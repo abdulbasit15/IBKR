@@ -1,0 +1,15 @@
+{
+    "symbol": "SPX",
+    "expiry": "20250717",
+    "trade_time": "14:10",           
+    "short_call_delta": 0.2,         
+    "long_call_delta": 0.2,          
+    "short_put_delta": -0.2,         
+    "long_put_delta": -0.2,          
+    "width": 5,                  
+    "exchange": "CBOE",
+    "currency": "USD",
+    "multiplier": "100",
+    "tradingClass": "SPX",
+    "retry_interval_min": 1      
+}

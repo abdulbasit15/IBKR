@@ -4,8 +4,19 @@ import numpy as np
 
 # Remove reading from JSON file
 # Set symbol and duration_year directly
-symbol = 'SPX'
-duration_year = 1
+#symbol = 'SPX'
+#duration_year = 1
+
+# Read config from IV.json using relative path
+with open('IV.json', 'r') as f:
+    config = json.load(f)
+    
+# Read config from IV.json
+# with open(r'C:\Repo\IBKR\TWS API\source\pythonclient\program\IV.json', 'r') as f:
+#     config = json.load(f)
+
+symbol = config['symbol']
+duration_year = config['duration_year']
 
 # Connect to IB
 ib = IB()
