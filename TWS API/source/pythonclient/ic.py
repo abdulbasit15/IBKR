@@ -138,7 +138,7 @@ combo.comboLegs = [
     ComboLeg(conId=ib.reqContractDetails(short_put)[0].contract.conId, ratio=1, action='SELL', exchange=exchange),
     ComboLeg(conId=ib.reqContractDetails(long_put)[0].contract.conId, ratio=1, action='BUY', exchange=exchange),
 ]
-order = MarketOrder('SELL', 1)
+order = MarketOrder('BUY', 1)
 
 # --- Trade window logic using only time (not date) ---
 def get_today_time(time_str):

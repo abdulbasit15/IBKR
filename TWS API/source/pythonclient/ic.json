@@ -2,7 +2,7 @@
     "symbol": "SPX",
     "expiry": "",   
     "short_call_delta": 0.1,
-     "short_put_delta": -0.1,
+    "short_put_delta": -0.1,
     "long_call_delta": null,
     "long_put_delta": null,          
     "width": 5,                  
@@ -10,7 +10,7 @@
     "currency": "USD",
     "multiplier": "100",
     "tradingClass": "SPXW",
-     "trade_start_time": "02:30",
-    "trade_end_time": "3:30",
+    "trade_start_time": "10:05",
+    "trade_end_time": "10:30",
     "retry_interval_min": 1      
 }
