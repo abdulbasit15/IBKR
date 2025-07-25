@@ -138,42 +138,67 @@ combo.comboLegs = [
     ComboLeg(conId=ib.reqContractDetails(short_put)[0].contract.conId, ratio=1, action='SELL', exchange=exchange),
     ComboLeg(conId=ib.reqContractDetails(long_put)[0].contract.conId, ratio=1, action='BUY', exchange=exchange),
 ]
-order = MarketOrder('BUY', 1)
 
-# --- Trade window logic using only time (not date) ---
-def get_today_time(time_str):
+# Wait for trade window
+def get_today_time(tstr):
     now = datetime.now()
-    hour, minute = map(int, time_str.split(':'))
+    hour, minute = map(int, tstr.split(':'))
     return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
-trade_start_dt = get_today_time(trade_start_time)
-trade_end_dt = get_today_time(trade_end_time)
-if trade_end_dt <= trade_start_dt:
-    trade_end_dt += timedelta(days=1)  # handle overnight windows
+start_time = get_today_time(trade_start_time)
+end_time = get_today_time(trade_end_time)
+if end_time <= start_time:
+    end_time += timedelta(days=1)
 
-# Wait until trade window opens
-now = datetime.now()
-if now < trade_start_dt:
-    wait_sec = (trade_start_dt - now).total_seconds()
-    print(f"Waiting {wait_sec/60:.1f} minutes until trade window opens at {trade_start_time}...")
-    time.sleep(wait_sec)
+if datetime.now() < start_time:
+    wait = (start_time - datetime.now()).total_seconds()
+    print(f"Waiting {wait/60:.1f} minutes to start...")
+    time.sleep(wait)
 
-# Place and retry order within the window
+# Trade logic
+order = MarketOrder('BUY', 2)
 order_filled = False
-while datetime.now() < trade_end_dt:
+while datetime.now() < end_time:
     trade = ib.placeOrder(combo, order)
-    print("Order submitted, waiting for fill...")
+    print("Submitted market order. Waiting for fill...")
     ib.sleep(10)
-    trade_status = trade.orderStatus.status
-    print(f"Order status: {trade_status}")
-    if trade_status == 'Filled':
-        print("Iron condor filled!")
+    if trade.orderStatus.status == 'Filled':
         order_filled = True
+        fill_price = trade.orderStatus.avgFillPrice
+        print(f"Filled at: {fill_price}")
+
+        def round_to_tick(price):
+            return round(price * 20) / 20 if price < 3 else round(price * 10) / 10
+
+        profit_target_price = round_to_tick(fill_price * 0.8)
+        stop_loss_price = round_to_tick(fill_price * 1.15)
+        print(f"Placing profit target: {profit_target_price}, stop loss: {stop_loss_price}")
+
+        profit_order = LimitOrder('SELL', 1, profit_target_price)
+        stop_order = StopOrder('SELL', 1, stop_loss_price)
+        
+        profit_trade = ib.placeOrder(combo, profit_order)
+        stop_trade = ib.placeOrder(combo, stop_order)
+
+        while profit_trade.orderStatus.status not in ['Filled', 'Cancelled'] and stop_trade.orderStatus.status not in ['Filled', 'Cancelled']:
+            ib.sleep(5)
+            print(f"Profit: {profit_trade.orderStatus.status}, Stop: {stop_trade.orderStatus.status}")
+            ib.reqAllOpenOrders()
+
+        if profit_trade.orderStatus.status == 'Filled':
+            print("✅ Profit target filled!")
+            ib.cancelOrder(stop_trade.order)
+        elif stop_trade.orderStatus.status == 'Filled':
+            print("⚠️ Stop loss triggered!")
+            ib.cancelOrder(profit_trade.order)
+        else:
+            print(f"Orders ended - Profit: {profit_trade.orderStatus.status}, Stop: {stop_trade.orderStatus.status}")
         break
-    print(f"Order not filled, retrying in {retry_interval_min} minutes...")
-    ib.sleep(retry_interval_min * 60)
+    else:
+        print(f"Order not filled yet, retrying in {retry_interval_min} minutes...")
+        ib.sleep(retry_interval_min * 60)
 
 if not order_filled:
-    print("Trade window ended. Order was not filled.")
+    print("Trade window closed. Order not filled.")
 
 ib.disconnect()
