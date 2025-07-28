@@ -1,16 +1,43 @@
 {
-    "symbol": "SPX",
-    "expiry": "",   
-    "short_call_delta": 0.2,
-    "short_put_delta": -0.2,
-    "long_call_delta": null,
-    "long_put_delta": null,          
-    "width": 10,                  
-    "exchange": "CBOE",
-    "currency": "USD",
-    "multiplier": "100",
-    "tradingClass": "SPXW",
-    "trade_start_time": "10:05",
-    "trade_end_time": "10:30",
-    "retry_interval_min": 1      
+    "strategies": {
+        "SPX IC - 10.05": {
+            "symbol": "SPX",
+            "expiry": "",   
+            "short_call_delta": 0.10,
+            "short_put_delta": -0.10,
+            "long_call_delta": null,
+            "long_put_delta": null,          
+            "width": 5,                  
+            "exchange": "CBOE",
+            "currency": "USD",
+            "multiplier": "100",
+            "tradingClass": "SPXW",
+            "trade_start_time": "10:05",
+            "trade_end_time": "15:30",
+            "retry_interval_min": 1,
+            "max_capital": 1000,
+            "profit_target": 0.80,
+            "stop_loss": 0.30
+        },
+        "SPX IC - 13.00": {
+            "symbol": "SPX",
+            "expiry": "",   
+            "short_call_delta": 0.5,
+            "short_put_delta": -0.5,
+            "long_call_delta": null,
+            "long_put_delta": null,          
+            "width": 5,                  
+            "exchange": "CBOE",
+            "currency": "USD",
+            "multiplier": "100",
+            "tradingClass": "SPXW",
+            "trade_start_time": "13:00",
+            "trade_end_time": "16:00",
+            "retry_interval_min": 1,
+            "max_capital": 1000,
+            "profit_target": 0.80,
+            "stop_loss": 0.30
+        }
+    },
+    "active_strategies": ["SPX IC - 10.05", "SPX IC - 13.00"]
 }
