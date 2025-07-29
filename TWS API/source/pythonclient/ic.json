@@ -3,8 +3,8 @@
         "SPX IC - 10.05": {
             "symbol": "SPX",
             "expiry": "",   
-            "short_call_delta": 0.10,
-            "short_put_delta": -0.10,
+            "short_call_delta": 0.20,
+            "short_put_delta": -0.20,
             "long_call_delta": null,
             "long_put_delta": null,          
             "width": 5,                  
@@ -16,8 +16,8 @@
             "trade_end_time": "15:30",
             "retry_interval_min": 1,
             "max_capital": 1000,
-            "profit_target": 0.80,
-            "stop_loss": 0.30
+            "profit_target": 0.25,
+            "stop_loss": 0.20
         },
         "SPX IC - 13.00": {
             "symbol": "SPX",

@@ -4,9 +4,12 @@ import time
 import pandas as pd
 import threading
 import asyncio
+import openpyxl
 from datetime import datetime, timedelta
 from ib_insync import *
 from ib_insync import ComboLeg, Contract
+from custom_order import place_custom_order
+
 
 # Load config using absolute path
 config_path = os.path.join(os.path.dirname(__file__), 'ic.json')
@@ -282,13 +285,15 @@ def run_strategy(strategy_name, strategy_config, client_id):
     # Entry order logic
     log("\n📈 ENTRY ORDER PHASE")
     log("=" * 30)
-    order = MarketOrder('BUY', max_contracts)
+    #order = MarketOrder('BUY', max_contracts)
+    #order = place_custom_order(ib, combo, max_contracts, log, action='BUY')
+    log("📤 Entry order placed, waiting for fill...")
     order_filled = False
     
     while datetime.now() < end_time:
         try:
             log("📤 Placing market order...")
-            trade = ib.placeOrder(combo, order)
+            trade = place_custom_order(ib, combo, max_contracts, log, action='BUY')
             log(f"✅ Order submitted with ID: {trade.order.orderId}")
         except Exception as e:
             log(f"❌ Error placing order: {e}")
