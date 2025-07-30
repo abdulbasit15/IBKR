@@ -26,7 +26,12 @@ class IBApp(EWrapper, EClient):
         print(f"Underlying ConId: {self.underlyingConId}")
 
     def securityDefinitionOptionParameter(self, reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes):
+        if expiry not in expirations:
+            print(f"No options found for expiry {expiry}. Available expirations: {expirations}")
+            self.strikes = [] # No valid strikes if expiry is not found
+            return
         self.strikes = sorted([s for s in strikes if s > 0])
+        print(f"Valid expirations: {expirations}")
 
     def tickPrice(self, reqId, tickType, price, attrib):
         if tickType == 4:  # Last price
@@ -59,8 +64,13 @@ app.reqContractDetails(1, spx_contract)
 while app.underlyingConId is None:
     time.sleep(0.1)
 
-app.reqSecDefOptParams(2, symbol, "", "IND", app.underlyingConId)
+app.reqSecDefOptParams(2, symbol, expiry, "IND", app.underlyingConId)
 time.sleep(2)
+
+if not app.strikes:
+    print(f"No strikes found for {symbol} with expiry {expiry}. Exiting.")
+    app.disconnect()
+    exit()
 
 # Request current SPX index price
 reqId_spx = 999

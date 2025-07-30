@@ -173,6 +173,30 @@ def run_strategy(strategy_name, strategy_config, client_id):
     else:
         log(f"✅ SPX market price: {current_price}")
     
+    # Check trade window first
+    def get_today_time(tstr):
+        now = datetime.now()
+        hour, minute = map(int, tstr.split(':'))
+        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    log(f"⏰ Trade window: {trade_start_time} - {trade_end_time}")
+    start_time = get_today_time(trade_start_time)
+    end_time = get_today_time(trade_end_time)
+    if end_time <= start_time:
+        end_time += timedelta(days=1)
+        log("📅 Trade window spans overnight")
+
+    if datetime.now() < start_time:
+        wait = (start_time - datetime.now()).total_seconds()
+        log(f"⏳ Waiting {wait/60:.1f} minutes until trade window opens...")
+        time.sleep(wait)
+    elif datetime.now() > end_time:
+        log("❌ Trade window has closed for today")
+        ib.disconnect()
+        return
+    else:
+        log("✅ Trade window is open")
+    
     num_strikes = 20
 
     # Get all strikes for this expiry
@@ -256,44 +280,24 @@ def run_strategy(strategy_name, strategy_config, client_id):
     ib.qualifyContracts(combo)
     log(f"✅ Combo contract qualified with conId: {combo.conId}")
 
-    # Wait for trade window
-    def get_today_time(tstr):
-        now = datetime.now()
-        hour, minute = map(int, tstr.split(':'))
-        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-
-    log(f"⏰ Trade window: {trade_start_time} - {trade_end_time}")
-    start_time = get_today_time(trade_start_time)
-    end_time = get_today_time(trade_end_time)
-    if end_time <= start_time:
-        end_time += timedelta(days=1)
-        log("📅 Trade window spans overnight")
-
-    if datetime.now() < start_time:
-        wait = (start_time - datetime.now()).total_seconds()
-        log(f"⏳ Waiting {wait/60:.1f} minutes until trade window opens...")
-        time.sleep(wait)
-    else:
-        log("✅ Trade window is open")
-
     # Calculate position size based on max capital
     max_loss_per_contract = width * 100 if width > 0 else 5000  # Default for straddles
     max_contracts = min(10, max_capital // max_loss_per_contract) if max_loss_per_contract > 0 else 1
-    
+    log(f"width: {width} max_loss_per_contract: ${max_loss_per_contract} max_capital: {max_capital} max_contracts: {max_contracts}")
     log(f"📊 Position sizing: Max {max_contracts} contracts (Max loss: ${max_loss_per_contract * max_contracts:,})")
 
     # Entry order logic
     log("\n📈 ENTRY ORDER PHASE")
     log("=" * 30)
-    #order = MarketOrder('BUY', max_contracts)
-    #order = place_custom_order(ib, combo, max_contracts, log, action='BUY')
-    log("📤 Entry order placed, waiting for fill...")
     order_filled = False
     
     while datetime.now() < end_time:
         try:
-            log("📤 Placing market order...")
+            log("📤 Placing custom order...")
             trade = place_custom_order(ib, combo, max_contracts, log, action='BUY')
+            if trade is None:
+                log("❌ Custom order failed")
+                break
             log(f"✅ Order submitted with ID: {trade.order.orderId}")
         except Exception as e:
             log(f"❌ Error placing order: {e}")
