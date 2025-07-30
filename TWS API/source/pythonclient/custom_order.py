@@ -39,7 +39,7 @@ def place_custom_order(ib, contract, quantity, log, action='BUY'):
         trade = ib.placeOrder(contract, order)
         log(f"Placed LimitOrder to {action} at {price}. OrderID: {trade.order.orderId}")
 
-        ib.sleep(5)  # Wait for 5 seconds
+        ib.sleep(10)  # Wait for 10 seconds
 
         if trade.orderStatus.status == 'Filled':
             log(f"✅ Order filled at {trade.orderStatus.avgFillPrice}")

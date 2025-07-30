@@ -205,25 +205,43 @@ def run_strategy(strategy_name, strategy_config, client_id):
     strikes_above = sorted([s for s in all_strikes if s > current_price])[:num_strikes]
     valid_strikes = sorted(strikes_below) + strikes_above
 
-    # Helper to find strike by delta
+    # Helper to find strike by delta (optimized)
     def find_strike_by_delta(right, target_delta):
+        # Create all option contracts for this right type
+        options = [Option(symbol, expiry, strike, right, exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass) for strike in valid_strikes]
+        
+        # Request market data for all options at once
+        tickers = [ib.reqMktData(opt) for opt in options]
+        
+        # Wait for Greeks to populate, with a timeout
+        greeks_timeout = 10  # seconds
+        start_time = time.time()
+        while time.time() - start_time < greeks_timeout:
+            all_greeks_available = True
+            for ticker in tickers:
+                if not ticker.modelGreeks or ticker.modelGreeks.delta is None:
+                    all_greeks_available = False
+                    break
+            if all_greeks_available:
+                break
+            ib.sleep(0.1) # Check every 100ms
+        
         best_strike = None
         best_delta = None
         min_diff = float('inf')
-        for strike in valid_strikes:
-            opt = Option(symbol, expiry, strike, right, exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
-            ticker = ib.reqMktData(opt)
-            for _ in range(10):
-                ib.sleep(0.1)
-                if ticker.modelGreeks and ticker.modelGreeks.delta is not None:
-                    break
+        
+        for ticker, strike in zip(tickers, valid_strikes):
             if ticker.modelGreeks and ticker.modelGreeks.delta is not None:
                 diff = abs(ticker.modelGreeks.delta - target_delta)
                 if diff < min_diff:
                     min_diff = diff
                     best_strike = strike
                     best_delta = ticker.modelGreeks.delta
+        
+        # Cancel all market data subscriptions
+        for opt in options:
             ib.cancelMktData(opt)
+        
         if best_strike is not None:
             log(f"Selected {right} strike {best_strike} with closest delta {best_delta:.3f} (target was {target_delta})")
             if min_diff > 0.05:
