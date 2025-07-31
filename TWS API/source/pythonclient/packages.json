@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "ib-insync": "latest",
+    "pandas": "latest",
+    "openpyxl": "latest"
+  }
+}

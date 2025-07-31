@@ -17,6 +17,7 @@ class IBApp(EWrapper, EClient):
         self.last_price = None
         self.call_prices = {}
         self.put_prices = {}
+        self.delta_values = {}
 
     def nextValidId(self, orderId):
         self.nextOrderId = orderId

@@ -1,32 +1,44 @@
 import os
+import sys
 import json
 import time
 import pandas as pd
 import threading
 import asyncio
-import openpyxl
 from datetime import datetime, timedelta
 from ib_insync import *
 from ib_insync import ComboLeg, Contract
 from custom_order import place_custom_order
 
 
-# Load config using absolute path
-config_path = os.path.join(os.path.dirname(__file__), 'ic.json')
+# Load config from same directory as executable
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    config_path = os.path.join(os.path.dirname(sys.executable), 'ic.json')
+else:
+    # Running as script
+    config_path = os.path.join(os.path.dirname(__file__), 'ic.json')
+
 with open(config_path, 'r') as f:
     config = json.load(f)
 
 def run_strategy(strategy_name, strategy_config, client_id):
+    # Get base directory (same as executable)
+    if getattr(sys, 'frozen', False):
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        base_dir = os.path.dirname(__file__)
+    
     # Setup logging
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     # Create safe filename from strategy name
-    safe_strategy_name = strategy_name.replace(' ', '_').replace('-', '').replace('.', '')
+    safe_strategy_name = strategy_name.replace(' ', '_').replace('-', '').replace('.', '').replace('__', '_')
     log_filename = f"{safe_strategy_name}_{timestamp}.log"
-    log_path = os.path.join(os.path.dirname(__file__), log_filename)
+    log_path = os.path.join(base_dir, log_filename)
 
     # Setup trade journal
     journal_filename = f"{strategy_config['symbol']}_journal.xlsx"
-    journal_path = os.path.join(os.path.dirname(__file__), journal_filename)
+    journal_path = os.path.join(base_dir, journal_filename)
 
     def log(message):
         timestamp_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -340,6 +352,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
             stop_loss_price = round_to_tick(fill_price * (1 + stop_loss))
             
             log(f"📊 Exit Strategy:")
+            log(f"   💰 Entry Fill Price: ${fill_price}")
             log(f"   💚 Profit Target: ${profit_target_price} ({profit_target*100:.0f}% profit)")
             log(f"   🛑 Stop Loss: ${stop_loss_price} ({stop_loss*100:.0f}% loss)")
             
