@@ -1,3 +1,5 @@
 {
-  "symbol": "SPX"
+  "symbol": "QQQ",
+  "exchange": "SMART",
+  "security": "STK"
 }

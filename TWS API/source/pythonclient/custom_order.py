@@ -2,7 +2,7 @@ import time
 import math
 from ib_insync import LimitOrder, MarketOrder
 
-def place_custom_order(ib, contract, quantity, log, action='BUY'):
+def place_custom_order(ib, contract, quantity, log, action='BUY', price_increment=0.05):
     """
     Places a custom order that tries to fill at the bid/ask and then walks the price.
     For a BUY order, it starts at the bid and walks up to the ask.
@@ -53,14 +53,14 @@ def place_custom_order(ib, contract, quantity, log, action='BUY'):
                 if price >= ask:
                     log("Price has reached ask. Exiting custom order logic.")
                     break
-                price += 0.05 # As requested by user
+                price += price_increment
                 price = min(price, ask) # Do not go over ask
                 log(f"Increasing price to {price}")
             else: # SELL
                 if price <= bid:
                     log("Price has reached bid. Exiting custom order logic.")
                     break
-                price -= 0.5 # As requested by user
+                price -= price_increment
                 price = max(price, bid) # Do not go under bid
                 log(f"Decreasing price to {price}")
 

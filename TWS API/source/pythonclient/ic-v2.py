@@ -10,7 +10,6 @@ from ib_insync import *
 from ib_insync import ComboLeg, Contract
 from custom_order import place_custom_order
 
-
 # Load config from same directory as executable
 if getattr(sys, 'frozen', False):
     # Running as compiled executable
@@ -84,7 +83,6 @@ def run_strategy(strategy_name, strategy_config, client_id):
     max_capital = strategy_config.get('max_capital', 50000)
     profit_target = strategy_config.get('profit_target', 0.2)  # 20% default
     stop_loss = strategy_config.get('stop_loss', 0.15)  # 15% default
-    price_increment = strategy_config.get('price_increment', 0.05)  # Default increment
 
     log(f"🚀 Starting {strategy_name}")
     log(f"📊 Config: {symbol} {strategy_config.get('expiry', 'auto')} on {exchange}")
@@ -131,19 +129,25 @@ def run_strategy(strategy_name, strategy_config, client_id):
         log(f"❌ Connection failed: {e}")
         return
 
-    # Get SPX index contract
-    log(f"📈 Getting {symbol} index contract...")
-    symbolData = Index(symbol, exchange)
-    contract_details = ib.reqContractDetails(symbolData)
+    # Get underlying contract (Index or Stock)
+    log(f"📈 Getting {symbol} contract...")
+    if symbol in ['SPX', 'NDX', 'RUT']:  # Index symbols
+        underlying = Index(symbol, exchange)
+        sec_type = 'IND'
+    else:  # Stock/ETF symbols like QQQ
+        underlying = Stock(symbol, exchange, currency)
+        sec_type = 'STK'
+    
+    contract_details = ib.reqContractDetails(underlying)
     if not contract_details:
         log(f"❌ {symbol} contract not found.")
         ib.disconnect()
         return
-    symbolData_conId = contract_details[0].contract.conId
-    log(f"✅ SPX contract found, conId: {symbolData_conId}")
+    underlying_conId = contract_details[0].contract.conId
+    log(f"✅ {symbol} contract found, conId: {underlying_conId}")
 
     log(f"🔍 Getting option chain for {exchange} {tradingClass}...")
-    opt_params = ib.reqSecDefOptParams(symbol, '', 'IND', symbolData_conId)
+    opt_params = ib.reqSecDefOptParams(symbol, '', sec_type, underlying_conId)
     params = [p for p in opt_params if p.exchange == exchange and p.tradingClass == tradingClass]
     if not params:
         log(f"❌ No option params for {exchange} {tradingClass}")
@@ -162,37 +166,30 @@ def run_strategy(strategy_name, strategy_config, client_id):
     else:
         log(f"✅ Using configured expiry: {expiry}")
 
-    # Get SPX current price (with delayed data if needed)
-    log("💰 Getting SPX current price...")
-    symbol_ticker = ib.reqMktData(symbolData, '', False, False)
+    # Get current price
+    log(f"💰 Getting {symbol} current price...")
+    underlying_ticker = ib.reqMktData(underlying)
     timeout = 10
     start = time.time()
-    while (symbol_ticker.marketPrice() is None or symbol_ticker.marketPrice() != symbol_ticker.marketPrice()) and time.time() - start < timeout:
+    while (underlying_ticker.marketPrice() is None or underlying_ticker.marketPrice() != underlying_ticker.marketPrice()) and time.time() - start < timeout:
         ib.sleep(0.2)
-    current_price = symbol_ticker.marketPrice()
-    
-    # If no live data, try delayed data
+    current_price = underlying_ticker.marketPrice()
     if current_price is None or current_price != current_price:
-        log("⏳ Requesting delayed market data...")
-        ib.cancelMktData(symbolData)
-        symbol_ticker = ib.reqMktData(symbolData, '', True, False)  # Request delayed data
-        ib.sleep(3)
-        current_price = symbol_ticker.marketPrice()
-    if current_price is None or current_price != current_price:
-        if symbol_ticker.bid > 0 and symbol_ticker.ask > 0:
-            current_price = (symbol_ticker.bid + symbol_ticker.ask) / 2
+        if underlying_ticker.bid > 0 and underlying_ticker.ask > 0:
+            current_price = (underlying_ticker.bid + underlying_ticker.ask) / 2
             log(f"⚠️ Using bid/ask midpoint: {current_price}")
-        elif symbol_ticker.bid > 0:
-            current_price = symbol_ticker.bid
+        elif underlying_ticker.bid > 0:
+            current_price = underlying_ticker.bid
             log(f"⚠️ Using bid price: {current_price}")
-        elif symbol_ticker.ask > 0:
-            current_price = symbol_ticker.ask
+        elif underlying_ticker.ask > 0:
+            current_price = underlying_ticker.ask
             log(f"⚠️ Using ask price: {current_price}")
         else:
-            current_price = 6360  # fallback
+            fallback_price = 6360 if symbol == 'SPX' else 560  # Different fallbacks
+            current_price = fallback_price
             log(f"⚠️ Using fallback price: {current_price}")
     else:
-        log(f"✅ SPX market price: {current_price}")
+        log(f"✅ {symbol} market price: {current_price}")
     
     # Check trade window first
     def get_today_time(tstr):
@@ -229,10 +226,11 @@ def run_strategy(strategy_name, strategy_config, client_id):
     # Helper to find strike by delta (optimized)
     def find_strike_by_delta(right, target_delta):
         # Create all option contracts for this right type
-        options = [Option(symbol, expiry, strike, right, exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass) for strike in valid_strikes]
+        opt_exchange = strategy_config.get('option_exchange', exchange)
+        options = [Option(symbol, expiry, strike, right, opt_exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass) for strike in valid_strikes]
         
-        # Request market data for all options at once (with delayed data fallback)
-        tickers = [ib.reqMktData(opt, '', True, False) for opt in options]  # Use delayed data
+        # Request market data for all options at once
+        tickers = [ib.reqMktData(opt) for opt in options]
         
         # Wait for Greeks to populate, with a timeout
         greeks_timeout = 10  # seconds
@@ -292,10 +290,11 @@ def run_strategy(strategy_name, strategy_config, client_id):
 
     # Build option contracts
     log("🔧 Building option contracts...")
-    short_call = Option(symbol, expiry, short_call_strike, 'C', exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
-    long_call = Option(symbol, expiry, long_call_strike, 'C', exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
-    short_put = Option(symbol, expiry, short_put_strike, 'P', exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
-    long_put = Option(symbol, expiry, long_put_strike, 'P', exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
+    opt_exchange = strategy_config.get('option_exchange', exchange)
+    short_call = Option(symbol, expiry, short_call_strike, 'C', opt_exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
+    long_call = Option(symbol, expiry, long_call_strike, 'C', opt_exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
+    short_put = Option(symbol, expiry, short_put_strike, 'P', opt_exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
+    long_put = Option(symbol, expiry, long_put_strike, 'P', opt_exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
     log("✅ Option contracts created")
 
     # Build combo contract
@@ -333,7 +332,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
     while datetime.now() < end_time:
         try:
             log("📤 Placing custom order...")
-            trade = place_custom_order(ib, combo, max_contracts, log, action='BUY', price_increment=price_increment)
+            trade = place_custom_order(ib, combo, max_contracts, log, action='BUY')
             if trade is None:
                 log("❌ Custom order failed")
                 break

@@ -16,6 +16,7 @@
             "trade_end_time": "12:30",
             "retry_interval_min": 1,
             "max_capital": 1000,
+            "price_increment": 0.05,
             "profit_target": 0.25,
             "stop_loss": 0.20
         },
@@ -35,9 +36,30 @@
             "trade_end_time": "16:00",
             "retry_interval_min": 1,
             "max_capital": 1000,
+            "price_increment": 0.05,
             "profit_target": 0.80,
             "stop_loss": 0.30
+        },
+        "QQQ IC - 10.30": {
+            "symbol": "QQQ",
+            "expiry": "",   
+            "short_call_delta": 0.40,
+            "short_put_delta": -0.40,
+            "long_call_delta": null,
+            "long_put_delta": null,          
+            "width": 2,                  
+            "exchange": "SMART",
+            "currency": "USD",
+            "multiplier": "100",
+            "tradingClass": "QQQ",
+            "trade_start_time": "09:00",
+            "trade_end_time": "15:30",
+            "retry_interval_min": 1,
+            "max_capital": 500,
+            "price_increment": 0.01,
+            "profit_target": 0.50,
+            "stop_loss": 0.80
         }
     },
-    "active_strategies": ["SPX IC - 10.05", "SPX IC - 13.00"]
+    "active_strategies": ["QQQ IC - 10.30"]
 }
