@@ -387,7 +387,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
             
             if profit_trade.orderStatus.status == 'Filled':
                 exit_price = profit_trade.orderStatus.avgFillPrice
-                profit = (fill_price - exit_price) * max_contracts * 100
+                profit = (exit_price - fill_price) * max_contracts * 100
                 log(f"🎉 PROFIT TARGET HIT!")
                 log(f"💰 Exit price: ${exit_price}")
                 log(f"💵 Total profit: ${profit:.2f}")
