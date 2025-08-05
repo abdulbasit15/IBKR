@@ -83,6 +83,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
     max_capital = strategy_config.get('max_capital', 50000)
     profit_target = strategy_config.get('profit_target', 0.2)  # 20% default
     stop_loss = strategy_config.get('stop_loss', 0.15)  # 15% default
+    price_increment = strategy_config.get('price_increment', 0.05)  # Default increment
 
     log(f"🚀 Starting {strategy_name}")
     log(f"📊 Config: {symbol} {strategy_config.get('expiry', 'auto')} on {exchange}")
@@ -101,18 +102,20 @@ def run_strategy(strategy_name, strategy_config, client_id):
     ib = IB()
     log(f"🔌 Connecting to TWS with client ID {client_id}...")
     
-    # Try connection with error handling
+    # Try connection with error handling and timeout
     try:
         # Try TWS port first, then IB Gateway port
-        ports = [7497]
+        ports = [7497, 4002]
         connected = False
         for port in ports:
             try:
-                ib.connect('127.0.0.1', port, clientId=client_id)
+                log(f"🔌 Attempting connection to port {port}...")
+                ib.connect('127.0.0.1', port, clientId=client_id, timeout=10)
                 log(f"✅ Connected to {'TWS' if port == 7497 else 'IB Gateway'} on port {port}")
                 connected = True
                 break
-            except ConnectionRefusedError:
+            except (ConnectionRefusedError, TimeoutError) as e:
+                log(f"⚠️ Port {port} failed: {type(e).__name__}")
                 continue
         
         if not connected:
@@ -124,6 +127,14 @@ def run_strategy(strategy_name, strategy_config, client_id):
         log("   2. API is enabled in TWS (File > Global Configuration > API > Settings)")
         log("   3. Port 7497 is correct (7497 for TWS, 4002 for IB Gateway)")
         log("   4. 'Enable ActiveX and Socket Clients' is checked")
+        return
+    except (ConnectionRefusedError, TimeoutError) as e:
+        log(f"❌ Connection failed: {type(e).__name__}")
+        log("💡 Troubleshooting tips:")
+        log("   1. Ensure TWS/IB Gateway is running")
+        log("   2. Check API settings: File > Global Configuration > API > Settings")
+        log("   3. Enable 'ActiveX and Socket Clients'")
+        log("   4. Verify client ID is unique")
         return
     except Exception as e:
         log(f"❌ Connection failed: {e}")
@@ -219,8 +230,33 @@ def run_strategy(strategy_name, strategy_config, client_id):
 
     # Get all strikes for this expiry
     all_strikes = sorted([s for s in params.strikes if s > 0])
-    strikes_below = sorted([s for s in all_strikes if s < current_price], reverse=True)[:num_strikes]
-    strikes_above = sorted([s for s in all_strikes if s > current_price])[:num_strikes]
+    
+    # Validate strikes by checking actual option contracts exist
+    def get_valid_strikes(strikes, symbol, expiry, exchange, currency, multiplier, tradingClass):
+        valid_strikes = []
+        opt_exchange = strategy_config.get('option_exchange', exchange)
+        
+        for strike in strikes:
+            try:
+                # Test if call option exists
+                test_option = Option(symbol, expiry, strike, 'C', opt_exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
+                contract_details = ib.reqContractDetails(test_option)
+                valid_strikes_prices = sorted({c.contract.strike for c in contract_details})
+                print(valid_strikes_prices[:10])
+                if contract_details:
+                    valid_strikes.append(strike)
+            except:
+                continue
+        
+        return valid_strikes
+    
+    # Get strikes around current price for validation
+    strikes_to_test = sorted([s for s in all_strikes if abs(s - current_price) <= current_price * 0.02])  # Within 2%
+    valid_all_strikes = get_valid_strikes(strikes_to_test, symbol, expiry, exchange, currency, multiplier, tradingClass)
+    log(f"Found {len(valid_all_strikes)} valid strikes for {symbol}")
+    
+    strikes_below = sorted([s for s in valid_all_strikes if s < current_price], reverse=True)[:num_strikes]
+    strikes_above = sorted([s for s in valid_all_strikes if s > current_price])[:num_strikes]
     valid_strikes = sorted(strikes_below) + strikes_above
 
     # Helper to find strike by delta (optimized)
@@ -332,7 +368,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
     while datetime.now() < end_time:
         try:
             log("📤 Placing custom order...")
-            trade = place_custom_order(ib, combo, max_contracts, log, action='BUY')
+            trade = place_custom_order(ib, combo, max_contracts, log, action='BUY', price_increment=price_increment)
             if trade is None:
                 log("❌ Custom order failed")
                 break
@@ -458,7 +494,7 @@ if __name__ == "__main__":
     for i, strategy_name in enumerate(active_strategies):
         if strategy_name in config['strategies']:
             strategy_config = config['strategies'][strategy_name]
-            client_id = 20 + i
+            client_id = 30 + i
             
             thread = threading.Thread(
                 target=run_strategy,
