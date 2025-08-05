@@ -2,6 +2,7 @@
     "strategies": {
         "SPX IC - 10.05": {
             "symbol": "SPX",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.20,
             "short_put_delta": -0.20,
@@ -22,6 +23,7 @@
         },
         "SPX IC - 0.3d+$10 - 14.15": {
             "symbol": "SPX",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.3,
             "short_put_delta": -0.3,
@@ -40,8 +42,9 @@
             "profit_target": 0.80,
             "stop_loss": 0.30
         },
-         "SPX IC - 0.45d+$5 - 13.55": {
+         "SPX IC - 0.45d+$5 - 15.55": {
             "symbol": "SPX",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -60,8 +63,9 @@
             "profit_target": 1.00,
             "stop_loss": 1.00
         },
-         "SPX IC - 0.45d+$5 - 13.55 SL 5%": {
+         "SPX IC - 0.45d+$5 - 15.55 SL 5%": {
             "symbol": "SPX",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -80,8 +84,9 @@
             "profit_target": 10.00,
             "stop_loss": 0.10
         },
-        "SPX IC - 0.45d+$10 - 13.55": {
-           "symbol": "SPX",
+        "SPX IC - 0.45d+$10 - 15.55": {
+            "symbol": "SPX",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -100,8 +105,9 @@
             "profit_target": 10.00,
             "stop_loss": 10.00
         },
-        "SPX IC - 0.45d+$10 - 13.55 SL 5%": {
-           "symbol": "SPX",
+        "SPX IC - 0.45d+$10 - 15.55 SL 5%": {
+            "symbol": "SPX",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -122,6 +128,7 @@
         },  
         "QQQ IC - 14.00 - $1 wide": {
             "symbol": "QQQ",
+            "secType": "STK",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -140,8 +147,9 @@
             "profit_target": 0.80,
             "stop_loss": 0.30
         },      
-        "QQQ IC - 15:30 - $1 wide": {
+        "QQQ IC - 15.30 - $1 wide": {
             "symbol": "QQQ",
+            "secType": "STK",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -160,8 +168,9 @@
             "profit_target": 0.50,
             "stop_loss": 0.30
         },
-        "QQQ IC - 15:30 - $2 wide": {
+        "QQQ IC - 15.30 - $2 wide": {
             "symbol": "QQQ",
+            "secType": "STK",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -180,8 +189,9 @@
             "profit_target": 0.50,
             "stop_loss": 0.30
         },
-        "QQQ IC - 15:55": {
+        "QQQ IC - 15.55": {
             "symbol": "QQQ",
+            "secType": "STK",
             "expiry": "",   
             "short_call_delta": 0.45,
             "short_put_delta": -0.45,
@@ -200,8 +210,9 @@
             "profit_target": 10,
             "stop_loss": 10
         },
-        "QQQ IB - 15:55": {
+        "QQQ IB - 15.55": {
             "symbol": "QQQ",
+            "secType": "STK",
             "expiry": "",   
             "short_call_delta": 0.5,
             "short_put_delta": -0.5,
@@ -212,7 +223,7 @@
             "currency": "USD",
             "multiplier": "100",
             "tradingClass": "QQQ",
-            "trade_start_time": "15:35",
+            "trade_start_time": "15:55",
             "trade_end_time": "17:00",
             "retry_interval_min": 1,
             "max_capital": 1000,
@@ -220,8 +231,9 @@
             "profit_target": 10,
             "stop_loss": 10
         },
-        "XSP IB - 15:55": {
+        "XSP IB - 15.55": {
             "symbol": "XSP",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.5,
             "short_put_delta": -0.5,
@@ -232,16 +244,17 @@
             "currency": "USD",
             "multiplier": "100",
             "tradingClass": "XSP",
-            "trade_start_time": "15:35",
+            "trade_start_time": "15:55",
             "trade_end_time": "17:00",
             "retry_interval_min": 1,
             "max_capital": 1000,
             "price_increment": 0.01,
-            "profit_target": 10,
+            "profit_target": 1,
             "stop_loss": 10
         },
-        "GLD IB - 15:55": {
+        "GLD IB - 15.55": {
             "symbol": "GLD",
+            "secType": "IND",
             "expiry": "",   
             "short_call_delta": 0.5,
             "short_put_delta": -0.5,
@@ -252,16 +265,17 @@
             "currency": "USD",
             "multiplier": "100",
             "tradingClass": "GLD",
-            "trade_start_time": "15:35",
+            "trade_start_time": "15:55",
             "trade_end_time": "17:00",
             "retry_interval_min": 1,
             "max_capital": 1000,
             "price_increment": 0.01,
-            "profit_target": 10,
+            "profit_target": 0.1,
             "stop_loss": 10
         },
-        "AAPL IB - 15:55": {
+        "AAPL IB - 15.55": {
             "symbol": "AAPL",
+            "secType": "STK",
             "expiry": "",   
             "short_call_delta": 0.5,
             "short_put_delta": -0.5,
@@ -277,14 +291,15 @@
             "retry_interval_min": 1,
             "max_capital": 1000,
             "price_increment": 0.01,
-            "profit_target": 10,
+            "profit_target": 0.05,
             "stop_loss": 10
         },
-        "AAPL IC - 15:55": {
+        "AAPL IC - 15.55": {
             "symbol": "AAPL",
+            "secType": "STK",
             "expiry": "",   
-            "short_call_delta": 0.45,
-            "short_put_delta": -0.45,
+            "short_call_delta": 0.4,
+            "short_put_delta": -0.4,
             "long_call_delta": null,
             "long_put_delta": null,          
             "width": 1,                  
@@ -292,28 +307,28 @@
             "currency": "USD",
             "multiplier": "100",
             "tradingClass": "AAPL",
-            "trade_start_time": "15:35",
+            "trade_start_time": "15:55",
             "trade_end_time": "16:00",
             "retry_interval_min": 1,
             "max_capital": 1000,
             "price_increment": 0.01,
-            "profit_target": 10,
+            "profit_target": 0.95,
             "stop_loss": 10
         }
     },
-    "active_strategies": [
-        "SPX IC - 0.45d+$5 - 13.55",
-        "SPX IC - 0.45d+$5 - 13.55 SL 5%",
-        "SPX IC - 0.45d+$10 - 13.55",
-        "SPX IC - 0.45d+$10 - 13.55 SL 5%",
+     "active_strategies": [
+        "SPX IC - 0.45d+$5 - 15.55",
+        "SPX IC - 0.45d+$5 - 15.55 SL 5%",
+        "SPX IC - 0.45d+$10 - 15.55",
+        "SPX IC - 0.45d+$10 - 15.55 SL 5%",
         "QQQ IC - 14.00 - $1 wide",
-        "QQQ IC - 15:30 - $1 wide",
-        "QQQ IC - 15:30 - $2 wide",
-        "QQQ IC - 15:55",
-        "QQQ IB - 15:55",
-        "XSP IB - 15:55",
-        "GLD IB - 15:55",
-        "AAPL IB - 15:55",
-        "AAPL IC - 15:55"
+        "QQQ IC - 15.30 - $1 wide",
+        "QQQ IC - 15.30 - $2 wide",
+        "QQQ IC - 15.55",
+        "QQQ IB - 15.55",
+        "XSP IB - 15.55",
+        "GLD IB - 15.55",
+        "AAPL IB - 15.55",
+        "AAPL IC - 15.55"
     ]
 }

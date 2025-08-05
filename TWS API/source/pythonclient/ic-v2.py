@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from ib_insync import *
 from ib_insync import ComboLeg, Contract
 from custom_order import place_custom_order
+from collections import Counter
 
 # Load config from same directory as executable
 if getattr(sys, 'frozen', False):
@@ -67,6 +68,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
 
     symbol = strategy_config['symbol']
+    secType = strategy_config['secType']
     exchange = strategy_config['exchange']
     currency = strategy_config['currency']
     multiplier = str(strategy_config['multiplier'])
@@ -142,12 +144,12 @@ def run_strategy(strategy_name, strategy_config, client_id):
 
     # Get underlying contract (Index or Stock)
     log(f"📈 Getting {symbol} contract...")
-    if symbol in ['SPX', 'NDX', 'RUT']:  # Index symbols
+    if secType in ['IND', 'INDX']:  # Index symbols
         underlying = Index(symbol, exchange)
-        sec_type = 'IND'
+        # sec_type = 'IND'
     else:  # Stock/ETF symbols like QQQ
         underlying = Stock(symbol, exchange, currency)
-        sec_type = 'STK'
+        # sec_type = 'STK'
     
     contract_details = ib.reqContractDetails(underlying)
     if not contract_details:
@@ -158,7 +160,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
     log(f"✅ {symbol} contract found, conId: {underlying_conId}")
 
     log(f"🔍 Getting option chain for {exchange} {tradingClass}...")
-    opt_params = ib.reqSecDefOptParams(symbol, '', sec_type, underlying_conId)
+    opt_params = ib.reqSecDefOptParams(symbol, '', secType, underlying_conId)
     params = [p for p in opt_params if p.exchange == exchange and p.tradingClass == tradingClass]
     if not params:
         log(f"❌ No option params for {exchange} {tradingClass}")
@@ -241,23 +243,63 @@ def run_strategy(strategy_name, strategy_config, client_id):
                 # Test if call option exists
                 test_option = Option(symbol, expiry, strike, 'C', opt_exchange, currency=currency, multiplier=multiplier, tradingClass=tradingClass)
                 contract_details = ib.reqContractDetails(test_option)
-                valid_strikes_prices = sorted({c.contract.strike for c in contract_details})
-                print(valid_strikes_prices[:10])
                 if contract_details:
                     valid_strikes.append(strike)
-            except:
+            except Exception as e:
+                log(f"Error validating strike {strike}: {e}")
                 continue
         
-        return valid_strikes
+        return sorted(list(set(valid_strikes)))
+
+    def get_strike_increment(strikes):
+        if len(strikes) < 2:
+            return None
+        
+        differences = []
+        for i in range(1, len(strikes)):
+            diff = round(strikes[i] - strikes[i-1], 2)
+            if diff > 0:
+                differences.append(diff)
+        
+        if not differences:
+            return None
+
+        # Find the most common difference (mode)
+        from collections import Counter
+        counts = Counter(differences)
+        most_common = counts.most_common(1)
+        
+        if most_common:
+            return most_common[0][0]
+        return None
     
     # Get strikes around current price for validation
     strikes_to_test = sorted([s for s in all_strikes if abs(s - current_price) <= current_price * 0.02])  # Within 2%
-    valid_all_strikes = get_valid_strikes(strikes_to_test, symbol, expiry, exchange, currency, multiplier, tradingClass)
+    valid_all_strikes = get_valid_strikes(strikes_to_test, symbol, expiry, exchange, currency, multiplier, tradingClass)    
     log(f"Found {len(valid_all_strikes)} valid strikes for {symbol}")
+    print(valid_all_strikes)
     
+    strike_increment = get_strike_increment(valid_all_strikes)
+    if strike_increment:
+        log(f"Detected strike increment: {strike_increment}")
+    else:
+        log("⚠️ Could not determine strike increment. Using default rounding.")
+
     strikes_below = sorted([s for s in valid_all_strikes if s < current_price], reverse=True)[:num_strikes]
     strikes_above = sorted([s for s in valid_all_strikes if s > current_price])[:num_strikes]
     valid_strikes = sorted(strikes_below) + strikes_above
+
+    def find_closest_strike(target_strike, available_strikes):
+        if not available_strikes:
+            return None
+        closest_strike = None
+        min_diff = float('inf')
+        for strike in available_strikes:
+            diff = abs(strike - target_strike)
+            if diff < min_diff:
+                min_diff = diff
+                closest_strike = strike
+        return closest_strike
 
     # Helper to find strike by delta (optimized)
     def find_strike_by_delta(right, target_delta):
@@ -309,16 +351,32 @@ def run_strategy(strategy_name, strategy_config, client_id):
     log("🎯 Selecting strikes...")
     short_call_strike = find_strike_by_delta('C', short_call_delta)
     short_put_strike = find_strike_by_delta('P', short_put_delta)
+    
+    # LONG CALL STRIKE (width-based or closest higher)
     if long_call_delta is not None:
         long_call_strike = find_strike_by_delta('C', long_call_delta)
     else:
-        long_call_strike = short_call_strike + width
-        log(f"📏 Long call strike set by width: {long_call_strike}")
+        target_long_call_strike = short_call_strike + width
+        long_call_strike = find_closest_strike(target_long_call_strike, [s for s in valid_strikes if s > short_call_strike])
+        if long_call_strike and long_call_strike != short_call_strike:
+            log(f"✅ Long call strike selected: {long_call_strike} (closest to target {target_long_call_strike})")
+        else:
+            log("❌ Could not find valid long call strike.")
+            ib.disconnect()
+            return
+
+    # LONG PUT STRIKE (width-based or closest lower)
     if long_put_delta is not None:
         long_put_strike = find_strike_by_delta('P', long_put_delta)
     else:
-        long_put_strike = short_put_strike - width
-        log(f"📏 Long put strike set by width: {long_put_strike}")
+        target_long_put_strike = short_put_strike - width
+        long_put_strike = find_closest_strike(target_long_put_strike, [s for s in valid_strikes if s < short_put_strike])
+        if long_put_strike and long_put_strike != short_put_strike:
+            log(f"✅ Long put strike selected: {long_put_strike} (closest to target {target_long_put_strike})")
+        else:
+            log("❌ Could not find valid long put strike.")
+            ib.disconnect()
+            return
 
     log(f"🦀 Strategy Structure:")
     log(f"   Short Call: {short_call_strike} | Long Call: {long_call_strike}")
@@ -342,11 +400,40 @@ def run_strategy(strategy_name, strategy_config, client_id):
     combo.currency = currency
 
     log("📋 Getting contract IDs for legs...")
+
+    short_call_details = ib.reqContractDetails(short_call)
+    if not short_call_details:
+        log(f"❌ Could not retrieve contract details for short call: {short_call}")
+        ib.disconnect()
+        return
+    short_call_conId = short_call_details[0].contract.conId
+
+    long_call_details = ib.reqContractDetails(long_call)
+    if not long_call_details:
+        log(f"❌ Could not retrieve contract details for long call: {long_call}")
+        ib.disconnect()
+        return
+    long_call_conId = long_call_details[0].contract.conId
+
+    short_put_details = ib.reqContractDetails(short_put)
+    if not short_put_details:
+        log(f"❌ Could not retrieve contract details for short put: {short_put}")
+        ib.disconnect()
+        return
+    short_put_conId = short_put_details[0].contract.conId
+
+    long_put_details = ib.reqContractDetails(long_put)
+    if not long_put_details:
+        log(f"❌ Could not retrieve contract details for long put: {long_put}")
+        ib.disconnect()
+        return
+    long_put_conId = long_put_details[0].contract.conId
+
     combo.comboLegs = [
-        ComboLeg(conId=ib.reqContractDetails(short_call)[0].contract.conId, ratio=1, action='SELL', exchange=exchange),
-        ComboLeg(conId=ib.reqContractDetails(long_call)[0].contract.conId, ratio=1, action='BUY', exchange=exchange),
-        ComboLeg(conId=ib.reqContractDetails(short_put)[0].contract.conId, ratio=1, action='SELL', exchange=exchange),
-        ComboLeg(conId=ib.reqContractDetails(long_put)[0].contract.conId, ratio=1, action='BUY', exchange=exchange),
+        ComboLeg(conId=short_call_conId, ratio=1, action='SELL', exchange=exchange),
+        ComboLeg(conId=long_call_conId, ratio=1, action='BUY', exchange=exchange),
+        ComboLeg(conId=short_put_conId, ratio=1, action='SELL', exchange=exchange),
+        ComboLeg(conId=long_put_conId, ratio=1, action='BUY', exchange=exchange),
     ]
 
     # Qualify the combo contract
@@ -389,11 +476,14 @@ def run_strategy(strategy_name, strategy_config, client_id):
             log("\n🎯 EXIT ORDERS PHASE")
             log("=" * 30)
             
-            def round_to_tick(price):
-                return round(price * 20) / 20 if price < 3 else round(price * 10) / 10
+            def round_to_tick(price, increment=None):
+                if increment:
+                    return round(price / increment) * increment
+                else:
+                    return round(price * 20) / 20 if price < 3 else round(price * 10) / 10
 
-            profit_target_price = round_to_tick(fill_price * (1 - profit_target))
-            stop_loss_price = round_to_tick(fill_price * (1 + stop_loss))
+            profit_target_price = round_to_tick(fill_price * (1 - profit_target), strike_increment)
+            stop_loss_price = round_to_tick(fill_price * (1 + stop_loss), strike_increment)
             
             log(f"📊 Exit Strategy:")
             log(f"   💰 Entry Fill Price: ${fill_price}")
