@@ -482,8 +482,8 @@ def run_strategy(strategy_name, strategy_config, client_id):
                 else:
                     return round(price * 20) / 20 if price < 3 else round(price * 10) / 10
 
-            profit_target_price = round_to_tick(fill_price * (1 - profit_target), strike_increment)
-            stop_loss_price = round_to_tick(fill_price * (1 + stop_loss), strike_increment)
+            profit_target_price = round_to_tick(fill_price * (1 - profit_target), price_increment)
+            stop_loss_price = round_to_tick(fill_price * (1 + stop_loss), price_increment)
             
             log(f"📊 Exit Strategy:")
             log(f"   💰 Entry Fill Price: ${fill_price}")
