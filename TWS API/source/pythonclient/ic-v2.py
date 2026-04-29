@@ -111,16 +111,25 @@ def run_strategy(strategy_name, strategy_config, client_id):
         connected = False
         for port in ports:
             try:
-                log(f"🔌 Attempting connection to port {port}...")
-                ib.connect('127.0.0.1', port, clientId=client_id, timeout=10)
-                log(f"✅ Connected to {'TWS' if port == 7497 else 'IB Gateway'} on port {port}")
+                app_name = 'TWS' if port == 7497 else 'IB Gateway'
+                log(f"🔌 Attempting connection to {app_name} on port {port}...")
+                ib.connect('127.0.0.1', port, clientId=client_id, timeout=5)
+                log(f"✅ Connected to {app_name} on port {port}")
                 connected = True
                 break
-            except (ConnectionRefusedError, TimeoutError) as e:
-                log(f"⚠️ Port {port} failed: {type(e).__name__}")
+            except ConnectionRefusedError:
+                log(f"⚠️ Port {port} refused - {'TWS' if port == 7497 else 'IB Gateway'} not running")
+                continue
+            except TimeoutError:
+                log(f"⚠️ Port {port} timeout - {'TWS' if port == 7497 else 'IB Gateway'} not responding")
+                continue
+            except Exception as e:
+                log(f"⚠️ Port {port} failed: {e}")
                 continue
         
         if not connected:
+            log("❌ Both connection attempts failed")
+            log("📋 Make sure API port on TWS/IBG is open")
             raise ConnectionRefusedError("Both TWS (7497) and IB Gateway (4002) ports failed")
         log("✅ Connected to TWS")
     except ConnectionRefusedError:
@@ -132,11 +141,22 @@ def run_strategy(strategy_name, strategy_config, client_id):
         return
     except (ConnectionRefusedError, TimeoutError) as e:
         log(f"❌ Connection failed: {type(e).__name__}")
-        log("💡 Troubleshooting tips:")
-        log("   1. Ensure TWS/IB Gateway is running")
-        log("   2. Check API settings: File > Global Configuration > API > Settings")
-        log("   3. Enable 'ActiveX and Socket Clients'")
-        log("   4. Verify client ID is unique")
+        log("💡 TROUBLESHOOTING CHECKLIST:")
+        log("   📋 TWS/IB Gateway Setup:")
+        log("      • Ensure TWS or IB Gateway is running")
+        log("      • Login with your IBKR credentials")
+        log("      • Wait for full startup (market data connected)")
+        log("   🔧 API Configuration:")
+        log("      • File > Global Configuration > API > Settings")
+        log("      • Check 'Enable ActiveX and Socket Clients'")
+        log("      • Socket port: 7497 (TWS) or 4002 (IB Gateway)")
+        log("      • Master API client ID: 0")
+        log("      • Read-Only API: Unchecked")
+        log("   🔒 Security Settings:")
+        log("      • Trusted IPs: 127.0.0.1 (localhost)")
+        log("      • Windows Firewall: Allow TWS/IB Gateway")
+        log(f"   🆔 Client ID: {client_id} (must be unique)")
+        log("   🔄 After changes: Restart TWS/IB Gateway")
         return
     except Exception as e:
         log(f"❌ Connection failed: {e}")
@@ -443,7 +463,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
 
     # Calculate position size based on max capital
     max_loss_per_contract = width * 100 if width > 0 else 5000  # Default for straddles
-    max_contracts = min(10, max_capital // max_loss_per_contract) if max_loss_per_contract > 0 else 1
+    max_contracts = min(1, max_capital // max_loss_per_contract) if max_loss_per_contract > 0 else 1
     log(f"width: {width} max_loss_per_contract: ${max_loss_per_contract} max_capital: {max_capital} max_contracts: {max_contracts}")
     log(f"📊 Position sizing: Max {max_contracts} contracts (Max loss: ${max_loss_per_contract * max_contracts:,})")
 
@@ -470,7 +490,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
         if trade.orderStatus.status == 'Filled':
             order_filled = True
             fill_price = trade.orderStatus.avgFillPrice
-            log(f"✅ FILLED! Entry price: ${fill_price}")
+            log(f"✅ FILLED! Entry price: ${fill_price}; and expiry: {expiry} ")
             log(f"💰 Credit received: ${fill_price * max_contracts * 100}")
 
             log("\n🎯 EXIT ORDERS PHASE")
@@ -482,11 +502,11 @@ def run_strategy(strategy_name, strategy_config, client_id):
                 else:
                     return round(price * 20) / 20 if price < 3 else round(price * 10) / 10
 
-            profit_target_price = round_to_tick(fill_price * (1 - profit_target), strike_increment)
-            stop_loss_price = round_to_tick(fill_price * (1 + stop_loss), strike_increment)
+            profit_target_price = round_to_tick(fill_price * (1 - profit_target), price_increment)
+            stop_loss_price = round_to_tick(fill_price * (1 + stop_loss), price_increment)
             
             log(f"📊 Exit Strategy:")
-            log(f"   💰 Entry Fill Price: ${fill_price}")
+            log(f"   💰 Entry Fill Price: ${fill_price}; and expiry: {expiry} ")
             log(f"   💚 Profit Target: ${profit_target_price} ({profit_target*100:.0f}% profit)")
             log(f"   🛑 Stop Loss: ${stop_loss_price} ({stop_loss*100:.0f}% loss)")
             
