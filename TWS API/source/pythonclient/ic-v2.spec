@@ -1,12 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_all
+
+numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all('numpy')
+pandas_datas, pandas_binaries, pandas_hiddenimports = collect_all('pandas')
+openpyxl_datas, openpyxl_binaries, openpyxl_hiddenimports = collect_all('openpyxl')
 
 a = Analysis(
     ['ic-v2.py'],
     pathex=[],
-    binaries=[],
-    datas=[],
-    hiddenimports=[],
+    binaries=numpy_binaries + pandas_binaries + openpyxl_binaries,
+    datas=numpy_datas + pandas_datas + openpyxl_datas,
+    hiddenimports=numpy_hiddenimports + pandas_hiddenimports + openpyxl_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

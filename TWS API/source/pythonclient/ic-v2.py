@@ -5,6 +5,7 @@ import time
 import pandas as pd
 import threading
 import asyncio
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 from ib_insync import *
 from ib_insync import ComboLeg, Contract
@@ -23,6 +24,9 @@ with open(config_path, 'r') as f:
     config = json.load(f)
 
 def run_strategy(strategy_name, strategy_config, client_id):
+    def to_2dp(value):
+        return float(Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
     # Get base directory (same as executable)
     if getattr(sys, 'frozen', False):
         base_dir = os.path.dirname(sys.executable)
@@ -85,7 +89,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
     max_capital = strategy_config.get('max_capital', 50000)
     profit_target = strategy_config.get('profit_target', 0.2)  # 20% default
     stop_loss = strategy_config.get('stop_loss', 0.15)  # 15% default
-    price_increment = strategy_config.get('price_increment', 0.05)  # Default increment
+    price_increment = to_2dp(strategy_config.get('price_increment', 0.05))  # Default increment
 
     log(f"🚀 Starting {strategy_name}")
     log(f"📊 Config: {symbol} {strategy_config.get('expiry', 'auto')} on {exchange}")
@@ -498,9 +502,11 @@ def run_strategy(strategy_name, strategy_config, client_id):
             
             def round_to_tick(price, increment=None):
                 if increment:
-                    return round(price / increment) * increment
+                    rounded_price = round(price / increment) * increment
+                    return to_2dp(rounded_price)
                 else:
-                    return round(price * 20) / 20 if price < 3 else round(price * 10) / 10
+                    rounded_price = round(price * 20) / 20 if price < 3 else round(price * 10) / 10
+                    return to_2dp(rounded_price)
 
             profit_target_price = round_to_tick(fill_price * (1 - profit_target), price_increment)
             stop_loss_price = round_to_tick(fill_price * (1 + stop_loss), price_increment)

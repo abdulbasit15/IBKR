@@ -1,5 +1,6 @@
 import time
 import math
+from decimal import Decimal, ROUND_HALF_UP
 from ib_insync import LimitOrder, MarketOrder
 
 def place_custom_order(ib, contract, quantity, log, action='BUY', price_increment=0.05):
@@ -8,12 +9,16 @@ def place_custom_order(ib, contract, quantity, log, action='BUY', price_incremen
     For a BUY order, it starts at the bid and walks up to the ask.
     For a SELL order, it starts at the ask and walks down to the bid.
     """
+    def to_2dp(value):
+        return float(Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
     log("Starting custom order logic")
+    price_increment = to_2dp(price_increment)
     ticker = ib.reqMktData(contract, '', False, False)
     ib.sleep(5)  # Allow time for the ticker to update
 
-    bid = ticker.bid
-    ask = ticker.ask
+    bid = to_2dp(ticker.bid)
+    ask = to_2dp(ticker.ask)
 
     # Handle case where ticker might not have updated yet # or bid <= 0 or ask <= 0 or bid >= ask:
     if math.isnan(bid) or math.isnan(ask):
@@ -22,22 +27,18 @@ def place_custom_order(ib, contract, quantity, log, action='BUY', price_incremen
         trade = ib.placeOrder(contract, order)
         return trade
 
-    log(f"Initial Bid: {bid}, Ask: {ask}")
-
-    if action.upper() == 'BUY':
-        price = bid
-        log(f"Attempting to BUY at bid price: {price}")
-    else: # SELL
-        price = ask
-        log(f"Attempting to SELL at ask price: {price}")
+    log(f"Initial Bid: {bid:.2f}, Ask: {ask:.2f}")
+    mid_price = to_2dp((bid + ask) / 2)
+    price = mid_price
+    log(f"Starting at midpoint price: {price:.2f}")
 
 
     while True:
         # Round price to nearest tick size, assuming 0.01 for now
-        price = round(price, 2)
+        price = to_2dp(price)
         order = LimitOrder(action, quantity, price)
         trade = ib.placeOrder(contract, order)
-        log(f"Placed LimitOrder to {action} at {price}. OrderID: {trade.order.orderId}")
+        log(f"Placed LimitOrder to {action} at {price:.2f}. OrderID: {trade.order.orderId}")
 
         ib.sleep(10)  # Wait for 10 seconds
 
@@ -45,7 +46,7 @@ def place_custom_order(ib, contract, quantity, log, action='BUY', price_incremen
             log(f"✅ Order filled at {trade.orderStatus.avgFillPrice}")
             return trade
         else:
-            log(f"Order not filled at {price}. Status: {trade.orderStatus.status}. Cancelling.")
+            log(f"Order not filled at {price:.2f}. Status: {trade.orderStatus.status}. Cancelling.")
             ib.cancelOrder(trade.order)
             ib.sleep(1) # Give time for cancellation to process
 
@@ -53,16 +54,14 @@ def place_custom_order(ib, contract, quantity, log, action='BUY', price_incremen
                 if price >= ask:
                     log("Price has reached ask. Exiting custom order logic.")
                     break
-                price += price_increment
-                price = min(price, ask) # Do not go over ask
-                log(f"Increasing price to {price}")
+                price = to_2dp(min(price + price_increment, ask)) # Do not go over ask
+                log(f"Increasing price to {price:.2f}")
             else: # SELL
                 if price <= bid:
                     log("Price has reached bid. Exiting custom order logic.")
                     break
-                price -= price_increment
-                price = max(price, bid) # Do not go under bid
-                log(f"Decreasing price to {price}")
+                price = to_2dp(max(price - price_increment, bid)) # Do not go under bid
+                log(f"Decreasing price to {price:.2f}")
 
     log("Custom order logic failed to fill the order. Placing a market order as a final attempt.")
     final_order = MarketOrder(action, quantity)
