@@ -377,7 +377,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
             log("\n⏳ MONITORING EXIT ORDERS")
             log("=" * 30)
             
-            while profit_trade.orderStatus.status not in ['Filled', 'Cancelled'] and stop_trade.orderStatus.status not in ['Filled', 'Cancelled']:
+            while profit_trade.orderStatus.status not in ['Filled', 'Cancelled'] or stop_trade.orderStatus.status not in ['Filled', 'Cancelled']:
                 ib.sleep(5)
                 log(f"📊 Status - Profit: {profit_trade.orderStatus.status} | Stop: {stop_trade.orderStatus.status}")
                 ib.reqAllOpenOrders()

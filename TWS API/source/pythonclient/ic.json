@@ -1,5 +1,8 @@
 {
     "strategies": {
+     "active_strategies": [
+        "AAPL IC - 15.35"
+       ],
         "SPX IC - 10.05": {
             "symbol": "SPX",
             "secType": "IND",
@@ -294,7 +297,7 @@
             "profit_target": 0.05,
             "stop_loss": 10
         },
-        "AAPL IC - 15.55": {
+        "AAPL IC - 15.35": {
             "symbol": "AAPL",
             "secType": "STK",
             "expiry": "",   
@@ -307,7 +310,7 @@
             "currency": "USD",
             "multiplier": "100",
             "tradingClass": "AAPL",
-            "trade_start_time": "15:55",
+            "trade_start_time": "15:35",
             "trade_end_time": "16:00",
             "retry_interval_min": 1,
             "max_capital": 1000,
@@ -315,20 +318,5 @@
             "profit_target": 0.95,
             "stop_loss": 10
         }
-    },
-     "active_strategies": [
-        "SPX IC - 0.45d+$5 - 15.55",
-        "SPX IC - 0.45d+$5 - 15.55 SL 5%",
-        "SPX IC - 0.45d+$10 - 15.55",
-        "SPX IC - 0.45d+$10 - 15.55 SL 5%",
-        "QQQ IC - 14.00 - $1 wide",
-        "QQQ IC - 15.30 - $1 wide",
-        "QQQ IC - 15.30 - $2 wide",
-        "QQQ IC - 15.55",
-        "QQQ IB - 15.55",
-        "XSP IB - 15.55",
-        "GLD IB - 15.55",
-        "AAPL IB - 15.55",
-        "AAPL IC - 15.55"
-    ]
+    }
 }
