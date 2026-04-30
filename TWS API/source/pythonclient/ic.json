@@ -1,4 +1,7 @@
 {
+       "active_strategies": [
+		"QQQ IC - 15.55"
+    ],
     "strategies": {
      "active_strategies": [
         "AAPL IC - 15.35"
@@ -133,8 +136,8 @@
             "symbol": "QQQ",
             "secType": "STK",
             "expiry": "",   
-            "short_call_delta": 0.45,
-            "short_put_delta": -0.45,
+            "short_call_delta": 0.40,
+            "short_put_delta": -0.40,
             "long_call_delta": null,
             "long_put_delta": null,          
             "width": 1,                  
@@ -257,7 +260,7 @@
         },
         "GLD IB - 15.55": {
             "symbol": "GLD",
-            "secType": "IND",
+            "secType": "STK",
             "expiry": "",   
             "short_call_delta": 0.5,
             "short_put_delta": -0.5,
