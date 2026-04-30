@@ -107,42 +107,42 @@ def run_strategy(strategy_name, strategy_config, client_id):
     
     ib = IB()
     log(f"🔌 Connecting to TWS with client ID {client_id}...")
-    
-    # Try connection with error handling and timeout
+
+    # Try connection with retries to reduce transient multi-thread startup failures.
     try:
-        # Try TWS port first, then IB Gateway port
-        ports = [7497, 4002]
+        ports = strategy_config.get('connection_ports', [7497, 4002])
+        max_attempts = int(strategy_config.get('connection_attempts', 3))
+        retry_sleep_seconds = float(strategy_config.get('connection_retry_seconds', 1.5))
         connected = False
-        for port in ports:
-            try:
-                app_name = 'TWS' if port == 7497 else 'IB Gateway'
-                log(f"🔌 Attempting connection to {app_name} on port {port}...")
-                ib.connect('127.0.0.1', port, clientId=client_id, timeout=5)
-                log(f"✅ Connected to {app_name} on port {port}")
-                connected = True
+
+        for attempt in range(1, max_attempts + 1):
+            if connected:
                 break
-            except ConnectionRefusedError:
-                log(f"⚠️ Port {port} refused - {'TWS' if port == 7497 else 'IB Gateway'} not running")
-                continue
-            except TimeoutError:
-                log(f"⚠️ Port {port} timeout - {'TWS' if port == 7497 else 'IB Gateway'} not responding")
-                continue
-            except Exception as e:
-                log(f"⚠️ Port {port} failed: {e}")
-                continue
-        
+            log(f"🔁 Connection attempt {attempt}/{max_attempts}...")
+
+            for port in ports:
+                app_name = 'TWS' if port == 7497 else 'IB Gateway' if port == 4002 else f'port {port}'
+                try:
+                    log(f"🔌 Attempting connection to {app_name} on port {port}...")
+                    ib.connect('127.0.0.1', port, clientId=client_id, timeout=5)
+                    if ib.isConnected():
+                        log(f"✅ Connected to {app_name} on port {port}")
+                        connected = True
+                        break
+                except ConnectionRefusedError:
+                    log(f"⚠️ Port {port} refused - {app_name} not running")
+                except TimeoutError:
+                    log(f"⚠️ Port {port} timeout - {app_name} not responding")
+                except Exception as e:
+                    log(f"⚠️ Port {port} failed: {e}")
+
+            if not connected and attempt < max_attempts:
+                log(f"⏳ Retry in {retry_sleep_seconds:.1f}s...")
+                time.sleep(retry_sleep_seconds)
+
         if not connected:
-            log("❌ Both connection attempts failed")
-            log("📋 Make sure API port on TWS/IBG is open")
-            raise ConnectionRefusedError("Both TWS (7497) and IB Gateway (4002) ports failed")
-        log("✅ Connected to TWS")
-    except ConnectionRefusedError:
-        log("❌ TWS connection refused. Please check:")
-        log("   1. TWS/IB Gateway is running")
-        log("   2. API is enabled in TWS (File > Global Configuration > API > Settings)")
-        log("   3. Port 7497 is correct (7497 for TWS, 4002 for IB Gateway)")
-        log("   4. 'Enable ActiveX and Socket Clients' is checked")
-        return
+            raise ConnectionRefusedError("All TWS/IBG connection attempts failed")
+        log("✅ API session established")
     except (ConnectionRefusedError, TimeoutError) as e:
         log(f"❌ Connection failed: {type(e).__name__}")
         log("💡 TROUBLESHOOTING CHECKLIST:")
