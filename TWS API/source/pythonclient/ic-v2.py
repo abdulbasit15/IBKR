@@ -12,6 +12,12 @@ from ib_insync import ComboLeg, Contract
 from custom_order import place_custom_order
 from collections import Counter
 
+def safe_console_print(message):
+    """Print in a way that does not crash on cp1252 consoles."""
+    encoding = (getattr(sys.stdout, "encoding", None) or "utf-8")
+    safe_message = str(message).encode(encoding, errors="replace").decode(encoding, errors="replace")
+    print(safe_message)
+
 # Load config from same directory as executable
 if getattr(sys, 'frozen', False):
     # Running as compiled executable
@@ -48,7 +54,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
         timestamp_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         log_message = f"[{timestamp_str}] {message}"
         console_message = f"[{timestamp_str}] [{strategy_name}] {message}"
-        print(console_message)
+        safe_console_print(console_message)
         with open(log_path, 'a', encoding='utf-8') as f:
             f.write(log_message + '\n')
 
@@ -301,7 +307,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
     strikes_to_test = sorted([s for s in all_strikes if abs(s - current_price) <= current_price * 0.02])  # Within 2%
     valid_all_strikes = get_valid_strikes(strikes_to_test, symbol, expiry, exchange, currency, multiplier, tradingClass)    
     log(f"Found {len(valid_all_strikes)} valid strikes for {symbol}")
-    print(valid_all_strikes)
+    safe_console_print(valid_all_strikes)
     
     strike_increment = get_strike_increment(valid_all_strikes)
     if strike_increment:
@@ -624,4 +630,4 @@ if __name__ == "__main__":
     for thread in threads:
         thread.join()
     
-    print("✅ All strategies completed")
+    safe_console_print("✅ All strategies completed")
