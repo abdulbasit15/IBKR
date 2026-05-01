@@ -77,6 +77,15 @@ def run_strategy(strategy_name, strategy_config, client_id):
             for sheet_name, df in sheets.items():
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
 
+    configured_accounts = config.get('accounts', [])
+    default_account = config.get('default_account')
+    strategy_account = strategy_config.get('account')
+    selected_account = strategy_account or default_account
+
+    if configured_accounts and selected_account and selected_account not in configured_accounts:
+        log(f"❌ Invalid account '{selected_account}' for {strategy_name}. Must be one of: {configured_accounts}")
+        return
+
     symbol = strategy_config['symbol']
     secType = strategy_config['secType']
     exchange = strategy_config['exchange']
@@ -99,6 +108,8 @@ def run_strategy(strategy_name, strategy_config, client_id):
 
     log(f"🚀 Starting {strategy_name}")
     log(f"📊 Config: {symbol} {strategy_config.get('expiry', 'auto')} on {exchange}")
+    if selected_account:
+        log(f"🏦 Target account: {selected_account}")
     log(f"💰 Max Capital: ${max_capital:,}")
     log(f"🎯 Profit Target: {profit_target*100:.0f}% | Stop Loss: {stop_loss*100:.0f}%")
     log(f"📄 Log file: {log_filename}")
@@ -485,7 +496,15 @@ def run_strategy(strategy_name, strategy_config, client_id):
     while datetime.now() < end_time:
         try:
             log("📤 Placing custom order...")
-            trade = place_custom_order(ib, combo, max_contracts, log, action='BUY', price_increment=price_increment)
+            trade = place_custom_order(
+                ib,
+                combo,
+                max_contracts,
+                log,
+                action='BUY',
+                price_increment=price_increment,
+                account=selected_account
+            )
             if trade is None:
                 log("❌ Custom order failed")
                 break
@@ -524,6 +543,9 @@ def run_strategy(strategy_name, strategy_config, client_id):
             
             profit_order = LimitOrder('SELL', max_contracts, profit_target_price)
             stop_order = StopOrder('SELL', max_contracts, stop_loss_price)
+            if selected_account:
+                profit_order.account = selected_account
+                stop_order.account = selected_account
             
             log("📤 Placing exit orders...")
             profit_trade = ib.placeOrder(combo, profit_order)

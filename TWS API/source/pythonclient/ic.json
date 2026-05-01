@@ -1,5 +1,11 @@
 {
-       "active_strategies": [
+    "accounts": [
+        "U20181485",
+        "U21953487",
+        "U22736412"
+    ],
+    "default_account": "U21953487",
+    "active_strategies": [
 		"QQQ IC - 15.55",
 		"SPX IC - 15.55"
     ],
