@@ -28,6 +28,7 @@
             "retry_interval_min": 1,
             "max_capital": 3000,
             "price_increment": 0.05,
+            "num_strikes": 50,
             "profit_target": 0.05,
             "stop_loss": 0.3
         },
@@ -49,6 +50,7 @@
             "retry_interval_min": 1,
             "max_capital": 3000,
             "price_increment": 0.05,
+            "num_strikes": 20,
             "profit_target": 0.20,
             "stop_loss": 0.15
         },
