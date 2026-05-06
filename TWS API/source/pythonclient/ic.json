@@ -6,13 +6,9 @@
     ],
     "default_account": "U21953487",
     "active_strategies": [
-		"QQQ IC - 15.55",
-		"SPX IC - 15.55"
+		"SPX IC - 10.05"
     ],
-    "strategies": {
-     "active_strategies": [
-        "AAPL IC - 15.35"
-       ],
+    "strategies": {     
         "SPX IC - 10.05": {
             "symbol": "SPX",
             "secType": "IND",
@@ -26,10 +22,10 @@
             "currency": "USD",
             "multiplier": "100",
             "tradingClass": "SPXW",
-            "trade_start_time": "10:05",
+            "trade_start_time": "10:04",
             "trade_end_time": "11:00",
             "retry_interval_min": 1,
-            "max_capital": 1000,
+            "max_capital": 3000,
             "price_increment": 0.05,
             "profit_target": 0.20,
             "stop_loss": 0.15
