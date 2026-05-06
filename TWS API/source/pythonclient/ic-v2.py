@@ -105,6 +105,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
     profit_target = strategy_config.get('profit_target', 0.2)  # 20% default
     stop_loss = strategy_config.get('stop_loss', 0.15)  # 15% default
     price_increment = to_2dp(strategy_config.get('price_increment', 0.05))  # Default increment
+    num_strikes = int(strategy_config.get('num_strikes', 20))
 
     log(f"🚀 Starting {strategy_name}")
     log(f"📊 Config: {symbol} {strategy_config.get('expiry', 'auto')} on {exchange}")
@@ -112,6 +113,7 @@ def run_strategy(strategy_name, strategy_config, client_id):
         log(f"🏦 Target account: {selected_account}")
     log(f"💰 Max Capital: ${max_capital:,}")
     log(f"🎯 Profit Target: {profit_target*100:.0f}% | Stop Loss: {stop_loss*100:.0f}%")
+    log(f"🎯 Strike candidates per side: {num_strikes}")
     log(f"📄 Log file: {log_filename}")
     log(f"📊 Journal file: {journal_filename}")
 
@@ -269,8 +271,6 @@ def run_strategy(strategy_name, strategy_config, client_id):
     else:
         log("✅ Trade window is open")
     
-    num_strikes = 20
-
     # Get all strikes for this expiry
     all_strikes = sorted([s for s in params.strikes if s > 0])
     

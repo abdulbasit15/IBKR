@@ -2,14 +2,36 @@
     "accounts": [
         "U20181485",
         "U21953487",
-        "U22736412"
+        "U22736412",
+		"DU672616"
     ],
-    "default_account": "U21953487",
+    "default_account": "DU672616",
     "active_strategies": [
-		"SPX IC - 10.05"
+		"SPX IC - 9.40"
     ],
     "strategies": {     
-        "SPX IC - 10.05": {
+        "SPX IC - 9.40": {
+            "symbol": "SPX",
+            "secType": "IND",
+            "expiry": "",   
+            "short_call_delta": 0.01,
+            "short_put_delta": -0.01,
+            "long_call_delta": null,
+            "long_put_delta": null,          
+            "width": 10,                  
+            "exchange": "CBOE",
+            "currency": "USD",
+            "multiplier": "100",
+            "tradingClass": "SPXW",
+            "trade_start_time": "10:04",
+            "trade_end_time": "11:00",
+            "retry_interval_min": 1,
+            "max_capital": 3000,
+            "price_increment": 0.05,
+            "profit_target": 0.05,
+            "stop_loss": 0.3
+        },
+		"SPX IC - 10.05": {
             "symbol": "SPX",
             "secType": "IND",
             "expiry": "",   
