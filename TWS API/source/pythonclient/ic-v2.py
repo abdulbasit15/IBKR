@@ -556,10 +556,20 @@ def run_strategy(strategy_name, strategy_config, client_id):
             log("\n⏳ MONITORING EXIT ORDERS")
             log("=" * 30)
             
-            while profit_trade.orderStatus.status not in ['Filled', 'Cancelled'] or stop_trade.orderStatus.status not in ['Filled', 'Cancelled']:
+            while True:
                 ib.sleep(5)
-                log(f"📊 Status - Profit: {profit_trade.orderStatus.status} | Stop: {stop_trade.orderStatus.status}")
+                profit_status = profit_trade.orderStatus.status
+                stop_status = stop_trade.orderStatus.status
+                log(f"📊 Status - Profit: {profit_status} | Stop: {stop_status}")
                 ib.reqAllOpenOrders()
+
+                # Exit monitoring as soon as either side fills so journaling can run.
+                if profit_status == 'Filled' or stop_status == 'Filled':
+                    break
+
+                # Also stop if both orders are otherwise terminal.
+                if profit_status in ['Cancelled', 'Inactive', 'ApiCancelled'] and stop_status in ['Cancelled', 'Inactive', 'ApiCancelled']:
+                    break
 
             log("\n🏁 TRADE COMPLETED")
             log("=" * 30)
