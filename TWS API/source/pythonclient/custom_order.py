@@ -3,7 +3,7 @@ import math
 from decimal import Decimal, ROUND_HALF_UP
 from ib_insync import LimitOrder, MarketOrder
 
-def place_custom_order(ib, contract, quantity, log, action='BUY', price_increment=0.05):
+def place_custom_order(ib, contract, quantity, log, action='BUY', price_increment=0.05, account=None):
     """
     Places a custom order that tries to fill at the bid/ask and then walks the price.
     For a BUY order, it starts at the bid and walks up to the ask.
@@ -24,6 +24,8 @@ def place_custom_order(ib, contract, quantity, log, action='BUY', price_incremen
     if math.isnan(bid) or math.isnan(ask):
         log(f"Invalid or missing bid/ask prices: Bid={bid}, Ask={ask}. Falling back to MarketOrder.")
         order = MarketOrder(action, quantity)
+        if account:
+            order.account = account
         trade = ib.placeOrder(contract, order)
         return trade
 
@@ -37,6 +39,8 @@ def place_custom_order(ib, contract, quantity, log, action='BUY', price_incremen
         # Round price to nearest tick size, assuming 0.01 for now
         price = to_2dp(price)
         order = LimitOrder(action, quantity, price)
+        if account:
+            order.account = account
         trade = ib.placeOrder(contract, order)
         log(f"Placed LimitOrder to {action} at {price:.2f}. OrderID: {trade.order.orderId}")
 
@@ -65,6 +69,8 @@ def place_custom_order(ib, contract, quantity, log, action='BUY', price_incremen
 
     log("Custom order logic failed to fill the order. Placing a market order as a final attempt.")
     final_order = MarketOrder(action, quantity)
+    if account:
+        final_order.account = account
     final_trade = ib.placeOrder(contract, final_order)
     ib.sleep(5)
 

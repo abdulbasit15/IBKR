@@ -77,6 +77,15 @@ def run_strategy(strategy_name, strategy_config, client_id):
             for sheet_name, df in sheets.items():
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
 
+    configured_accounts = config.get('accounts', [])
+    default_account = config.get('default_account')
+    strategy_account = strategy_config.get('account')
+    selected_account = strategy_account or default_account
+
+    if configured_accounts and selected_account and selected_account not in configured_accounts:
+        log(f"❌ Invalid account '{selected_account}' for {strategy_name}. Must be one of: {configured_accounts}")
+        return
+
     symbol = strategy_config['symbol']
     secType = strategy_config['secType']
     exchange = strategy_config['exchange']
@@ -96,11 +105,15 @@ def run_strategy(strategy_name, strategy_config, client_id):
     profit_target = strategy_config.get('profit_target', 0.2)  # 20% default
     stop_loss = strategy_config.get('stop_loss', 0.15)  # 15% default
     price_increment = to_2dp(strategy_config.get('price_increment', 0.05))  # Default increment
+    num_strikes = int(strategy_config.get('num_strikes', 20))
 
     log(f"🚀 Starting {strategy_name}")
     log(f"📊 Config: {symbol} {strategy_config.get('expiry', 'auto')} on {exchange}")
+    if selected_account:
+        log(f"🏦 Target account: {selected_account}")
     log(f"💰 Max Capital: ${max_capital:,}")
     log(f"🎯 Profit Target: {profit_target*100:.0f}% | Stop Loss: {stop_loss*100:.0f}%")
+    log(f"🎯 Strike candidates per side: {num_strikes}")
     log(f"📄 Log file: {log_filename}")
     log(f"📊 Journal file: {journal_filename}")
 
@@ -258,8 +271,6 @@ def run_strategy(strategy_name, strategy_config, client_id):
     else:
         log("✅ Trade window is open")
     
-    num_strikes = 20
-
     # Get all strikes for this expiry
     all_strikes = sorted([s for s in params.strikes if s > 0])
     
@@ -485,7 +496,15 @@ def run_strategy(strategy_name, strategy_config, client_id):
     while datetime.now() < end_time:
         try:
             log("📤 Placing custom order...")
-            trade = place_custom_order(ib, combo, max_contracts, log, action='BUY', price_increment=price_increment)
+            trade = place_custom_order(
+                ib,
+                combo,
+                max_contracts,
+                log,
+                action='BUY',
+                price_increment=price_increment,
+                account=selected_account
+            )
             if trade is None:
                 log("❌ Custom order failed")
                 break
@@ -524,6 +543,9 @@ def run_strategy(strategy_name, strategy_config, client_id):
             
             profit_order = LimitOrder('SELL', max_contracts, profit_target_price)
             stop_order = StopOrder('SELL', max_contracts, stop_loss_price)
+            if selected_account:
+                profit_order.account = selected_account
+                stop_order.account = selected_account
             
             log("📤 Placing exit orders...")
             profit_trade = ib.placeOrder(combo, profit_order)
@@ -534,10 +556,20 @@ def run_strategy(strategy_name, strategy_config, client_id):
             log("\n⏳ MONITORING EXIT ORDERS")
             log("=" * 30)
             
-            while profit_trade.orderStatus.status not in ['Filled', 'Cancelled'] or stop_trade.orderStatus.status not in ['Filled', 'Cancelled']:
+            while True:
                 ib.sleep(5)
-                log(f"📊 Status - Profit: {profit_trade.orderStatus.status} | Stop: {stop_trade.orderStatus.status}")
+                profit_status = profit_trade.orderStatus.status
+                stop_status = stop_trade.orderStatus.status
+                log(f"📊 Status - Profit: {profit_status} | Stop: {stop_status}")
                 ib.reqAllOpenOrders()
+
+                # Exit monitoring as soon as either side fills so journaling can run.
+                if profit_status == 'Filled' or stop_status == 'Filled':
+                    break
+
+                # Also stop if both orders are otherwise terminal.
+                if profit_status in ['Cancelled', 'Inactive', 'ApiCancelled'] and stop_status in ['Cancelled', 'Inactive', 'ApiCancelled']:
+                    break
 
             log("\n🏁 TRADE COMPLETED")
             log("=" * 30)
