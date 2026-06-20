@@ -92,6 +92,37 @@ def fetch_bars_chunked(ib: IB, contract, bar_size: str) -> list:
     return all_bars
 
 
+def update_csv(ib: IB, contract, bar_size: str, end_dt: datetime) -> Path | None:
+    """Append bars newer than the last row in an existing CSV."""
+    slug = bar_size.replace(" ", "")
+    path = OUTPUT_DIR / f"{SYMBOL}_{slug}_2y.csv"
+    if not path.exists():
+        print(f"  {path.name} not found, skipping update")
+        return None
+
+    existing = pd.read_csv(path)
+    last_ts = pd.Timestamp(existing["date"].iloc[-1])
+
+    bars = request_bars(ib, contract, bar_size, end_dt, "1 M")
+    if not bars:
+        print(f"  No data returned for {bar_size}")
+        return None
+
+    new_bars = [b for b in bars if pd.Timestamp(b.date) > last_ts]
+    if not new_bars:
+        print(f"  {bar_size}: already up to date (last={last_ts})")
+        return path
+
+    new_df = util.df(new_bars)
+    combined = pd.concat([existing, new_df], ignore_index=True)
+    combined.to_csv(path, index=False)
+    print(
+        f"  {bar_size}: appended {len(new_df)} bars "
+        f"({new_df['date'].iloc[0]} to {new_df['date'].iloc[-1]})"
+    )
+    return path
+
+
 def save_bars(bars: list, bar_size: str) -> Path:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     slug = bar_size.replace(" ", "")
@@ -101,7 +132,7 @@ def save_bars(bars: list, bar_size: str) -> Path:
     return path
 
 
-def main():
+def main(update_only: bool = False, end_date: str | None = None):
     ib = IB()
     ib.connect(HOST, PORT, clientId=CLIENT_ID)
     ib.RequestTimeout = REQUEST_TIMEOUT
@@ -110,17 +141,30 @@ def main():
     ib.qualifyContracts(contract)
     print(f"Contract: {contract}")
 
-    for bar_size in BAR_SIZES:
-        print(f"\nDownloading {bar_size} bars...")
-        bars = fetch_bars_chunked(ib, contract, bar_size)
-        if not bars:
-            print(f"  No data returned for {bar_size}")
-            continue
+    end_dt = (
+        datetime.strptime(end_date, "%Y-%m-%d").replace(
+            hour=23, minute=59, second=59, tzinfo=timezone.utc
+        )
+        if end_date
+        else datetime.now(timezone.utc)
+    )
 
-        path = save_bars(bars, bar_size)
-        df = pd.read_csv(path)
-        print(f"  Saved {len(df)} bars -> {path}")
-        print(f"  Range: {df['date'].iloc[0]} to {df['date'].iloc[-1]}")
+    for bar_size in BAR_SIZES:
+        if update_only:
+            print(f"\nUpdating {bar_size} bars through {end_dt.date()}...")
+            path = update_csv(ib, contract, bar_size, end_dt)
+        else:
+            print(f"\nDownloading {bar_size} bars...")
+            bars = fetch_bars_chunked(ib, contract, bar_size)
+            if not bars:
+                print(f"  No data returned for {bar_size}")
+                continue
+            path = save_bars(bars, bar_size)
+
+        if path:
+            df = pd.read_csv(path)
+            print(f"  Total {len(df)} bars -> {path}")
+            print(f"  Range: {df['date'].iloc[0]} to {df['date'].iloc[-1]}")
         time.sleep(PACING_SEC)
 
     ib.disconnect()
@@ -128,4 +172,19 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Download or update SOXL historical bars")
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="Append new bars to existing CSVs instead of full re-download",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        default=None,
+        help="End date for update (YYYY-MM-DD), defaults to now",
+    )
+    args = parser.parse_args()
+    main(update_only=args.update, end_date=args.end_date)
