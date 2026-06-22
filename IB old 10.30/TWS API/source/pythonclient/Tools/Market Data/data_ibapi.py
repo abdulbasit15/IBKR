@@ -1,0 +1,88 @@
+import json
+import sys
+import threading
+import time
+from pathlib import Path
+
+_root = next(p for p in Path(__file__).resolve().parents if (p / "ibapi").is_dir())
+sys.path.insert(0, str(_root))
+
+from ibapi.client import EClient
+from ibapi.wrapper import EWrapper
+from ibapi.contract import Contract
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+with open(SCRIPT_DIR / "config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
+
+symbol = config['symbol']
+security = config['security']
+exchange = config['exchange']
+
+class IBApp(EWrapper, EClient):
+    def __init__(self):
+        EClient.__init__(self, self)
+        self.prices = {}
+
+    def tickPrice(self, reqId, tickType, price, attrib):
+        if tickType == 4:  # Last price
+            self.prices[reqId] = price
+            if reqId == 1:
+                print(f"✅ Live {symbol} price: {price}")
+            elif reqId == 2:
+                print(f"✅ Live {symbol} Call price: {price}")
+            elif reqId == 3:
+                print(f"✅ Live {symbol} Put price: {price}")
+
+def run_loop(app):
+    app.run()
+
+app = IBApp()
+app.connect('127.0.0.1', 7497, 1)
+
+# Define the SPX index contract
+contract = Contract()
+contract.symbol = symbol
+contract.secType = security
+contract.exchange = exchange
+contract.currency = "USD"
+
+# Define call and put option contracts for SPX, 6300 strike, example expiry
+expiry = "20250801"  # Update as needed
+
+call_option = Contract()
+call_option.symbol = symbol
+call_option.secType = "OPT"
+call_option.exchange = exchange
+call_option.currency = "USD"
+call_option.lastTradeDateOrContractMonth = expiry
+call_option.strike = 556
+call_option.right = "C"
+call_option.multiplier = "100"
+
+put_option = Contract()
+put_option.symbol = symbol
+put_option.secType = "OPT"
+put_option.exchange = exchange
+put_option.currency = "USD"
+put_option.lastTradeDateOrContractMonth = expiry
+put_option.strike = 556
+put_option.right = "P"
+put_option.multiplier = "100"
+
+# Start the message processing thread
+thread = threading.Thread(target=run_loop, args=(app,), daemon=True)
+thread.start()
+
+# Request market data for index, call, and put
+app.reqMktData(1, contract, "", False, False, [])
+app.reqMktData(2, call_option, "", False, False, [])
+app.reqMktData(3, put_option, "", False, False, [])
+
+# Keep script running to print live prices
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    app.disconnect()

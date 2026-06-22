@@ -1,0 +1,17 @@
+*.pyc
+tags
+__pycache__/*
+log/*
+*.log
+log.*
+core
+*.xml
+MANIFEST
+dist
+dist/
+dist_*/
+dist*/
+build
+.idea
+*.egg-info
+/.tox/
