@@ -16,7 +16,7 @@ namespace OrderConditionsParsingTestProject
         [TestMethod]
         public void TestEWrapperToEventsConsistency()
         {
-            var eWrapperMethods = typeof(EWrapper).GetMethods();
+            var eWrapperMethods = typeof(EWrapper).GetMethods().Where(m => !m.Name.EndsWith("ProtoBuf"));
             var iTwsEventsMethods = typeof(ITwsEvents).GetMethods();
             var missingMethods = eWrapperMethods.Except(iTwsEventsMethods, new MethodComparer());
 

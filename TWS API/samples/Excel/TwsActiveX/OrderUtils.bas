@@ -27,10 +27,10 @@ Public Enum OrderStatusColumns
     Col_PERMID
 End Enum
 
-Public Enum CommissionMarginColumns
-' Pre-trade commissions and margin information (WhatIf)
-    Col_COMMISSION = 1
-    Col_COMMISSIONCURRENCY
+Public Enum CommissionAndFeesMarginColumns
+' Pre-trade commission and fees and margin information (WhatIf)
+    Col_COMMISSIONANDFEES = 1
+    Col_COMMISSIONANDFEESCURRENCY
     Col_EQUITYWITHLOANBEFORE
     Col_INITMARGINBEFORE
     Col_MAINTMARGINBEFORE
@@ -40,6 +40,19 @@ Public Enum CommissionMarginColumns
     Col_EQUITYWITHLOANAFTER
     Col_INITMARGINAFTER
     Col_MAINTMARGINAFTER
+    Col_MARGINCURRENCY
+    Col_EQUITYWITHLOANBEFOREOUTSIDERTH
+    Col_INITMARGINBEFOREOUTSIDERTH
+    Col_MAINTMARGINBEFOREOUTSIDERTH
+    Col_EQUITYWITHLOANCHANGEOUTSIDERTH
+    Col_INITMARGINCHANGEOUTSIDERTH
+    Col_MAINTMARGINCHANGEOUTSIDERTH
+    Col_EQUITYWITHLOANAFTEROUTSIDERTH
+    Col_INITMARGINAFTEROUTSIDERTH
+    Col_MAINTMARGINAFTEROUTSIDERTH
+    Col_SUGGESTEDSIZE
+    Col_REJECTREASON
+    Col_ORDERALLOCATIONS
     Col_BONDACCRUEDINTEREST
 End Enum
 
@@ -149,8 +162,25 @@ Public Enum ExtendedOrderAttributesColumns
     Col_MID_OFFSET_AT_HALF
     Col_CUSTOMER_ACCOUNT
     Col_PROFESSIONAL_CUSTOMER
-    Col_EXTERNAL_USER_ID
+    Col_INCLUDE_OVERNIGHT
     Col_MANUAL_ORDER_INDICATOR
+    Col_IMBALANCE_ONLY
+    Col_POST_ONLY
+    Col_ALLOW_PRE_OPEN
+    Col_IGNORE_OPEN_AUCTION
+    Col_DEACTIVATE
+    Col_ACTIVE_START_TIME
+    Col_ACTIVE_STOP_TIME
+    Col_SEEK_PRICE_IMPROVEMENT
+    Col_WHAT_IF_TYPE
+    Col_ROUTE_MARKETABLE_TO_BBO
+    Col_SL_ORDER_ID
+    Col_SL_ORDER_TYPE
+    Col_PT_ORDER_ID
+    Col_PT_ORDER_TYPE
+    Col_HEDGETYPE
+    Col_HEDGEPARAM
+    Col_HEDGEMAXSIZE
 End Enum
 
 ' other constants
@@ -165,6 +195,17 @@ Public Sub ApplyExtendedTemplate(orderIndex As Long, extendedOrderAttributesTabl
     Next i
 End Sub
 
+Public Sub ClearAttachedOrderIds(extendedOrderAttributesTable As Range)
+    Dim i As Long
+    Dim row As Object
+    
+    For Each row In Selection.Rows
+        i = row.row - extendedOrderAttributesTable.Rows(1).row + 1
+        extendedOrderAttributesTable(i, Col_SL_ORDER_ID).value = ""
+        extendedOrderAttributesTable(i, Col_PT_ORDER_ID).value = ""
+    Next
+End Sub
+
 Public Sub CancelOrders(orderStatusTable As Range, extendedOrderAttributesTable As Range)
     If Not CheckConnected Then Exit Sub
     
@@ -177,7 +218,6 @@ Public Sub CancelOrders(orderStatusTable As Range, extendedOrderAttributesTable 
         i = row.row - orderStatusTable.Rows(1).row + 1
         orderCancel.manualOrderCancelTime = Util.SetNonEmptyValue(extendedOrderAttributesTable(i, Col_MANUAL_ORDER_CANCEL_TIME).value, orderCancel.manualOrderCancelTime)
         orderCancel.extOperator = Util.SetNonEmptyValue(extendedOrderAttributesTable(i, Col_EXT_OPERATOR).value, orderCancel.extOperator)
-        orderCancel.externalUserId = Util.SetNonEmptyValue(extendedOrderAttributesTable(i, Col_EXTERNAL_USER_ID).value, orderCancel.externalUserId)
         orderCancel.manualOrderIndicator = Util.SetNonEmptyValue(extendedOrderAttributesTable(i, Col_MANUAL_ORDER_INDICATOR).value, orderCancel.manualOrderIndicator)
         
         If orderStatusTable(i, Col_ORDERSTATUS).value <> "" Then
@@ -213,10 +253,10 @@ Public Function FindOrderRowIndex(orderId As Long, orderStatusTable As Range) As
     FindOrderRowIndex = 0
 End Function
 
-Public Function FindOrderRowIndexByPermId(permId As Long, orderStatusTable As Range) As Long
+Public Function FindOrderRowIndexByPermId(permId As String, orderStatusTable As Range) As Long
     Dim i As Long
     For i = 1 To orderStatusTable.Rows.Count
-        If CLng(orderStatusTable(i, OrderStatusColumns.Col_PERMID)) = permId Then
+        If CLng(orderStatusTable(i, OrderStatusColumns.Col_PERMID)) = CLng(permId) Then
             FindOrderRowIndexByPermId = i
             Exit Function
         End If
@@ -283,7 +323,7 @@ Private Sub PlaceModifyOrder( _
         .Symbol = UCase(contractDescriptionTable(orderIndex, Col_SYMBOL).value)
         .SecType = UCase(contractDescriptionTable(orderIndex, Col_SECTYPE).value)
         .lastTradeDateOrContractMonth = contractDescriptionTable(orderIndex, Col_LASTTRADEDATE).value
-        .Strike = contractDescriptionTable(orderIndex, Col_STRIKE).value
+        .Strike = Util.SetNonEmptyValue(contractDescriptionTable(orderIndex, Col_STRIKE).value, .Strike)
         .Right = UCase(contractDescriptionTable(orderIndex, Col_RIGHT).value)
         .multiplier = UCase(contractDescriptionTable(orderIndex, Col_MULTIPLIER).value)
         .Exchange = UCase(contractDescriptionTable(orderIndex, Col_EXCH).value)
@@ -416,8 +456,43 @@ Private Sub PlaceModifyOrder( _
         .midOffsetAtHalf = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_MID_OFFSET_AT_HALF).value, .midOffsetAtHalf)
         .customerAccount = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_CUSTOMER_ACCOUNT).value, .customerAccount)
         .professionalCustomer = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_PROFESSIONAL_CUSTOMER).value, .professionalCustomer)
-        .externalUserId = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_EXTERNAL_USER_ID).value, .externalUserId)
+        .includeOvernight = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_INCLUDE_OVERNIGHT).value, .includeOvernight)
         .manualOrderIndicator = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_MANUAL_ORDER_INDICATOR).value, .manualOrderIndicator)
+        .imbalanceOnly = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_IMBALANCE_ONLY).value, .imbalanceOnly)
+        .postOnly = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_POST_ONLY).value, .postOnly)
+        .allowPreOpen = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_ALLOW_PRE_OPEN).value, .allowPreOpen)
+        .ignoreOpenAuction = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_IGNORE_OPEN_AUCTION).value, .ignoreOpenAuction)
+        .Deactivate = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_DEACTIVATE).value, .Deactivate)
+        .activeStartTime = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_ACTIVE_START_TIME).value, .activeStartTime)
+        .activeStopTime = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_ACTIVE_STOP_TIME).value, .activeStopTime)
+        If extendedAttributeTable(orderIndex, Col_SEEK_PRICE_IMPROVEMENT).value <> "" Then
+            .seekPriceImprovement = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_SEEK_PRICE_IMPROVEMENT).value, .seekPriceImprovement)
+        Else
+            .seekPriceImprovement = -1
+        End If
+        .whatIfType = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_WHAT_IF_TYPE).value, .whatIfType)
+        If extendedAttributeTable(orderIndex, Col_ROUTE_MARKETABLE_TO_BBO).value <> "" Then
+            .routeMarketableToBbo = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_ROUTE_MARKETABLE_TO_BBO).value, .routeMarketableToBbo)
+        Else
+            .routeMarketableToBbo = -1
+        End If
+        
+        If extendedAttributeTable(orderIndex, Col_SL_ORDER_TYPE).value <> "" Then
+            extendedAttributeTable(orderIndex, Col_SL_ORDER_ID).value = Api.NextOrderId
+            .slOrderId = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_SL_ORDER_ID).value, .slOrderId)
+            .slOrderType = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_SL_ORDER_TYPE).value, .slOrderType)
+        End If
+        
+        If extendedAttributeTable(orderIndex, Col_PT_ORDER_TYPE).value <> "" Then
+            extendedAttributeTable(orderIndex, Col_PT_ORDER_ID).value = Api.NextOrderId
+            .ptOrderId = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_PT_ORDER_ID).value, .ptOrderId)
+            .ptOrderType = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_PT_ORDER_TYPE).value, .ptOrderType)
+        End If
+        
+        .hedgeType = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_HEDGETYPE).value, .hedgeType)
+        .hedgeParam = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_HEDGEPARAM).value, .hedgeParam)
+        .hedgeMaxSize = Util.SetNonEmptyValue(extendedAttributeTable(orderIndex, Col_HEDGEMAXSIZE).value, .hedgeMaxSize)
+        
     End With
 
     ' combo legs
@@ -460,11 +535,6 @@ Private Sub PlaceModifyOrder( _
     'place order
     Api.Tws.PlaceOrderEx orderId, lContractInfo, lOrderInfo
     
-    ' requesting next valid orderIndex
-    If orderStatusTable(orderIndex, Col_ORDERID).value = STR_EMPTY Then
-        Api.Tws.reqIds 1
-    End If
-    
     ' update order orderIndex in table
     If WhatIf Then
         orderStatusTable(orderIndex, Col_ORDERID).value = orderId
@@ -480,12 +550,12 @@ Private Sub PlaceModifyOrder( _
     End If
 End Sub
 
-Public Sub ProcessError(orderStatusTable As Range, ByVal orderId As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(orderStatusTable As Range, ByVal orderId As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
     Dim i As Long
     i = FindOrderRowIndex(orderId, orderStatusTable)
     If i = 0 Then Exit Sub
     
-    orderStatusTable(i, Col_ORDERSTATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+    orderStatusTable(i, Col_ORDERSTATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
 End Sub
 
 ' update order status
@@ -505,27 +575,55 @@ Public Sub UpdateOrderStatus(orderStatusTable As Range, orderId As Long, status 
     End If
 End Sub
 
-Public Sub UpdateWhatIfInfo(orderStatusTable As Range, commissionMarginTable As Range, orderId As Long, contract As TWSLib.IContract, order As TWSLib.IOrder, orderState As TWSLib.IOrderState)
+Public Sub UpdateWhatIfInfo(orderStatusTable As Range, commissionAndFeesMarginTable As Range, orderId As Long, contract As TWSLib.IContract, order As TWSLib.IOrder, orderState As TWSLib.IOrderState)
     ' find row to update by using orderId
     Dim i As Long
     i = FindOrderRowIndex(orderId, orderStatusTable)
     If i = 0 Then Exit Sub
     
-    commissionMarginTable(i, Col_COMMISSION).value = orderState.commission
-    commissionMarginTable(i, Col_COMMISSIONCURRENCY).value = orderState.commissionCurrency
-    commissionMarginTable(i, Col_EQUITYWITHLOANBEFORE).value = orderState.equityWithLoanBefore
-    commissionMarginTable(i, Col_INITMARGINBEFORE).value = orderState.initMarginBefore
-    commissionMarginTable(i, Col_MAINTMARGINBEFORE).value = orderState.maintMarginBefore
-    commissionMarginTable(i, Col_EQUITYWITHLOANCHANGE).value = orderState.equityWithLoanChange
-    commissionMarginTable(i, Col_INITMARGINCHANGE).value = orderState.initMarginChange
-    commissionMarginTable(i, Col_MAINTMARGINCHANGE).value = orderState.maintMarginChange
-    commissionMarginTable(i, Col_EQUITYWITHLOANAFTER).value = orderState.equityWithLoanAfter
-    commissionMarginTable(i, Col_INITMARGINAFTER).value = orderState.initMarginAfter
-    commissionMarginTable(i, Col_MAINTMARGINAFTER).value = orderState.maintMarginAfter
-    commissionMarginTable(i, Col_BONDACCRUEDINTEREST).value = order.bondAccruedInterest
+    commissionAndFeesMarginTable(i, Col_COMMISSIONANDFEES).value = Util.DblMaxStr(orderState.commissionAndFees)
+    commissionAndFeesMarginTable(i, Col_COMMISSIONANDFEESCURRENCY).value = orderState.commissionAndFeesCurrency
+    commissionAndFeesMarginTable(i, Col_EQUITYWITHLOANBEFORE).value = orderState.equityWithLoanBefore
+    commissionAndFeesMarginTable(i, Col_INITMARGINBEFORE).value = orderState.initMarginBefore
+    commissionAndFeesMarginTable(i, Col_MAINTMARGINBEFORE).value = orderState.maintMarginBefore
+    commissionAndFeesMarginTable(i, Col_EQUITYWITHLOANCHANGE).value = orderState.equityWithLoanChange
+    commissionAndFeesMarginTable(i, Col_INITMARGINCHANGE).value = orderState.initMarginChange
+    commissionAndFeesMarginTable(i, Col_MAINTMARGINCHANGE).value = orderState.maintMarginChange
+    commissionAndFeesMarginTable(i, Col_EQUITYWITHLOANAFTER).value = orderState.equityWithLoanAfter
+    commissionAndFeesMarginTable(i, Col_INITMARGINAFTER).value = orderState.initMarginAfter
+    commissionAndFeesMarginTable(i, Col_MAINTMARGINAFTER).value = orderState.maintMarginAfter
+    
+    commissionAndFeesMarginTable(i, Col_MARGINCURRENCY).value = orderState.marginCurrency
+    commissionAndFeesMarginTable(i, Col_EQUITYWITHLOANBEFOREOUTSIDERTH).value = Util.DblMaxStr(orderState.equityWithLoanBeforeOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_INITMARGINBEFOREOUTSIDERTH).value = Util.DblMaxStr(orderState.initMarginBeforeOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_MAINTMARGINBEFOREOUTSIDERTH).value = Util.DblMaxStr(orderState.maintMarginBeforeOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_EQUITYWITHLOANCHANGEOUTSIDERTH).value = Util.DblMaxStr(orderState.equityWithLoanChangeOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_INITMARGINCHANGEOUTSIDERTH).value = Util.DblMaxStr(orderState.initMarginChangeOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_MAINTMARGINCHANGEOUTSIDERTH).value = Util.DblMaxStr(orderState.maintMarginChangeOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_EQUITYWITHLOANAFTEROUTSIDERTH).value = Util.DblMaxStr(orderState.equityWithLoanAfterOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_INITMARGINAFTEROUTSIDERTH).value = Util.DblMaxStr(orderState.initMarginAfterOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_MAINTMARGINAFTEROUTSIDERTH).value = Util.DblMaxStr(orderState.maintMarginAfterOutsideRTH)
+    commissionAndFeesMarginTable(i, Col_SUGGESTEDSIZE).value = Util.DecimalToString(orderState.suggestedSize)
+    commissionAndFeesMarginTable(i, Col_REJECTREASON).value = orderState.rejectReason
+    
+    Dim tempStr As String
+    If Not orderState.orderAllocations Is Nothing Then
+        tempStr = "{"
+        For i = 0 To orderState.orderAllocations.Count - 1 Step 1
+            With orderState.orderAllocations(i)
+                tempStr = tempStr & "acc=" & .Account & STR_COMMA
+                tempStr = tempStr & "pos=" & Util.DecimalToString(.position) & STR_COMMA
+                tempStr = tempStr & "posD=" & Util.DecimalToString(.positionDesired) & STR_COMMA
+                tempStr = tempStr & "posA=" & Util.DecimalToString(.positionAfter) & STR_COMMA
+                tempStr = tempStr & "desAQty=" & Util.DecimalToString(.desiredAllocQty) & STR_COMMA
+                tempStr = tempStr & "allAQty=" & Util.DecimalToString(.allowedAllocQty) & STR_COMMA
+                tempStr = tempStr & "isMon=" & Util.DecimalToString(.isMonetary)
+                tempStr = tempStr & STR_SEMICOLON
+            End With
+        Next i
+        tempStr = tempStr & "}"
+        commissionAndFeesMarginTable(i, Col_ORDERALLOCATIONS).value = tempStr
+    End If
+    commissionAndFeesMarginTable(i, Col_BONDACCRUEDINTEREST).value = order.bondAccruedInterest
 End Sub
-
-
-
-
 

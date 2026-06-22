@@ -8,33 +8,29 @@ public class OrderCancel {
 
     private String m_manualOrderCancelTime;
     private String m_extOperator;
-    private String m_externalUserId;
-    private int    m_manualOrderIndicator;
+    private int m_manualOrderIndicator;
 
     // getters
     public String manualOrderCancelTime() { return m_manualOrderCancelTime; }
     public String extOperator()           { return m_extOperator; }
-    public String externalUserId()        { return m_externalUserId; }
     public int manualOrderIndicator()     { return m_manualOrderIndicator; }
 
     // setters
     public void manualOrderCancelTime(String v) { m_manualOrderCancelTime = v; }
     public void extOperator(String v)           { m_extOperator = v; }
-    public void externalUserId(String v)        { m_externalUserId = v; }
     public void manualOrderIndicator(int v)     { m_manualOrderIndicator = v; }
 
     public OrderCancel() {
-        this(EMPTY_STR, EMPTY_STR, EMPTY_STR, Integer.MAX_VALUE); 
+        this(EMPTY_STR); 
     }
 
     public OrderCancel(String manualOrderCancelTime) {
-        this(manualOrderCancelTime, EMPTY_STR, EMPTY_STR, Integer.MAX_VALUE); 
+        this(manualOrderCancelTime, EMPTY_STR, Integer.MAX_VALUE);
     }
 
-    public OrderCancel(String manualOrderCancelTime, String extOperator, String externalUserId, int manualOrderIndicator) {
+    public OrderCancel(String manualOrderCancelTime, String extOperator, int manualOrderIndicator) {
         m_manualOrderCancelTime = manualOrderCancelTime;
         m_extOperator = extOperator;
-        m_externalUserId = externalUserId;
         m_manualOrderIndicator = manualOrderIndicator;
     }
 
@@ -48,14 +44,13 @@ public class OrderCancel {
         }
         OrderCancel l_theOther = (OrderCancel)p_other;
 
-        if (m_manualOrderIndicator != l_theOther.m_manualOrderIndicator
+        if (Util.StringCompare(m_manualOrderCancelTime, l_theOther.m_manualOrderCancelTime) != 0 ||
+            Util.StringCompare(m_extOperator, l_theOther.m_extOperator) != 0
             ) {
             return false;
         }
 
-        if (Util.StringCompare(m_manualOrderCancelTime, l_theOther.m_manualOrderCancelTime) != 0
-            || Util.StringCompare(m_extOperator, l_theOther.m_extOperator) != 0 
-            || Util.StringCompare(m_externalUserId, l_theOther.m_externalUserId) != 0 
+        if (m_manualOrderIndicator != l_theOther.m_manualOrderIndicator
             ) {
             return false;
         }

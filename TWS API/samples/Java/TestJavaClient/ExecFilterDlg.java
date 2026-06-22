@@ -1,10 +1,13 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package TestJavaClient;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -30,6 +33,8 @@ public class ExecFilterDlg extends JDialog {
     private JTextField 	m_secType = new JTextField();
     private JTextField 	m_exchange = new JTextField();
     private JTextField 	m_action = new JTextField();
+    private JTextField 	m_lastNDays = new JTextField();
+    private JTextField 	m_specificDates = new JTextField();
 
     ExecFilterDlg( JFrame owner) {
         super( owner, true);
@@ -55,6 +60,10 @@ public class ExecFilterDlg extends JDialog {
         execRptFilterPanel.add( m_exchange);
         execRptFilterPanel.add( new JLabel( "Action :") );
         execRptFilterPanel.add( m_action);
+        execRptFilterPanel.add( new JLabel( "Last N Days :") );
+        execRptFilterPanel.add( m_lastNDays);
+        execRptFilterPanel.add( new JLabel( "Specific Dates :") );
+        execRptFilterPanel.add( m_specificDates);
 
         // create button panel
         JPanel buttonPanel = new JPanel();
@@ -93,6 +102,16 @@ public class ExecFilterDlg extends JDialog {
             m_execFilter.secType(m_secType.getText());
             m_execFilter.exchange(m_exchange.getText());
             m_execFilter.side(m_action.getText());
+            
+            String lastNDays = m_lastNDays.getText();
+            if (!lastNDays.isEmpty()) {
+                m_execFilter.lastNDays(Integer.parseInt(lastNDays));
+            }
+            String specificDates = m_specificDates.getText();
+            if (!specificDates.isEmpty()) {
+                List<Integer> specificDatesList = Stream.of(specificDates.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+                m_execFilter.specificDates(specificDatesList);
+            }
         }
         catch( Exception e) {
             Main.inform( this, "Error - " + e);

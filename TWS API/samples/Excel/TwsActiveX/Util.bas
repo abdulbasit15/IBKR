@@ -31,6 +31,7 @@ Private Type TIME_ZONE_INFORMATION
 End Type
 
 Public Const MaxLongValue As Long = &H7FFFFFFF
+Public Const MaxLongPtrValue As LongPtr = (2 ^ 63) - 1
 Public Const MaxDoubleValue As Double = (2 - 2 ^ -52) * 2 ^ 1023
 Public Const MaxDecimalString As String = "79228162514264337593543950335"
 
@@ -312,14 +313,13 @@ Public Function SetNonEmptyValue(tableValue As Variant, defaultValue As Variant)
     End If
 End Function
 
-' convert long value to date
-Public Function ConvertLongToDateStr(ByVal lSec As Long) As String
+' convert string value as long to date
+Public Function ConvertLongStrToDateStr(ByVal longTimeStr As String) As String
     Dim tz As TIME_ZONE_INFORMATION
-    
-    If lSec > 0 Then
-        ConvertLongToDateStr = str(DateAdd("s", -(tz.Bias + tz.DaylightBias * IIf(GetTimeZoneInformation(tz) = 2, 1, 0)) * 60, DateAdd("s", lSec, DateSerial(1970, 1, 1))))
+    If longTimeStr <> STR_EMPTY Then
+        ConvertLongStrToDateStr = Format(DateAdd("s", -(tz.Bias + tz.DaylightBias * IIf(GetTimeZoneInformation(tz) = 2, 1, 0)) * 60, DateAdd("s", longTimeStr, DateSerial(1970, 1, 1))), "yyyy-mm-dd Hh:Nn:Ss")
     Else
-        ConvertLongToDateStr = STR_EMPTY
+        ConvertLongStrToDateStr = STR_EMPTY
     End If
 End Function
 
@@ -475,6 +475,14 @@ Public Function GetStringTimeStamp() As String
                         sysTime.wHour & sysTime.wMinute & sysTime.wSecond & sysTime.wMilliseconds
 End Function
 
+Public Function LongMaxStr(longVal As LongPtr) As String
+    If longVal = MaxLongPtrValue Then
+        LongMaxStr = ""
+    Else
+        LongMaxStr = CStr(longVal)
+    End If
+End Function
+
 Public Function IntMaxStr(intVal As Long) As String
     If intVal = MaxLongValue Then
         IntMaxStr = ""
@@ -571,6 +579,14 @@ End Function
 Public Function GetInfinity() As Double
     On Error Resume Next
     GetInfinity = 1 / 0
+End Function
+
+Public Function GetArraySize(arr As Variant) As Integer
+   If IsEmpty(arr) Then
+      GetArraySize = 0
+   Else
+      GetArraySize = UBound(arr) - LBound(arr)
+   End If
 End Function
 
 

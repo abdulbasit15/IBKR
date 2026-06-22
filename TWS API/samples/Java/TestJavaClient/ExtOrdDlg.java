@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package TestJavaClient;
@@ -19,7 +19,9 @@ import javax.swing.JTextField;
 
 import com.ib.client.Order;
 import com.ib.client.OrderCancel;
+import com.ib.client.Types.ThreeStateBoolean;
 
+import apidemo.util.TCombo;
 import apidemo.util.UpperField;
 
 public class ExtOrdDlg extends JDialog {
@@ -99,6 +101,7 @@ public class ExtOrdDlg extends JDialog {
 
     private JTextField 	m_hedgeType = new JTextField();
     private JTextField 	m_hedgeParam = new JTextField();
+    private JTextField  m_hedgeMaxSize = new JTextField();
     private JCheckBox   m_optOutSmartRoutingCheckBox = new JCheckBox("Opting out of SMART routing", false);
 	private JCheckBox 	m_solicited = new JCheckBox("Solicited", false);
 	private JCheckBox 	m_randomizeSize = new JCheckBox("Randomize size", false);
@@ -123,9 +126,17 @@ public class ExtOrdDlg extends JDialog {
     private JTextField  m_midOffsetAtHalf = new JTextField();
     private JTextField  m_customerAccount = new JTextField();
     private JCheckBox   m_professionalCustomer = new JCheckBox("Professional Customer", false);
+    private JCheckBox   m_includeOvernight = new JCheckBox("Include Overnight", false);
     private JTextField  m_extOperator = new JTextField();
-    private JTextField  m_externalUserId = new JTextField();
-    private JTextField  m_manualOrderIndicator = new JTextField();
+    private UpperField  m_manualOrderIndicator = new UpperField();
+    private JCheckBox   m_imbalanceOnly = new JCheckBox("Imbalance Only", false);
+    private JCheckBox   m_postOnly = new JCheckBox("Post Only", false);
+    private JCheckBox   m_allowPreOpen = new JCheckBox("Allow Pre-Open", false);
+    private JCheckBox   m_ignoreOpenAuction = new JCheckBox("Ignore Open Auction", false);
+    private JCheckBox   m_deactivate = new JCheckBox("Deactivate", false);
+    private TCombo<ThreeStateBoolean> m_seekPriceImprovement = new TCombo<>(ThreeStateBoolean.values());
+    private JTextField m_whatIfType = new JTextField();
+    private TCombo<ThreeStateBoolean> m_routeMarketableToBbo = new TCombo<>(ThreeStateBoolean.values());
 
     ExtOrdDlg( OrderDlg owner) {
         super( owner, true);
@@ -206,8 +217,10 @@ public class ExtOrdDlg extends JDialog {
         extOrderDetailsPanel.add(m_minQty);
         extOrderDetailsPanel.add(new JLabel("Percent Offset"));
         extOrderDetailsPanel.add(m_percentOffset);
-        extOrderDetailsPanel.add( new JLabel( "") );
-        extOrderDetailsPanel.add( new JLabel(""));
+        extOrderDetailsPanel.add(new JLabel("Seek Price Improvement"));
+        extOrderDetailsPanel.add(m_seekPriceImprovement);
+        extOrderDetailsPanel.add(new JLabel("Route Marketable to BBO"));
+        extOrderDetailsPanel.add(m_routeMarketableToBbo);
         extOrderDetailsPanel.add(new JLabel("BOX: Auction Strategy"));
         extOrderDetailsPanel.add(m_auctionStrategy);
         extOrderDetailsPanel.add(new JLabel("BOX: Starting Price"));
@@ -277,6 +290,8 @@ public class ExtOrdDlg extends JDialog {
         extOrderDetailsPanel.add(m_hedgeType);
         extOrderDetailsPanel.add(new JLabel("HEDGE: Param"));
         extOrderDetailsPanel.add(m_hedgeParam);
+        extOrderDetailsPanel.add(new JLabel("HEDGE: Max Size"));
+        extOrderDetailsPanel.add(m_hedgeMaxSize);
         extOrderDetailsPanel.add(m_optOutSmartRoutingCheckBox) ;
         extOrderDetailsPanel.add(m_solicited);
         extOrderDetailsPanel.add(m_randomizeSize);
@@ -319,13 +334,19 @@ public class ExtOrdDlg extends JDialog {
         extOrderDetailsPanel.add(new JLabel("Mid Offset At Half"));
         extOrderDetailsPanel.add(m_midOffsetAtHalf);
         extOrderDetailsPanel.add(m_professionalCustomer);
+        extOrderDetailsPanel.add(m_includeOvernight);
+        extOrderDetailsPanel.add(m_imbalanceOnly);
         extOrderDetailsPanel.add( new JLabel(""));
         extOrderDetailsPanel.add(new JLabel("Ext Operator"));
         extOrderDetailsPanel.add(m_extOperator);
-        extOrderDetailsPanel.add(new JLabel("External User Id"));
-        extOrderDetailsPanel.add(m_externalUserId);
-        extOrderDetailsPanel.add(new JLabel("ManualOrderIndicator"));
+        extOrderDetailsPanel.add(new JLabel("WhatIf Type"));
+        extOrderDetailsPanel.add(m_whatIfType);
+        extOrderDetailsPanel.add(new JLabel("Manual Order Indicator"));
         extOrderDetailsPanel.add(m_manualOrderIndicator);
+        extOrderDetailsPanel.add(m_postOnly);
+        extOrderDetailsPanel.add(m_allowPreOpen);
+        extOrderDetailsPanel.add(m_ignoreOpenAuction);
+        extOrderDetailsPanel.add(m_deactivate);
         
         // add listeners
         m_competeAgainstBestOffsetUpToMid.addItemListener(new ItemListener() {
@@ -432,6 +453,7 @@ public class ExtOrdDlg extends JDialog {
             m_order.scaleTable(m_scaleTable.getText().trim());
             m_order.hedgeType(m_hedgeType.getText().trim());
             m_order.hedgeParam(m_hedgeParam.getText().trim());
+            m_order.hedgeMaxSize(parseMaxInt(m_hedgeMaxSize));
             
             m_order.randomizePrice(m_randomizePrice.isSelected());
             m_order.randomizeSize(m_randomizeSize.isSelected());
@@ -455,13 +477,20 @@ public class ExtOrdDlg extends JDialog {
             m_order.midOffsetAtHalf(parseMaxDouble(m_midOffsetAtHalf));
             m_order.customerAccount(m_customerAccount.getText());
             m_order.professionalCustomer(m_professionalCustomer.isSelected());
+            m_order.includeOvernight(m_includeOvernight.isSelected());
             m_order.extOperator(m_extOperator.getText());
-            m_order.externalUserId(m_externalUserId.getText());
             m_order.manualOrderIndicator(parseMaxInt(m_manualOrderIndicator));
+            m_order.imbalanceOnly(m_imbalanceOnly.isSelected());
+            m_order.postOnly(m_postOnly.isSelected());
+            m_order.allowPreOpen(m_allowPreOpen.isSelected());
+            m_order.ignoreOpenAuction(m_ignoreOpenAuction.isSelected());
+            m_order.deactivate(m_deactivate.isSelected());
+            m_order.seekPriceImprovement(m_seekPriceImprovement.getSelectedItem().toBoolean());
+            m_order.whatIfType(parseMaxInt(m_whatIfType));
+            m_order.routeMarketableToBbo(m_routeMarketableToBbo.getSelectedItem().toBoolean());
 
             m_orderCancel.manualOrderCancelTime(m_manualOrderCancelTime.getText());
             m_orderCancel.extOperator(m_extOperator.getText());
-            m_orderCancel.externalUserId(m_externalUserId.getText());
             m_orderCancel.manualOrderIndicator(parseMaxInt(m_manualOrderIndicator));
         }
         catch( Exception e) {

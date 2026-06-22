@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System.Collections.Generic;
@@ -81,9 +81,11 @@ namespace IBSampleApp.ui
             BondContractDetailsGrid[26, BondContractDetailsGrid.Rows.Count - 1].Value = bondContractDetailsMessage.ContractDetails.Notes;
             BondContractDetailsGrid[27, BondContractDetailsGrid.Rows.Count - 1].Value = bondContractDetailsMessage.ContractDetails.LastTradeTime;
             BondContractDetailsGrid[28, BondContractDetailsGrid.Rows.Count - 1].Value = bondContractDetailsMessage.ContractDetails.TimeZoneId;
-            BondContractDetailsGrid[29, BondContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(bondContractDetailsMessage.ContractDetails.MinSize);
-            BondContractDetailsGrid[30, BondContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(bondContractDetailsMessage.ContractDetails.SizeIncrement);
-            BondContractDetailsGrid[31, BondContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(bondContractDetailsMessage.ContractDetails.SuggestedSizeIncrement);
+            BondContractDetailsGrid[29, BondContractDetailsGrid.Rows.Count - 1].Value = bondContractDetailsMessage.ContractDetails.TradingHours;
+            BondContractDetailsGrid[30, BondContractDetailsGrid.Rows.Count - 1].Value = bondContractDetailsMessage.ContractDetails.LiquidHours;
+            BondContractDetailsGrid[31, BondContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(bondContractDetailsMessage.ContractDetails.MinSize);
+            BondContractDetailsGrid[32, BondContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(bondContractDetailsMessage.ContractDetails.SizeIncrement);
+            BondContractDetailsGrid[33, BondContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(bondContractDetailsMessage.ContractDetails.SuggestedSizeIncrement);
 
             UpdateMakretRuleIdsComboBox(bondContractDetailsMessage.ContractDetails.MarketRuleIds);
         }
@@ -112,10 +114,18 @@ namespace IBSampleApp.ui
             ContractDetailsGrid[17, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.ContractMonth;
             ContractDetailsGrid[18, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.LastTradeTime;
             ContractDetailsGrid[19, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.TimeZoneId;
-            ContractDetailsGrid[20, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.StockType;
-            ContractDetailsGrid[21, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.MinSize);
-            ContractDetailsGrid[22, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.SizeIncrement);
-            ContractDetailsGrid[23, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.SuggestedSizeIncrement);
+            ContractDetailsGrid[20, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.TradingHours;
+            ContractDetailsGrid[21, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.LiquidHours;
+            ContractDetailsGrid[22, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.StockType;
+            ContractDetailsGrid[23, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.MinSize);
+            ContractDetailsGrid[24, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.SizeIncrement);
+            ContractDetailsGrid[25, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.SuggestedSizeIncrement);
+            ContractDetailsGrid[26, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.EventContract1;
+            ContractDetailsGrid[27, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.EventContractDescription1;
+            ContractDetailsGrid[28, ContractDetailsGrid.Rows.Count - 1].Value = contractDetailsMessage.ContractDetails.EventContractDescription2;
+            ContractDetailsGrid[29, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.MinAlgoSize);
+            ContractDetailsGrid[30, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.LastPricePrecision);
+            ContractDetailsGrid[31, ContractDetailsGrid.Rows.Count - 1].Value = Util.DecimalMaxString(contractDetailsMessage.ContractDetails.LastSizePrecision);
 
             UpdateMakretRuleIdsComboBox(contractDetailsMessage.ContractDetails.MarketRuleIds);
         }

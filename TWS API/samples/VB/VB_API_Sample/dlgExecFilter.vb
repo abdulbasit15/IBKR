@@ -1,50 +1,52 @@
-﻿' Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿' Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
-
 Option Explicit On
+Imports System.Collections.Generic
+Imports System.Linq
+
 Friend Class dlgExecFilter
-	Inherits System.Windows.Forms.Form
+    Inherits System.Windows.Forms.Form
 #Region "Windows Form Designer generated code "
-	Public Sub New()
-		MyBase.New()
-		If m_vb6FormDefInstance Is Nothing Then
-			If m_InitializingDefInstance Then
-				m_vb6FormDefInstance = Me
-			Else
-				Try 
-					'For the start-up form, the first instance created is the default instance.
-					If System.Reflection.Assembly.GetExecutingAssembly.EntryPoint.DeclaringType Is Me.GetType Then
-						m_vb6FormDefInstance = Me
-					End If
-				Catch
-				End Try
-			End If
-		End If
-		'This call is required by the Windows Form Designer.
-		InitializeComponent()
-	End Sub
-	'Form overrides dispose to clean up the component list.
-	Protected Overloads Overrides Sub Dispose(Disposing As Boolean)
-		If Disposing Then
-			If Not components Is Nothing Then
-				components.Dispose()
-			End If
-		End If
-		MyBase.Dispose(Disposing)
-	End Sub
-	'Required by the Windows Form Designer
-	Private components As System.ComponentModel.IContainer
-	Public ToolTip1 As System.Windows.Forms.ToolTip
-	Public WithEvents txtAction As System.Windows.Forms.TextBox
-	Public WithEvents txtClientId As System.Windows.Forms.TextBox
-	Public WithEvents txtAcctCode As System.Windows.Forms.TextBox
-	Public WithEvents txtTime As System.Windows.Forms.TextBox
-	Public WithEvents txtSymbol As System.Windows.Forms.TextBox
-	Public WithEvents txtSecType As System.Windows.Forms.TextBox
-	Public WithEvents txtExchange As System.Windows.Forms.TextBox
-	Public WithEvents cmdCancel As System.Windows.Forms.Button
-	Public WithEvents cmdOk As System.Windows.Forms.Button
+    Public Sub New()
+        MyBase.New()
+        If m_vb6FormDefInstance Is Nothing Then
+            If m_InitializingDefInstance Then
+                m_vb6FormDefInstance = Me
+            Else
+                Try
+                    'For the start-up form, the first instance created is the default instance.
+                    If System.Reflection.Assembly.GetExecutingAssembly.EntryPoint.DeclaringType Is Me.GetType Then
+                        m_vb6FormDefInstance = Me
+                    End If
+                Catch
+                End Try
+            End If
+        End If
+        'This call is required by the Windows Form Designer.
+        InitializeComponent()
+    End Sub
+    'Form overrides dispose to clean up the component list.
+    Protected Overloads Overrides Sub Dispose(Disposing As Boolean)
+        If Disposing Then
+            If Not components Is Nothing Then
+                components.Dispose()
+            End If
+        End If
+        MyBase.Dispose(Disposing)
+    End Sub
+    'Required by the Windows Form Designer
+    Private components As System.ComponentModel.IContainer
+    Public ToolTip1 As System.Windows.Forms.ToolTip
+    Public WithEvents txtAction As System.Windows.Forms.TextBox
+    Public WithEvents txtClientId As System.Windows.Forms.TextBox
+    Public WithEvents txtAcctCode As System.Windows.Forms.TextBox
+    Public WithEvents txtTime As System.Windows.Forms.TextBox
+    Public WithEvents txtSymbol As System.Windows.Forms.TextBox
+    Public WithEvents txtSecType As System.Windows.Forms.TextBox
+    Public WithEvents txtExchange As System.Windows.Forms.TextBox
+    Public WithEvents cmdCancel As System.Windows.Forms.Button
+    Public WithEvents cmdOk As System.Windows.Forms.Button
     Public WithEvents lblClientId As System.Windows.Forms.Label
     Public WithEvents lblAcctCode As System.Windows.Forms.Label
     Public WithEvents lblTime As System.Windows.Forms.Label
@@ -53,6 +55,10 @@ Friend Class dlgExecFilter
     Public WithEvents lblExchange As System.Windows.Forms.Label
     Public WithEvents txtReqId As System.Windows.Forms.TextBox
     Public WithEvents lblReqId As System.Windows.Forms.Label
+    Public WithEvents lblLastNDays As Label
+    Public WithEvents lblSpecificDates As Label
+    Public WithEvents txtLastNDays As TextBox
+    Public WithEvents txtSpecificDates As TextBox
     Public WithEvents lblAction As System.Windows.Forms.Label
     'NOTE: The following procedure is required by the Windows Form Designer
     'It can be modified using the Windows Form Designer.
@@ -78,6 +84,10 @@ Friend Class dlgExecFilter
         Me.lblAction = New System.Windows.Forms.Label()
         Me.txtReqId = New System.Windows.Forms.TextBox()
         Me.lblReqId = New System.Windows.Forms.Label()
+        Me.lblLastNDays = New System.Windows.Forms.Label()
+        Me.lblSpecificDates = New System.Windows.Forms.Label()
+        Me.txtLastNDays = New System.Windows.Forms.TextBox()
+        Me.txtSpecificDates = New System.Windows.Forms.TextBox()
         Me.SuspendLayout()
         '
         'txtAction
@@ -191,7 +201,7 @@ Friend Class dlgExecFilter
         Me.cmdCancel.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdCancel.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdCancel.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdCancel.Location = New System.Drawing.Point(143, 213)
+        Me.cmdCancel.Location = New System.Drawing.Point(143, 304)
         Me.cmdCancel.Name = "cmdCancel"
         Me.cmdCancel.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdCancel.Size = New System.Drawing.Size(73, 25)
@@ -205,7 +215,7 @@ Friend Class dlgExecFilter
         Me.cmdOk.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdOk.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdOk.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdOk.Location = New System.Drawing.Point(64, 213)
+        Me.cmdOk.Location = New System.Drawing.Point(64, 304)
         Me.cmdOk.Name = "cmdOk"
         Me.cmdOk.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdOk.Size = New System.Drawing.Size(73, 25)
@@ -332,11 +342,71 @@ Friend Class dlgExecFilter
         Me.lblReqId.TabIndex = 15
         Me.lblReqId.Text = "Request Id"
         '
+        'lblLastNDays
+        '
+        Me.lblLastNDays.BackColor = System.Drawing.Color.Gainsboro
+        Me.lblLastNDays.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblLastNDays.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblLastNDays.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblLastNDays.Location = New System.Drawing.Point(15, 215)
+        Me.lblLastNDays.Name = "lblLastNDays"
+        Me.lblLastNDays.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblLastNDays.Size = New System.Drawing.Size(81, 17)
+        Me.lblLastNDays.TabIndex = 16
+        Me.lblLastNDays.Text = "Last N Days"
+        '
+        'lblSpecificDates
+        '
+        Me.lblSpecificDates.BackColor = System.Drawing.Color.Gainsboro
+        Me.lblSpecificDates.Cursor = System.Windows.Forms.Cursors.Default
+        Me.lblSpecificDates.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblSpecificDates.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.lblSpecificDates.Location = New System.Drawing.Point(15, 241)
+        Me.lblSpecificDates.Name = "lblSpecificDates"
+        Me.lblSpecificDates.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.lblSpecificDates.Size = New System.Drawing.Size(81, 17)
+        Me.lblSpecificDates.TabIndex = 17
+        Me.lblSpecificDates.Text = "Specific Dates"
+        '
+        'txtLastNDays
+        '
+        Me.txtLastNDays.AcceptsReturn = True
+        Me.txtLastNDays.BackColor = System.Drawing.SystemColors.Window
+        Me.txtLastNDays.BorderStyle = System.Windows.Forms.BorderStyle.None
+        Me.txtLastNDays.Cursor = System.Windows.Forms.Cursors.IBeam
+        Me.txtLastNDays.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtLastNDays.ForeColor = System.Drawing.SystemColors.WindowText
+        Me.txtLastNDays.Location = New System.Drawing.Point(119, 215)
+        Me.txtLastNDays.MaxLength = 0
+        Me.txtLastNDays.Name = "txtLastNDays"
+        Me.txtLastNDays.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.txtLastNDays.Size = New System.Drawing.Size(97, 13)
+        Me.txtLastNDays.TabIndex = 18
+        '
+        'txtSpecificDates
+        '
+        Me.txtSpecificDates.AcceptsReturn = True
+        Me.txtSpecificDates.BackColor = System.Drawing.SystemColors.Window
+        Me.txtSpecificDates.BorderStyle = System.Windows.Forms.BorderStyle.None
+        Me.txtSpecificDates.Cursor = System.Windows.Forms.Cursors.IBeam
+        Me.txtSpecificDates.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtSpecificDates.ForeColor = System.Drawing.SystemColors.WindowText
+        Me.txtSpecificDates.Location = New System.Drawing.Point(119, 241)
+        Me.txtSpecificDates.MaxLength = 0
+        Me.txtSpecificDates.Name = "txtSpecificDates"
+        Me.txtSpecificDates.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.txtSpecificDates.Size = New System.Drawing.Size(97, 13)
+        Me.txtSpecificDates.TabIndex = 19
+        '
         'dlgExecFilter
         '
         Me.AutoScaleBaseSize = New System.Drawing.Size(5, 13)
         Me.BackColor = System.Drawing.Color.Gainsboro
-        Me.ClientSize = New System.Drawing.Size(237, 253)
+        Me.ClientSize = New System.Drawing.Size(237, 341)
+        Me.Controls.Add(Me.txtSpecificDates)
+        Me.Controls.Add(Me.txtLastNDays)
+        Me.Controls.Add(Me.lblSpecificDates)
+        Me.Controls.Add(Me.lblLastNDays)
         Me.Controls.Add(Me.lblReqId)
         Me.Controls.Add(Me.txtReqId)
         Me.Controls.Add(Me.txtAction)
@@ -373,28 +443,27 @@ Friend Class dlgExecFilter
 #End Region
 #Region "Upgrade Support "
     Private Shared m_vb6FormDefInstance As dlgExecFilter
-	Private Shared m_InitializingDefInstance As Boolean
-	Public Shared Property DefInstance() As dlgExecFilter
-		Get
-			If m_vb6FormDefInstance Is Nothing OrElse m_vb6FormDefInstance.IsDisposed Then
-				m_InitializingDefInstance = True
-				m_vb6FormDefInstance = New dlgExecFilter()
-				m_InitializingDefInstance = False
-			End If
-			DefInstance = m_vb6FormDefInstance
-		End Get
-		Set
-			m_vb6FormDefInstance = Value
-		End Set
-	End Property
-#End Region 
-	' ========================================================
-	' Member variables
-	' ========================================================
+    Private Shared m_InitializingDefInstance As Boolean
+    Public Shared Property DefInstance() As dlgExecFilter
+        Get
+            If m_vb6FormDefInstance Is Nothing OrElse m_vb6FormDefInstance.IsDisposed Then
+                m_InitializingDefInstance = True
+                m_vb6FormDefInstance = New dlgExecFilter()
+                m_InitializingDefInstance = False
+            End If
+            DefInstance = m_vb6FormDefInstance
+        End Get
+        Set
+            m_vb6FormDefInstance = Value
+        End Set
+    End Property
+#End Region
+    ' ========================================================
+    ' Member variables
+    ' ========================================================
     Private m_execFilter As IBApi.ExecutionFilter
-
     Private m_reqId As Integer
-	Private m_ok As Boolean
+    Private m_ok As Boolean
 
     ' ========================================================
     ' Get/Set Methods
@@ -425,14 +494,13 @@ Friend Class dlgExecFilter
 
         With execFilter
 
-            txtClientId.Text = .clientId
-            txtAcctCode.Text = .acctCode
-            txtTime.Text = .time
-            txtSymbol.Text = .symbol
-            txtSecType.Text = .secType
-            txtExchange.Text = .exchange
-            txtAction.Text = .side
-
+            txtClientId.Text = .ClientId
+            txtAcctCode.Text = .AcctCode
+            txtTime.Text = .Time
+            txtSymbol.Text = .Symbol
+            txtSecType.Text = .SecType
+            txtExchange.Text = .Exchange
+            txtAction.Text = .Side
         End With
     End Sub
 
@@ -444,7 +512,6 @@ Friend Class dlgExecFilter
         m_reqId = Text2Int(txtReqId.Text)
 
         With m_execFilter
-
             .ClientId = Text2Int(txtClientId.Text)
             .AcctCode = txtAcctCode.Text
             .Time = txtTime.Text
@@ -452,7 +519,16 @@ Friend Class dlgExecFilter
             .SecType = txtSecType.Text
             .Exchange = txtExchange.Text
             .Side = txtAction.Text
-
+            If Len(txtLastNDays.Text) > 0 Then
+                .LastNDays = Text2Int(txtLastNDays.Text)
+            Else
+                .LastNDays = Integer.MaxValue
+            End If
+            If Len(txtSpecificDates.Text) > 0 Then
+                .SpecificDates = New List(Of Integer)(txtSpecificDates.Text.Split(",").Select(Function(n) Integer.Parse(n)).ToList)
+            Else
+                .SpecificDates = New List(Of Integer)
+            End If
         End With
 
         m_ok = True

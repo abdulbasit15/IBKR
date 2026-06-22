@@ -78,7 +78,7 @@ public class MatchingSymbolsHandler extends BaseHandler {
         return array;
     }
 
-    /** Method handles mathcing symbols cancel */
+    /** Method handles matching symbols cancel */
     public byte[] handleMatchingSymbolsCancel(String requestStr) {
         DdeRequest request = m_requestParser.parseRequest(requestStr, DdeRequestType.CANCEL_MATCHING_SYMBOLS);
         System.out.println("Handling matching symbols cancel: id=" + request.requestId());

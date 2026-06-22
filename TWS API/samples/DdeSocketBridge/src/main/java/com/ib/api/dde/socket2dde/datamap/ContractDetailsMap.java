@@ -36,6 +36,12 @@ public class ContractDetailsMap extends BaseListDataMap<ContractDetails> {
     public final static String MIN_SIZE = "minSize";
     public final static String SIZE_INCREMENT = "sizeIncrement";
     public final static String SUGGESTED_SIZE_INCREMENT = "suggestedSizeIncrement";
+    public final static String MIN_ALGO_SIZE = "minAlgoSize";
+    public final static String LAST_PRICE_PRECISION = "lastPricePrecision";
+    public final static String LAST_SIZE_PRECISION = "lastSizePrecision";
+    public final static String EVENT_CONTRACT_1 = "eventContract1";
+    public final static String EVENT_CONTRACT_DESCRIPTION_1 = "eventContractDescription1";
+    public final static String EVENT_CONTRACT_DESCRIPTION_2 = "eventContractDescription2";
     public final static String FUND_NAME = "fundName";
     public final static String FUND_FAMILY = "fundFamily";
     public final static String FUND_TYPE = "fundType";
@@ -139,6 +145,24 @@ public class ContractDetailsMap extends BaseListDataMap<ContractDetails> {
             }
             if (tickType.equalsIgnoreCase(SUGGESTED_SIZE_INCREMENT)) {
                 return Utils.toString(contractDetails.suggestedSizeIncrement());
+            }
+            if (tickType.equalsIgnoreCase(MIN_ALGO_SIZE)) {
+                return Utils.toString(contractDetails.minAlgoSize());
+            }
+            if (tickType.equalsIgnoreCase(LAST_PRICE_PRECISION)) {
+                return Utils.toString(contractDetails.lastPricePrecision());
+            }
+            if (tickType.equalsIgnoreCase(LAST_SIZE_PRECISION)) {
+                return Utils.toString(contractDetails.lastSizePrecision());
+            }
+            if (tickType.equalsIgnoreCase(EVENT_CONTRACT_1)) {
+                return Utils.toString(contractDetails.eventContract1());
+            }
+            if (tickType.equalsIgnoreCase(EVENT_CONTRACT_DESCRIPTION_1)) {
+                return Utils.toString(contractDetails.eventContractDescription1());
+            }
+            if (tickType.equalsIgnoreCase(EVENT_CONTRACT_DESCRIPTION_2)) {
+                return Utils.toString(contractDetails.eventContractDescription2());
             }
             if (tickType.equalsIgnoreCase(FUND_NAME)) {
                 return contractDetails.fundName();

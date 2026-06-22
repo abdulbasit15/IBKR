@@ -1,12 +1,14 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
 #ifndef TWS_API_CLIENT_EXECUTION_H
 #define TWS_API_CLIENT_EXECUTION_H
 
+#include <list>
 #include <string>
 #include "Decimal.h"
+#include "CommonDefs.h"
 
 struct Execution
 {
@@ -22,6 +24,7 @@ struct Execution
 		evMultiplier = 0;
         lastLiquidity = 0;
         pendingPriceRevision = false;
+		optExerciseOrLapseType = OptionExerciseType::None;
 	}
 
 	std::string	execId;
@@ -31,9 +34,9 @@ struct Execution
 	std::string	side;
 	Decimal 	shares;
 	double		price;
-	int			permId;
-	long		clientId;
-	long		orderId;
+	long long	permId;
+	int 		clientId;
+	int 		orderId;
 	int			liquidation;
 	Decimal		cumQty;
 	double		avgPrice;
@@ -43,6 +46,8 @@ struct Execution
 	std::string modelCode;
     int         lastLiquidity;
     bool        pendingPriceRevision;
+	std::string submitter;
+	OptionExerciseType optExerciseOrLapseType;
 };
 
 struct ExecutionFilter
@@ -53,13 +58,15 @@ struct ExecutionFilter
 	}
 
 	// Filter fields
-	long		m_clientId;
+	int 		m_clientId;
 	std::string	m_acctCode;
 	std::string	m_time;
 	std::string	m_symbol;
 	std::string	m_secType;
 	std::string	m_exchange;
 	std::string	m_side;
+	int         m_lastNDays = UNSET_INTEGER;
+	std::list<int> m_specificDates;
 };
 
 #endif // execution_def

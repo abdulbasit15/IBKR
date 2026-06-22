@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -47,6 +47,9 @@ public class ContractDetailsHandler extends BaseHandler {
     /* *****************************************************************************************************/
     /** Method sends contract details request to TWS */
     public byte[] handleContractDetailsRequest(String requestStr, byte[] data) {
+        if (data == null) {
+            return null;
+        }
         ContractDetailsRequest request = m_requestParser.parseContractDetailsRequest(requestStr, data);
         System.out.println("Sending contract details request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()));
         ContractDetailsMap dataMap = new ContractDetailsMap(request);
@@ -63,6 +66,7 @@ public class ContractDetailsHandler extends BaseHandler {
         ContractDetailsMap dataMap = m_contractDetailsRequests.get(request.requestId());
         if(dataMap != null) {
             updateRequestStatus(request.requestId(), dataMap, DdeRequestStatus.CANCELLED);
+            clientSocket().cancelContractData(request.requestId());
             m_contractDetailsRequests.remove(request.requestId());
         }
         return null;

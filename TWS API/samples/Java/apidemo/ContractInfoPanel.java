@@ -79,7 +79,7 @@ class ContractInfoPanel extends JPanel {
 		}
 	}
 
-	class DetailsResultsPanel extends JPanel implements IContractDetailsHandler {
+	class DetailsResultsPanel extends JPanel implements IContractDetailsHandler, INewTab {
 		JLabel m_label = new JLabel();
 		JTextArea m_text = new JTextArea();
 
@@ -117,6 +117,12 @@ class ContractInfoPanel extends JPanel {
 				m_marketRuleRequestPanel.m_marketRuleIdCombo.setModel(new DefaultComboBoxModel<>(m_marketRuleIds.toArray(new Integer[m_marketRuleIds.size()])));
 			}
 		}
+
+        @Override public void closed() { 
+            ApiDemo.INSTANCE.controller().cancelContractData(this);
+        }
+
+        @Override public void activated() { }
 	}
 
 	public class FundaRequestPanel extends JPanel {

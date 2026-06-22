@@ -1,8 +1,11 @@
-' Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 
 Option Explicit On
+
+Imports System.Globalization
+
 Friend Class Utils
     ' Enums
     Public Enum TickType
@@ -204,7 +207,7 @@ Friend Class Utils
     End Function
 
     Public Shared Function StringToDouble(val As String) As Double
-        Return If(String.IsNullOrWhiteSpace(val), Double.MaxValue, CDbl(val))
+        Return If(String.IsNullOrWhiteSpace(val), Double.MaxValue, Double.Parse(val, NumberFormatInfo.InvariantInfo))
     End Function
 
     Public Shared Function UnixMillisecondsToString(unixTime As Long, dateFormat As String) As String

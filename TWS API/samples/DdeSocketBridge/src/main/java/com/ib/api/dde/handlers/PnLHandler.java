@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -32,6 +32,9 @@ public class PnLHandler extends MarketDataBaseHandler {
     /** Method sends PnL request to TWS */
     public byte[] handlePnLRequest(String requestStr, byte[] data) {
         PnLRequest request = m_requestParser.parsePnLRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         byte[] ret = handleMarketDataBaseRequest(request); 
         if (request.conId() == 0) {
             System.out.println("Sending PnL request: id=" + request.requestId() + " account=" + request.account() + " modelCode=" + request.modelCode());

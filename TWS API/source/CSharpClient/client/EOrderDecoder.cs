@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System.Collections.Generic;
@@ -107,7 +107,7 @@ namespace IBApi
         {
             if (msgVersion >= 4)
             {
-                order.PermId = eDecoder.ReadInt();
+                order.PermId = eDecoder.ReadLong();
             }
         }
 
@@ -612,7 +612,7 @@ namespace IBApi
             }
         }
 
-        public void readWhatIfInfoAndCommission()
+        public void readWhatIfInfoAndCommissionAndFees()
         {
             if (msgVersion >= 16)
             {
@@ -630,10 +630,43 @@ namespace IBApi
                 orderState.InitMarginAfter = eDecoder.ReadString();
                 orderState.MaintMarginAfter = eDecoder.ReadString();
                 orderState.EquityWithLoanAfter = eDecoder.ReadString();
-                orderState.Commission = eDecoder.ReadDoubleMax();
-                orderState.MinCommission = eDecoder.ReadDoubleMax();
-                orderState.MaxCommission = eDecoder.ReadDoubleMax();
-                orderState.CommissionCurrency = eDecoder.ReadString();
+                orderState.CommissionAndFees = eDecoder.ReadDoubleMax();
+                orderState.MinCommissionAndFees = eDecoder.ReadDoubleMax();
+                orderState.MaxCommissionAndFees = eDecoder.ReadDoubleMax();
+                orderState.CommissionAndFeesCurrency = eDecoder.ReadString();
+                if (serverVersion >= MinServerVer.MIN_SERVER_VER_FULL_ORDER_PREVIEW_FIELDS)
+                {
+                    orderState.MarginCurrency = eDecoder.ReadString();
+                    orderState.InitMarginBeforeOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.MaintMarginBeforeOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.EquityWithLoanBeforeOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.InitMarginChangeOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.MaintMarginChangeOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.EquityWithLoanChangeOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.InitMarginAfterOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.MaintMarginAfterOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.EquityWithLoanAfterOutsideRTH = eDecoder.ReadDoubleMax();
+                    orderState.SuggestedSize = eDecoder.ReadDecimal();
+                    orderState.RejectReason = eDecoder.ReadString();
+
+                    var orderAllocationsCount = eDecoder.ReadInt();
+                    if (orderAllocationsCount > 0)
+                    {
+                        orderState.OrderAllocations = new List<OrderAllocation>(orderAllocationsCount);
+                        for (var i = 0; i < orderAllocationsCount; ++i)
+                        {
+                            var orderAllocation = new OrderAllocation();
+                            orderAllocation.Account = eDecoder.ReadString();
+                            orderAllocation.Position = eDecoder.ReadDecimal();
+                            orderAllocation.PositionDesired = eDecoder.ReadDecimal();
+                            orderAllocation.PositionAfter = eDecoder.ReadDecimal();
+                            orderAllocation.DesiredAllocQty = eDecoder.ReadDecimal();
+                            orderAllocation.AllowedAllocQty = eDecoder.ReadDecimal();
+                            orderAllocation.IsMonetary = eDecoder.ReadBoolFromInt();
+                            orderState.OrderAllocations.Add(orderAllocation);
+                        }
+                    }
+                }
                 orderState.WarningText = eDecoder.ReadString();
             }
         }
@@ -765,7 +798,15 @@ namespace IBApi
 
         public void readShareholder() => order.Shareholder = eDecoder.ReadString();
 
-        public void readImbalanceOnly() => order.ImbalanceOnly = eDecoder.ReadBoolFromInt();
+        public void readImbalanceOnly() => readImbalanceOnly(Constants.MinVersion);
+
+        public void readImbalanceOnly(int minVersionImbalanceOnly)
+        {
+            if (serverVersion >= minVersionImbalanceOnly)
+            {
+                order.ImbalanceOnly = eDecoder.ReadBoolFromInt();
+            }
+        }
 
         public void readRouteMarketableToBbo() => order.RouteMarketableToBbo = eDecoder.ReadBoolFromInt();
 
@@ -832,6 +873,28 @@ namespace IBApi
             if (serverVersion >= MinServerVer.MIN_SERVER_VER_BOND_ACCRUED_INTEREST)
             {
                 order.BondAccruedInterest = eDecoder.ReadString();
+            }
+        }
+        public void readIncludeOvernight()
+        {
+            if (serverVersion >= MinServerVer.MIN_SERVER_VER_INCLUDE_OVERNIGHT)
+            {
+                order.IncludeOvernight = eDecoder.ReadBoolFromInt();
+            }
+        }
+        public void readCMETaggingFields()
+        {
+            if (serverVersion >= MinServerVer.MIN_SERVER_VER_CME_TAGGING_FIELDS_IN_OPEN_ORDER)
+            {
+                order.ExtOperator = eDecoder.ReadString();
+                order.ManualOrderIndicator = eDecoder.ReadIntMax();
+            }
+        }
+        public void readSubmitter()
+        {
+            if (serverVersion >= MinServerVer.MIN_SERVER_VER_SUBMITTER)
+            {
+                order.Submitter = eDecoder.ReadString();
             }
         }
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -14,6 +14,7 @@ import com.ib.api.dde.dde2socket.requests.parser.RequestParser;
 import com.ib.api.dde.handlers.base.BaseHandler;
 import com.ib.api.dde.socket2dde.data.ErrorData;
 import com.ib.api.dde.utils.Utils;
+import com.ib.client.Util;
 
 /** Class handles error data and messages */
 public class ErrorsHandler extends BaseHandler {
@@ -77,6 +78,8 @@ public class ErrorsHandler extends BaseHandler {
             ErrorData msg = errorDataList.get(i);
             ArrayList<String> item = new ArrayList<String>();
             item.add(String.valueOf(msg.requesId()));
+            String errorTimeStr = msg.errorTime() > 0 ? Util.UnixMillisecondsToString(msg.errorTime(), "yyyyMMdd-HH:mm:ss") : ""; 
+            item.add(errorTimeStr);
             item.add(String.valueOf(msg.errorCode()));
             // split long error message into substrings with length = 255, then merge these substrings in Excel
             item.addAll(Utils.chunkStringByLength(msg.errorMessage(), 255));

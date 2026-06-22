@@ -1,10 +1,11 @@
 """
-Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 """
 
 from ibapi.object_implem import Object
-from ibapi.const import UNSET_DECIMAL
+from ibapi.const import UNSET_DECIMAL, UNSET_DOUBLE
+
 from ibapi.utils import intMaxString
 from ibapi.utils import floatMaxString
 from ibapi.utils import decimalMaxString
@@ -65,7 +66,7 @@ class Contract(Object):
         self.secType = ""
         self.lastTradeDateOrContractMonth = ""
         self.lastTradeDate = ""
-        self.strike = 0.0  # float !!
+        self.strike = UNSET_DOUBLE  # float !!
         self.right = ""
         self.multiplier = ""
         self.exchange = ""
@@ -88,13 +89,15 @@ class Contract(Object):
         self.deltaNeutralContract = None
 
     def __str__(self):
-        s = ",".join(
-            (
-                str(self.conId),
+        s = (
+            "ConId: %s, Symbol: %s, SecType: %s, LastTradeDateOrContractMonth: %s, Strike: %s, Right: %s, Multiplier: %s, Exchange: %s, PrimaryExchange: %s, "
+            "Currency: %s, LocalSymbol: %s, TradingClass: %s, IncludeExpired: %s, SecIdType: %s, SecId: %s, Description: %s, "
+            "IssuerId: %s"
+            % (
+                intMaxString(self.conId),
                 str(self.symbol),
                 str(self.secType),
                 str(self.lastTradeDateOrContractMonth),
-                str(self.lastTradeDate),
                 floatMaxString(self.strike),
                 str(self.right),
                 str(self.multiplier),
@@ -110,7 +113,7 @@ class Contract(Object):
                 str(self.issuerId),
             )
         )
-        s += "combo:" + self.comboLegsDescrip
+        s += "Combo:" + self.comboLegsDescrip
 
         if self.comboLegs:
             for leg in self.comboLegs:
@@ -152,6 +155,9 @@ class ContractDetails(Object):
         self.minSize = UNSET_DECIMAL
         self.sizeIncrement = UNSET_DECIMAL
         self.suggestedSizeIncrement = UNSET_DECIMAL
+        self.minAlgoSize = UNSET_DECIMAL
+        self.lastPricePrecision = UNSET_DECIMAL
+        self.lastSizePrecision = UNSET_DECIMAL
         # BOND values
         self.cusip = ""
         self.ratings = ""
@@ -187,6 +193,9 @@ class ContractDetails(Object):
         self.fundDistributionPolicyIndicator = FundDistributionPolicyIndicator.NoneItem
         self.fundAssetType = FundAssetType.NoneItem
         self.ineligibilityReasonList = None
+        self.eventContract1 = ""
+        self.eventContractDescription1 = ""
+        self.eventContractDescription2 = ""
 
     def __str__(self):
         s = ",".join(
@@ -233,7 +242,13 @@ class ContractDetails(Object):
                 decimalMaxString(self.minSize),
                 decimalMaxString(self.sizeIncrement),
                 decimalMaxString(self.suggestedSizeIncrement),
+                decimalMaxString(self.minAlgoSize),
+                decimalMaxString(self.lastPricePrecision),
+                decimalMaxString(self.lastSizePrecision),
                 str(self.ineligibilityReasonList),
+                str(self.eventContract1),
+                str(self.eventContractDescription1),
+                str(self.eventContractDescription2),
             )
         )
 
@@ -260,19 +275,3 @@ class FundDistributionPolicyIndicator(Enum):
     NoneItem = ("None", "None")
     AccumulationFund = ("N", "Accumulation Fund")
     IncomeFund = ("Y", "Income Fund")
-
-def listOfValues(cls):
-    return list(map(lambda c: c, cls))
-
-def getEnumTypeFromString(cls, stringIn):
-    for item in cls:
-        if item.value[0] == stringIn:
-            return item
-    return listOfValues(cls)[0]
-
-def getEnumTypeName(cls, valueIn):
-    for item in cls:
-        if item == valueIn:
-            return item.value[1]
-    return listOfValues(cls)[0].value[1]
-

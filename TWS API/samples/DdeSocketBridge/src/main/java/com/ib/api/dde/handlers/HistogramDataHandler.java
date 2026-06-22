@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -34,6 +34,9 @@ public class HistogramDataHandler extends BaseListDataHandler<HistogramEntry> {
     /** Method sends histogram data request to TWS */
     public byte[] handleHistogramDataRequest(String requestStr, byte[] data) {
         HistogramDataRequest request = m_requestParser.parseHistogramDataRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending histogram data request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()));
         byte[] ret = handleBaseRequest(request); 
         clientSocket().reqHistogramData(request.requestId(), request.contract(), request.useRth(), request.timePeriod()); 

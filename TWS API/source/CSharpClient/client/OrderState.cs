@@ -1,7 +1,9 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
+using System;
 using System.Collections.Generic;
+using System.Data;
 
 namespace IBApi
 {
@@ -63,25 +65,90 @@ namespace IBApi
         public string EquityWithLoanAfter { get; set; }
 
         /**
-          * @brief The order's generated commission.
+          * @brief The order's generated commission and fees.
           */
-        public double Commission { get; set; }
+        public double CommissionAndFees { get; set; }
 
         /**
-        * @brief The execution's minimum commission.
+        * @brief The execution's minimum commission and fees.
         */
-        public double MinCommission { get; set; }
+        public double MinCommissionAndFees { get; set; }
 
         /**
-        * @brief The executions maximum commission.
+        * @brief The executions maximum commission and fees.
         */
-        public double MaxCommission { get; set; }
+        public double MaxCommissionAndFees { get; set; }
 
         /**
-         * @brief The generated commission currency
-         * @sa CommissionReport
+         * @brief The generated commission and fees currency
+         * @sa CommissionAndFeesReport
          */
-        public string CommissionCurrency { get; set; }
+        public string CommissionAndFeesCurrency { get; set; }
+
+        /**
+         * @brief Margin currency
+         */
+        public string MarginCurrency { get; set; }
+
+        /**
+         * @brief The account's current initial margin outside RTH
+         */
+        public double InitMarginBeforeOutsideRTH { get; set; }
+
+        /**
+        * @brief The account's current maintenance margin outside RTH
+        */
+        public double MaintMarginBeforeOutsideRTH { get; set; }
+
+        /**
+        * @brief The account's current equity with loan outside RTH
+        */
+        public double EquityWithLoanBeforeOutsideRTH { get; set; }
+
+        /**
+         * @brief The change of the account's initial margin outside RTH
+         */
+        public double InitMarginChangeOutsideRTH { get; set; }
+
+        /**
+        * @brief The change of the account's maintenance margin outside RTH
+        */
+        public double MaintMarginChangeOutsideRTH { get; set; }
+
+        /**
+        * @brief The change of the account's equity with loan outside RTH
+        */
+        public double EquityWithLoanChangeOutsideRTH { get; set; }
+
+        /**
+         * @brief The order's impact on the account's initial margin outside RTH
+         */
+        public double InitMarginAfterOutsideRTH { get; set; }
+
+        /**
+        * @brief The order's impact on the account's maintenance margin outside RTH
+        */
+        public double MaintMarginAfterOutsideRTH { get; set; }
+
+        /**
+        * @brief Shows the impact the order would have on the account's equity with loan outside RTH
+        */
+        public double EquityWithLoanAfterOutsideRTH { get; set; }
+
+        /**
+        * @brief Suggested size
+        */
+        public decimal SuggestedSize { get; set; }
+
+        /**
+        * @brief Reject reason
+        */
+        public string RejectReason { get; set; }
+
+        /**
+        * @brief Order allocations
+        */
+        public List<OrderAllocation> OrderAllocations { get; set; } = new List<OrderAllocation>();
 
         /**
          * @brief If the order is warranted, a descriptive message will be provided.
@@ -104,40 +171,25 @@ namespace IBApi
             InitMarginAfter = null;
             MaintMarginAfter = null;
             EquityWithLoanAfter = null;
-            Commission = 0.0;
-            MinCommission = 0.0;
-            MaxCommission = 0.0;
-            CommissionCurrency = null;
+            CommissionAndFees = 0.0;
+            MinCommissionAndFees = 0.0;
+            MaxCommissionAndFees = 0.0;
+            CommissionAndFeesCurrency = null;
+            MarginCurrency = "";
+            InitMarginBeforeOutsideRTH = double.MaxValue;
+            MaintMarginBeforeOutsideRTH = double.MaxValue;
+            EquityWithLoanBeforeOutsideRTH = double.MaxValue;
+            InitMarginChangeOutsideRTH = double.MaxValue;
+            MaintMarginChangeOutsideRTH = double.MaxValue;
+            EquityWithLoanChangeOutsideRTH = double.MaxValue;
+            InitMarginAfterOutsideRTH = double.MaxValue;
+            MaintMarginAfterOutsideRTH = double.MaxValue;
+            EquityWithLoanAfterOutsideRTH = double.MaxValue;
+            SuggestedSize = decimal.MaxValue;
+            RejectReason = "";
             WarningText = null;
             CompletedTime = null;
             CompletedStatus = null;
-        }
-
-        public OrderState(string status,
-                string initMarginBefore, string maintMarginBefore, string equityWithLoanBefore,
-                string initMarginChange, string maintMarginChange, string equityWithLoanChange,
-                string initMarginAfter, string maintMarginAfter, string equityWithLoanAfter,
-                double commission, double minCommission,
-                double maxCommission, string commissionCurrency, string warningText,
-                string completedTime, string completedStatus)
-        {
-            Status = status;
-            InitMarginBefore = initMarginBefore;
-            MaintMarginBefore = maintMarginBefore;
-            EquityWithLoanBefore = equityWithLoanBefore;
-            InitMarginChange = initMarginChange;
-            MaintMarginChange = maintMarginChange;
-            EquityWithLoanChange = equityWithLoanChange;
-            InitMarginAfter = initMarginAfter;
-            MaintMarginAfter = maintMarginAfter;
-            EquityWithLoanAfter = equityWithLoanAfter;
-            Commission = commission;
-            MinCommission = minCommission;
-            MaxCommission = maxCommission;
-            CommissionCurrency = commissionCurrency;
-            WarningText = warningText;
-            CompletedTime = completedTime;
-            CompletedStatus = completedStatus;
         }
 
         public override bool Equals(object other)
@@ -149,9 +201,19 @@ namespace IBApi
             if (!(other is OrderState state))
                 return false;
 
-            if (Commission != state.Commission ||
-                MinCommission != state.MinCommission ||
-                MaxCommission != state.MaxCommission)
+            if (CommissionAndFees != state.CommissionAndFees ||
+                MinCommissionAndFees != state.MinCommissionAndFees ||
+                MaxCommissionAndFees != state.MaxCommissionAndFees ||
+                InitMarginBeforeOutsideRTH != state.InitMarginBeforeOutsideRTH ||
+                MaintMarginBeforeOutsideRTH != state.MaintMarginBeforeOutsideRTH ||
+                EquityWithLoanBeforeOutsideRTH != state.EquityWithLoanBeforeOutsideRTH ||
+                InitMarginChangeOutsideRTH != state.InitMarginChangeOutsideRTH ||
+                MaintMarginChangeOutsideRTH != state.MaintMarginChangeOutsideRTH ||
+                EquityWithLoanChangeOutsideRTH != state.EquityWithLoanChangeOutsideRTH ||
+                InitMarginAfterOutsideRTH != state.InitMarginAfterOutsideRTH ||
+                MaintMarginAfterOutsideRTH != state.MaintMarginAfterOutsideRTH ||
+                EquityWithLoanAfterOutsideRTH != state.EquityWithLoanAfterOutsideRTH ||
+                SuggestedSize != state.SuggestedSize)
             {
                 return false;
             }
@@ -166,9 +228,16 @@ namespace IBApi
                 Util.StringCompare(InitMarginAfter, state.InitMarginAfter) != 0 ||
                 Util.StringCompare(MaintMarginAfter, state.MaintMarginAfter) != 0 ||
                 Util.StringCompare(EquityWithLoanAfter, state.EquityWithLoanAfter) != 0 ||
-                Util.StringCompare(CommissionCurrency, state.CommissionCurrency) != 0 ||
+                Util.StringCompare(CommissionAndFeesCurrency, state.CommissionAndFeesCurrency) != 0 ||
+                Util.StringCompare(MarginCurrency, state.MarginCurrency) != 0 ||
+                Util.StringCompare(RejectReason, state.RejectReason) != 0 ||
                 Util.StringCompare(CompletedTime, state.CompletedTime) != 0 ||
                 Util.StringCompare(CompletedStatus, state.CompletedStatus) != 0)
+            {
+                return false;
+            }
+
+            if (!Util.VectorEqualsUnordered(OrderAllocations, state.OrderAllocations))
             {
                 return false;
             }
@@ -189,10 +258,22 @@ namespace IBApi
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(InitMarginAfter);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(MaintMarginAfter);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(EquityWithLoanAfter);
-            hashCode *= -1521134295 + Commission.GetHashCode();
-            hashCode *= -1521134295 + MinCommission.GetHashCode();
-            hashCode *= -1521134295 + MaxCommission.GetHashCode();
-            hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(CommissionCurrency);
+            hashCode *= -1521134295 + CommissionAndFees.GetHashCode();
+            hashCode *= -1521134295 + MinCommissionAndFees.GetHashCode();
+            hashCode *= -1521134295 + MaxCommissionAndFees.GetHashCode();
+            hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(CommissionAndFeesCurrency);
+            hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(MarginCurrency);
+            hashCode *= -1521134295 + InitMarginBeforeOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + MaintMarginBeforeOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + EquityWithLoanBeforeOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + InitMarginChangeOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + MaintMarginChangeOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + EquityWithLoanChangeOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + InitMarginAfterOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + MaintMarginAfterOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + EquityWithLoanAfterOutsideRTH.GetHashCode();
+            hashCode *= -1521134295 + SuggestedSize.GetHashCode();
+            hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(RejectReason);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(WarningText);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(CompletedTime);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(CompletedStatus);

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.ib.api.dde.TwsService;
 import com.ib.api.dde.dde2socket.requests.DdeRequest;
@@ -19,7 +21,7 @@ import com.ib.api.dde.handlers.base.BaseHandler;
 import com.ib.api.dde.socket2dde.data.ExecutionData;
 import com.ib.api.dde.socket2dde.datamap.BaseListDataMap;
 import com.ib.api.dde.utils.Utils;
-import com.ib.client.CommissionReport;
+import com.ib.client.CommissionAndFeesReport;
 import com.ib.client.EClientSocket;
 import com.ib.client.ExecutionFilter;
 
@@ -136,11 +138,11 @@ public class ExecutionsHandler extends BaseHandler {
         updateRequestError(errorMsgStr, m_executionDataMap.get(requestId), DdeRequestType.REQ_EXECUTIONS.topic());
     }
 
-    /** Method updates commission report */
-    public void updateCommissionReport(CommissionReport commissionReport) {
-        ExecutionData executionDataMap = getExecutionDataMapByExecId(commissionReport.execId());
+    /** Method updates commission and fees report */
+    public void updateCommissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport) {
+        ExecutionData executionDataMap = getExecutionDataMapByExecId(commissionAndFeesReport.execId());
         if (executionDataMap != null) {
-            executionDataMap.commissionReport(commissionReport);
+            executionDataMap.commissionAndFeesReport(commissionAndFeesReport);
         }
     }
 
@@ -153,7 +155,7 @@ public class ExecutionsHandler extends BaseHandler {
         synchronized(m_executionDataMap) {
             for (BaseListDataMap<ExecutionData> executionDataMap : m_executionDataMap.values()) {
                 for (ExecutionData executionData: executionDataMap.syncCopyList()) {
-                    if (executionData.execution().execId().equals(execId)){
+                    if (executionData.execution().execId() != null && executionData.execution().execId().equals(execId)){
                         executionDataRet = executionData;
                     }
                 }
@@ -219,6 +221,27 @@ public class ExecutionsHandler extends BaseHandler {
                 }
                 if (params.length >= 7) {
                     executionFilter.side(params[6]);
+                }
+                
+                if (params.length >= 8) {
+                    int lastNDays = 0;
+                    try {
+                        lastNDays = Utils.isNotNull(params[7]) ? Integer.valueOf(params[7]): 0;
+                        executionFilter.lastNDays(lastNDays);
+                    } catch (NumberFormatException ex) {
+                        System.out.println("Error parsing lastNDays. NumberFormatException: " + ex.getMessage());
+                    }
+                }
+                if (params.length >= 9) {
+                    try {
+	                    String specificDatesStr = params[8];
+	                    if (!specificDatesStr.isEmpty()) {
+	                        List<Integer> specificDatesList = Stream.of(specificDatesStr.split(DATE_SEPARATOR)).map(Integer::parseInt).collect(Collectors.toList());
+	                        executionFilter.specificDates(specificDatesList);
+	                    }
+                    } catch (Exception ex) {
+                        System.out.println("Error parsing specificDates. Exception: " + ex.getMessage());
+                    }
                 }
             }
             return new ExecutionsRequest(requestId, executionFilter, requestStr);

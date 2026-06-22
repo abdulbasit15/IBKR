@@ -1,5 +1,5 @@
 """
-Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 """
 
@@ -49,7 +49,7 @@ class IN:
     DELTA_NEUTRAL_VALIDATION = 56
     TICK_SNAPSHOT_END = 57
     MARKET_DATA_TYPE = 58
-    COMMISSION_REPORT = 59
+    COMMISSION_AND_FEES_REPORT = 59
     POSITION_DATA = 61
     POSITION_END = 62
     ACCOUNT_SUMMARY = 63
@@ -97,6 +97,10 @@ class IN:
     WSH_EVENT_DATA = 105
     HISTORICAL_SCHEDULE = 106
     USER_INFO = 107
+    HISTORICAL_DATA_END = 108
+    CURRENT_TIME_IN_MILLIS = 109
+    CONFIG_RESPONSE = 110
+    UPDATE_CONFIG_RESPONSE = 111
 
 
 # outgoing msg id's
@@ -181,3 +185,8 @@ class OUT:
     REQ_WSH_EVENT_DATA = 102
     CANCEL_WSH_EVENT_DATA = 103
     REQ_USER_INFO = 104
+    REQ_CURRENT_TIME_IN_MILLIS = 105
+    CANCEL_CONTRACT_DATA = 106
+    CANCEL_HISTORICAL_TICKS = 107
+    REQ_CONFIG = 108
+    UPDATE_CONFIG = 109

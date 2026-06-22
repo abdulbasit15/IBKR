@@ -13,14 +13,14 @@ Const STR_REQERRORS = "reqErrors"
 
 ' cells
 Const CELL_SERVER_NAME = "B5" ' cell with server name
-Const CELL_SUBSCRIPTION_CONTROL = "L5" ' cell with subscription control
+Const CELL_SUBSCRIPTION_CONTROL = "M5" ' cell with subscription control
 
 'rows
 Const ERRORS_START_ROW = 10
 Const ERRORS_END_ROW = 200
 
 'range
-Const TABLE_RANGE = "A" & ERRORS_START_ROW & ":AJ" & ERRORS_END_ROW
+Const TABLE_RANGE = "A" & ERRORS_START_ROW & ":AK" & ERRORS_END_ROW
 
 Dim errorsStartIndex As Integer
 
@@ -110,7 +110,8 @@ Private Sub Worksheet_Calculate()
                 row = util.findEmptyRow(Worksheets("Errors"), ERRORS_START_ROW, ERRORS_END_ROW)
                 For i = 1 To UBound(errorsArray) - LBound(errorsArray) + 1
                     .Cells(row + i - 1, 1).value = errorsArray(i, 1) ' error id
-                    .Cells(row + i - 1, 2).value = errorsArray(i, 2) ' error code
+                    .Cells(row + i - 1, 2).value = errorsArray(i, 2) ' error time
+                    .Cells(row + i - 1, 3).value = errorsArray(i, 3) ' error code
                     ' error messagee can be > 255 symbols, so we should concat all parts (each of length 255) of error message
                     Dim errorMsg, advancedOrderRejectJson, tempStr As String
                     errorMsg = util.STR_EMPTY
@@ -133,8 +134,8 @@ Private Sub Worksheet_Calculate()
                     Else
                         errorMsg = tempStr
                     End If
-                    .Cells(row + i - 1, 3).value = errorMsg ' error message
-                    .Cells(row + i - 1, 31).value = advancedOrderRejectJson ' advanced order reject json
+                    .Cells(row + i - 1, 4).value = errorMsg ' error message
+                    .Cells(row + i - 1, 32).value = advancedOrderRejectJson ' advanced order reject json
                     errorsStartIndex = errorsStartIndex + 1
                 Next i
             ElseIf dimension = 1 Then

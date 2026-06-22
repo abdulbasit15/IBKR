@@ -47,7 +47,7 @@ void EMutex::Enter() {
 # if !defined(IBAPI_STD_MUTEX)
     pthread_mutex_lock(&cs);
 # else
-    cs.lock();  
+    cs.lock();
 # endif
 #elif defined(IB_WIN32)
     EnterCriticalSection(&cs);
@@ -61,7 +61,7 @@ void EMutex::Leave() {
 # if !defined(IBAPI_STD_MUTEX)
     pthread_mutex_unlock(&cs);
 # else
-    cs.unlock();  
+    cs.unlock();
 # endif
 #elif defined(IB_WIN32)
     LeaveCriticalSection(&cs);

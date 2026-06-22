@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -146,6 +146,9 @@ public class AccountUpdatesMultiHandler extends AccountUpdatesHandler {
     public byte[] handleFAReplace(String requestStr, byte[] data) {
         if (m_faReplace == null || m_faReplace.ddeRequestStatus() == DdeRequestStatus.UNKNOWN) {
             FinancialAdvisorReplace request = m_requestParser.parseFAReplace(requestStr, data);
+            if (request == null) {
+                return null;
+            }
             System.out.println("Handling FA replace.");
             m_faReplace = new BaseStringDataMap(request);
             m_faReplace.ddeRequestStatus(DdeRequestStatus.REQUESTED);
@@ -157,7 +160,7 @@ public class AccountUpdatesMultiHandler extends AccountUpdatesHandler {
 
     /** Method handles FA replace status */
     public String handleFAReplaceStatus(String requestStr) {
-        return m_faReplace != null ? m_faReplace.ddeRequestStatus().toString() : DdeRequestStatus.UNKNOWN.toString();
+        return m_faReplace != null ? m_faReplace.ddeRequestStatus().toString() : null;
     }
     
     /** Method handles FA replace stop advise */

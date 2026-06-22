@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -8,9 +8,11 @@
 #include "EWrapper.h"
 #include "EReaderOSSignal.h"
 #include "EReader.h"
+#include "OrderState.h"
 
 #include <memory>
 #include <vector>
+#include <cstring>
 
 class EClientSocket;
 
@@ -107,8 +109,12 @@ enum State {
 	ST_IBKRATSSAMPLE_ACK,
 	ST_WSH,
 	ST_WSH_ACK,
-	ST_RFQOPERATIONS,
-	ST_RFQOPERATIONS_ACK
+	ST_CONFIG,
+	ST_CONFIG_ACK,
+	ST_ORDER_PARENTCHILD_OPERATIONS,
+	ST_ORDER_PARENTCHILD_OPERATIONS_ACK,
+	ST_NEWS_OPERATIONS_PROTO,
+	ST_NEWS_OPERATIONS_PROTO_ACK
 };
 
 //! [ewrapperimpl]
@@ -155,7 +161,7 @@ private:
 	void financialAdvisorOrderSamples();
 	void financialAdvisorOperations();
 	void testDisplayGroups();
-	void miscelaneous();
+	void miscellaneous();
 	void reqFamilyCodes();
 	void reqMatchingSymbols();
 	void reqMktDepthExchanges();
@@ -174,7 +180,9 @@ private:
 	void whatIfSamples();
 	void ibkratsSample();
 	void wshCalendarOperations();
-	void rfqOperations();
+	void configOperations();
+	void orderParentChildOperations();
+	void newsOperationsProto();
 
 	void reqCurrentTime();
 
@@ -189,6 +197,7 @@ private:
 	void printContractDetailsSecIdList(const TagValueListSPtr &secIdList);
 	void printBondContractDetailsMsg(const ContractDetails& contractDetails);
 	void printContractDetailsIneligibilityReasonList(const IneligibilityReasonListSPtr &ineligibilityReasonList);
+	void printSoftDollarTier(const SoftDollarTier& softDollarTier);
 
 private:
 	//! [socket_declare]
@@ -198,7 +207,7 @@ private:
 	State m_state;
 	time_t m_sleepDeadline;
 
-	OrderId m_orderId;
+	int m_orderId;
 	std::unique_ptr<EReader> m_pReader;
     bool m_extraAuth;
 	std::string m_bboExchange;

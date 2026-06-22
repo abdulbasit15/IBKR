@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -142,7 +142,7 @@ namespace TwsRtdServer
 
         public void error(Exception e) { }
         public void error(string str) { }
-        public void error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson) 
+        public void error(int id, long errorTime, int errorCode, string errorMsg, string advancedOrderRejectJson) 
         {
             if (id == -1 && Array.IndexOf(TwsRtdServerErrors.TwsServerErrors(), errorCode) >= 0) 
             {
@@ -222,14 +222,14 @@ namespace TwsRtdServer
         public void updateAccountTime(string timestamp) { }
         public void accountDownloadEnd(string account) { }
         public void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice,
-            int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice) { }
+            long permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice) { }
         public void openOrder(int orderId, Contract contract, Order order, OrderState orderState) { }
         public void openOrderEnd() { }
         public void contractDetails(int reqId, ContractDetails contractDetails) { }
         public void contractDetailsEnd(int reqId) { }
         public void execDetails(int reqId, Contract contract, Execution execution) { }
         public void execDetailsEnd(int reqId) { }
-        public void commissionReport(CommissionReport commissionReport) { }
+        public void commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport) { }
         public void fundamentalData(int reqId, string data) { }
         public void historicalData(int reqId, Bar bar) { }
         public void historicalDataUpdate(int reqId, Bar bar) { }
@@ -293,7 +293,7 @@ namespace TwsRtdServer
         public void tickByTickAllLast(int reqId, int tickType, long time, double price, decimal size, TickAttribLast tickAttribLast, string exchange, string specialConditions) { }
         public void tickByTickBidAsk(int reqId, long time, double bidPrice, double askPrice, decimal bidSize, decimal askSize, TickAttribBidAsk tickAttribBidAsk) { }
         public void tickByTickMidPoint(int reqId, long time, double midPoint) { }
-        public void orderBound(long orderId, int apiClientId, int apiOrderId) { }
+        public void orderBound(long permId, int clientId, int orderId) { }
         public void completedOrder(Contract contract, Order order, OrderState orderState) { }
         public void completedOrdersEnd() { }
         public void replaceFAEnd(int reqId, string text) { }
@@ -301,5 +301,92 @@ namespace TwsRtdServer
         public void wshEventData(int reqId, string dataJson) { }
         public void historicalSchedule(int reqId, string startDateTime, string endDateTime, string timeZone, HistoricalSession[] sessions) { }
         public void userInfo(int reqId, string whiteBrandingId) { }
+        public void currentTimeInMillis(long timeInMillis) { }
+
+        /**
+         * Protobuf
+         */
+        public void orderStatusProtoBuf(IBApi.protobuf.OrderStatus orderStatusProto) { }
+        public void openOrderProtoBuf(IBApi.protobuf.OpenOrder openOrderProto) { }
+        public void openOrdersEndProtoBuf(IBApi.protobuf.OpenOrdersEnd openOrdersEnd) { }
+        public void errorProtoBuf(IBApi.protobuf.ErrorMessage errorMessageProto) { }
+        public void execDetailsProtoBuf(IBApi.protobuf.ExecutionDetails executionDetailsProto) { }
+        public void execDetailsEndProtoBuf(IBApi.protobuf.ExecutionDetailsEnd executionDetailsEndProto) { }
+        public void completedOrderProtoBuf(IBApi.protobuf.CompletedOrder completedOrderProto) { }
+        public void completedOrdersEndProtoBuf(IBApi.protobuf.CompletedOrdersEnd completedOrdersEndProto) { }
+        public void orderBoundProtoBuf(IBApi.protobuf.OrderBound orderBoundProto) { }
+        public void contractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto) { }
+        public void bondContractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto) { }
+        public void contractDataEndProtoBuf(IBApi.protobuf.ContractDataEnd contractDataEndProto) { }
+        public void tickPriceProtoBuf(IBApi.protobuf.TickPrice tickPriceProto) { }
+        public void tickSizeProtoBuf(IBApi.protobuf.TickSize tickSizeProto) { }
+        public void tickOptionComputationProtoBuf(IBApi.protobuf.TickOptionComputation tickOptionComputationProto) { }
+        public void tickGenericProtoBuf(IBApi.protobuf.TickGeneric tickGenericProto) { }
+        public void tickStringProtoBuf(IBApi.protobuf.TickString tickStringProto) { }
+        public void tickSnapshotEndProtoBuf(IBApi.protobuf.TickSnapshotEnd tickSnapshotEndProto) { }
+        public void updateMarketDepthProtoBuf(IBApi.protobuf.MarketDepth marketDepthProto) { }
+        public void updateMarketDepthL2ProtoBuf(IBApi.protobuf.MarketDepthL2 marketDepthL2Proto) { }
+        public void marketDataTypeProtoBuf(IBApi.protobuf.MarketDataType marketDataTypeProto) { }
+        public void tickReqParamsProtoBuf(IBApi.protobuf.TickReqParams tickReqParamsProto) { }
+        public void updateAccountValueProtoBuf(IBApi.protobuf.AccountValue accountValueProto) { }
+        public void updatePortfolioProtoBuf(IBApi.protobuf.PortfolioValue portfolioValueProto) { }
+        public void updateAccountTimeProtoBuf(IBApi.protobuf.AccountUpdateTime accountUpdateTimeProto) { }
+        public void accountDataEndProtoBuf(IBApi.protobuf.AccountDataEnd accountDataEndProto) { }
+        public void managedAccountsProtoBuf(IBApi.protobuf.ManagedAccounts managedAccountsProto) { }
+        public void positionProtoBuf(IBApi.protobuf.Position positionProto) { }
+        public void positionEndProtoBuf(IBApi.protobuf.PositionEnd positionEndProto) { }
+        public void accountSummaryProtoBuf(IBApi.protobuf.AccountSummary accountSummaryProto) { }
+        public void accountSummaryEndProtoBuf(IBApi.protobuf.AccountSummaryEnd accountSummaryEndProto) { }
+        public void positionMultiProtoBuf(IBApi.protobuf.PositionMulti positionMultiProto) { }
+        public void positionMultiEndProtoBuf(IBApi.protobuf.PositionMultiEnd positionMultiEndProto) { }
+        public void accountUpdateMultiProtoBuf(IBApi.protobuf.AccountUpdateMulti accountUpdateMultiProto) { }
+        public void accountUpdateMultiEndProtoBuf(IBApi.protobuf.AccountUpdateMultiEnd accountUpdateMultiEndProto) { }
+        public void historicalDataProtoBuf(IBApi.protobuf.HistoricalData historicalDataProto) { }
+        public void historicalDataUpdateProtoBuf(IBApi.protobuf.HistoricalDataUpdate historicalDataUpdateProto) { }
+        public void historicalDataEndProtoBuf(IBApi.protobuf.HistoricalDataEnd historicalDataEndProto) { }
+        public void realTimeBarTickProtoBuf(IBApi.protobuf.RealTimeBarTick realTimeBarTickProto) { }
+        public void headTimestampProtoBuf(IBApi.protobuf.HeadTimestamp headTimestampProto) { }
+        public void histogramDataProtoBuf(IBApi.protobuf.HistogramData histogramDataProto) { }
+        public void historicalTicksProtoBuf(IBApi.protobuf.HistoricalTicks historicalTicksProto) { }
+        public void historicalTicksBidAskProtoBuf(IBApi.protobuf.HistoricalTicksBidAsk historicalTicksBidAskProto) { }
+        public void historicalTicksLastProtoBuf(IBApi.protobuf.HistoricalTicksLast historicalTicksLastProto) { }
+        public void tickByTickDataProtoBuf(IBApi.protobuf.TickByTickData tickByTickDataProto) { }
+        public void updateNewsBulletinProtoBuf(IBApi.protobuf.NewsBulletin newsBulletinProto) { }
+        public void newsArticleProtoBuf(IBApi.protobuf.NewsArticle newsArticleProto) { }
+        public void newsProvidersProtoBuf(IBApi.protobuf.NewsProviders newsProvidersProto) { }
+        public void historicalNewsProtoBuf(IBApi.protobuf.HistoricalNews historicalNewsProto) { }
+        public void historicalNewsEndProtoBuf(IBApi.protobuf.HistoricalNewsEnd historicalNewsEndProto) { }
+        public void wshMetaDataProtoBuf(IBApi.protobuf.WshMetaData wshMetaDataProto) { }
+        public void wshEventDataProtoBuf(IBApi.protobuf.WshEventData wshEventDataProto) { }
+        public void tickNewsProtoBuf(IBApi.protobuf.TickNews tickNewsProto) { }
+        public virtual void scannerParametersProtoBuf(IBApi.protobuf.ScannerParameters scannerParametersProto) { }
+        public virtual void scannerDataProtoBuf(IBApi.protobuf.ScannerData scannerDataProto) { }
+        public virtual void fundamentalsDataProtoBuf(IBApi.protobuf.FundamentalsData fundamentalsDataProto) { }
+        public virtual void pnlProtoBuf(IBApi.protobuf.PnL pnlProto) { }
+        public virtual void pnlSingleProtoBuf(IBApi.protobuf.PnLSingle pnlSingleProto) { }
+        public virtual void receiveFAProtoBuf(IBApi.protobuf.ReceiveFA receiveFAProto) { }
+        public virtual void replaceFAEndProtoBuf(IBApi.protobuf.ReplaceFAEnd replaceFAEndProto) { }
+        public virtual void commissionAndFeesReportProtoBuf(IBApi.protobuf.CommissionAndFeesReport commissionAndFeesReportProto) { }
+        public virtual void historicalScheduleProtoBuf(IBApi.protobuf.HistoricalSchedule historicalScheduleProto) { }
+        public virtual void rerouteMarketDataRequestProtoBuf(IBApi.protobuf.RerouteMarketDataRequest rerouteMarketDataRequestProto) { }
+        public virtual void rerouteMarketDepthRequestProtoBuf(IBApi.protobuf.RerouteMarketDepthRequest rerouteMarketDepthRequestProto) { }
+        public virtual void secDefOptParameterProtoBuf(IBApi.protobuf.SecDefOptParameter secDefOptParameterProto) { }
+        public virtual void secDefOptParameterEndProtoBuf(IBApi.protobuf.SecDefOptParameterEnd secDefOptParameterEndProto) { }
+        public virtual void softDollarTiersProtoBuf(IBApi.protobuf.SoftDollarTiers softDollarTiersProto) { }
+        public virtual void familyCodesProtoBuf(IBApi.protobuf.FamilyCodes familyCodesProto) { }
+        public virtual void symbolSamplesProtoBuf(IBApi.protobuf.SymbolSamples symbolSamplesProto) { }
+        public virtual void smartComponentsProtoBuf(IBApi.protobuf.SmartComponents smartComponentsProto) { }
+        public virtual void marketRuleProtoBuf(IBApi.protobuf.MarketRule marketRuleProto) { }
+        public virtual void userInfoProtoBuf(IBApi.protobuf.UserInfo userInfoProto) { }
+        public virtual void nextValidIdProtoBuf(IBApi.protobuf.NextValidId nextValidIdProto) { }
+        public virtual void currentTimeProtoBuf(IBApi.protobuf.CurrentTime currentTimeProto) { }
+        public virtual void currentTimeInMillisProtoBuf(IBApi.protobuf.CurrentTimeInMillis currentTimeInMillisProto) { }
+        public virtual void verifyMessageApiProtoBuf(IBApi.protobuf.VerifyMessageApi verifyMessageApiProto) { }
+        public virtual void verifyCompletedProtoBuf(IBApi.protobuf.VerifyCompleted verifyCompletedProto) { }
+        public virtual void displayGroupListProtoBuf(IBApi.protobuf.DisplayGroupList displayGroupListProto) { }
+        public virtual void displayGroupUpdatedProtoBuf(IBApi.protobuf.DisplayGroupUpdated displayGroupUpdatedProto) { }
+        public virtual void marketDepthExchangesProtoBuf(IBApi.protobuf.MarketDepthExchanges marketDepthExchangesProto) { }
+        public virtual void configResponseProtoBuf(IBApi.protobuf.ConfigResponse configResponseProto) { }
+        public virtual void updateConfigResponseProtoBuf(IBApi.protobuf.UpdateConfigResponse updateConfigResponseProto) { }
     }
 }

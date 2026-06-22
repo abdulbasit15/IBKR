@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.client;
@@ -6,6 +6,89 @@ package com.ib.client;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.ib.client.protobuf.AccountDataEndProto;
+import com.ib.client.protobuf.AccountSummaryEndProto;
+import com.ib.client.protobuf.AccountSummaryProto;
+import com.ib.client.protobuf.AccountUpdateMultiEndProto;
+import com.ib.client.protobuf.AccountUpdateMultiProto;
+import com.ib.client.protobuf.AccountUpdateTimeProto;
+import com.ib.client.protobuf.AccountValueProto;
+import com.ib.client.protobuf.CommissionAndFeesReportProto;
+import com.ib.client.protobuf.CompletedOrderProto;
+import com.ib.client.protobuf.CompletedOrdersEndProto;
+import com.ib.client.protobuf.ConfigResponseProto;
+import com.ib.client.protobuf.ContractDataEndProto;
+import com.ib.client.protobuf.ContractDataProto;
+import com.ib.client.protobuf.CurrentTimeInMillisProto;
+import com.ib.client.protobuf.CurrentTimeProto;
+import com.ib.client.protobuf.DisplayGroupListProto;
+import com.ib.client.protobuf.DisplayGroupUpdatedProto;
+import com.ib.client.protobuf.ErrorMessageProto;
+import com.ib.client.protobuf.ExecutionDetailsEndProto;
+import com.ib.client.protobuf.ExecutionDetailsProto;
+import com.ib.client.protobuf.FamilyCodesProto;
+import com.ib.client.protobuf.FundamentalsDataProto;
+import com.ib.client.protobuf.HeadTimestampProto;
+import com.ib.client.protobuf.HistogramDataProto;
+import com.ib.client.protobuf.HistoricalDataEndProto;
+import com.ib.client.protobuf.HistoricalDataProto;
+import com.ib.client.protobuf.HistoricalDataUpdateProto;
+import com.ib.client.protobuf.HistoricalNewsEndProto;
+import com.ib.client.protobuf.HistoricalNewsProto;
+import com.ib.client.protobuf.HistoricalScheduleProto;
+import com.ib.client.protobuf.HistoricalTicksBidAskProto;
+import com.ib.client.protobuf.HistoricalTicksLastProto;
+import com.ib.client.protobuf.HistoricalTicksProto;
+import com.ib.client.protobuf.ManagedAccountsProto;
+import com.ib.client.protobuf.MarketDataTypeProto;
+import com.ib.client.protobuf.MarketDepthExchangesProto;
+import com.ib.client.protobuf.MarketDepthL2Proto;
+import com.ib.client.protobuf.MarketDepthProto;
+import com.ib.client.protobuf.MarketRuleProto;
+import com.ib.client.protobuf.NewsArticleProto;
+import com.ib.client.protobuf.NewsBulletinProto;
+import com.ib.client.protobuf.NewsProvidersProto;
+import com.ib.client.protobuf.NextValidIdProto;
+import com.ib.client.protobuf.OpenOrderProto;
+import com.ib.client.protobuf.OpenOrdersEndProto;
+import com.ib.client.protobuf.OrderBoundProto;
+import com.ib.client.protobuf.OrderStatusProto;
+import com.ib.client.protobuf.PnLProto;
+import com.ib.client.protobuf.PnLSingleProto;
+import com.ib.client.protobuf.PortfolioValueProto;
+import com.ib.client.protobuf.PositionEndProto;
+import com.ib.client.protobuf.PositionMultiEndProto;
+import com.ib.client.protobuf.PositionMultiProto;
+import com.ib.client.protobuf.PositionProto;
+import com.ib.client.protobuf.RealTimeBarTickProto;
+import com.ib.client.protobuf.ReceiveFAProto;
+import com.ib.client.protobuf.ReplaceFAEndProto;
+import com.ib.client.protobuf.RerouteMarketDataRequestProto;
+import com.ib.client.protobuf.RerouteMarketDepthRequestProto;
+import com.ib.client.protobuf.ScannerDataProto;
+import com.ib.client.protobuf.ScannerParametersProto;
+import com.ib.client.protobuf.SecDefOptParameterEndProto;
+import com.ib.client.protobuf.SecDefOptParameterProto;
+import com.ib.client.protobuf.SmartComponentsProto;
+import com.ib.client.protobuf.SoftDollarTiersProto;
+import com.ib.client.protobuf.SymbolSamplesProto;
+import com.ib.client.protobuf.TickByTickDataProto;
+import com.ib.client.protobuf.TickGenericProto;
+import com.ib.client.protobuf.TickNewsProto;
+import com.ib.client.protobuf.TickOptionComputationProto;
+import com.ib.client.protobuf.TickPriceProto;
+import com.ib.client.protobuf.TickReqParamsProto;
+import com.ib.client.protobuf.TickSizeProto;
+import com.ib.client.protobuf.TickSnapshotEndProto;
+import com.ib.client.protobuf.TickStringProto;
+import com.ib.client.protobuf.UpdateConfigResponseProto;
+import com.ib.client.protobuf.UserInfoProto;
+import com.ib.client.protobuf.VerifyCompletedProto;
+import com.ib.client.protobuf.VerifyMessageApiProto;
+import com.ib.client.protobuf.WshEventDataProto;
+import com.ib.client.protobuf.WshMetaDataProto;
+
 import java.util.Set;
 
 public interface EWrapper {
@@ -23,7 +106,7 @@ public interface EWrapper {
 			String formattedBasisPoints, double impliedFuture, int holdDays,
 			String futureLastTradeDate, double dividendImpact, double dividendsToLastTradeDate);
     void orderStatus( int orderId, String status, Decimal filled, Decimal remaining,
-            double avgFillPrice, int permId, int parentId, double lastFillPrice,
+            double avgFillPrice, long permId, int parentId, double lastFillPrice,
             int clientId, String whyHeld, double mktCapPrice);
     void openOrder( int orderId, Contract contract, Order order, OrderState orderState);
     void openOrderEnd();
@@ -55,7 +138,7 @@ public interface EWrapper {
     void deltaNeutralValidation(int reqId, DeltaNeutralContract deltaNeutralContract);
     void tickSnapshotEnd(int reqId);
     void marketDataType(int reqId, int marketDataType);
-    void commissionReport(CommissionReport commissionReport);
+    void commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport);
     void position(String account, Contract contract, Decimal pos, double avgCost);
     void positionEnd();
     void accountSummary(int reqId, String account, String tag, String value, String currency);
@@ -68,7 +151,7 @@ public interface EWrapper {
     void displayGroupUpdated( int reqId, String contractInfo);
     void error( Exception e);
     void error( String str);
-    void error(int id, int errorCode, String errorMsg, String advancedOrderRejectJson);
+    void error(int id, long errorTime, int errorCode, String errorMsg, String advancedOrderRejectJson);
     void connectionClosed();
     void connectAck();
     void positionMulti( int reqId, String account, String modelCode, Contract contract, Decimal pos, double avgCost);
@@ -103,7 +186,7 @@ public interface EWrapper {
     void tickByTickAllLast(int reqId, int tickType, long time, double price, Decimal size, TickAttribLast tickAttribLast, String exchange, String specialConditions);
     void tickByTickBidAsk(int reqId, long time, double bidPrice, double askPrice, Decimal bidSize, Decimal askSize, TickAttribBidAsk tickAttribBidAsk);
     void tickByTickMidPoint(int reqId, long time, double midPoint);
-    void orderBound(long orderId, int apiClientId, int apiOrderId);
+    void orderBound(long permId, int clientId, int orderId);
     void completedOrder(Contract contract, Order order, OrderState orderState);
     void completedOrdersEnd();
     void replaceFAEnd(int reqId, String text);
@@ -111,5 +194,90 @@ public interface EWrapper {
 	void wshEventData(int reqId, String dataJson);
     void historicalSchedule(int reqId, String startDateTime, String endDateTime, String timeZone, List<HistoricalSession> sessions);
     void userInfo(int reqId, String whiteBrandingId);
+    void currentTimeInMillis(long timeInMillis);
+    
+    // protobuf
+    void orderStatusProtoBuf(OrderStatusProto.OrderStatus orderStatusProto);
+    void openOrderProtoBuf(OpenOrderProto.OpenOrder openOrderProto);
+    void openOrdersEndProtoBuf(OpenOrdersEndProto.OpenOrdersEnd openOrdersEndProto);
+    void errorProtoBuf(ErrorMessageProto.ErrorMessage errorMessageProto);
+    void execDetailsProtoBuf(ExecutionDetailsProto.ExecutionDetails executionDetailsProto);
+    void execDetailsEndProtoBuf(ExecutionDetailsEndProto.ExecutionDetailsEnd executionDetailsEndProto);
+    void completedOrderProtoBuf(CompletedOrderProto.CompletedOrder completedOrderProto);
+    void completedOrdersEndProtoBuf(CompletedOrdersEndProto.CompletedOrdersEnd completedOrdersEndProto);
+    void orderBoundProtoBuf(OrderBoundProto.OrderBound orderBoundProto);
+    void contractDataProtoBuf(ContractDataProto.ContractData contractDataProto);
+    void bondContractDataProtoBuf(ContractDataProto.ContractData contractDataProto);
+    void contractDataEndProtoBuf(ContractDataEndProto.ContractDataEnd contractDataEndProto);
+    void tickPriceProtoBuf(TickPriceProto.TickPrice tickPriceProto);
+    void tickSizeProtoBuf(TickSizeProto.TickSize tickSizeProto);
+    void tickOptionComputationProtoBuf(TickOptionComputationProto.TickOptionComputation tickOptionComputationProto);
+    void tickGenericProtoBuf(TickGenericProto.TickGeneric tickGenericProto);
+    void tickStringProtoBuf(TickStringProto.TickString tickStringProto);
+    void tickSnapshotEndProtoBuf(TickSnapshotEndProto.TickSnapshotEnd tickSnapshotEndProto);
+    void updateMarketDepthProtoBuf(MarketDepthProto.MarketDepth marketDepthProto);
+    void updateMarketDepthL2ProtoBuf(MarketDepthL2Proto.MarketDepthL2 marketDepthL2Proto);
+    void marketDataTypeProtoBuf(MarketDataTypeProto.MarketDataType marketDataTypeProto);
+    void tickReqParamsProtoBuf(TickReqParamsProto.TickReqParams tickReqParamsProto);
+    void updateAccountValueProtoBuf(AccountValueProto.AccountValue accounValueProto);
+    void updatePortfolioProtoBuf(PortfolioValueProto.PortfolioValue portfolioValueProto);
+    void updateAccountTimeProtoBuf(AccountUpdateTimeProto.AccountUpdateTime accountUpdateTimeProto);
+    void accountDataEndProtoBuf(AccountDataEndProto.AccountDataEnd accountDataEndProto);
+    void managedAccountsProtoBuf(ManagedAccountsProto.ManagedAccounts managedAccountsProto);
+    void positionProtoBuf(PositionProto.Position positionProto);
+    void positionEndProtoBuf(PositionEndProto.PositionEnd positionEndProto);
+    void accountSummaryProtoBuf(AccountSummaryProto.AccountSummary accountSummaryProto);
+    void accountSummaryEndProtoBuf(AccountSummaryEndProto.AccountSummaryEnd accountSummaryEndProto);
+    void positionMultiProtoBuf(PositionMultiProto.PositionMulti positionMultiProto);
+    void positionMultiEndProtoBuf(PositionMultiEndProto.PositionMultiEnd positionMultiEndProto);
+    void accountUpdateMultiProtoBuf(AccountUpdateMultiProto.AccountUpdateMulti accountUpdateMultiProto);
+    void accountUpdateMultiEndProtoBuf(AccountUpdateMultiEndProto.AccountUpdateMultiEnd accountUpdateMultiEndProto);
+    void historicalDataProtoBuf(HistoricalDataProto.HistoricalData historicalDataProto);
+    void historicalDataUpdateProtoBuf(HistoricalDataUpdateProto.HistoricalDataUpdate historicalDataUpdateProto);
+    void historicalDataEndProtoBuf(HistoricalDataEndProto.HistoricalDataEnd historicalDataEndProto);
+    void realTimeBarTickProtoBuf(RealTimeBarTickProto.RealTimeBarTick realTimeBarTickProto);
+    void headTimestampProtoBuf(HeadTimestampProto.HeadTimestamp headTimestampProto);
+    void histogramDataProtoBuf(HistogramDataProto.HistogramData histogramDataProto);
+    void historicalTicksProtoBuf(HistoricalTicksProto.HistoricalTicks historicalTicksProto);
+    void historicalTicksBidAskProtoBuf(HistoricalTicksBidAskProto.HistoricalTicksBidAsk historicalTicksBidAskProto);
+    void historicalTicksLastProtoBuf(HistoricalTicksLastProto.HistoricalTicksLast historicalTicksLastProto);
+    void tickByTickDataProtoBuf(TickByTickDataProto.TickByTickData tickByTickDataProto);
+    void updateNewsBulletinProtoBuf(NewsBulletinProto.NewsBulletin newsBulletinProto);
+    void newsArticleProtoBuf(NewsArticleProto.NewsArticle newsArticleProto);
+    void newsProvidersProtoBuf(NewsProvidersProto.NewsProviders newsProvidersProto);
+    void historicalNewsProtoBuf(HistoricalNewsProto.HistoricalNews historicalNewsProto);
+    void historicalNewsEndProtoBuf(HistoricalNewsEndProto.HistoricalNewsEnd historicalNewsEndProto);
+    void wshMetaDataProtoBuf(WshMetaDataProto.WshMetaData wshMetaDataProto);
+    void wshEventDataProtoBuf(WshEventDataProto.WshEventData wshEventDataProto);
+    void tickNewsProtoBuf(TickNewsProto.TickNews tickNewsProto);
+    void scannerParametersProtoBuf(ScannerParametersProto.ScannerParameters scannerParametersProto);
+    void scannerDataProtoBuf(ScannerDataProto.ScannerData scannerDataProto);
+    void fundamentalsDataProtoBuf(FundamentalsDataProto.FundamentalsData fundamentalsDataProto);
+    void pnlProtoBuf(PnLProto.PnL pnlProto);
+    void pnlSingleProtoBuf(PnLSingleProto.PnLSingle pnlSingleProto);
+    void receiveFAProtoBuf(ReceiveFAProto.ReceiveFA receiveFAProto);
+    void replaceFAEndProtoBuf(ReplaceFAEndProto.ReplaceFAEnd replaceFAEndProto);
+    void commissionAndFeesReportProtoBuf(CommissionAndFeesReportProto.CommissionAndFeesReport commissionAndFeesReportProto);
+    void historicalScheduleProtoBuf(HistoricalScheduleProto.HistoricalSchedule historicalScheduleProto);
+    void rerouteMarketDataRequestProtoBuf(RerouteMarketDataRequestProto.RerouteMarketDataRequest rerouteMarketDataRequestProto);
+    void rerouteMarketDepthRequestProtoBuf(RerouteMarketDepthRequestProto.RerouteMarketDepthRequest rerouteMarketDepthRequestProto);
+    void secDefOptParameterProtoBuf(SecDefOptParameterProto.SecDefOptParameter secDefOptParameterProto);
+    void secDefOptParameterEndProtoBuf(SecDefOptParameterEndProto.SecDefOptParameterEnd secDefOptParameterEndProto);
+    void softDollarTiersProtoBuf(SoftDollarTiersProto.SoftDollarTiers softDollarTiersProto);
+    void familyCodesProtoBuf(FamilyCodesProto.FamilyCodes familyCodesProto);
+    void symbolSamplesProtoBuf(SymbolSamplesProto.SymbolSamples symbolSamplesProto);
+    void smartComponentsProtoBuf(SmartComponentsProto.SmartComponents smartComponentsProto);
+    void marketRuleProtoBuf(MarketRuleProto.MarketRule marketRuleProto);
+    void userInfoProtoBuf(UserInfoProto.UserInfo userInfoProto);
+    void nextValidIdProtoBuf(NextValidIdProto.NextValidId nextValidIdProto);
+    void currentTimeProtoBuf(CurrentTimeProto.CurrentTime currentTimeProto);
+    void currentTimeInMillisProtoBuf(CurrentTimeInMillisProto.CurrentTimeInMillis currentTimeInMillisProto);
+    void verifyMessageApiProtoBuf(VerifyMessageApiProto.VerifyMessageApi verifyMessageApiProto);
+    void verifyCompletedProtoBuf(VerifyCompletedProto.VerifyCompleted verifyCompletedProto);
+    void displayGroupListProtoBuf(DisplayGroupListProto.DisplayGroupList displayGroupListProto);
+    void displayGroupUpdatedProtoBuf(DisplayGroupUpdatedProto.DisplayGroupUpdated displayGroupUpdatedProto);
+    void marketDepthExchangesProtoBuf(MarketDepthExchangesProto.MarketDepthExchanges marketDepthExchangesProto);
+    void configResponseProtoBuf(ConfigResponseProto.ConfigResponse configResponseProto);
+    void updateConfigResponseProtoBuf(UpdateConfigResponseProto.UpdateConfigResponse updateConfigResponseProto);
 }
 

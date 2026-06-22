@@ -334,7 +334,7 @@ Private Sub Worksheet_Calculate()
         If CStr(.Range(CELL_MANAGED_ACCOUNTS).value) = util.STR_LONGVALUE Then
             ' request long values
             ' some values lengths are longer than 255 symbols, DDE cannot send/receive such values, so we have to split long values into chunks and then merge them
-            ' here we request array with splitted long value and then merge and display in cell
+            ' here we request array with split long value and then merge and display in cell
             server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
             If server = util.STR_EMPTY Then Exit Sub
             

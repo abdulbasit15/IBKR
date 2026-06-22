@@ -83,49 +83,49 @@ class ContractSamples:
 
     @staticmethod
     def BondWithCusip():
-            #! [bondwithcusip]
-            contract = Contract()
-            # enter CUSIP as symbol
-            contract.symbol= "449276AA2"
-            contract.secType = "BOND"
-            contract.exchange = "SMART"
-            contract.currency = "USD"
-            #! [bondwithcusip]
-            return contract
+        #! [bondwithcusip]
+        contract = Contract()
+        # enter CUSIP as symbol
+        contract.symbol= "449276AA2"
+        contract.secType = "BOND"
+        contract.exchange = "SMART"
+        contract.currency = "USD"
+        #! [bondwithcusip]
+        return contract
 
 
     @staticmethod
     def Bond():
-            #! [bond]
-            contract = Contract()
-            contract.conId = 456467716
-            contract.exchange = "SMART"
-            #! [bond]
-            return contract
+        #! [bond]
+        contract = Contract()
+        contract.conId = 456467716
+        contract.exchange = "SMART"
+        #! [bond]
+        return contract
 
 
     @staticmethod
     def MutualFund():
-            #! [fundcontract]
-            contract = Contract()
-            contract.symbol = "VINIX"
-            contract.secType = "FUND"
-            contract.exchange = "FUNDSERV"
-            contract.currency = "USD"
-            #! [fundcontract]
-            return contract
+        #! [fundcontract]
+        contract = Contract()
+        contract.symbol = "VINIX"
+        contract.secType = "FUND"
+        contract.exchange = "FUNDSERV"
+        contract.currency = "USD"
+        #! [fundcontract]
+        return contract
 
 
     @staticmethod
     def Commodity():
-            #! [commoditycontract]
-            contract = Contract()
-            contract.symbol = "XAUUSD"
-            contract.secType = "CMDTY"
-            contract.exchange = "SMART"
-            contract.currency = "USD"
-            #! [commoditycontract]
-            return contract
+        #! [commoditycontract]
+        contract = Contract()
+        contract.symbol = "XAUUSD"
+        contract.secType = "CMDTY"
+        contract.exchange = "SMART"
+        contract.currency = "USD"
+        #! [commoditycontract]
+        return contract
     
 
     @staticmethod
@@ -261,11 +261,11 @@ class ContractSamples:
     def SimpleFuture():
         #! [futcontract]
         contract = Contract()
-        contract.symbol = "GBL"
+        contract.symbol = "ES"
         contract.secType = "FUT"
-        contract.exchange = "EUREX"
-        contract.currency = "EUR"
-        contract.lastTradeDateOrContractMonth = "202303"
+        contract.exchange = "CME"
+        contract.currency = "USD"
+        contract.lastTradeDateOrContractMonth = "202503"
         #! [futcontract]
         return contract
 
@@ -723,6 +723,41 @@ class ContractSamples:
         contract.exchange = "ALLFUNDS"
         contract.currency = "USD"
         # ! [fundcontract]
+        return contract
+
+    @staticmethod
+    def OptForecastx():
+        # ! [optforecastxcontract]
+        contract = Contract()
+        contract.symbol = "CPIY"
+        contract.secType = "OPT"
+        contract.lastTradeDateOrContractMonth = "202612"
+        contract.exchange = "FORECASTX"
+        contract.currency = "USD"
+        # ! [optforecastxcontract]
+        return contract
+
+    @staticmethod
+    def OptForecastxZeroStrike():
+        # ! [optforecastxcontract]
+        contract = Contract()
+        contract.symbol = "CPIY"
+        contract.secType = "OPT"
+        contract.lastTradeDateOrContractMonth = "202612"
+        contract.strike = 0
+        contract.right = "C"
+        contract.exchange = "FORECASTX"
+        contract.currency = "USD"
+        # ! [optforecastxcontract]
+        return contract
+
+    @staticmethod
+    def OptForecastxByConId():
+        # ! [optforecastxbyconid]
+        contract = Contract()
+        contract.conId = 789013783
+        contract.exchange = "FORECASTX"
+        # ! [optforecastxbyconid]
         return contract
 
 def Test():

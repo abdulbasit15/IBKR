@@ -165,7 +165,7 @@ Private Sub reqNewsTicks_Click()
     Dim contractInfo As IContract
     Set contractInfo = Api.Tws.createContract()
 
-    ' fill contract strcuture
+    ' fill contract structure
     With contractInfo
         .Symbol = UCase(Range(CELL_SYMBOL).value)
         .SecType = UCase(Range(CELL_SECTYPE).value)
@@ -232,7 +232,7 @@ End Sub
 Public Sub TickNews(ByVal tickerId As Long, ByVal timeStamp As String, ByVal providerCode As String, ByVal articleId As String, ByVal headline As String, ByVal extraData As String)
     If tickNewsActiveReqId = tickerId - ID_TICK_NEWS Then
         tickNewsRow = tickNewsRow + 1
-        tickNewsTable(tickNewsRow, Col_TICK_NEWS_TIME).value = Format(DateAdd("s", CLng(Left(timeStamp, Len(timeStamp) - 3)), "01/01/1970"), "yyyy-mm-dd Hh:Nn:Ss")
+        tickNewsTable(tickNewsRow, Col_TICK_NEWS_TIME).value = Util.ConvertLongStrToDateStr(Left(timeStamp, Len(timeStamp) - 3))
         tickNewsTable(tickNewsRow, Col_TICK_NEWS_PROVIDER_CODE).value = providerCode
         tickNewsTable(tickNewsRow, Col_TICK_NEWS_ARTICLE_ID).value = articleId
         tickNewsTable(tickNewsRow, Col_TICK_NEWS_HEADLINE).value = headline

@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using IBApi;
@@ -175,7 +175,7 @@ namespace TWSLib
 
         void ITws.placeOrder(int id, string action, double quantity, string localSymbol, string secType,
                    string lastTradeDateOrContractMonth, double strike, string right, string multiplier,
-                   string exchange, string primaryExchange, string curency, string orderType,
+                   string exchange, string primaryExchange, string currency, string orderType,
                    double lmtPrice, double auxPrice, string goodAfterTime, string faGroup,
                    string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodTillDate)
         {
@@ -199,7 +199,7 @@ namespace TWSLib
                 SecType = secType,
                 Exchange = exchange,
                 PrimaryExch = primaryExchange,
-                Currency = curency,
+                Currency = currency,
                 ComboLegs = this.comboLegs,
                 LastTradeDateOrContractMonth = lastTradeDateOrContractMonth,
                 Strike = strike,
@@ -322,7 +322,7 @@ namespace TWSLib
 
 
         void ITws.placeOrder2(int id, string action, double quantity, string localSymbol,
-                   string secType, string exchange, string primaryExchange, string curency,
+                   string secType, string exchange, string primaryExchange, string currency,
                    string orderType, double lmtPrice, double auxPrice,
                    string goodAfterTime, string faGroup,
                    string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodTillDate)
@@ -334,7 +334,7 @@ namespace TWSLib
             contract.SecType = secType;
             contract.Exchange = exchange;
             contract.PrimaryExch = primaryExchange;
-            contract.Currency = curency;
+            contract.Currency = currency;
 
             // add the combo order legs, if any
             contract.ComboLegs = this.comboLegs;
@@ -362,7 +362,7 @@ namespace TWSLib
 
 
         void ITws.reqContractDetails(string symbol, string secType, string lastTradeDateOrContractMonth, double strike,
-                   string right, string multiplier, string exchange, string curency, int includeExpired)
+                   string right, string multiplier, string exchange, string currency, int includeExpired)
         {
             // set contract fields
             Contract contract = new Contract();
@@ -374,7 +374,7 @@ namespace TWSLib
             contract.Right = right;
             contract.Multiplier = multiplier;
             contract.Exchange = exchange;
-            contract.Currency = curency;
+            contract.Currency = currency;
             contract.IncludeExpired = includeExpired != 0;
 
             // request contract details
@@ -382,7 +382,7 @@ namespace TWSLib
         }
 
 
-        void ITws.reqContractDetails2(string localSymbol, string secType, string exchange, string curency, int includeExpired)
+        void ITws.reqContractDetails2(string localSymbol, string secType, string exchange, string currency, int includeExpired)
         {
             // set contract fields
             Contract contract = new Contract();
@@ -390,7 +390,7 @@ namespace TWSLib
             contract.LocalSymbol = localSymbol;
             contract.SecType = secType;
             contract.Exchange = exchange;
-            contract.Currency = curency;
+            contract.Currency = currency;
             contract.IncludeExpired = includeExpired != 0;
 
             // request contract details
@@ -399,7 +399,7 @@ namespace TWSLib
 
 
         void ITws.reqMktDepth(int id, string symbol, string secType, string lastTradeDateOrContractMonth, double strike,
-                   string right, string multiplier, string exchange, string curency, int numRows, bool isSmartDepth, ITagValueList options)
+                   string right, string multiplier, string exchange, string currency, int numRows, bool isSmartDepth, ITagValueList options)
         {
             // set contract fields
             Contract contract = new Contract();
@@ -411,14 +411,14 @@ namespace TWSLib
             contract.Right = right;
             contract.Multiplier = multiplier;
             contract.Exchange = exchange;
-            contract.Currency = curency;
+            contract.Currency = currency;
 
             // request market depth
             this.socket.reqMarketDepth(id, contract, numRows, isSmartDepth, ITagValueListToListTagValue(options));
         }
 
 
-        void ITws.reqMktDepth2(int id, string localSymbol, string secType, string exchange, string curency, int numRows, bool isSmartDepth, ITagValueList options)
+        void ITws.reqMktDepth2(int id, string localSymbol, string secType, string exchange, string currency, int numRows, bool isSmartDepth, ITagValueList options)
         {
 
             Contract contract = new Contract();
@@ -426,7 +426,7 @@ namespace TWSLib
             contract.LocalSymbol = localSymbol;
             contract.SecType = secType;
             contract.Exchange = exchange;
-            contract.Currency = curency;
+            contract.Currency = currency;
 
             // request market depth
             this.socket.reqMarketDepth(id, contract, numRows, isSmartDepth, ITagValueListToListTagValue(options));
@@ -511,7 +511,7 @@ namespace TWSLib
 
 
         void ITws.reqHistoricalData(int id, string symbol, string secType, string lastTradeDateOrContractMonth, double strike,
-                   string right, string multiplier, string exchange, string curency, int isExpired,
+                   string right, string multiplier, string exchange, string currency, int isExpired,
                    string endDateTime, string durationStr, string barSizeSetting, string whatToShow,
                    int useRTH, int formatDate, bool keepUpToDate, ITagValueList options)
         {
@@ -524,7 +524,7 @@ namespace TWSLib
             contract.Right = right;
             contract.Multiplier = multiplier;
             contract.Exchange = exchange;
-            contract.Currency = curency;
+            contract.Currency = currency;
             contract.IncludeExpired = isExpired != 0;
 
             // add the combo order legs, if any
@@ -536,7 +536,7 @@ namespace TWSLib
 
 
         void ITws.exerciseOptions(int id, string symbol, string secType, string lastTradeDateOrContractMonth, double strike,
-                   string right, string multiplier, string exchange, string curency,
+                   string right, string multiplier, string exchange, string currency,
                    int exerciseAction, int exerciseQuantity, int @override)
         {
             Contract contract = new Contract();
@@ -548,7 +548,7 @@ namespace TWSLib
             contract.Right = right;
             contract.Multiplier = multiplier;
             contract.Exchange = exchange;
-            contract.Currency = curency;
+            contract.Currency = currency;
 
             this.socket.exerciseOptions(id, contract, exerciseAction, exerciseQuantity, (this as ITws).account, @override, "", "", false);
         }
@@ -740,9 +740,9 @@ namespace TWSLib
         }
 
 
-        void ITws.reqGlobalCancel()
+        void ITws.reqGlobalCancel(IOrderCancel orderCancel)
         {
-            this.socket.reqGlobalCancel();
+            this.socket.reqGlobalCancel((OrderCancel)(orderCancel as ComOrderCancel));
         }
 
 
@@ -814,8 +814,8 @@ namespace TWSLib
         {
             this.socket.reqScannerSubscription(tickerId,
                 (ScannerSubscription)(subscription as ComScannerSubscription),
-                options,
-                scannerSubscriptionFilterOptions);
+                Util.StringToTagValueList(options),
+                Util.StringToTagValueList(scannerSubscriptionFilterOptions));
         }
 
 
@@ -888,6 +888,8 @@ namespace TWSLib
         IDeltaNeutralContract ITws.createDeltaNeutralContract() { return new ComDeltaNeutralContract(); }
 
         ITagValueList ITws.createTagValueList() { return new ComTagValueList(); }
+
+        IIntegerList ITws.createIntegerList() { return new ComIntegerList(); }
 
         IOrderComboLegList ITws.createOrderComboLegList() { return new ComOrderComboLegList(); }
 
@@ -1083,6 +1085,21 @@ namespace TWSLib
             this.socket.reqUserInfo(reqId);
         }
 
+        void ITws.reqCurrentTimeInMillis()
+        {
+            this.socket.reqCurrentTimeInMillis();
+        }
+
+        void ITws.cancelContractData(int reqId)
+        {
+            this.socket.cancelContractData(reqId);
+        }
+
+        void ITws.cancelHistoricalTicks(int reqId)
+        {
+            this.socket.cancelHistoricalTicks(reqId);
+        }
+
         #endregion
 
         #region events
@@ -1117,16 +1134,16 @@ namespace TWSLib
         }
 
 
-        public delegate void openOrder1Delegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol);
+        public delegate void openOrder1Delegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol);
         public event openOrder1Delegate openOrder1;
 
         public delegate void openOrder2Delegate(int id, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId);
         public event openOrder2Delegate openOrder2;
 
-        public delegate void openOrder3Delegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate);
+        public delegate void openOrder3Delegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate);
         public event openOrder3Delegate openOrder3;
 
-        public delegate void openOrder4Delegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate, int ocaType, string rule80A, string settlingFirm, int allOrNone, int minQty, double percentOffset, int eTradeOnly, int firmQuoteOnly, double nbboPriceCap, int auctionStrategy, double startingPrice, double stockRefPrice, double delta, double stockRangeLower, double stockRangeUpper, int blockOrder, int sweepToFill, int ignoreRth, int hidden, double discretionaryAmt, int displaySize, int parentId, int triggerMethod, int shortSaleSlot, string designatedLocation, double volatility, int volatilityType, string deltaNeutralOrderType, double deltaNeutralAuxPrice, int continuousUpdate, int referencePriceType, double trailStopPrice, double basisPoints, int basisPointsType, string legsStr, int scaleInitLevelSize, int scaleSubsLevelSize, double scalePriceIncrement);
+        public delegate void openOrder4Delegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate, int ocaType, string rule80A, string settlingFirm, int allOrNone, int minQty, double percentOffset, int eTradeOnly, int firmQuoteOnly, double nbboPriceCap, int auctionStrategy, double startingPrice, double stockRefPrice, double delta, double stockRangeLower, double stockRangeUpper, int blockOrder, int sweepToFill, int ignoreRth, int hidden, double discretionaryAmt, int displaySize, int parentId, int triggerMethod, int shortSaleSlot, string designatedLocation, double volatility, int volatilityType, string deltaNeutralOrderType, double deltaNeutralAuxPrice, int continuousUpdate, int referencePriceType, double trailStopPrice, double basisPoints, int basisPointsType, string legsStr, int scaleInitLevelSize, int scaleSubsLevelSize, double scalePriceIncrement);
         public event openOrder4Delegate openOrder4;
 
         public delegate void openOrderExDelegate(int orderId, IContract contract, IOrder order, IOrderState orderState);
@@ -1189,7 +1206,7 @@ namespace TWSLib
                                 order.Origin,
                                 order.OrderRef,
                                 order.ClientId,
-                                order.PermId,
+                                (int)order.PermId,
                                 "", // deprecated sharesAllocation
                                 order.FaGroup,
                                 order.FaMethod,
@@ -1198,7 +1215,7 @@ namespace TWSLib
                                 order.GoodAfterTime,
                                 order.GoodTillDate), null);
 
-            // send order and contract fields, and etended order attributes
+            // send order and contract fields, and extended order attributes
             var t_openOrder4 = this.openOrder4;
             if (t_openOrder4 != null)
                 sc.Post(state => t_openOrder4(
@@ -1223,7 +1240,7 @@ namespace TWSLib
                                 order.Origin,
                                 order.OrderRef,
                                 order.ClientId,
-                                order.PermId,
+                                (int)order.PermId,
                                 "", // deprecated sharesAllocation
                                 order.FaGroup,
                                 order.FaMethod,
@@ -1290,7 +1307,7 @@ namespace TWSLib
                 sc.Post(state => t_updateAccountTime(timestamp), null);
         }
 
-        public delegate void updateAccountValueDelegate(string key, string value, string curency, string accountName);
+        public delegate void updateAccountValueDelegate(string key, string value, string currency, string accountName);
         public event updateAccountValueDelegate updateAccountValue;
         void EWrapper.updateAccountValue(string key, string value, string currency, string accountName)
         {
@@ -1313,6 +1330,9 @@ namespace TWSLib
 
         public delegate void errMsgDelegate(int id, int errorCode, string errorMsg, string advacedOrderRejectJson);
         public event errMsgDelegate errMsg;
+        public delegate void errMsg2Delegate(int id, string errorTime, int errorCode, string errorMsg, string advacedOrderRejectJson);
+        public event errMsg2Delegate errMsg2;
+
         void EWrapper.error(Exception e)
         {
             var t_errMsg = this.errMsg;
@@ -1327,15 +1347,19 @@ namespace TWSLib
                 sc.Post(state => t_errMsg(-1, -1, str, ""), null);
         }
 
-        void EWrapper.error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson)
+        void EWrapper.error(int id, long errorTime, int errorCode, string errorMsg, string advancedOrderRejectJson)
         {
             var t_errMsg = this.errMsg;
             if (t_errMsg != null)
                 sc.Post(state => t_errMsg(id, errorCode, errorMsg, advancedOrderRejectJson), null);
+
+            var t_errMsg2 = this.errMsg2;
+            if (t_errMsg2 != null)
+                sc.Post(state => t_errMsg2(id, errorTime.ToString("G"), errorCode, errorMsg, advancedOrderRejectJson), null);
         }
 
 
-        public delegate void updatePortfolioDelegate(string symbol, string secType, string lastTradeDate, double strike, string right, string curency, string localSymbol, int position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, string accountName);
+        public delegate void updatePortfolioDelegate(string symbol, string secType, string lastTradeDate, double strike, string right, string currency, string localSymbol, double position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, string accountName);
         public event updatePortfolioDelegate updatePortfolio;
 
         public delegate void updatePortfolioExDelegate(IContract contract, object position, double marketPrice,
@@ -1368,14 +1392,20 @@ namespace TWSLib
 
         public delegate void orderStatusDelegate(int id, string status, object filled, object remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice);
         public event orderStatusDelegate orderStatus;
-        void EWrapper.orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
+        public delegate void orderStatus2Delegate(int id, string status, object filled, object remaining, double avgFillPrice, string permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice);
+        public event orderStatus2Delegate orderStatus2;
+        void EWrapper.orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
         {
             var t_orderStatus = this.orderStatus;
             if (t_orderStatus != null)
-                sc.Post(state => t_orderStatus(orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice), null);
+                sc.Post(state => t_orderStatus(orderId, status, filled, remaining, avgFillPrice, (int)permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice), null);
+
+            var t_orderStatus2 = this.orderStatus2;
+            if (t_orderStatus2 != null)
+                sc.Post(state => t_orderStatus2(orderId, status, filled, remaining, avgFillPrice, permId.ToString("G"), parentId, lastFillPrice, clientId, whyHeld, mktCapPrice), null);
         }
 
-        public delegate void contractDetailsDelegate(string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string marketName, string tradingClass, int conId, double minTick, int priceMagnifier, string multiplier, string orderTypes, string validExchanges);
+        public delegate void contractDetailsDelegate(string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string marketName, string tradingClass, int conId, double minTick, int priceMagnifier, string multiplier, string orderTypes, string validExchanges);
         public event contractDetailsDelegate contractDetails;
 
         public delegate void contractDetailsExDelegate(int reqId, IContractDetails contractDetails);
@@ -1407,7 +1437,7 @@ namespace TWSLib
                 sc.Post(state => t_contractDetailsEx(reqId, (ComContractDetails)contractDetails), null);
         }
 
-        public delegate void execDetailsDelegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string cExchange, string curency, string localSymbol, string execId, string time, string acctNumber, string eExchange, string side, double shares, double price, int permId, int clientId, int isLiquidation, string lastLiquidity);
+        public delegate void execDetailsDelegate(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string cExchange, string currency, string localSymbol, string execId, string time, string acctNumber, string eExchange, string side, double shares, double price, int permId, int clientId, int isLiquidation, string lastLiquidity);
         public event execDetailsDelegate execDetails;
 
         public delegate void execDetailsExDelegate(int reqId, IContract contract, IExecution execution);
@@ -1433,7 +1463,7 @@ namespace TWSLib
                                 execution.Side,
                                 Decimal.ToDouble(execution.Shares),
                                 execution.Price,
-                                execution.PermId,
+                                (int)execution.PermId,
                                 execution.ClientId,
                                 execution.Liquidation,
                                 execution.LastLiquidity.ToString()), null);
@@ -1514,7 +1544,7 @@ namespace TWSLib
                 sc.Post(state => t_historicalUpdateData(reqId, bar.Time, bar.Open, bar.High, bar.Low, bar.Close, bar.Volume, bar.Count, bar.WAP, 0), null);
         }
 
-        public delegate void bondContractDetailsDelegate(string symbol, string secType, string cusip, double coupon, string maturity, string issueDate, string ratings, string bondType, string couponType, int convertible, int callable, int putable, string descAppend, string exchange, string curency, string marketName, string tradingClass, int conId, double minTick, string orderTypes, string validExchanges, string nextOptionDate, string nextOptionType, int nextOptionPartial, string notes);
+        public delegate void bondContractDetailsDelegate(string symbol, string secType, string cusip, double coupon, string maturity, string issueDate, string ratings, string bondType, string couponType, int convertible, int callable, int putable, string descAppend, string exchange, string currency, string marketName, string tradingClass, int conId, double minTick, string orderTypes, string validExchanges, string nextOptionDate, string nextOptionType, int nextOptionPartial, string notes);
         public event bondContractDetailsDelegate bondContractDetails;
 
         public delegate void bondContractDetailsExDelegate(int reqId, IContractDetails contractDetails);
@@ -1556,7 +1586,7 @@ namespace TWSLib
         }
 
 
-        public delegate void scannerDataDelegate(int reqId, int rank, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string marketName, string tradingClass, string distance, string benchmark, string projection, string legsStr);
+        public delegate void scannerDataDelegate(int reqId, int rank, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string marketName, string tradingClass, string distance, string benchmark, string projection, string legsStr);
         public event scannerDataDelegate scannerData;
 
         public delegate void tickGenericDelegate(int id, int tickType, double value);
@@ -1707,13 +1737,13 @@ namespace TWSLib
                 sc.Post(state => t_scannerDataEx(reqId, rank, (ComContractDetails)contractDetails, distance, benchmark, projection, legsStr), null);
         }
 
-        public delegate void commissionReportDelegate(ICommissionReport commissionReport);
-        public event commissionReportDelegate commissionReport;
-        void EWrapper.commissionReport(CommissionReport commissionReport)
+        public delegate void commissionAndFeesReportDelegate(ICommissionAndFeesReport commissionAndFeesReport);
+        public event commissionAndFeesReportDelegate commissionAndFeesReport;
+        void EWrapper.commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport)
         {
-            var t_commissionReport = this.commissionReport;
-            if (t_commissionReport != null)
-                sc.Post(state => t_commissionReport((ComCommissionReport)commissionReport), null);
+            var t_commissionAndFeesReport = this.commissionAndFeesReport;
+            if (t_commissionAndFeesReport != null)
+                sc.Post(state => t_commissionAndFeesReport((ComCommissionAndFeesReport)commissionAndFeesReport), null);
         }
 
         public delegate void positionDelegate(string account, IContract contract, object position, double avgCost);
@@ -1734,7 +1764,7 @@ namespace TWSLib
                 sc.Post(state => t_positionEnd(), null);
         }
 
-        public delegate void accountSummaryDelegate(int reqId, string account, string tag, string value, string curency);
+        public delegate void accountSummaryDelegate(int reqId, string account, string tag, string value, string currency);
         public event accountSummaryDelegate accountSummary;
         void EWrapper.accountSummary(int reqId, string account, string tag, string value, string currency)
         {
@@ -1969,10 +1999,9 @@ namespace TWSLib
         public event tickReqParamsDelegate tickReqParams;
         void EWrapper.tickReqParams(int tickerId, double minTick, string bboExchange, int snapshotPermissions)
         {
-            var tmp = this.tickReqParams;
-
-            if (tmp != null)
-                sc.Post(state => tmp(tickerId, minTick, bboExchange, snapshotPermissions), null);
+            var t_tickReqParams = this.tickReqParams;
+            if (t_tickReqParams != null)
+                sc.Post(state => t_tickReqParams(tickerId, minTick, bboExchange, snapshotPermissions), null);
         }
 
         public delegate void newsProvidersDelegate(INewsProviderList newsProviders);
@@ -2156,14 +2185,14 @@ namespace TWSLib
                 sc.Post(state => tmp(reqId, time.ToString("G"), midPoint), null);
         }
 
-        public delegate void OrderBoundDelegate(string orderId, int apiClientId, int apiOrderId);
+        public delegate void OrderBoundDelegate(string permId, int clientId, int orderId);
         public event OrderBoundDelegate orderBound;
-        void EWrapper.orderBound(long orderId, int apiClientId, int apiOrderId)
+        void EWrapper.orderBound(long permId, int clientId, int orderId)
         {
             var tmp = this.orderBound;
 
             if (tmp != null)
-                sc.Post(state => tmp(orderId.ToString(), apiClientId, apiOrderId), null);
+                sc.Post(state => tmp(permId.ToString("G"), clientId, orderId), null);
         }
 
         public delegate void completedOrderDelegate(IContract contract, IOrder order, IOrderState orderState);
@@ -2233,6 +2262,110 @@ namespace TWSLib
 
         IWshEventData ITws.createWshEventData() { return new ComWshEventData(); }
 
+        public delegate void currentTimeInMillisDelegate(string timeInMillis);
+        public event currentTimeInMillisDelegate currentTimeInMillis;
+        void EWrapper.currentTimeInMillis(long timeInMillis)
+        {
+            var t_currentTimeInMillis = this.currentTimeInMillis;
+            if (t_currentTimeInMillis != null)
+                sc.Post(state => t_currentTimeInMillis(timeInMillis.ToString("G")), null);
+        }
+
+        /**
+         * Protobuf
+         */
+        void EWrapper.orderStatusProtoBuf(IBApi.protobuf.OrderStatus orderStatusProto) { }
+        void EWrapper.openOrderProtoBuf(IBApi.protobuf.OpenOrder openOrderProto) { }
+        void EWrapper.openOrdersEndProtoBuf(IBApi.protobuf.OpenOrdersEnd openOrdersEnd) { }
+        void EWrapper.errorProtoBuf(IBApi.protobuf.ErrorMessage errorMessageProto) { }
+        void EWrapper.execDetailsProtoBuf(IBApi.protobuf.ExecutionDetails executionDetailsProto) { }
+        void EWrapper.execDetailsEndProtoBuf(IBApi.protobuf.ExecutionDetailsEnd executionDetailsEndProto) { }
+        void EWrapper.completedOrderProtoBuf(IBApi.protobuf.CompletedOrder completedOrderProto) { }
+        void EWrapper.completedOrdersEndProtoBuf(IBApi.protobuf.CompletedOrdersEnd completedOrdersEndProto) { }
+        void EWrapper.orderBoundProtoBuf(IBApi.protobuf.OrderBound orderBoundProto) { }
+        void EWrapper.contractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto) { }
+        void EWrapper.bondContractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto) { }
+        void EWrapper.contractDataEndProtoBuf(IBApi.protobuf.ContractDataEnd contractDataEndProto) { }
+        void EWrapper.tickPriceProtoBuf(IBApi.protobuf.TickPrice tickPriceProto) { }
+        void EWrapper.tickSizeProtoBuf(IBApi.protobuf.TickSize tickSizeProto) { }
+        void EWrapper.tickOptionComputationProtoBuf(IBApi.protobuf.TickOptionComputation tickOptionComputationProto) { }
+        void EWrapper.tickGenericProtoBuf(IBApi.protobuf.TickGeneric tickGenericProto) { }
+        void EWrapper.tickStringProtoBuf(IBApi.protobuf.TickString tickStringProto) { }
+        void EWrapper.tickSnapshotEndProtoBuf(IBApi.protobuf.TickSnapshotEnd tickSnapshotEndProto) { }
+        void EWrapper.updateMarketDepthProtoBuf(IBApi.protobuf.MarketDepth marketDepthProto) { }
+        void EWrapper.updateMarketDepthL2ProtoBuf(IBApi.protobuf.MarketDepthL2 marketDepthL2Proto) { }
+        void EWrapper.marketDataTypeProtoBuf(IBApi.protobuf.MarketDataType marketDataTypeProto) { }
+
+        public delegate void tickReqParamsExDelegate(ITickReqParams tickReqParams);
+        public event tickReqParamsExDelegate tickReqParamsEx;
+        void EWrapper.tickReqParamsProtoBuf(IBApi.protobuf.TickReqParams tickReqParamsProto)
+        {
+            var tmp = this.tickReqParamsEx;
+
+            if (tmp != null)
+                sc.Post(state => tmp(new ComTickReqParams(tickReqParamsProto)), null);
+        }
+
+        void EWrapper.updateAccountValueProtoBuf(IBApi.protobuf.AccountValue accountValueProto) { }
+        void EWrapper.updatePortfolioProtoBuf(IBApi.protobuf.PortfolioValue portfolioValueProto) { }
+        void EWrapper.updateAccountTimeProtoBuf(IBApi.protobuf.AccountUpdateTime accountUpdateTimeProto) { }
+        void EWrapper.accountDataEndProtoBuf(IBApi.protobuf.AccountDataEnd accountDataEndProto) { }
+        void EWrapper.managedAccountsProtoBuf(IBApi.protobuf.ManagedAccounts managedAccountsProto) { }
+        void EWrapper.positionProtoBuf(IBApi.protobuf.Position positionProto) { }
+        void EWrapper.positionEndProtoBuf(IBApi.protobuf.PositionEnd positionEndProto) { }
+        void EWrapper.accountSummaryProtoBuf(IBApi.protobuf.AccountSummary accountSummaryProto) { }
+        void EWrapper.accountSummaryEndProtoBuf(IBApi.protobuf.AccountSummaryEnd accountSummaryEndProto) { }
+        void EWrapper.positionMultiProtoBuf(IBApi.protobuf.PositionMulti positionMultiProto) { }
+        void EWrapper.positionMultiEndProtoBuf(IBApi.protobuf.PositionMultiEnd positionMultiEndProto) { }
+        void EWrapper.accountUpdateMultiProtoBuf(IBApi.protobuf.AccountUpdateMulti accountUpdateMultiProto) { }
+        void EWrapper.accountUpdateMultiEndProtoBuf(IBApi.protobuf.AccountUpdateMultiEnd accountUpdateMultiEndProto) { }
+        void EWrapper.historicalDataProtoBuf(IBApi.protobuf.HistoricalData historicalDataProto) { }
+        void EWrapper.historicalDataUpdateProtoBuf(IBApi.protobuf.HistoricalDataUpdate historicalDataUpdateProto) { }
+        void EWrapper.historicalDataEndProtoBuf(IBApi.protobuf.HistoricalDataEnd historicalDataEndProto) { }
+        void EWrapper.realTimeBarTickProtoBuf(IBApi.protobuf.RealTimeBarTick realTimeBarTickProto) { }
+        void EWrapper.headTimestampProtoBuf(IBApi.protobuf.HeadTimestamp headTimestampProto) { }
+        void EWrapper.histogramDataProtoBuf(IBApi.protobuf.HistogramData histogramDataProto) { }
+        void EWrapper.historicalTicksProtoBuf(IBApi.protobuf.HistoricalTicks historicalTicksProto) { }
+        void EWrapper.historicalTicksBidAskProtoBuf(IBApi.protobuf.HistoricalTicksBidAsk historicalTicksBidAskProto) { }
+        void EWrapper.historicalTicksLastProtoBuf(IBApi.protobuf.HistoricalTicksLast historicalTicksLastProto) { }
+        void EWrapper.tickByTickDataProtoBuf(IBApi.protobuf.TickByTickData tickByTickDataProto) { }
+        void EWrapper.updateNewsBulletinProtoBuf(IBApi.protobuf.NewsBulletin newsBulletinProto) { }
+        void EWrapper.newsArticleProtoBuf(IBApi.protobuf.NewsArticle newsArticleProto) { }
+        void EWrapper.newsProvidersProtoBuf(IBApi.protobuf.NewsProviders newsProvidersProto) { }
+        void EWrapper.historicalNewsProtoBuf(IBApi.protobuf.HistoricalNews historicalNewsProto) { }
+        void EWrapper.historicalNewsEndProtoBuf(IBApi.protobuf.HistoricalNewsEnd historicalNewsEndProto) { }
+        void EWrapper.wshMetaDataProtoBuf(IBApi.protobuf.WshMetaData wshMetaDataProto) { }
+        void EWrapper.wshEventDataProtoBuf(IBApi.protobuf.WshEventData wshEventDataProto) { }
+        void EWrapper.tickNewsProtoBuf(IBApi.protobuf.TickNews tickNewsProto) { }
+        void EWrapper.scannerParametersProtoBuf(IBApi.protobuf.ScannerParameters scannerParametersProto) { }
+        void EWrapper.scannerDataProtoBuf(IBApi.protobuf.ScannerData scannerDataProto) { }
+        void EWrapper.fundamentalsDataProtoBuf(IBApi.protobuf.FundamentalsData fundamentalsDataProto) { }
+        void EWrapper.pnlProtoBuf(IBApi.protobuf.PnL pnlProto) { }
+        void EWrapper.pnlSingleProtoBuf(IBApi.protobuf.PnLSingle pnlSingleProto) { }
+        void EWrapper.receiveFAProtoBuf(IBApi.protobuf.ReceiveFA receiveFAProto) { }
+        void EWrapper.replaceFAEndProtoBuf(IBApi.protobuf.ReplaceFAEnd replaceFAEndProto) { }
+        void EWrapper.commissionAndFeesReportProtoBuf(IBApi.protobuf.CommissionAndFeesReport commissionAndFeesReportProto) { }
+        void EWrapper.historicalScheduleProtoBuf(IBApi.protobuf.HistoricalSchedule historicalScheduleProto) { }
+        void EWrapper.rerouteMarketDataRequestProtoBuf(IBApi.protobuf.RerouteMarketDataRequest rerouteMarketDataRequestProto) { }
+        void EWrapper.rerouteMarketDepthRequestProtoBuf(IBApi.protobuf.RerouteMarketDepthRequest rerouteMarketDepthRequestProto) { }
+        void EWrapper.secDefOptParameterProtoBuf(IBApi.protobuf.SecDefOptParameter secDefOptParameterProto) { }
+        void EWrapper.secDefOptParameterEndProtoBuf(IBApi.protobuf.SecDefOptParameterEnd secDefOptParameterEndProto) { }
+        void EWrapper.softDollarTiersProtoBuf(IBApi.protobuf.SoftDollarTiers softDollarTiersProto) { }
+        void EWrapper.familyCodesProtoBuf(IBApi.protobuf.FamilyCodes familyCodesProto) { }
+        void EWrapper.symbolSamplesProtoBuf(IBApi.protobuf.SymbolSamples symbolSamplesProto) { }
+        void EWrapper.smartComponentsProtoBuf(IBApi.protobuf.SmartComponents smartComponentsProto) { }
+        void EWrapper.marketRuleProtoBuf(IBApi.protobuf.MarketRule marketRuleProto) { }
+        void EWrapper.userInfoProtoBuf(IBApi.protobuf.UserInfo userInfoProto) { }
+        void EWrapper.nextValidIdProtoBuf(IBApi.protobuf.NextValidId nextValidIdProto) { }
+        void EWrapper.currentTimeProtoBuf(IBApi.protobuf.CurrentTime currentTimeProto) { }
+        void EWrapper.currentTimeInMillisProtoBuf(IBApi.protobuf.CurrentTimeInMillis currentTimeInMillisProto) { }
+        void EWrapper.configResponseProtoBuf(IBApi.protobuf.ConfigResponse configResponseProto) { }
+        void EWrapper.verifyMessageApiProtoBuf(IBApi.protobuf.VerifyMessageApi verifyMessageApiProto) { }
+        void EWrapper.verifyCompletedProtoBuf(IBApi.protobuf.VerifyCompleted verifyCompletedProto) { }
+        void EWrapper.displayGroupListProtoBuf(IBApi.protobuf.DisplayGroupList displayGroupListProto) { }
+        void EWrapper.displayGroupUpdatedProtoBuf(IBApi.protobuf.DisplayGroupUpdated displayGroupUpdatedProto) { }
+        void EWrapper.marketDepthExchangesProtoBuf(IBApi.protobuf.MarketDepthExchanges marketDepthExchangesProto) { }
+        void EWrapper.updateConfigResponseProtoBuf(IBApi.protobuf.UpdateConfigResponse updateConfigResponseProto) { }
         #endregion
 
         List<ComboLeg> comboLegs = new List<ComboLeg>();

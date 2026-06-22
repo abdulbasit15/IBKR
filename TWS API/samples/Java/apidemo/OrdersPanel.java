@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package apidemo;
@@ -130,14 +130,19 @@ public class OrdersPanel extends JPanel {
         OrderCancel orderCancel = new OrderCancel();
 
         if (order != null) {
-            TicketDlg dlg = new TicketDlg( order.m_contract, order.m_order, orderCancel);
+            TicketDlg dlg = new TicketDlg( order.m_contract, order.m_order, orderCancel, false);
             dlg.setVisible( true);
         }
     }
 
-	protected void onCancelAll() {
-		ApiDemo.INSTANCE.controller().cancelAllOrders();
-	}
+    protected void onCancelAll() {
+        OrderCancel orderCancel = new OrderCancel();
+
+        if (orderCancel != null) {
+            TicketDlg dlg = new TicketDlg( null, null, orderCancel, true);
+            dlg.setVisible( true);
+        }
+    }
 
 	private OrderRow getSelectedOrder() {
 		int i = m_table.getSelectedRow();
@@ -177,7 +182,7 @@ public class OrdersPanel extends JPanel {
 	}
 	
 	static class OrdersModel extends AbstractTableModel implements ILiveOrderHandler {
-		private Map<Integer,OrderRow> m_map = new HashMap<>();
+		private Map<Long,OrderRow> m_map = new HashMap<>();
 		private List<OrderRow> m_orders = new ArrayList<>();
 
 		@Override public int getRowCount() {
@@ -220,7 +225,7 @@ public class OrdersPanel extends JPanel {
 		@Override public void openOrderEnd() {
 		}
 		
-		@Override public void orderStatus(int orderId, OrderStatus status, Decimal filled, Decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
+		@Override public void orderStatus(int orderId, OrderStatus status, Decimal filled, Decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
 			OrderRow full = m_map.get( permId);
 			if (full != null) {
 				full.m_state.status( status);
@@ -229,7 +234,7 @@ public class OrdersPanel extends JPanel {
 		}
 		
 		@Override public int getColumnCount() {
-			return 12;
+			return 23;
 		}
 		
 		@Override public String getColumnName(int col) {
@@ -245,7 +250,19 @@ public class OrdersPanel extends JPanel {
 				case 8: return "Contract";
 				case 9: return "Cust Acct";
 				case 10: return "Prof Cust";
-				case 11: return "Status";
+				case 11: return "Incl Overnight";
+				case 12: return "Status";
+				case 13: return "Ext Oper";
+				case 14: return "Manual Ind";
+				case 15: return "Submitter";
+				case 16: return "Imbalance Only";
+				case 17: return "Post Only";
+				case 18: return "Allow Pre-Open";
+				case 19: return "Ign Open Auc";
+				case 20: return "Deactivate";
+				case 21: return "Seek Price Impr";
+				case 22: return "Route Mktable to BBO";
+
 				default: return null;
 			}
 		}
@@ -254,7 +271,7 @@ public class OrdersPanel extends JPanel {
 			OrderRow fullOrder = m_orders.get( row);
 			Order order = fullOrder.m_order;
 			switch( col) {
-				case 0: return Util.IntMaxString(order.permId());
+				case 0: return Util.LongMaxString(order.permId());
 				case 1: return Util.IntMaxString(order.clientId());
 				case 2: return Util.IntMaxString(order.orderId());
 				case 3: return order.account();
@@ -265,7 +282,19 @@ public class OrdersPanel extends JPanel {
 				case 8: return fullOrder.m_contract.textDescription();
 				case 9: return order.customerAccount();
 				case 10: return order.professionalCustomer();
-				case 11: return fullOrder.m_state.status();
+				case 11: return order.includeOvernight();
+				case 12: return fullOrder.m_state.status();
+				case 13: return order.extOperator();
+				case 14: return Util.IntMaxString(order.manualOrderIndicator());
+				case 15: return order.submitter();
+				case 16: return order.imbalanceOnly();
+				case 17: return order.postOnly();
+				case 18: return order.allowPreOpen();
+				case 19: return order.ignoreOpenAuction();
+				case 20: return order.deactivate();
+				case 21: return order.seekPriceImprovement();
+				case 22: return order.routeMarketableToBbo();
+
 				default: return null;
 			}
 		}

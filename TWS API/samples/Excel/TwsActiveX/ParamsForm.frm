@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ParamsForm 
    Caption         =   "Smart Combo Routing Params"
    ClientHeight    =   4230
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   3825
+   ClientLeft      =   48
+   ClientTop       =   432
+   ClientWidth     =   3824
    OleObjectBlob   =   "ParamsForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End

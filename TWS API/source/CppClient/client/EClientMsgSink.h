@@ -8,7 +8,6 @@
 struct EClientMsgSink
 {
     virtual void serverVersion(int version, const char *time) = 0;
-    virtual void redirect(const char *host, int port) = 0;
     virtual ~EClientMsgSink() {}
 };
 #endif

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 namespace IBApi
@@ -28,7 +28,7 @@ namespace IBApi
         public const int ScannerData = 20;
         public const int TickOptionComputation = 21;
         public const int TickGeneric = 45;
-        public const int Tickstring = 46;
+        public const int TickString = 46;
         public const int TickEFP = 47; //TICK EFP 47
         public const int CurrentTime = 49;
         public const int RealTimeBars = 50;
@@ -40,7 +40,7 @@ namespace IBApi
         public const int DeltaNeutralValidation = 56;
         public const int TickSnapshotEnd = 57;
         public const int MarketDataType = 58;
-        public const int CommissionsReport = 59;
+        public const int CommissionsAndFeesReport = 59;
         public const int Position = 61;
         public const int PositionEnd = 62;
         public const int AccountSummary = 63;
@@ -88,5 +88,9 @@ namespace IBApi
         public const int WshEventData = 105;
         public const int HistoricalSchedule = 106;
         public const int UserInfo = 107;
+        public const int HistoricalDataEnd = 108;
+        public const int CurrentTimeInMillis = 109;
+        public const int ConfigResponse = 110;
+        public const int UpdateConfigResponse = 111;
     }
 }

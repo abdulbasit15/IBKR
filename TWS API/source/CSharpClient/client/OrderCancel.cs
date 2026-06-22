@@ -13,20 +13,15 @@ namespace IBApi
         public static string EMPTY_STR = "";
 
         /**
-         * @brief This is a regulartory attribute that applies to all US Commodity (Futures) Exchanges, provided to allow client to comply with CFTC Tag 50 Rules
-         */
-        public string ExtOperator { get; set; }
-
-        /**
          * @brief Used by brokers and advisors when manually entering, modifying or cancelling orders at the direction of a client.
          * <i>Only used when allocating orders to specific groups or accounts. Excluding "All" group.</i>
          */
         public string ManualOrderCancelTime { get; set; }
 
         /**
-         * @brief External User Id
+         * @brief This is a regulartory attribute that applies to all US Commodity (Futures) Exchanges, provided to allow client to comply with CFTC Tag 50 Rules
          */
-        public string ExternalUserId { get; set; }
+        public string ExtOperator { get; set; }
 
         /**
          * @brief Manual Order Indicator
@@ -37,7 +32,6 @@ namespace IBApi
         {
             ManualOrderCancelTime = EMPTY_STR;
             ExtOperator = EMPTY_STR;
-            ExternalUserId = EMPTY_STR;
             ManualOrderIndicator = int.MaxValue;
         }
 
@@ -53,11 +47,9 @@ namespace IBApi
             {
                 return false;
             }
-
             if (
                 Util.StringCompare(ManualOrderCancelTime, l_theOther.ManualOrderCancelTime) != 0 ||
-                Util.StringCompare(ExtOperator, l_theOther.ExtOperator) != 0 ||
-                Util.StringCompare(ExternalUserId, l_theOther.ExternalUserId) != 0)
+                Util.StringCompare(ExtOperator, l_theOther.ExtOperator) != 0)
             {
                 return false;
             }
@@ -70,7 +62,6 @@ namespace IBApi
             var hashCode = 1040337091;
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(ManualOrderCancelTime);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(ExtOperator);
-            hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(ExternalUserId);
             hashCode *= -1521134295 + ManualOrderIndicator.GetHashCode();
 
             return hashCode;

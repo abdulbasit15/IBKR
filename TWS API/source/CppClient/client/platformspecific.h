@@ -42,7 +42,7 @@
 #define IB_POSIX
 #if __cplusplus >= 201103L // strict C++11 standard std::mutex is available
 #define IBAPI_STD_MUTEX
-#endif 
+#endif
 #else
 #error "Not supported on this platform"
 #endif

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.client;
@@ -89,7 +89,7 @@ public class Contract implements Cloneable {
 
     public Contract() {
     	m_conid = 0;
-        m_strike = 0;
+        m_strike = Double.MAX_VALUE;
         m_includeExpired = false;
     }
 
@@ -245,8 +245,7 @@ public class Contract implements Cloneable {
 
             app( sb, m_lastTradeDateOrContractMonth);
             app( sb, m_lastTradeDate);
-
-            if (m_strike != 0) {
+            if (m_strike != Double.MAX_VALUE) {
                 app( sb, m_strike);
             }
 
@@ -277,7 +276,7 @@ public class Contract implements Cloneable {
         add( sb, "secType", m_secType);
         add( sb, "lastTradeDateOrContractMonth", m_lastTradeDateOrContractMonth);
         add( sb, "lastTradeDate", m_lastTradeDate);
-        add( sb, "strike", m_strike);
+        add( sb, "strike", Util.DoubleMaxString(m_strike));
         add( sb, "right", m_right);
         add( sb, "multiplier", m_multiplier);
         add( sb, "exchange", m_exchange);

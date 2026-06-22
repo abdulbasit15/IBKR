@@ -531,6 +531,39 @@ namespace IBApi
             //! @endcond
         }
 
+        /**
+         * @brief Minimum order quantity for an algo
+         */
+        public decimal MinAlgoSize
+        {
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
+
+        /**
+         * @brief Precision of Last Price
+         */
+        public decimal LastPricePrecision
+        {
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
+
+        /**
+         * @brief Precision of Last Size
+         */
+        public decimal LastSizePrecision
+        {
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
+
         // FUND values
 
         /**
@@ -623,6 +656,21 @@ namespace IBApi
          */
         public List<IneligibilityReason> IneligibilityReasonList { get; set; }
 
+        /**
+         * @brief EventContract1
+         */
+        public string EventContract1 { get; set; }
+
+        /**
+         * @brief EventContractDescription1
+         */
+        public string EventContractDescription1 { get; set; }
+
+        /**
+         * @brief EventContractDescription2
+         */
+        public string EventContractDescription2 { get; set; }
+
         public ContractDetails()
         {
             Contract = new Contract();
@@ -632,6 +680,9 @@ namespace IBApi
             MinSize = decimal.MaxValue;
             SizeIncrement = decimal.MaxValue;
             SuggestedSizeIncrement = decimal.MaxValue;
+            MinAlgoSize = decimal.MaxValue;
+            LastPricePrecision = decimal.MaxValue;
+            LastSizePrecision = decimal.MaxValue;
         }
     }
 

@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ namespace IBApi
     /**
      * @class ExecutionFilter
      * @brief when requesting executions, a filter can be specified to receive only a subset of them
-     * @sa Contract, Execution, CommissionReport
+     * @sa Contract, Execution, CommissionAndFeesReport
      */
     public class ExecutionFilter
     {
@@ -48,9 +48,23 @@ namespace IBApi
         */
         public string Side { get; set; }
 
-        public ExecutionFilter() => ClientId = 0;
+        /**
+         * @brief Last N days for which the request is sent
+         */
+        public int LastNDays { get; set; }
 
-        public ExecutionFilter(int clientId, string acctCode, string time, string symbol, string secType, string exchange, string side)
+        /**
+         * @brief List of specific dates for which the request is sent
+         */
+        public List<int> SpecificDates { get; set; }
+
+        public ExecutionFilter()
+        {
+            ClientId = 0;
+            LastNDays = int.MaxValue;
+        }
+
+        public ExecutionFilter(int clientId, string acctCode, string time, string symbol, string secType, string exchange, string side, int lastNDays, List<int> specificDates)
         {
             ClientId = clientId;
             AcctCode = acctCode;
@@ -59,6 +73,8 @@ namespace IBApi
             SecType = secType;
             Exchange = exchange;
             Side = side;
+            LastNDays = lastNDays;
+            SpecificDates = specificDates;
         }
 
         public override bool Equals(object other)
@@ -74,13 +90,19 @@ namespace IBApi
             }
             else
             {
+                if (!Util.VectorEqualsUnordered(SpecificDates, l_theOther.SpecificDates))
+                {
+                    return false;
+                }
+
                 l_bRetVal = ClientId == l_theOther.ClientId &&
                             string.Equals(AcctCode, l_theOther.AcctCode, System.StringComparison.OrdinalIgnoreCase) &&
                             string.Equals(Time, l_theOther.Time, System.StringComparison.OrdinalIgnoreCase) &&
                             string.Equals(Symbol, l_theOther.Symbol, System.StringComparison.OrdinalIgnoreCase) &&
                             string.Equals(SecType, l_theOther.SecType, System.StringComparison.OrdinalIgnoreCase) &&
                             string.Equals(Exchange, l_theOther.Exchange, System.StringComparison.OrdinalIgnoreCase) &&
-                            string.Equals(Side, l_theOther.Side, System.StringComparison.OrdinalIgnoreCase);
+                            string.Equals(Side, l_theOther.Side, System.StringComparison.OrdinalIgnoreCase) &&
+                            LastNDays == l_theOther.LastNDays;
             }
             return l_bRetVal;
         }
@@ -95,6 +117,7 @@ namespace IBApi
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(SecType);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(Exchange);
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(Side);
+            hashCode *= -1521134295 + LastNDays.GetHashCode();
             return hashCode;
         }
     }

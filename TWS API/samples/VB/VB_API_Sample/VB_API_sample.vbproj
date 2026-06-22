@@ -98,11 +98,27 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Google.Protobuf, Version=3.29.5.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
+      <HintPath>packages\Google.Protobuf.3.29.5\lib\net45\Google.Protobuf.dll</HintPath>
+    </Reference>
     <Reference Include="System">
       <Name>System</Name>
     </Reference>
+    <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Buffers.4.4.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
+    </Reference>
     <Reference Include="System.Drawing">
       <Name>System.Drawing</Name>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Memory.4.5.3\lib\netstandard2.0\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Numerics.Vectors.4.4.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms">
       <Name>System.Windows.Forms</Name>
@@ -121,6 +137,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApiEventSource.vb" />
+    <Compile Include="dlgAttachedOrders.Designer.vb">
+      <DependentUpon>dlgAttachedOrders.vb</DependentUpon>
+    </Compile>
+    <Compile Include="dlgAttachedOrders.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="dlgConfig.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="dlgWsh.Designer.vb">
       <DependentUpon>dlgWsh.vb</DependentUpon>
     </Compile>
@@ -133,6 +158,88 @@
     <Compile Include="dlgPnL.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="EventArgs\CurrentTimeInMillisEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\AccountDataEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\AccountSummaryEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\AccountSummaryProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\AccountUpdateMultiEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\AccountUpdateMultiProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\CommissionAndFeesReportProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UpdateConfigResponseProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ContractDataEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\CurrentTimeInMillisProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\CurrentTimeProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\DisplayGroupListProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\DisplayGroupUpdatedProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\FamilyCodesProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\FundamentalsDataProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HeadTimestampProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistogramDataProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalDataEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalDataProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalDataUpdateProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalNewsEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalNewsProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalScheduleProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalTicksBidAskProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalTicksLastProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\HistoricalTicksProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ManagedAccountsProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\MarketDepthExchangesProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\MarketRuleProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\NewsArticleProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\NewsProvidersProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\NextValidIdProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\PnLProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\PnLSingleProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\PositionEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\PositionMultiEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\PositionMultiProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\PositionProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\RealTimeBarTickProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ReceiveFAProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ReplaceFAEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\RerouteMarketDataRequestProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\RerouteMarketDepthRequestProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ScannerDataProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ScannerParametersProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\SecDefOptParameterEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\SecDefOptParameterProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\SmartComponentsProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\SoftDollarTiersProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\SymbolSamplesProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickByTickDataProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickNewsProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickOptionComputationProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickGenericProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickReqParamsProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UpdateAccountTimeProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UpdateAccountValueProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UpdateMarketDepthL2ProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\MarketDataTypeProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UpdateMarketDepthProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickSnapshotEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickStringProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickSizeProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\TickPriceProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ContractDataProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\CompletedOrdersEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\OrderBoundProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\CompletedOrderProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ExecutionDetailsEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ExecutionDetailsProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ErrorMessageProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\OpenOrdersEndProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\OpenOrderProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\OrderStatusProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UpdateNewsBulletinProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UpdatePortfolioProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\ConfigResponseProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\UserInfoProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\VerifyCompletedProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\VerifyMessageApiProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\WshEventDataProtoBufEventArgs.vb" />
+    <Compile Include="EventArgs\protobuf\WshMetaDataProtoBufEventArgs.vb" />
     <Compile Include="EventArgs\UserInfoEventArgs.vb" />
     <Compile Include="EventArgs\HistoricalScheduleEventArgs.vb" />
     <Compile Include="EventArgs\ReplaceFAEndEventArgs.vb" />
@@ -205,7 +312,7 @@
     <Compile Include="EventArgs\AccountSummaryEventArgs.vb" />
     <Compile Include="EventArgs\AccountUpdateMultiEndEventArgs.vb" />
     <Compile Include="EventArgs\AccountUpdateMultiEventArgs.vb" />
-    <Compile Include="EventArgs\CommissionReportEventArgs.vb" />
+    <Compile Include="EventArgs\CommissionAndFeesReportEventArgs.vb" />
     <Compile Include="EventArgs\ContractDetailsEndEventArgs.vb" />
     <Compile Include="EventArgs\ContractDetailsEventArgs.vb" />
     <Compile Include="EventArgs\MarketRuleEventArgs.vb" />
@@ -341,6 +448,13 @@
     <Compile Include="MainForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <EmbeddedResource Include="dlgAttachedOrders.resx">
+      <DependentUpon>dlgAttachedOrders.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="dlgConfig.resX">
+      <DependentUpon>dlgConfig.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="dlgWsh.resx">
       <DependentUpon>dlgWsh.vb</DependentUpon>
     </EmbeddedResource>

@@ -1,4 +1,4 @@
-' Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 
@@ -208,12 +208,22 @@ Public Class dlgOrderAttribs
     Public WithEvents LabelCustomerAccount As Label
     Public WithEvents txtCustomerAccount As TextBox
     Friend WithEvents checkProfessionalCustomer As CheckBox
+    Friend WithEvents checkIncludeOvernight As CheckBox
     Public WithEvents txtExtOperator As TextBox
     Public WithEvents LabelExtOperator As Label
-    Public WithEvents txtExternalUserId As TextBox
-    Public WithEvents LabelExternalUserId As Label
     Public WithEvents txtManualOrderIndicator As TextBox
     Public WithEvents LabelManualOrderIndicator As Label
+    Friend WithEvents checkImbalanceOnly As CheckBox
+    Friend WithEvents checkIgnoreOpenAuction As CheckBox
+    Friend WithEvents checkPostOnly As CheckBox
+    Friend WithEvents checkAllowPreOpen As CheckBox
+    Friend WithEvents checkDeactivate As CheckBox
+    Friend WithEvents checkSeekPriceImprovement As CheckBox
+    Public WithEvents LabelWhatIfType As Label
+    Public WithEvents txtWhatIfType As TextBox
+    Friend WithEvents checkRouteMarketableToBbo As CheckBox
+    Public WithEvents LabelHedgeMaxSzie As Label
+    Public WithEvents txtHedgeMaxSize As TextBox
     Public WithEvents Label41 As System.Windows.Forms.Label
     <System.Diagnostics.DebuggerStepThrough()> Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
@@ -388,12 +398,22 @@ Public Class dlgOrderAttribs
         Me.LabelCustomerAccount = New System.Windows.Forms.Label()
         Me.txtCustomerAccount = New System.Windows.Forms.TextBox()
         Me.checkProfessionalCustomer = New System.Windows.Forms.CheckBox()
+        Me.checkIncludeOvernight = New System.Windows.Forms.CheckBox()
         Me.txtExtOperator = New System.Windows.Forms.TextBox()
         Me.LabelExtOperator = New System.Windows.Forms.Label()
-        Me.txtExternalUserId = New System.Windows.Forms.TextBox()
-        Me.LabelExternalUserId = New System.Windows.Forms.Label()
         Me.txtManualOrderIndicator = New System.Windows.Forms.TextBox()
         Me.LabelManualOrderIndicator = New System.Windows.Forms.Label()
+        Me.checkImbalanceOnly = New System.Windows.Forms.CheckBox()
+        Me.checkIgnoreOpenAuction = New System.Windows.Forms.CheckBox()
+        Me.checkPostOnly = New System.Windows.Forms.CheckBox()
+        Me.checkAllowPreOpen = New System.Windows.Forms.CheckBox()
+        Me.checkDeactivate = New System.Windows.Forms.CheckBox()
+        Me.checkSeekPriceImprovement = New System.Windows.Forms.CheckBox()
+        Me.LabelWhatIfType = New System.Windows.Forms.Label()
+        Me.txtWhatIfType = New System.Windows.Forms.TextBox()
+        Me.checkRouteMarketableToBbo = New System.Windows.Forms.CheckBox()
+        Me.LabelHedgeMaxSzie = New System.Windows.Forms.Label()
+        Me.txtHedgeMaxSize = New System.Windows.Forms.TextBox()
         Me.SuspendLayout()
         '
         'txtHedgeParam
@@ -648,7 +668,7 @@ Public Class dlgOrderAttribs
         Me.cmdOk.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdOk.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdOk.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdOk.Location = New System.Drawing.Point(345, 786)
+        Me.cmdOk.Location = New System.Drawing.Point(345, 805)
         Me.cmdOk.Name = "cmdOk"
         Me.cmdOk.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdOk.Size = New System.Drawing.Size(73, 25)
@@ -663,7 +683,7 @@ Public Class dlgOrderAttribs
         Me.cmdCancel.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdCancel.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdCancel.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdCancel.Location = New System.Drawing.Point(456, 786)
+        Me.cmdCancel.Location = New System.Drawing.Point(456, 805)
         Me.cmdCancel.Name = "cmdCancel"
         Me.cmdCancel.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdCancel.Size = New System.Drawing.Size(73, 25)
@@ -889,6 +909,7 @@ Public Class dlgOrderAttribs
         Me.txtTIF.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.txtTIF.Size = New System.Drawing.Size(85, 13)
         Me.txtTIF.TabIndex = 1
+        Me.txtTIF.Text = "DAY"
         '
         'Label35
         '
@@ -1693,7 +1714,7 @@ Public Class dlgOrderAttribs
         'checkOptOutSmartRouting
         '
         Me.checkOptOutSmartRouting.AutoSize = True
-        Me.checkOptOutSmartRouting.Location = New System.Drawing.Point(16, 471)
+        Me.checkOptOutSmartRouting.Location = New System.Drawing.Point(268, 780)
         Me.checkOptOutSmartRouting.Name = "checkOptOutSmartRouting"
         Me.checkOptOutSmartRouting.Size = New System.Drawing.Size(166, 18)
         Me.checkOptOutSmartRouting.TabIndex = 38
@@ -2727,6 +2748,16 @@ Public Class dlgOrderAttribs
         Me.checkProfessionalCustomer.Text = "Professional Customer"
         Me.checkProfessionalCustomer.UseVisualStyleBackColor = True
         '
+        'checkIncludeOvernight
+        '
+        Me.checkIncludeOvernight.AutoSize = True
+        Me.checkIncludeOvernight.Location = New System.Drawing.Point(267, 728)
+        Me.checkIncludeOvernight.Name = "checkIncludeOvernight"
+        Me.checkIncludeOvernight.Size = New System.Drawing.Size(110, 18)
+        Me.checkIncludeOvernight.TabIndex = 182
+        Me.checkIncludeOvernight.Text = "Include Overnight"
+        Me.checkIncludeOvernight.UseVisualStyleBackColor = True
+        '
         'txtExtOperator
         '
         Me.txtExtOperator.AcceptsReturn = True
@@ -2735,12 +2766,12 @@ Public Class dlgOrderAttribs
         Me.txtExtOperator.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtExtOperator.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtExtOperator.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtExtOperator.Location = New System.Drawing.Point(144, 751)
+        Me.txtExtOperator.Location = New System.Drawing.Point(143, 752)
         Me.txtExtOperator.MaxLength = 0
         Me.txtExtOperator.Name = "txtExtOperator"
         Me.txtExtOperator.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.txtExtOperator.Size = New System.Drawing.Size(85, 13)
-        Me.txtExtOperator.TabIndex = 177
+        Me.txtExtOperator.TabIndex = 184
         '
         'LabelExtOperator
         '
@@ -2748,40 +2779,12 @@ Public Class dlgOrderAttribs
         Me.LabelExtOperator.Cursor = System.Windows.Forms.Cursors.Default
         Me.LabelExtOperator.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.LabelExtOperator.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.LabelExtOperator.Location = New System.Drawing.Point(16, 751)
+        Me.LabelExtOperator.Location = New System.Drawing.Point(12, 752)
         Me.LabelExtOperator.Name = "LabelExtOperator"
         Me.LabelExtOperator.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.LabelExtOperator.Size = New System.Drawing.Size(117, 17)
-        Me.LabelExtOperator.TabIndex = 176
+        Me.LabelExtOperator.TabIndex = 183
         Me.LabelExtOperator.Text = "Ext Operator"
-        '
-        'txtExternalUserId
-        '
-        Me.txtExternalUserId.AcceptsReturn = True
-        Me.txtExternalUserId.BackColor = System.Drawing.SystemColors.Window
-        Me.txtExternalUserId.BorderStyle = System.Windows.Forms.BorderStyle.None
-        Me.txtExternalUserId.Cursor = System.Windows.Forms.Cursors.IBeam
-        Me.txtExternalUserId.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtExternalUserId.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtExternalUserId.Location = New System.Drawing.Point(432, 751)
-        Me.txtExternalUserId.MaxLength = 0
-        Me.txtExternalUserId.Name = "txtExternalUserId"
-        Me.txtExternalUserId.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.txtExternalUserId.Size = New System.Drawing.Size(85, 13)
-        Me.txtExternalUserId.TabIndex = 179
-        '
-        'LabelExternalUserId
-        '
-        Me.LabelExternalUserId.BackColor = System.Drawing.Color.Gainsboro
-        Me.LabelExternalUserId.Cursor = System.Windows.Forms.Cursors.Default
-        Me.LabelExternalUserId.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.LabelExternalUserId.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.LabelExternalUserId.Location = New System.Drawing.Point(264, 751)
-        Me.LabelExternalUserId.Name = "LabelExternalUserId"
-        Me.LabelExternalUserId.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.LabelExternalUserId.Size = New System.Drawing.Size(117, 17)
-        Me.LabelExternalUserId.TabIndex = 178
-        Me.LabelExternalUserId.Text = "External User Id"
         '
         'txtManualOrderIndicator
         '
@@ -2791,12 +2794,12 @@ Public Class dlgOrderAttribs
         Me.txtManualOrderIndicator.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtManualOrderIndicator.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtManualOrderIndicator.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtManualOrderIndicator.Location = New System.Drawing.Point(753, 751)
+        Me.txtManualOrderIndicator.Location = New System.Drawing.Point(432, 752)
         Me.txtManualOrderIndicator.MaxLength = 0
         Me.txtManualOrderIndicator.Name = "txtManualOrderIndicator"
         Me.txtManualOrderIndicator.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.txtManualOrderIndicator.Size = New System.Drawing.Size(85, 13)
-        Me.txtManualOrderIndicator.TabIndex = 181
+        Me.txtManualOrderIndicator.TabIndex = 186
         '
         'LabelManualOrderIndicator
         '
@@ -2804,24 +2807,165 @@ Public Class dlgOrderAttribs
         Me.LabelManualOrderIndicator.Cursor = System.Windows.Forms.Cursors.Default
         Me.LabelManualOrderIndicator.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.LabelManualOrderIndicator.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.LabelManualOrderIndicator.Location = New System.Drawing.Point(552, 751)
+        Me.LabelManualOrderIndicator.Location = New System.Drawing.Point(265, 752)
         Me.LabelManualOrderIndicator.Name = "LabelManualOrderIndicator"
         Me.LabelManualOrderIndicator.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.LabelManualOrderIndicator.Size = New System.Drawing.Size(117, 17)
-        Me.LabelManualOrderIndicator.TabIndex = 180
+        Me.LabelManualOrderIndicator.TabIndex = 185
         Me.LabelManualOrderIndicator.Text = "Manual Order Indicator"
+        '
+        'checkImbalanceOnly
+        '
+        Me.checkImbalanceOnly.AutoSize = True
+        Me.checkImbalanceOnly.Location = New System.Drawing.Point(550, 728)
+        Me.checkImbalanceOnly.Name = "checkImbalanceOnly"
+        Me.checkImbalanceOnly.Size = New System.Drawing.Size(99, 18)
+        Me.checkImbalanceOnly.TabIndex = 187
+        Me.checkImbalanceOnly.Text = "Imbalance Only"
+        Me.checkImbalanceOnly.UseVisualStyleBackColor = True
+        '
+        'checkIgnoreOpenAuction
+        '
+        Me.checkIgnoreOpenAuction.AutoSize = True
+        Me.checkIgnoreOpenAuction.Location = New System.Drawing.Point(550, 752)
+        Me.checkIgnoreOpenAuction.Name = "checkIgnoreOpenAuction"
+        Me.checkIgnoreOpenAuction.Size = New System.Drawing.Size(124, 18)
+        Me.checkIgnoreOpenAuction.TabIndex = 188
+        Me.checkIgnoreOpenAuction.Text = "Ignore Open Auction"
+        Me.checkIgnoreOpenAuction.UseVisualStyleBackColor = True
+        '
+        'checkPostOnly
+        '
+        Me.checkPostOnly.AutoSize = True
+        Me.checkPostOnly.Location = New System.Drawing.Point(753, 728)
+        Me.checkPostOnly.Name = "checkPostOnly"
+        Me.checkPostOnly.Size = New System.Drawing.Size(72, 18)
+        Me.checkPostOnly.TabIndex = 189
+        Me.checkPostOnly.Text = "Post Only"
+        Me.checkPostOnly.UseVisualStyleBackColor = True
+        '
+        'checkAllowPreOpen
+        '
+        Me.checkAllowPreOpen.AutoSize = True
+        Me.checkAllowPreOpen.Location = New System.Drawing.Point(753, 751)
+        Me.checkAllowPreOpen.Name = "checkAllowPreOpen"
+        Me.checkAllowPreOpen.Size = New System.Drawing.Size(103, 18)
+        Me.checkAllowPreOpen.TabIndex = 190
+        Me.checkAllowPreOpen.Text = "Allow Pre-Open"
+        Me.checkAllowPreOpen.UseVisualStyleBackColor = True
+        '
+        'checkDeactivate
+        '
+        Me.checkDeactivate.AutoSize = True
+        Me.checkDeactivate.Location = New System.Drawing.Point(753, 567)
+        Me.checkDeactivate.Name = "checkDeactivate"
+        Me.checkDeactivate.Size = New System.Drawing.Size(77, 18)
+        Me.checkDeactivate.TabIndex = 191
+        Me.checkDeactivate.Text = "Deactivate"
+        Me.checkDeactivate.UseVisualStyleBackColor = True
+        '
+        'checkSeekPriceImprovement
+        '
+        Me.checkSeekPriceImprovement.AutoSize = True
+        Me.checkSeekPriceImprovement.Checked = True
+        Me.checkSeekPriceImprovement.CheckState = System.Windows.Forms.CheckState.Indeterminate
+        Me.checkSeekPriceImprovement.Location = New System.Drawing.Point(697, 615)
+        Me.checkSeekPriceImprovement.Name = "checkSeekPriceImprovement"
+        Me.checkSeekPriceImprovement.Size = New System.Drawing.Size(141, 18)
+        Me.checkSeekPriceImprovement.TabIndex = 192
+        Me.checkSeekPriceImprovement.Text = "Seek Price Improvement"
+        Me.checkSeekPriceImprovement.UseVisualStyleBackColor = True
+        '
+        'LabelWhatIfType
+        '
+        Me.LabelWhatIfType.BackColor = System.Drawing.Color.Gainsboro
+        Me.LabelWhatIfType.Cursor = System.Windows.Forms.Cursors.Default
+        Me.LabelWhatIfType.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.LabelWhatIfType.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.LabelWhatIfType.Location = New System.Drawing.Point(12, 780)
+        Me.LabelWhatIfType.Name = "LabelWhatIfType"
+        Me.LabelWhatIfType.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.LabelWhatIfType.Size = New System.Drawing.Size(117, 17)
+        Me.LabelWhatIfType.TabIndex = 193
+        Me.LabelWhatIfType.Text = "WhatIf Type"
+        '
+        'txtWhatIfType
+        '
+        Me.txtWhatIfType.AcceptsReturn = True
+        Me.txtWhatIfType.BackColor = System.Drawing.SystemColors.Window
+        Me.txtWhatIfType.BorderStyle = System.Windows.Forms.BorderStyle.None
+        Me.txtWhatIfType.Cursor = System.Windows.Forms.Cursors.IBeam
+        Me.txtWhatIfType.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtWhatIfType.ForeColor = System.Drawing.SystemColors.WindowText
+        Me.txtWhatIfType.Location = New System.Drawing.Point(144, 780)
+        Me.txtWhatIfType.MaxLength = 0
+        Me.txtWhatIfType.Name = "txtWhatIfType"
+        Me.txtWhatIfType.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.txtWhatIfType.Size = New System.Drawing.Size(85, 13)
+        Me.txtWhatIfType.TabIndex = 194
+        '
+        'checkRouteMarketableToBbo
+        '
+        Me.checkRouteMarketableToBbo.AutoSize = True
+        Me.checkRouteMarketableToBbo.Checked = True
+        Me.checkRouteMarketableToBbo.CheckState = System.Windows.Forms.CheckState.Indeterminate
+        Me.checkRouteMarketableToBbo.Location = New System.Drawing.Point(550, 780)
+        Me.checkRouteMarketableToBbo.Name = "checkRouteMarketableToBbo"
+        Me.checkRouteMarketableToBbo.Size = New System.Drawing.Size(145, 18)
+        Me.checkRouteMarketableToBbo.TabIndex = 195
+        Me.checkRouteMarketableToBbo.Text = "Route Marketable To Bbo"
+        Me.checkRouteMarketableToBbo.UseVisualStyleBackColor = True
+        '
+        'LabelHedgeMaxSzie
+        '
+        Me.LabelHedgeMaxSzie.BackColor = System.Drawing.Color.Gainsboro
+        Me.LabelHedgeMaxSzie.Cursor = System.Windows.Forms.Cursors.Default
+        Me.LabelHedgeMaxSzie.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.LabelHedgeMaxSzie.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.LabelHedgeMaxSzie.Location = New System.Drawing.Point(16, 471)
+        Me.LabelHedgeMaxSzie.Name = "LabelHedgeMaxSzie"
+        Me.LabelHedgeMaxSzie.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.LabelHedgeMaxSzie.Size = New System.Drawing.Size(97, 17)
+        Me.LabelHedgeMaxSzie.TabIndex = 196
+        Me.LabelHedgeMaxSzie.Text = "Hedge: max size"
+        '
+        'txtHedgeMaxSize
+        '
+        Me.txtHedgeMaxSize.AcceptsReturn = True
+        Me.txtHedgeMaxSize.BackColor = System.Drawing.SystemColors.Window
+        Me.txtHedgeMaxSize.BorderStyle = System.Windows.Forms.BorderStyle.None
+        Me.txtHedgeMaxSize.Cursor = System.Windows.Forms.Cursors.IBeam
+        Me.txtHedgeMaxSize.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtHedgeMaxSize.ForeColor = System.Drawing.SystemColors.WindowText
+        Me.txtHedgeMaxSize.Location = New System.Drawing.Point(143, 471)
+        Me.txtHedgeMaxSize.MaxLength = 0
+        Me.txtHedgeMaxSize.Name = "txtHedgeMaxSize"
+        Me.txtHedgeMaxSize.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.txtHedgeMaxSize.Size = New System.Drawing.Size(85, 13)
+        Me.txtHedgeMaxSize.TabIndex = 197
+        Me.ToolTip1.SetToolTip(Me.txtHedgeMaxSize, "Allowed values are 'beta' for beta hedge and 'ratio' for pair hedge")
         '
         'dlgOrderAttribs
         '
         Me.AutoScaleBaseSize = New System.Drawing.Size(5, 13)
         Me.BackColor = System.Drawing.Color.Gainsboro
-        Me.ClientSize = New System.Drawing.Size(850, 818)
+        Me.ClientSize = New System.Drawing.Size(866, 837)
+        Me.Controls.Add(Me.txtHedgeMaxSize)
+        Me.Controls.Add(Me.LabelHedgeMaxSzie)
+        Me.Controls.Add(Me.checkRouteMarketableToBbo)
+        Me.Controls.Add(Me.txtWhatIfType)
+        Me.Controls.Add(Me.LabelWhatIfType)
+        Me.Controls.Add(Me.checkSeekPriceImprovement)
+        Me.Controls.Add(Me.checkDeactivate)
+        Me.Controls.Add(Me.checkAllowPreOpen)
+        Me.Controls.Add(Me.checkPostOnly)
+        Me.Controls.Add(Me.checkIgnoreOpenAuction)
+        Me.Controls.Add(Me.checkImbalanceOnly)
         Me.Controls.Add(Me.txtManualOrderIndicator)
         Me.Controls.Add(Me.LabelManualOrderIndicator)
-        Me.Controls.Add(Me.txtExternalUserId)
-        Me.Controls.Add(Me.LabelExternalUserId)
         Me.Controls.Add(Me.txtExtOperator)
         Me.Controls.Add(Me.LabelExtOperator)
+        Me.Controls.Add(Me.checkIncludeOvernight)
         Me.Controls.Add(Me.checkProfessionalCustomer)
         Me.Controls.Add(Me.txtCustomerAccount)
         Me.Controls.Add(Me.LabelCustomerAccount)
@@ -3046,7 +3190,9 @@ Public Class dlgOrderAttribs
         m_ok = False
 
         txtModelCode.Text = m_orderInfo.ModelCode
-        txtTIF.Text = m_orderInfo.Tif
+        If m_orderInfo.Tif IsNot Nothing Then
+            txtTIF.Text = m_orderInfo.Tif
+        End If
         txtActiveStartTime.Text = m_orderInfo.ActiveStartTime
         txtActiveStopTime.Text = m_orderInfo.ActiveStopTime
         txtOCA.Text = m_orderInfo.OcaGroup
@@ -3155,9 +3301,6 @@ Public Class dlgOrderAttribs
         End If
         txtMidOffsetAtWhole.Text = dvalStr(m_orderInfo.MidOffsetAtWhole)
         txtMidOffsetAtHalf.Text = dvalStr(m_orderInfo.MidOffsetAtHalf)
-        txtExtOperator.Text = m_orderInfo.ExtOperator
-        txtExternalUserId.Text = m_orderInfo.ExternalUserId
-        txtManualOrderIndicator.Text = ivalStr(m_orderInfo.ManualOrderIndicator)
     End Sub
 
     ' ========================================================
@@ -3200,14 +3343,6 @@ Public Class dlgOrderAttribs
         End If
     End Function
 
-    Private Function dval(text As String) As Double
-        If Len(text) = 0 Then
-            Return Double.MaxValue
-        Else
-            Return CDbl(text)
-        End If
-    End Function
-
     ' ========================================================
     ' Button Events
     ' ========================================================
@@ -3231,9 +3366,9 @@ Public Class dlgOrderAttribs
         m_orderInfo.Rule80A = txtRule80A.Text
         m_orderInfo.AllOrNone = bval(txtAllOrNone.Text)
         m_orderInfo.MinQty = ival(txtMinQty.Text)
-        m_orderInfo.PercentOffset = dval(txtPercentOffset.Text)
-        m_orderInfo.TrailStopPrice = dval(txtTrailStopPrice.Text)
-        m_orderInfo.TrailingPercent = dval(txtTrailingPercent.Text)
+        m_orderInfo.PercentOffset = Utils.StringToDouble(txtPercentOffset.Text)
+        m_orderInfo.TrailStopPrice = Utils.StringToDouble(txtTrailStopPrice.Text)
+        m_orderInfo.TrailingPercent = Utils.StringToDouble(txtTrailingPercent.Text)
 
         ' Institutional orders only
         m_orderInfo.OpenClose = txtOpenClose.Text
@@ -3247,28 +3382,28 @@ Public Class dlgOrderAttribs
         End If
 
         'SMART routing only
-        m_orderInfo.DiscretionaryAmt = dval(txtDiscretionaryAmt.Text)
+        m_orderInfo.DiscretionaryAmt = Utils.StringToDouble(txtDiscretionaryAmt.Text)
         m_orderInfo.OptOutSmartRouting = checkOptOutSmartRouting.Checked
 
         ' BOX or VOL orders only
         m_orderInfo.AuctionStrategy = ival(txtAuctionStrategy.Text)
 
         'BOX orders only
-        m_orderInfo.StartingPrice = dval(txtStartingPrice.Text)
-        m_orderInfo.StockRefPrice = dval(txtStockRefPrice.Text)
-        m_orderInfo.Delta = dval(txtDelta.Text)
+        m_orderInfo.StartingPrice = Utils.StringToDouble(txtStartingPrice.Text)
+        m_orderInfo.StockRefPrice = Utils.StringToDouble(txtStockRefPrice.Text)
+        m_orderInfo.Delta = Utils.StringToDouble(txtDelta.Text)
 
         ' pegged to stock or VOL orders
-        m_orderInfo.StockRangeLower = dval(txtStockRangeLower.Text)
-        m_orderInfo.StockRangeUpper = dval(txtStockRangeUpper.Text)
+        m_orderInfo.StockRangeLower = Utils.StringToDouble(txtStockRangeLower.Text)
+        m_orderInfo.StockRangeUpper = Utils.StringToDouble(txtStockRangeUpper.Text)
 
         ' VOLATILITY orders only
-        m_orderInfo.Volatility = dval(txtVolatility.Text)
+        m_orderInfo.Volatility = Utils.StringToDouble(txtVolatility.Text)
         m_orderInfo.VolatilityType = ival(txtVolatilityType.Text)
         m_orderInfo.ContinuousUpdate = bval(txtContinuousUpdate.Text)
         m_orderInfo.ReferencePriceType = ival(txtReferencePriceType.Text)
         m_orderInfo.DeltaNeutralOrderType = txtDeltaNeutralOrderType.Text
-        m_orderInfo.DeltaNeutralAuxPrice = dval(txtDeltaNeutralAuxPrice.Text)
+        m_orderInfo.DeltaNeutralAuxPrice = Utils.StringToDouble(txtDeltaNeutralAuxPrice.Text)
         m_orderInfo.DeltaNeutralConId = ival(txtDeltaNeutralConId.Text)
         m_orderInfo.DeltaNeutralSettlingFirm = txtDeltaNeutralSettlingFirm.Text
         m_orderInfo.DeltaNeutralClearingAccount = txtDeltaNeutralClearingAccount.Text
@@ -3281,10 +3416,10 @@ Public Class dlgOrderAttribs
         ' SCALE orders only
         m_orderInfo.ScaleInitLevelSize = ival(txtScaleInitLevelSize.Text)
         m_orderInfo.ScaleSubsLevelSize = ival(txtScaleSubsLevelSize.Text)
-        m_orderInfo.ScalePriceIncrement = dval(txtScalePriceIncr.Text)
-        m_orderInfo.ScalePriceAdjustValue = dval(txtScalePriceAdjustValue.Text)
+        m_orderInfo.ScalePriceIncrement = Utils.StringToDouble(txtScalePriceIncr.Text)
+        m_orderInfo.ScalePriceAdjustValue = Utils.StringToDouble(txtScalePriceAdjustValue.Text)
         m_orderInfo.ScalePriceAdjustInterval = ival(txtScalePriceAdjustInterval.Text)
-        m_orderInfo.ScaleProfitOffset = dval(txtScaleProfitOffset.Text)
+        m_orderInfo.ScaleProfitOffset = Utils.StringToDouble(txtScaleProfitOffset.Text)
         m_orderInfo.ScaleAutoReset = checkScaleAutoReset.Checked
         m_orderInfo.ScaleInitPosition = ival(txtScaleInitPosition.Text)
         m_orderInfo.ScaleInitFillQty = ival(txtScaleInitFillQty.Text)
@@ -3294,6 +3429,7 @@ Public Class dlgOrderAttribs
         ' HEDGE orders only
         m_orderInfo.HedgeType = txtHedgeType.Text
         m_orderInfo.HedgeParam = txtHedgeParam.Text
+        m_orderInfo.HedgeMaxSize = ival(txtHedgeMaxSize.Text)
 
         ' Clearing info
         m_orderInfo.Account = txtAccount.Text
@@ -3321,18 +3457,25 @@ Public Class dlgOrderAttribs
         m_orderInfo.ManualOrderTime = txtManualOrderTime.Text
         m_orderInfo.MinTradeQty = ival(txtMinTradeQty.Text)
         m_orderInfo.MinCompeteSize = ival(txtMinCompeteSize.Text)
-        m_orderInfo.CompeteAgainstBestOffset = If(checkCompeteAgainstBestOffsetUpToMid.Checked, dval(IBApi.Order.COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID), dval(txtCompeteAgainstBestOffset.Text))
-        m_orderInfo.MidOffsetAtWhole = dval(txtMidOffsetAtWhole.Text)
-        m_orderInfo.MidOffsetAtHalf = dval(txtMidOffsetAtHalf.Text)
+        m_orderInfo.CompeteAgainstBestOffset = If(checkCompeteAgainstBestOffsetUpToMid.Checked, Utils.StringToDouble(IBApi.Order.COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID), Utils.StringToDouble(txtCompeteAgainstBestOffset.Text))
+        m_orderInfo.MidOffsetAtWhole = Utils.StringToDouble(txtMidOffsetAtWhole.Text)
+        m_orderInfo.MidOffsetAtHalf = Utils.StringToDouble(txtMidOffsetAtHalf.Text)
         m_orderInfo.CustomerAccount = txtCustomerAccount.Text
         m_orderInfo.ProfessionalCustomer = checkProfessionalCustomer.Checked
+        m_orderInfo.IncludeOvernight = checkIncludeOvernight.Checked
         m_orderInfo.ExtOperator = txtExtOperator.Text
-        m_orderInfo.ExternalUserId = txtExternalUserId.Text
         m_orderInfo.ManualOrderIndicator = ival(txtManualOrderIndicator.Text)
+        m_orderInfo.ImbalanceOnly = checkImbalanceOnly.Checked
+        m_orderInfo.PostOnly = checkPostOnly.Checked
+        m_orderInfo.AllowPreOpen = checkAllowPreOpen.Checked
+        m_orderInfo.IgnoreOpenAuction = checkIgnoreOpenAuction.Checked
+        m_orderInfo.Deactivate = checkDeactivate.Checked
+        m_orderInfo.SeekPriceImprovement = If(checkSeekPriceImprovement.CheckState = CheckState.Indeterminate, Nothing, CType(checkSeekPriceImprovement.Checked, Boolean?))
+        m_orderInfo.WhatIfType = ival(txtWhatIfType.Text)
+        m_orderInfo.RouteMarketableToBbo = If(checkRouteMarketableToBbo.CheckState = CheckState.Indeterminate, Nothing, CType(checkRouteMarketableToBbo.Checked, Boolean?))
 
         m_orderCancel.ManualOrderCancelTime = txtManualOrderCancelTime.Text
         m_orderCancel.ExtOperator = txtExtOperator.Text
-        m_orderCancel.ExternalUserId = txtExternalUserId.Text
         m_orderCancel.ManualOrderIndicator = ival(txtManualOrderIndicator.Text)
 
         m_ok = True

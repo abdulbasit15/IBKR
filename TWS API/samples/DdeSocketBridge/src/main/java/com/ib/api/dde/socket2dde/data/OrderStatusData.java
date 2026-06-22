@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.socket2dde.data;
@@ -12,7 +12,7 @@ public class OrderStatusData {
     private final Decimal m_filled;
     private final Decimal m_remaining;
     private final double m_avgFillPrice;
-    private final int m_permId;
+    private final long m_permId;
     private final int m_parentId; 
     private final double m_lastFillPrice;
     private final int m_clientId;
@@ -26,7 +26,7 @@ public class OrderStatusData {
     public Decimal filled()       { return m_filled; }
     public Decimal remaining()    { return m_remaining; }
     public double avgFillPrice()  { return m_avgFillPrice; }
-    public int permId()           { return m_permId; }
+    public long permId()          { return m_permId; }
     public int parentId()         { return m_parentId; }
     public double lastFillPrice() { return m_lastFillPrice; }
     public int clientId()         { return m_clientId; }
@@ -38,7 +38,7 @@ public class OrderStatusData {
     public void errorMessage(String errorMessage) { m_errorMessage = errorMessage; }
     
     public OrderStatusData(int orderId, String status, Decimal filled, 
-                Decimal remaining, double avgFillPrice, int permId, int parentId, 
+                Decimal remaining, double avgFillPrice, long permId, int parentId, 
                 double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
         m_orderId = orderId;
         m_status = status;

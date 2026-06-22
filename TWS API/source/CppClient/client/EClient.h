@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -9,18 +9,104 @@
 #include <string>
 #include <vector>
 #include <ostream>
+#include <set>
 #include "platformspecific.h"
 #include "CommonDefs.h"
 #include "TagValue.h"
 #include "Contract.h"
 #include "WshEventData.h"
 #include "OrderCancel.h"
+#include "EDecoder.h"
+#include "ExecutionRequest.pb.h"
+#include "PlaceOrderRequest.pb.h"
+#include "CancelOrderRequest.pb.h"
+#include "GlobalCancelRequest.pb.h"
+#include "AllOpenOrdersRequest.pb.h"
+#include "AutoOpenOrdersRequest.pb.h"
+#include "OpenOrdersRequest.pb.h"
+#include "CompletedOrdersRequest.pb.h"
+#include "ContractDataRequest.pb.h"
+#include "MarketDataRequest.pb.h"
+#include "CancelMarketData.pb.h"
+#include "MarketDepthRequest.pb.h"
+#include "CancelMarketDepth.pb.h"
+#include "MarketDataTypeRequest.pb.h"
+#include "AccountDataRequest.pb.h"
+#include "ManagedAccountsRequest.pb.h"
+#include "PositionsRequest.pb.h"
+#include "AccountSummaryRequest.pb.h"
+#include "CancelAccountSummary.pb.h"
+#include "CancelPositions.pb.h"
+#include "PositionsMultiRequest.pb.h"
+#include "CancelPositionsMulti.pb.h"
+#include "AccountUpdatesMultiRequest.pb.h"
+#include "CancelAccountUpdatesMulti.pb.h"
+#include "HistoricalDataRequest.pb.h"
+#include "CancelHistoricalData.pb.h"
+#include "RealTimeBarsRequest.pb.h"
+#include "CancelRealTimeBars.pb.h"
+#include "HeadTimestampRequest.pb.h"
+#include "CancelHeadTimestamp.pb.h"
+#include "HistogramDataRequest.pb.h"
+#include "CancelHistogramData.pb.h"
+#include "HistoricalTicksRequest.pb.h"
+#include "TickByTickRequest.pb.h"
+#include "CancelTickByTick.pb.h"
+#include "NewsBulletinsRequest.pb.h"
+#include "CancelNewsBulletins.pb.h"
+#include "NewsArticleRequest.pb.h"
+#include "NewsProvidersRequest.pb.h"
+#include "HistoricalNewsRequest.pb.h"
+#include "WshMetaDataRequest.pb.h"
+#include "CancelWshMetaData.pb.h"
+#include "WshEventDataRequest.pb.h"
+#include "CancelWshEventData.pb.h"
+#include "ScannerParametersRequest.pb.h"
+#include "ScannerSubscriptionRequest.pb.h"
+#include "CancelScannerSubscription.pb.h"
+#include "FundamentalsDataRequest.pb.h"
+#include "CancelFundamentalsData.pb.h"
+#include "PnLRequest.pb.h"
+#include "CancelPnL.pb.h"
+#include "PnLSingleRequest.pb.h"
+#include "CancelPnLSingle.pb.h"
+#include "FARequest.pb.h"
+#include "FAReplace.pb.h"
+#include "ExerciseOptionsRequest.pb.h"
+#include "CalculateImpliedVolatilityRequest.pb.h"
+#include "CancelCalculateImpliedVolatility.pb.h"
+#include "CalculateOptionPriceRequest.pb.h"
+#include "CancelCalculateOptionPrice.pb.h"
+#include "SecDefOptParamsRequest.pb.h"
+#include "SoftDollarTiersRequest.pb.h"
+#include "FamilyCodesRequest.pb.h"
+#include "MatchingSymbolsRequest.pb.h"
+#include "SmartComponentsRequest.pb.h"
+#include "MarketRuleRequest.pb.h"
+#include "UserInfoRequest.pb.h"
+#include "IdsRequest.pb.h"
+#include "CurrentTimeRequest.pb.h"
+#include "CurrentTimeInMillisRequest.pb.h"
+#include "StartApiRequest.pb.h"
+#include "SetServerLogLevelRequest.pb.h"
+#include "VerifyRequest.pb.h"
+#include "VerifyMessageRequest.pb.h"
+#include "QueryDisplayGroupsRequest.pb.h"
+#include "SubscribeToGroupEventsRequest.pb.h"
+#include "UpdateDisplayGroupRequest.pb.h"
+#include "UnsubscribeFromGroupEventsRequest.pb.h"
+#include "MarketDepthExchangesRequest.pb.h"
+#include "CancelContractData.pb.h"
+#include "CancelHistoricalTicks.pb.h"
+#include "ConfigRequest.pb.h"
+#include "UpdateConfigRequest.pb.h"
+
 
 namespace ibapi {
 namespace client_constants {
 
 /////////////////////////////////////////////////////////////////////////////////
-// SOCKET CLIENT VERSION CHANGE LOG : Incremented when the format of incomming
+// SOCKET CLIENT VERSION CHANGE LOG : Incremented when the format of incoming
 //                                    server responses change
 /////////////////////////////////////////////////////////////////////////////////
 // constants
@@ -62,7 +148,7 @@ namespace client_constants {
 // 35 = can receive contId field for Contract objects
 // 36 = can receive outsideRth field for Order objects
 // 37 = can receive clearingAccount and clearingIntent for Order objects
-// 38 = can receive multipier and primaryExchange in portfolio updates
+// 38 = can receive multiplier and primaryExchange in portfolio updates
 //    ; can receive cumQty and avgPrice in execution
 //    ; can receive fundamental data
 //    ; can receive deltaNeutralContract for Contract objects
@@ -92,7 +178,7 @@ namespace client_constants {
 //      InitPosition, InitFillQty and RandomPercent) in openOrder
 // 55 = can receive orderComboLegs (price) in openOrder
 // 56 = can receive trailingPercent in openOrder
-// 57 = can receive commissionReport message
+// 57 = can receive commissionAndFeesReport message
 // 58 = can receive CUSIP/ISIN/etc. in contractDescription/bondContractDescription
 // 59 = can receive evRule, evMultiplier in contractDescription/bondContractDescription/executionDetails
 //      can receive multiplier in executionDetails
@@ -191,11 +277,99 @@ const int CANCEL_WSH_META_DATA			= 101;
 const int REQ_WSH_EVENT_DATA			= 102;
 const int CANCEL_WSH_EVENT_DATA			= 103;
 const int REQ_USER_INFO                 = 104;
+const int REQ_CURRENT_TIME_IN_MILLIS    = 105;
+const int CANCEL_CONTRACT_DATA          = 106;
+const int CANCEL_HISTORICAL_TICKS       = 107;
+const int REQ_CONFIG                    = 108;
+const int UPDATE_CONFIG                 = 109;
 
 // TWS New Bulletins constants
 const int NEWS_MSG              = 1;    // standard IB news bulleting message
-const int EXCHANGE_AVAIL_MSG    = 2;    // control message specifing that an exchange is available for trading
-const int EXCHANGE_UNAVAIL_MSG  = 3;    // control message specifing that an exchange is unavailable for trading
+const int EXCHANGE_AVAIL_MSG    = 2;    // control message specifying that an exchange is available for trading
+const int EXCHANGE_UNAVAIL_MSG  = 3;    // control message specifying that an exchange is unavailable for trading
+
+const int PROTOBUF_MSG_ID = 200;
+const std::map<int, int> PROTOBUF_MSG_IDS = {
+	{REQ_EXECUTIONS, MIN_SERVER_VER_PROTOBUF},
+	{PLACE_ORDER, MIN_SERVER_VER_PROTOBUF_PLACE_ORDER},
+	{CANCEL_ORDER, MIN_SERVER_VER_PROTOBUF_PLACE_ORDER},
+	{REQ_GLOBAL_CANCEL, MIN_SERVER_VER_PROTOBUF_PLACE_ORDER},
+	{REQ_ALL_OPEN_ORDERS, MIN_SERVER_VER_PROTOBUF_COMPLETED_ORDER},
+	{REQ_AUTO_OPEN_ORDERS, MIN_SERVER_VER_PROTOBUF_COMPLETED_ORDER},
+	{REQ_OPEN_ORDERS, MIN_SERVER_VER_PROTOBUF_COMPLETED_ORDER},
+	{REQ_COMPLETED_ORDERS, MIN_SERVER_VER_PROTOBUF_COMPLETED_ORDER},
+	{REQ_CONTRACT_DATA, MIN_SERVER_VER_PROTOBUF_CONTRACT_DATA},
+	{REQ_MKT_DATA, MIN_SERVER_VER_PROTOBUF_MARKET_DATA},
+	{CANCEL_MKT_DATA, MIN_SERVER_VER_PROTOBUF_MARKET_DATA},
+	{REQ_MKT_DEPTH, MIN_SERVER_VER_PROTOBUF_MARKET_DATA},
+	{CANCEL_MKT_DEPTH, MIN_SERVER_VER_PROTOBUF_MARKET_DATA},
+	{REQ_MARKET_DATA_TYPE, MIN_SERVER_VER_PROTOBUF_MARKET_DATA},
+	{REQ_ACCT_DATA, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{REQ_MANAGED_ACCTS, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{REQ_POSITIONS, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{CANCEL_POSITIONS, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{REQ_ACCOUNT_SUMMARY, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{CANCEL_ACCOUNT_SUMMARY, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{REQ_POSITIONS_MULTI, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{CANCEL_POSITIONS_MULTI, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{REQ_ACCOUNT_UPDATES_MULTI, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{CANCEL_ACCOUNT_UPDATES_MULTI, MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS},
+	{REQ_HISTORICAL_DATA, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{CANCEL_HISTORICAL_DATA, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{REQ_REAL_TIME_BARS, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{CANCEL_REAL_TIME_BARS, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{REQ_HEAD_TIMESTAMP, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{CANCEL_HEAD_TIMESTAMP, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{REQ_HISTOGRAM_DATA, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{CANCEL_HISTOGRAM_DATA, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{REQ_HISTORICAL_TICKS, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{REQ_TICK_BY_TICK_DATA, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{CANCEL_TICK_BY_TICK_DATA, MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA},
+	{REQ_NEWS_BULLETINS, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{CANCEL_NEWS_BULLETINS, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{REQ_NEWS_ARTICLE, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{REQ_NEWS_PROVIDERS, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{REQ_HISTORICAL_NEWS, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{REQ_WSH_META_DATA, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{CANCEL_WSH_META_DATA, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{REQ_WSH_EVENT_DATA, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+	{CANCEL_WSH_EVENT_DATA, MIN_SERVER_VER_PROTOBUF_NEWS_DATA},
+    {REQ_SCANNER_PARAMETERS, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {REQ_SCANNER_SUBSCRIPTION, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {CANCEL_SCANNER_SUBSCRIPTION, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {REQ_FUNDAMENTAL_DATA, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {CANCEL_FUNDAMENTAL_DATA, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {REQ_PNL, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {CANCEL_PNL, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {REQ_PNL_SINGLE, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+    {CANCEL_PNL_SINGLE, MIN_SERVER_VER_PROTOBUF_SCAN_DATA},
+	{REQ_FA, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1},
+	{REPLACE_FA, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1},
+	{EXERCISE_OPTIONS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1},
+	{REQ_CALC_IMPLIED_VOLAT, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1},
+	{CANCEL_CALC_IMPLIED_VOLAT, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1},
+	{REQ_CALC_OPTION_PRICE, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1},
+	{CANCEL_CALC_OPTION_PRICE, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1},
+	{REQ_SEC_DEF_OPT_PARAMS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2},
+	{REQ_SOFT_DOLLAR_TIERS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2},
+	{REQ_FAMILY_CODES, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2},
+	{REQ_MATCHING_SYMBOLS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2},
+	{REQ_SMART_COMPONENTS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2},
+	{REQ_MARKET_RULE, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2},
+	{REQ_USER_INFO, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2},
+	{REQ_IDS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{REQ_CURRENT_TIME, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{REQ_CURRENT_TIME_IN_MILLIS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{START_API, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{SET_SERVER_LOGLEVEL, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{VERIFY_REQUEST, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{VERIFY_MESSAGE, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{QUERY_DISPLAY_GROUPS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{SUBSCRIBE_TO_GROUP_EVENTS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{UPDATE_DISPLAY_GROUP, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{UNSUBSCRIBE_FROM_GROUP_EVENTS, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3},
+	{REQ_MKT_DEPTH_EXCHANGES, MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3}
+};
 
 } // namespace client_constants
 } // namespace ibapi
@@ -232,6 +406,7 @@ public:
 	void setConnectOptions(const std::string& connectOptions);
 	void disableUseV100Plus();
 	bool usingV100Plus();
+	bool useProtoBuf(int msgId);
 
 protected:
 
@@ -243,8 +418,7 @@ public:
 	enum ConnState {
 		CS_DISCONNECTED,
 		CS_CONNECTING,
-		CS_CONNECTED,
-		CS_REDIRECT
+		CS_CONNECTED
 	};
 
 	// connection state
@@ -272,18 +446,18 @@ public:
 	// override virtual funcs from EClient
 	int serverVersion();
 	std::string TwsConnectionTime();
-	void reqMktData(TickerId id, const Contract& contract,
+	void reqMktData(int reqId, const Contract& contract,
 		const std::string& genericTicks, bool snapshot, bool regulatorySnaphsot, const TagValueListSPtr& mktDataOptions);
-	void cancelMktData(TickerId id);
-	void placeOrder(OrderId id, const Contract& contract, const Order& order);
-	void cancelOrder(OrderId id, const OrderCancel& orderCancel);
+	void cancelMktData(int reqId);
+	void placeOrder(int id, const Contract& contract, const Order& order);
+	void cancelOrder(int id, const OrderCancel& orderCancel);
 	void reqOpenOrders();
 	void reqAccountUpdates(bool subscribe, const std::string& acctCode);
 	void reqExecutions(int reqId, const ExecutionFilter& filter);
 	void reqIds(int numIds);
 	void reqContractDetails(int reqId, const Contract& contract);
-	void reqMktDepth(TickerId tickerId, const Contract& contract, int numRows, bool isSmartDepth, const TagValueListSPtr& mktDepthOptions);
-	void cancelMktDepth(TickerId tickerId, bool isSmartDepth);
+	void reqMktDepth(int reqId, const Contract& contract, int numRows, bool isSmartDepth, const TagValueListSPtr& mktDepthOptions);
+	void cancelMktDepth(int reqId, bool isSmartDepth);
 	void reqNewsBulletins(bool allMsgs);
 	void cancelNewsBulletins();
 	void setServerLogLevel(int level);
@@ -292,34 +466,34 @@ public:
 	void reqManagedAccts();
 	void requestFA(faDataType pFaDataType);
 	void replaceFA(int reqId, faDataType pFaDataType, const std::string& cxml);
-	void reqHistoricalData(TickerId id, const Contract& contract,
+	void reqHistoricalData(int reqId, const Contract& contract,
 		const std::string& endDateTime, const std::string& durationStr,
 		const std::string&  barSizeSetting, const std::string& whatToShow,
 		int useRTH, int formatDate, bool keepUpToDate, const TagValueListSPtr& chartOptions);
-	void exerciseOptions(TickerId tickerId, const Contract& contract,
+	void exerciseOptions(int reqId, const Contract& contract,
 		int exerciseAction, int exerciseQuantity,
 		const std::string& account, int override, const std::string& manualOrderTime, const std::string& customerAccount, bool professionalCustomer);
-	void cancelHistoricalData(TickerId tickerId );
-	void reqRealTimeBars(TickerId id, const Contract& contract, int barSize,
+	void cancelHistoricalData(int reqId);
+	void reqRealTimeBars(int reqId, const Contract& contract, int barSize,
 		const std::string& whatToShow, bool useRTH, const TagValueListSPtr& realTimeBarsOptions);
-	void cancelRealTimeBars(TickerId tickerId );
-	void cancelScannerSubscription(int tickerId);
+	void cancelRealTimeBars(int reqId);
+	void cancelScannerSubscription(int reqId);
 	void reqScannerParameters();
-	void reqScannerSubscription(int tickerId, const ScannerSubscription& subscription, const TagValueListSPtr& scannerSubscriptionOptions, const TagValueListSPtr& scannerSubscriptionFilterOptions);
+	void reqScannerSubscription(int reqId, const ScannerSubscription& subscription, const TagValueListSPtr& scannerSubscriptionOptions, const TagValueListSPtr& scannerSubscriptionFilterOptions);
 	void reqCurrentTime();
-	void reqFundamentalData(TickerId reqId, const Contract&, const std::string& reportType,
+	void reqFundamentalData(int reqId, const Contract&, const std::string& reportType,
                                  //reserved for future use, must be blank
                                  const TagValueListSPtr& fundamentalDataOptions);
-	void cancelFundamentalData(TickerId reqId);
-	void calculateImpliedVolatility(TickerId reqId, const Contract& contract, double optionPrice, double underPrice, 
+	void cancelFundamentalData(int reqId);
+	void calculateImpliedVolatility(int reqId, const Contract& contract, double optionPrice, double underPrice,
         //reserved for future use, must be blank
         const TagValueListSPtr& miscOptions);
-	void calculateOptionPrice(TickerId reqId, const Contract& contract, double volatility, double underPrice, 
+	void calculateOptionPrice(int reqId, const Contract& contract, double volatility, double underPrice,
         //reserved for future use, must be blank
         const TagValueListSPtr& miscOptions);
-	void cancelCalculateImpliedVolatility(TickerId reqId);
-	void cancelCalculateOptionPrice(TickerId reqId);
-	void reqGlobalCancel();
+	void cancelCalculateImpliedVolatility(int reqId);
+	void cancelCalculateOptionPrice(int reqId);
+	void reqGlobalCancel(const OrderCancel& orderCancel);
 	void reqMarketDataType(int marketDataType);
 	void reqPositions();
 	void cancelPositions();
@@ -345,10 +519,10 @@ public:
 	void reqSmartComponents(int reqId, std::string bboExchange);
 	void reqNewsProviders();
 	void reqNewsArticle(int requestId, const std::string& providerCode, const std::string& articleId, const TagValueListSPtr& newsArticleOptions);
-	void reqHistoricalNews(int requestId, int conId, const std::string& providerCodes, const std::string& startDateTime, const std::string& endDateTime, int totalResults, 
+	void reqHistoricalNews(int requestId, int conId, const std::string& providerCodes, const std::string& startDateTime, const std::string& endDateTime, int totalResults,
 		const TagValueListSPtr& historicalNewsOptions);
-	void reqHeadTimestamp(int tickerId, const Contract &contract, const std::string& whatToShow, int useRTH, int formatDate);
-	void cancelHeadTimestamp(int tickerId);
+	void reqHeadTimestamp(int reqId, const Contract &contract, const std::string& whatToShow, int useRTH, int formatDate);
+	void cancelHeadTimestamp(int reqId);
 	void reqHistogramData(int reqId, const Contract &contract, bool useRTH, const std::string& timePeriod);
 	void cancelHistogramData(int reqId);
 	void reqMarketRule(int marketRuleId);
@@ -367,11 +541,101 @@ public:
 	void cancelWshMetaData(int reqId);
 	void cancelWshEventData(int reqid);
     void reqUserInfo(int reqId);
+	void reqCurrentTimeInMillis();
+	void cancelContractData(int reqId);
+	void cancelHistoricalTicks(int reqId);
+
+public:
+	void reqExecutionsProtoBuf(const protobuf::ExecutionRequest& executionRequestProto);
+	void placeOrderProtoBuf(const protobuf::PlaceOrderRequest& placeOrderRequestProto);
+	void cancelOrderProtoBuf(const protobuf::CancelOrderRequest& cancelOrderRequestProto);
+	void reqGlobalCancelProtoBuf(const protobuf::GlobalCancelRequest & globalCancelRequestProto);
+	void reqAllOpenOrdersProtoBuf(const protobuf::AllOpenOrdersRequest& allOpenOrdersRequestProto);
+	void reqAutoOpenOrdersProtoBuf(const protobuf::AutoOpenOrdersRequest& autoOpenOrdersRequestProto);
+	void reqOpenOrdersProtoBuf(const protobuf::OpenOrdersRequest& openOrdersRequestProto);
+	void reqCompletedOrdersProtoBuf(const protobuf::CompletedOrdersRequest& completedOrdersRequestProto);
+	void reqContractDataProtoBuf(const protobuf::ContractDataRequest& contractDataRequestProto);
+	void reqMarketDataProtoBuf(const protobuf::MarketDataRequest& marketDataRequestProto);
+	void cancelMarketDataProtoBuf(const protobuf::CancelMarketData& cancelMarketDataProto);
+	void reqMarketDepthProtoBuf(const protobuf::MarketDepthRequest& marketDepthRequestProto);
+	void cancelMarketDepthProtoBuf(const protobuf::CancelMarketDepth& cancelMarketDepthProto);
+	void reqMarketDataTypeProtoBuf(const protobuf::MarketDataTypeRequest& marketDataTypeRequestProto);
+    void reqAccountUpdatesProtoBuf(const protobuf::AccountDataRequest &accountDataRequestProto);
+    void reqManagedAcctsProtoBuf(const protobuf::ManagedAccountsRequest &managedAccountsRequestProto);
+    void reqPositionsProtoBuf(const protobuf::PositionsRequest &positionsRequestProto);
+    void reqAccountSummaryProtoBuf(const protobuf::AccountSummaryRequest &accountSummaryRequestProto);
+    void cancelAccountSummaryProtoBuf(const protobuf::CancelAccountSummary &cancelAccountSummaryProto);
+    void cancelPositionsProtoBuf(const protobuf::CancelPositions &cancelPositionsProto);
+    void reqPositionsMultiProtoBuf(const protobuf::PositionsMultiRequest &positionsMultiRequestProto);
+    void cancelPositionsMultiProtoBuf(const protobuf::CancelPositionsMulti &cancelPositionsMultiProto);
+    void reqAccountUpdatesMultiProtoBuf(const protobuf::AccountUpdatesMultiRequest &accountUpdatesMultiRequestProto);
+    void cancelAccountUpdatesMultiProtoBuf(const protobuf::CancelAccountUpdatesMulti &cancelAccountUpdatesMultiProto);
+	void reqHistoricalDataProtoBuf(const protobuf::HistoricalDataRequest& historicalDataRequestProto);
+	void cancelHistoricalDataProtoBuf(const protobuf::CancelHistoricalData& cancelHistoricalDataProto);
+	void reqRealTimeBarsProtoBuf(const protobuf::RealTimeBarsRequest& realTimeBarsRequestProto);
+	void cancelRealTimeBarsProtoBuf(const protobuf::CancelRealTimeBars& cancelRealTimeBarsProto);
+	void reqHeadTimestampProtoBuf(const protobuf::HeadTimestampRequest& headTimestampRequestProto);
+	void cancelHeadTimestampProtoBuf(const protobuf::CancelHeadTimestamp& cancelHeadTimestampProto);
+	void reqHistogramDataProtoBuf(const protobuf::HistogramDataRequest& histogramDataRequestProto);
+	void cancelHistogramDataProtoBuf(const protobuf::CancelHistogramData& cancelHistogramDataProto);
+	void reqHistoricalTicksProtoBuf(const protobuf::HistoricalTicksRequest& historicalTicksRequestProto);
+	void reqTickByTickDataProtoBuf(const protobuf::TickByTickRequest& tickByTickRequestProto);
+	void cancelTickByTickDataProtoBuf(const protobuf::CancelTickByTick& cancelTickByTickProto);
+	void reqNewsBulletinsProtoBuf(const protobuf::NewsBulletinsRequest& newsBulletinsRequestProto);
+	void cancelNewsBulletinsProtoBuf(const protobuf::CancelNewsBulletins& cancelNewsBulletinsProto);
+	void reqNewsArticleProtoBuf(const protobuf::NewsArticleRequest& newsArticleRequestProto);
+	void reqNewsProvidersProtoBuf(const protobuf::NewsProvidersRequest& newsProvidersRequestProto);
+	void reqHistoricalNewsProtoBuf(const protobuf::HistoricalNewsRequest& historicalNewsRequestProto);
+	void reqWshMetaDataProtoBuf(const protobuf::WshMetaDataRequest& wshMetaDataRequestProto);
+	void cancelWshMetaDataProtoBuf(const protobuf::CancelWshMetaData& cancelWshMetaDataProto);
+	void reqWshEventDataProtoBuf(const protobuf::WshEventDataRequest& wshEventDataRequestProto);
+	void cancelWshEventDataProtoBuf(const protobuf::CancelWshEventData& cancelWshEventDataProto);
+	void reqScannerParametersProtoBuf(const protobuf::ScannerParametersRequest& scannerParametersRequestProto);
+	void reqScannerSubscriptionProtoBuf(const protobuf::ScannerSubscriptionRequest& scannerSubscriptionRequestProto);
+	void cancelScannerSubscriptionProtoBuf(const protobuf::CancelScannerSubscription& cancelScannerSubscriptionProto);
+	void reqFundamentalsDataProtoBuf(const protobuf::FundamentalsDataRequest& fundamentalsDataRequestProto);
+	void cancelFundamentalsDataProtoBuf(const protobuf::CancelFundamentalsData& cancelFundamentalsDataProto);
+	void reqPnLProtoBuf(const protobuf::PnLRequest& pnlRequestProto);
+	void cancelPnLProtoBuf(const protobuf::CancelPnL& cancelPnLProto);
+	void reqPnLSingleProtoBuf(const protobuf::PnLSingleRequest& pnlSingleRequestProto);
+	void cancelPnLSingleProtoBuf(const protobuf::CancelPnLSingle& cancelPnLSingleProto);
+	void reqFAProtoBuf(const protobuf::FARequest& faRequestProto);
+	void replaceFAProtoBuf(const protobuf::FAReplace& faReplaceProto);
+	void exerciseOptionsProtoBuf(const protobuf::ExerciseOptionsRequest& exerciseOptionsRequestProto);
+	void calculateImpliedVolatilityProtoBuf(const protobuf::CalculateImpliedVolatilityRequest& calculateImpliedVolatilityRequestProto);
+	void cancelCalculateImpliedVolatilityProtoBuf(const protobuf::CancelCalculateImpliedVolatility& cancelCalculateImpliedVolatilityProto);
+	void calculateOptionPriceProtoBuf(const protobuf::CalculateOptionPriceRequest& calculateOptionPriceRequestProto);
+	void cancelCalculateOptionPriceProtoBuf(const protobuf::CancelCalculateOptionPrice& cancelCalculateOptionPriceProto);
+	void reqSecDefOptParamsProtoBuf(const protobuf::SecDefOptParamsRequest& secDefOptParamsRequestProto);
+	void reqSoftDollarTiersProtoBuf(const protobuf::SoftDollarTiersRequest& softDollarTiersRequestProto);
+	void reqFamilyCodesProtoBuf(const protobuf::FamilyCodesRequest& familyCodesRequestProto);
+	void reqMatchingSymbolsProtoBuf(const protobuf::MatchingSymbolsRequest& matchingSymbolsRequestProto);
+	void reqSmartComponentsProtoBuf(const protobuf::SmartComponentsRequest& smartComponentsRequestProto);
+	void reqMarketRuleProtoBuf(const protobuf::MarketRuleRequest& marketRuleRequestProto);
+	void reqUserInfoProtoBuf(const protobuf::UserInfoRequest& userInfoRequestProto);
+	void reqIdsProtoBuf(const protobuf::IdsRequest& idsRequestProto);
+	void reqCurrentTimeProtoBuf(const protobuf::CurrentTimeRequest& currentTimeRequestProto);
+	void reqCurrentTimeInMillisProtoBuf(const protobuf::CurrentTimeInMillisRequest& currentTimeInMillisRequestProto);
+	void startApiProtoBuf(const protobuf::StartApiRequest& startApiRequestProto);
+	void setServerLogLevelProtoBuf(const protobuf::SetServerLogLevelRequest& setServerLogLevelRequestProto);
+	void verifyRequestProtoBuf(const protobuf::VerifyRequest& verifyRequestProto);
+	void verifyMessageProtoBuf(const protobuf::VerifyMessageRequest& verifyMessageRequestProto);
+	void queryDisplayGroupsProtoBuf(const protobuf::QueryDisplayGroupsRequest& queryDisplayGroupsRequestProto);
+	void subscribeToGroupEventsProtoBuf(const protobuf::SubscribeToGroupEventsRequest& subscribeToGroupEventsRequestProto);
+	void updateDisplayGroupProtoBuf(const protobuf::UpdateDisplayGroupRequest& updateDisplayGroupRequestProto);
+	void unsubscribeFromGroupEventsProtoBuf(const protobuf::UnsubscribeFromGroupEventsRequest& unsubscribeFromGroupEventsRequestProto);
+	void reqMarketDepthExchangesProtoBuf(const protobuf::MarketDepthExchangesRequest& marketDepthExchangesRequestProto);
+	void cancelContractDataProtoBuf(const protobuf::CancelContractData& cancelContractDataProto);
+	void cancelHistoricalTicksProtoBuf(const protobuf::CancelHistoricalTicks& cancelHistoricalTicksProto);
+	void reqConfigProtoBuf(const protobuf::ConfigRequest& configRequestProto);
+	void updateConfigProtoBuf(const protobuf::UpdateConfigRequest& updateConfigRequestProto);
 
 private:
 
 	virtual int receive(char* buf, size_t sz) = 0;
 	static bool isAsciiPrintable(const std::string& s);
+	std::string validateOrderParameters(const protobuf::Order& order);
+	std::string validateAttachedOrdersParameters(const protobuf::AttachedOrders& attachedOrders);
 
 protected:
 
@@ -391,10 +655,14 @@ public:
 
     void EncodeContract(std::ostream& os, const Contract &contract);
     void EncodeTagValueList(std::ostream& os, const TagValueListSPtr &tagValueList);
+	void EncodeMsgId(std::ostream& os, int msgId);
 
 	// "max" encoders
 	static void EncodeFieldMax(std::ostream& os, int);
 	static void EncodeFieldMax(std::ostream& os, double);
+
+	// "raw" encoders
+	static void EncodeRawInt(std::ostream& buf, int intValue);
 
 	// socket state
 private:
@@ -443,6 +711,8 @@ template<> void EClient::EncodeField<std::string> (std::ostream& os, std::string
 #define ENCODE_TAGVALUELIST(x) EClient::EncodeTagValueList(msg, x);
 #define ENCODE_FIELD(x) EClient::EncodeField(msg, x);
 #define ENCODE_FIELD_MAX(x) EClient::EncodeFieldMax(msg, x);
+#define ENCODE_MSG_ID(x) EClient::EncodeMsgId(msg, x);
+#define ENCODE_RAW_INT(x) EClient::EncodeRawInt(msg, x);
 
 
 #endif

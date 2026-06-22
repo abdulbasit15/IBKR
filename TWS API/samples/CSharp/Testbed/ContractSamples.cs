@@ -310,11 +310,11 @@ namespace Samples
         {
             //! [futcontract]
             Contract contract = new Contract();
-            contract.Symbol = "GBL";
+            contract.Symbol = "ES";
             contract.SecType = "FUT";
-            contract.Exchange = "EUREX";
-            contract.Currency = "EUR";
-            contract.LastTradeDateOrContractMonth = "202303";
+            contract.Exchange = "CME";
+            contract.Currency = "USD";
+            contract.LastTradeDateOrContractMonth = "202503";
             //! [futcontract]
             return contract;
         }
@@ -751,5 +751,44 @@ namespace Samples
             //! [fundcontract]
             return contract;
         }
+
+        public static Contract OptForecastx()
+        {
+            //! [optforecastxcontract]
+            Contract contract = new Contract();
+            contract.Symbol = "CPIY";
+            contract.SecType = "OPT";
+            contract.LastTradeDateOrContractMonth = "202612";
+            contract.Currency = "USD";
+            contract.Exchange = "FORECASTX";
+            //! [optforecastxcontract]
+            return contract;
+        }
+
+        public static Contract OptForecastxZeroStrike()
+        {
+            //! [optforecastxcontract]
+            Contract contract = new Contract();
+            contract.Symbol = "CPIY";
+            contract.SecType = "OPT";
+            contract.LastTradeDateOrContractMonth = "202612";
+            contract.Currency = "USD";
+            contract.Strike = 0;
+            contract.Right = "C";
+            contract.Exchange = "FORECASTX";
+            //! [optforecastxcontract]
+            return contract;
+        }
+
+        public static Contract OptForecastxByConId()
+        {
+            //! [optforecastxbyconid]
+            Contract contract = new Contract();
+            contract.ConId = 789013783;
+            contract.Exchange = "FORECASTX";
+            //! [optforecastxbyconid]
+            return contract;
+        }
+
     }
 }

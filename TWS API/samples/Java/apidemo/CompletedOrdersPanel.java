@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package apidemo;
@@ -60,7 +60,7 @@ public class CompletedOrdersPanel extends JPanel implements ICompletedOrdersHand
         }
 
         @Override public int getColumnCount() {
-            return 14;
+            return 17;
         }
 
         @Override public String getColumnName(int col) {
@@ -77,9 +77,11 @@ public class CompletedOrdersPanel extends JPanel implements ICompletedOrdersHand
                 case 9: return "Contract";
                 case 10: return "Cust Acct";
                 case 11: return "Prof Cust";
-                case 12: return "Status";
-                case 13: return "Completed Time";
-                case 14: return "Completed Status";
+                case 12: return "Submitter";
+                case 13: return "Imbalance Only";
+                case 14: return "Status";
+                case 15: return "Completed Time";
+                case 16: return "Completed Status";
 
                 default: return null;
             }
@@ -89,7 +91,7 @@ public class CompletedOrdersPanel extends JPanel implements ICompletedOrdersHand
             CompletedOrder completedOrder = m_completedOrders.get( row);
 
             switch( col) {
-                case 0: return Util.IntMaxString(completedOrder.m_order.permId());
+                case 0: return Util.LongMaxString(completedOrder.m_order.permId());
                 case 1: return Util.LongMaxString(completedOrder.m_order.parentPermId());
                 case 2: return completedOrder.m_order.account();
                 case 3: return completedOrder.m_order.action();
@@ -101,9 +103,11 @@ public class CompletedOrdersPanel extends JPanel implements ICompletedOrdersHand
                 case 9: return completedOrder.m_contract.textDescription();
                 case 10: return completedOrder.m_order.customerAccount();
                 case 11: return completedOrder.m_order.professionalCustomer();
-                case 12: return completedOrder.m_orderState.status();
-                case 13: return completedOrder.m_orderState.completedTime();
-                case 14: return completedOrder.m_orderState.completedStatus();
+                case 12: return completedOrder.m_order.submitter();
+                case 13: return completedOrder.m_order.imbalanceOnly();
+                case 14: return completedOrder.m_orderState.status();
+                case 15: return completedOrder.m_orderState.completedTime();
+                case 16: return completedOrder.m_orderState.completedStatus();
                 default: return null;
             }
         }

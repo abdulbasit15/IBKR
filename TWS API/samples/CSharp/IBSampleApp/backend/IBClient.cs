@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ namespace IBSampleApp
         {
             var reqId = new Random(DateTime.Now.Millisecond).Next();
             var resolveResult = new TaskCompletionSource<Contract>();
-            var resolveContract_Error = new Action<int, int, string, string, Exception>((id, code, msg, advancedOrderRejectJson, ex) =>
+            var resolveContract_Error = new Action<int, long, int, string, string, Exception>((id, errorTime, code, msg, advancedOrderRejectJson, ex) =>
                 {
                     if (reqId != id)
                         return;
@@ -62,7 +62,7 @@ namespace IBSampleApp
             var reqId = new Random(DateTime.Now.Millisecond).Next();
             var res = new TaskCompletionSource<Contract[]>();
             var contractList = new List<Contract>();
-            var resolveContract_Error = new Action<int, int, string, string, Exception>((id, code, msg, advancedOrderRejectJson, ex) =>
+            var resolveContract_Error = new Action<int, long, int, string, string, Exception>((id, errorTime, code, msg, advancedOrderRejectJson, ex) =>
                 {
                     if (reqId != id)
                         return;
@@ -117,14 +117,14 @@ namespace IBSampleApp
 
         public int NextOrderId { get; set; }
 
-        public event Action<int, int, string, string, Exception> Error;
+        public event Action<int, long, int, string, string, Exception> Error;
 
         void EWrapper.error(Exception e)
         {
             var tmp = Error;
 
             if (tmp != null)
-                sc.Post(t => tmp(0, 0, null, null, e), null);
+                sc.Post(t => tmp(0, Util.CurrentTimeMillis(), 0, null, null, e), null);
         }
 
         void EWrapper.error(string str)
@@ -132,15 +132,15 @@ namespace IBSampleApp
             var tmp = Error;
 
             if (tmp != null)
-                sc.Post(t => tmp(0, 0, str, null, null), null);
+                sc.Post(t => tmp(0, Util.CurrentTimeMillis(), 0, str, null, null), null);
         }
 
-        void EWrapper.error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson)
+        void EWrapper.error(int id, long errorTime, int errorCode, string errorMsg, string advancedOrderRejectJson)
         {
             var tmp = Error;
 
             if (tmp != null)
-                sc.Post(t => tmp(id, errorCode, errorMsg, advancedOrderRejectJson, null), null);
+                sc.Post(t => tmp(id, errorTime, errorCode, errorMsg, advancedOrderRejectJson, null), null);
         }
 
         public event Action ConnectionClosed;
@@ -327,7 +327,7 @@ namespace IBSampleApp
 
         public event Action<OrderStatusMessage> OrderStatus;
 
-        void EWrapper.orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
+        void EWrapper.orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
         {
             var tmp = OrderStatus;
 
@@ -395,14 +395,14 @@ namespace IBSampleApp
                 sc.Post(t => tmp(reqId), null);
         }
 
-        public event Action<CommissionReport> CommissionReport;
+        public event Action<CommissionAndFeesReport> CommissionAndFeesReport;
 
-        void EWrapper.commissionReport(CommissionReport commissionReport)
+        void EWrapper.commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport)
         {
-            var tmp = CommissionReport;
+            var tmp = CommissionAndFeesReport;
 
             if (tmp != null)
-                sc.Post(t => tmp(commissionReport), null);
+                sc.Post(t => tmp(commissionAndFeesReport), null);
         }
 
         public event Action<FundamentalsMessage> FundamentalData;
@@ -936,12 +936,12 @@ namespace IBSampleApp
 
         public event Action<OrderBoundMessage> OrderBound;
 
-        void EWrapper.orderBound(long orderId, int apiClientId, int apiOrderId)
+        void EWrapper.orderBound(long permId, int clientId, int orderId)
         {
             var tmp = OrderBound;
 
             if (tmp != null)
-                sc.Post(t => tmp(new OrderBoundMessage(orderId, apiClientId, apiOrderId)), null);
+                sc.Post(t => tmp(new OrderBoundMessage(permId, clientId, orderId)), null);
         }
 
         public event Action<CompletedOrderMessage> CompletedOrder;
@@ -1011,5 +1011,667 @@ namespace IBSampleApp
             if (tmp != null)
                 sc.Post(t => tmp(whiteBrandingId), null);
         }
+
+        public event Action<long> CurrentTimeInMillis;
+        void EWrapper.currentTimeInMillis(long timeInMillis)
+        {
+            var tmp = CurrentTimeInMillis;
+            if (tmp != null)
+                sc.Post(t => tmp(timeInMillis), null);
+        }
+
+        /**
+         * Protobuf
+         */
+        public event Action<IBApi.protobuf.OrderStatus> OrderStatusProtoBuf;
+        void EWrapper.orderStatusProtoBuf(IBApi.protobuf.OrderStatus orderStatusProto) {
+            var tmp = OrderStatusProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(orderStatusProto), null);
+        }
+
+        public event Action<IBApi.protobuf.OpenOrder> OpenOrderProtoBuf;
+        void EWrapper.openOrderProtoBuf(IBApi.protobuf.OpenOrder openOrderProto) {
+            var tmp = OpenOrderProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(openOrderProto), null);
+        }
+
+        public event Action<IBApi.protobuf.OpenOrdersEnd> OpenOrdersEndProtoBuf;
+        void EWrapper.openOrdersEndProtoBuf(IBApi.protobuf.OpenOrdersEnd openOrdersEndProto) {
+            var tmp = OpenOrdersEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(openOrdersEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ErrorMessage> ErrorMessageProtoBuf;
+        void EWrapper.errorProtoBuf(IBApi.protobuf.ErrorMessage errorMessageProto) {
+            var tmp = ErrorMessageProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(errorMessageProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ExecutionDetails> ExecutionDetailsProtoBuf;
+        void EWrapper.execDetailsProtoBuf(IBApi.protobuf.ExecutionDetails executionDetailsProto) {
+            var tmp = ExecutionDetailsProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(executionDetailsProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ExecutionDetailsEnd> ExecutionDetailsEndProtoBuf;
+        void EWrapper.execDetailsEndProtoBuf(IBApi.protobuf.ExecutionDetailsEnd executionDetailsEndProto) {
+            var tmp = ExecutionDetailsEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(executionDetailsEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.CompletedOrder> CompletedOrderProtoBuf;
+        void EWrapper.completedOrderProtoBuf(IBApi.protobuf.CompletedOrder completedOrderProto)
+        {
+            var tmp = CompletedOrderProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(completedOrderProto), null);
+        }
+
+        public event Action<IBApi.protobuf.CompletedOrdersEnd> CompletedOrdersEndProtoBuf;
+        void EWrapper.completedOrdersEndProtoBuf(IBApi.protobuf.CompletedOrdersEnd completedOrdersEndProto)
+        {
+            var tmp = CompletedOrdersEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(completedOrdersEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.OrderBound> OrderBoundProtoBuf;
+        void EWrapper.orderBoundProtoBuf(IBApi.protobuf.OrderBound orderBoundProto)
+        {
+            var tmp = OrderBoundProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(orderBoundProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ContractData> ContractDataProtoBuf;
+        void EWrapper.contractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto)
+        {
+            var tmp = ContractDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(contractDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ContractData> BondContractDataProtoBuf;
+        void EWrapper.bondContractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto)
+        {
+            var tmp = BondContractDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(contractDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ContractDataEnd> ContractDataEndProtoBuf;
+        void EWrapper.contractDataEndProtoBuf(IBApi.protobuf.ContractDataEnd contractDataEndProto)
+        {
+            var tmp = ContractDataEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(contractDataEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickPrice> TickPriceProtoBuf;
+        void EWrapper.tickPriceProtoBuf(IBApi.protobuf.TickPrice tickPriceProto)
+        {
+            var tmp = TickPriceProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickPriceProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickSize> TickSizeProtoBuf;
+        void EWrapper.tickSizeProtoBuf(IBApi.protobuf.TickSize tickSizeProto)
+        {
+            var tmp = TickSizeProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickSizeProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickOptionComputation> TickOptionComputationProtoBuf;
+        void EWrapper.tickOptionComputationProtoBuf(IBApi.protobuf.TickOptionComputation tickOptionComputationProto)
+        {
+            var tmp = TickOptionComputationProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickOptionComputationProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickGeneric> TickGenericProtoBuf;
+        void EWrapper.tickGenericProtoBuf(IBApi.protobuf.TickGeneric tickGenericProto)
+        {
+            var tmp = TickGenericProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickGenericProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickString> TickStringProtoBuf;
+        void EWrapper.tickStringProtoBuf(IBApi.protobuf.TickString tickStringProto)
+        {
+            var tmp = TickStringProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickStringProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickSnapshotEnd> TickSnapshotEndProtoBuf;
+        void EWrapper.tickSnapshotEndProtoBuf(IBApi.protobuf.TickSnapshotEnd tickSnapshotEndProto)
+        {
+            var tmp = TickSnapshotEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickSnapshotEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.MarketDepth> UpdateMarketDepthProtoBuf;
+        void EWrapper.updateMarketDepthProtoBuf(IBApi.protobuf.MarketDepth marketDepthProto)
+        {
+            var tmp = UpdateMarketDepthProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(marketDepthProto), null);
+        }
+
+        public event Action<IBApi.protobuf.MarketDepthL2> UpdateMarketDepthL2ProtoBuf;
+        void EWrapper.updateMarketDepthL2ProtoBuf(IBApi.protobuf.MarketDepthL2 marketDepthL2Proto)
+        {
+            var tmp = UpdateMarketDepthL2ProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(marketDepthL2Proto), null);
+        }
+
+        public event Action<IBApi.protobuf.MarketDataType> MarketDataTypeProtoBuf;
+        void EWrapper.marketDataTypeProtoBuf(IBApi.protobuf.MarketDataType marketDataTypeProto)
+        {
+            var tmp = MarketDataTypeProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(marketDataTypeProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickReqParams> TickReqParamsProtoBuf;
+        void EWrapper.tickReqParamsProtoBuf(IBApi.protobuf.TickReqParams tickReqParamsProto)
+        {
+            var tmp = TickReqParamsProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickReqParamsProto), null);
+        }
+
+        public event Action<IBApi.protobuf.AccountValue> UpdateAccountValueProtoBuf;
+        void EWrapper.updateAccountValueProtoBuf(IBApi.protobuf.AccountValue accountValueProto)
+        {
+            var tmp = UpdateAccountValueProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(accountValueProto), null);
+        }
+
+        public event Action<IBApi.protobuf.PortfolioValue> UpdatePortfolioProtoBuf;
+        void EWrapper.updatePortfolioProtoBuf(IBApi.protobuf.PortfolioValue portfolioValueProto)
+        {
+            var tmp = UpdatePortfolioProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(portfolioValueProto), null);
+        }
+
+        public event Action<IBApi.protobuf.AccountUpdateTime> UpdateAccountTimeProtoBuf;
+        void EWrapper.updateAccountTimeProtoBuf(IBApi.protobuf.AccountUpdateTime accountUpdateTimeProto)
+        {
+            var tmp = UpdateAccountTimeProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(accountUpdateTimeProto), null);
+        }
+
+        public event Action<IBApi.protobuf.AccountDataEnd> AccountDataEndProtoBuf;
+        void EWrapper.accountDataEndProtoBuf(IBApi.protobuf.AccountDataEnd accountDataEndProto)
+        {
+            var tmp = AccountDataEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(accountDataEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ManagedAccounts> ManagedAccountsProtoBuf;
+        void EWrapper.managedAccountsProtoBuf(IBApi.protobuf.ManagedAccounts managedAccountsProto)
+        {
+            var tmp = ManagedAccountsProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(managedAccountsProto), null);
+        }
+
+        public event Action<IBApi.protobuf.Position> PositionProtoBuf;
+        void EWrapper.positionProtoBuf(IBApi.protobuf.Position positionProto)
+        {
+            var tmp = PositionProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(positionProto), null);
+        }
+
+        public event Action<IBApi.protobuf.PositionEnd> PositionEndProtoBuf;
+        void EWrapper.positionEndProtoBuf(IBApi.protobuf.PositionEnd positionEndProto)
+        {
+            var tmp = PositionEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(positionEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.AccountSummary> AccountSummaryProtoBuf;
+        void EWrapper.accountSummaryProtoBuf(IBApi.protobuf.AccountSummary accountSummaryProto)
+        {
+            var tmp = AccountSummaryProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(accountSummaryProto), null);
+        }
+
+        public event Action<IBApi.protobuf.AccountSummaryEnd> AccountSummaryEndProtoBuf;
+        void EWrapper.accountSummaryEndProtoBuf(IBApi.protobuf.AccountSummaryEnd accountSummaryEndProto)
+        {
+            var tmp = AccountSummaryEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(accountSummaryEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.PositionMulti> PositionMultiProtoBuf;
+        void EWrapper.positionMultiProtoBuf(IBApi.protobuf.PositionMulti positionMultiProto)
+        {
+            var tmp = PositionMultiProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(positionMultiProto), null);
+        }
+
+        public event Action<IBApi.protobuf.PositionMultiEnd> PositionMultiEndProtoBuf;
+        void EWrapper.positionMultiEndProtoBuf(IBApi.protobuf.PositionMultiEnd positionMultiEndProto)
+        {
+            var tmp = PositionMultiEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(positionMultiEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.AccountUpdateMulti> AccountUpdateMultiProtoBuf;
+        void EWrapper.accountUpdateMultiProtoBuf(IBApi.protobuf.AccountUpdateMulti accountUpdateMultiProto)
+        {
+            var tmp = AccountUpdateMultiProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(accountUpdateMultiProto), null);
+        }
+
+        public event Action<IBApi.protobuf.AccountUpdateMultiEnd> AccountUpdateMultiEndProtoBuf;
+        void EWrapper.accountUpdateMultiEndProtoBuf(IBApi.protobuf.AccountUpdateMultiEnd accountUpdateMultiEndProto)
+        {
+            var tmp = AccountUpdateMultiEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(accountUpdateMultiEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalData> HistoricalDataProtoBuf;
+        void EWrapper.historicalDataProtoBuf(IBApi.protobuf.HistoricalData historicalDataProto)
+        {
+            var tmp = HistoricalDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalDataUpdate> HistoricalDataUpdateProtoBuf;
+        void EWrapper.historicalDataUpdateProtoBuf(IBApi.protobuf.HistoricalDataUpdate historicalDataUpdateProto)
+        {
+            var tmp = HistoricalDataUpdateProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalDataUpdateProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalDataEnd> HistoricalDataEndProtoBuf;
+        void EWrapper.historicalDataEndProtoBuf(IBApi.protobuf.HistoricalDataEnd historicalDataEndProto)
+        {
+            var tmp = HistoricalDataEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalDataEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.RealTimeBarTick> RealTimeBarTickProtoBuf;
+        void EWrapper.realTimeBarTickProtoBuf(IBApi.protobuf.RealTimeBarTick realTimeBarTickProto)
+        {
+            var tmp = RealTimeBarTickProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(realTimeBarTickProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HeadTimestamp> HeadTimestampProtoBuf;
+        void EWrapper.headTimestampProtoBuf(IBApi.protobuf.HeadTimestamp headTimestampProto)
+        {
+            var tmp = HeadTimestampProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(headTimestampProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistogramData> HistogramDataProtoBuf;
+        void EWrapper.histogramDataProtoBuf(IBApi.protobuf.HistogramData histogramDataProto)
+        {
+            var tmp = HistogramDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(histogramDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalTicks> HistoricalTicksProtoBuf;
+        void EWrapper.historicalTicksProtoBuf(IBApi.protobuf.HistoricalTicks historicalTicksProto)
+        {
+            var tmp = HistoricalTicksProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalTicksProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalTicksBidAsk> HistoricalTicksBidAskProtoBuf;
+        void EWrapper.historicalTicksBidAskProtoBuf(IBApi.protobuf.HistoricalTicksBidAsk historicalTicksBidAskProto)
+        {
+            var tmp = HistoricalTicksBidAskProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalTicksBidAskProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalTicksLast> HistoricalTicksLastProtoBuf;
+        void EWrapper.historicalTicksLastProtoBuf(IBApi.protobuf.HistoricalTicksLast historicalTicksLastProto)
+        {
+            var tmp = HistoricalTicksLastProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalTicksLastProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickByTickData> TickByTickDataProtoBuf;
+        void EWrapper.tickByTickDataProtoBuf(IBApi.protobuf.TickByTickData tickByTickDataProto)
+        {
+            var tmp = TickByTickDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickByTickDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.NewsBulletin> UpdateNewsBulletinProtoBuf;
+        void EWrapper.updateNewsBulletinProtoBuf(IBApi.protobuf.NewsBulletin newsBulletinProto)
+        {
+            var tmp = UpdateNewsBulletinProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(newsBulletinProto), null);
+        }
+
+        public event Action<IBApi.protobuf.NewsArticle> NewsArticleProtoBuf;
+        void EWrapper.newsArticleProtoBuf(IBApi.protobuf.NewsArticle newsArticleProto)
+        {
+            var tmp = NewsArticleProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(newsArticleProto), null);
+        }
+
+        public event Action<IBApi.protobuf.NewsProviders> NewsProvidersProtoBuf;
+        void EWrapper.newsProvidersProtoBuf(IBApi.protobuf.NewsProviders newsProvidersProto)
+        {
+            var tmp = NewsProvidersProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(newsProvidersProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalNews> HistoricalNewsProtoBuf;
+        void EWrapper.historicalNewsProtoBuf(IBApi.protobuf.HistoricalNews historicalNewsProto)
+        {
+            var tmp = HistoricalNewsProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalNewsProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalNewsEnd> HistoricalNewsEndProtoBuf;
+        void EWrapper.historicalNewsEndProtoBuf(IBApi.protobuf.HistoricalNewsEnd historicalNewsEndProto)
+        {
+            var tmp = HistoricalNewsEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalNewsEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.WshMetaData> WshMetaDataProtoBuf;
+        void EWrapper.wshMetaDataProtoBuf(IBApi.protobuf.WshMetaData wshMetaDataProto)
+        {
+            var tmp = WshMetaDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(wshMetaDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.WshEventData> WshEventDataProtoBuf;
+        void EWrapper.wshEventDataProtoBuf(IBApi.protobuf.WshEventData wshEventDataProto)
+        {
+            var tmp = WshEventDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(wshEventDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.TickNews> TickNewsProtoBuf;
+        void EWrapper.tickNewsProtoBuf(IBApi.protobuf.TickNews tickNewsProto)
+        {
+            var tmp = TickNewsProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(tickNewsProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ScannerParameters> ScannerParametersProtoBuf;
+        void EWrapper.scannerParametersProtoBuf(IBApi.protobuf.ScannerParameters scannerParametersProto)
+        {
+            var tmp = ScannerParametersProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(scannerParametersProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ScannerData> ScannerDataProtoBuf;
+        void EWrapper.scannerDataProtoBuf(IBApi.protobuf.ScannerData scannerDataProto)
+        {
+            var tmp = ScannerDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(scannerDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.FundamentalsData> FundamentalsDataProtoBuf;
+        void EWrapper.fundamentalsDataProtoBuf(IBApi.protobuf.FundamentalsData fundamentalsDataProto)
+        {
+            var tmp = FundamentalsDataProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(fundamentalsDataProto), null);
+        }
+
+        public event Action<IBApi.protobuf.PnL> PnLProtoBuf;
+        void EWrapper.pnlProtoBuf(IBApi.protobuf.PnL pnlProto)
+        {
+            var tmp = PnLProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(pnlProto), null);
+        }
+
+        public event Action<IBApi.protobuf.PnLSingle> PnLSingleProtoBuf;
+        void EWrapper.pnlSingleProtoBuf(IBApi.protobuf.PnLSingle pnlSingleProto)
+        {
+            var tmp = PnLSingleProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(pnlSingleProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ReceiveFA> ReceiveFAProtoBuf;
+        void EWrapper.receiveFAProtoBuf(IBApi.protobuf.ReceiveFA receiveFAProto)
+        {
+            var tmp = ReceiveFAProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(receiveFAProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ReplaceFAEnd> ReplaceFAEndProtoBuf;
+        void EWrapper.replaceFAEndProtoBuf(IBApi.protobuf.ReplaceFAEnd replaceFAEndProto)
+        {
+            var tmp = ReplaceFAEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(replaceFAEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.CommissionAndFeesReport> CommissionAndFeesReportProtoBuf;
+        void EWrapper.commissionAndFeesReportProtoBuf(IBApi.protobuf.CommissionAndFeesReport commissionAndFeesReportProto)
+        {
+            var tmp = CommissionAndFeesReportProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(commissionAndFeesReportProto), null);
+        }
+
+        public event Action<IBApi.protobuf.HistoricalSchedule> HistoricalScheduleProtoBuf;
+        void EWrapper.historicalScheduleProtoBuf(IBApi.protobuf.HistoricalSchedule historicalScheduleProto)
+        {
+            var tmp = HistoricalScheduleProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(historicalScheduleProto), null);
+        }
+
+        public event Action<IBApi.protobuf.RerouteMarketDataRequest> RerouteMarketDataRequestProtoBuf;
+        void EWrapper.rerouteMarketDataRequestProtoBuf(IBApi.protobuf.RerouteMarketDataRequest rerouteMarketDataRequestProto)
+        {
+            var tmp = RerouteMarketDataRequestProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(rerouteMarketDataRequestProto), null);
+        }
+
+        public event Action<IBApi.protobuf.RerouteMarketDepthRequest> RerouteMarketDepthRequestProtoBuf;
+        void EWrapper.rerouteMarketDepthRequestProtoBuf(IBApi.protobuf.RerouteMarketDepthRequest rerouteMarketDepthRequestProto)
+        {
+            var tmp = RerouteMarketDepthRequestProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(rerouteMarketDepthRequestProto), null);
+        }
+
+        public event Action<IBApi.protobuf.SecDefOptParameter> SecDefOptParameterProtoBuf;
+        void EWrapper.secDefOptParameterProtoBuf(IBApi.protobuf.SecDefOptParameter secDefOptParameterProto)
+        {
+            var tmp = SecDefOptParameterProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(secDefOptParameterProto), null);
+        }
+
+        public event Action<IBApi.protobuf.SecDefOptParameterEnd> SecDefOptParameterEndProtoBuf;
+        void EWrapper.secDefOptParameterEndProtoBuf(IBApi.protobuf.SecDefOptParameterEnd secDefOptParameterEndProto)
+        {
+            var tmp = SecDefOptParameterEndProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(secDefOptParameterEndProto), null);
+        }
+
+        public event Action<IBApi.protobuf.SoftDollarTiers> SoftDollarTiersProtoBuf;
+        void EWrapper.softDollarTiersProtoBuf(IBApi.protobuf.SoftDollarTiers softDollarTiersProto)
+        {
+            var tmp = SoftDollarTiersProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(softDollarTiersProto), null);
+        }
+
+        public event Action<IBApi.protobuf.FamilyCodes> FamilyCodesProtoBuf;
+        void EWrapper.familyCodesProtoBuf(IBApi.protobuf.FamilyCodes familyCodesProto)
+        {
+            var tmp = FamilyCodesProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(familyCodesProto), null);
+        }
+
+        public event Action<IBApi.protobuf.SymbolSamples> SymbolSamplesProtoBuf;
+        void EWrapper.symbolSamplesProtoBuf(IBApi.protobuf.SymbolSamples symbolSamplesProto)
+        {
+            var tmp = SymbolSamplesProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(symbolSamplesProto), null);
+        }
+
+        public event Action<IBApi.protobuf.SmartComponents> SmartComponentsProtoBuf;
+        void EWrapper.smartComponentsProtoBuf(IBApi.protobuf.SmartComponents smartComponentsProto)
+        {
+            var tmp = SmartComponentsProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(smartComponentsProto), null);
+        }
+
+        public event Action<IBApi.protobuf.MarketRule> MarketRuleProtoBuf;
+        void EWrapper.marketRuleProtoBuf(IBApi.protobuf.MarketRule marketRuleProto)
+        {
+            var tmp = MarketRuleProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(marketRuleProto), null);
+        }
+
+        public event Action<IBApi.protobuf.UserInfo> UserInfoProtoBuf;
+        void EWrapper.userInfoProtoBuf(IBApi.protobuf.UserInfo userInfoProto)
+        {
+            var tmp = UserInfoProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(userInfoProto), null);
+        }
+
+        public event Action<IBApi.protobuf.NextValidId> NextValidIdProtoBuf;
+        void EWrapper.nextValidIdProtoBuf(IBApi.protobuf.NextValidId nextValidIdProto)
+        {
+            var tmp = NextValidIdProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(nextValidIdProto), null);
+        }
+
+        public event Action<IBApi.protobuf.CurrentTime> CurrentTimeProtoBuf;
+        void EWrapper.currentTimeProtoBuf(IBApi.protobuf.CurrentTime currentTimeProto)
+        {
+            var tmp = CurrentTimeProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(currentTimeProto), null);
+        }
+
+        public event Action<IBApi.protobuf.CurrentTimeInMillis> CurrentTimeInMillisProtoBuf;
+        void EWrapper.currentTimeInMillisProtoBuf(IBApi.protobuf.CurrentTimeInMillis currentTimeInMillisProto)
+        {
+            var tmp = CurrentTimeInMillisProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(currentTimeInMillisProto), null);
+        }
+
+        public event Action<IBApi.protobuf.VerifyMessageApi> VerifyMessageApiProtoBuf;
+        void EWrapper.verifyMessageApiProtoBuf(IBApi.protobuf.VerifyMessageApi verifyMessageApiProto)
+        {
+            var tmp = VerifyMessageApiProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(verifyMessageApiProto), null);
+        }
+
+        public event Action<IBApi.protobuf.VerifyCompleted> VerifyCompletedProtoBuf;
+        void EWrapper.verifyCompletedProtoBuf(IBApi.protobuf.VerifyCompleted verifyCompletedProto)
+        {
+            var tmp = VerifyCompletedProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(verifyCompletedProto), null);
+        }
+
+        public event Action<IBApi.protobuf.DisplayGroupList> DisplayGroupListProtoBuf;
+        void EWrapper.displayGroupListProtoBuf(IBApi.protobuf.DisplayGroupList displayGroupListProto)
+        {
+            var tmp = DisplayGroupListProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(displayGroupListProto), null);
+        }
+
+        public event Action<IBApi.protobuf.DisplayGroupUpdated> DisplayGroupUpdatedProtoBuf;
+        void EWrapper.displayGroupUpdatedProtoBuf(IBApi.protobuf.DisplayGroupUpdated displayGroupUpdatedProto)
+        {
+            var tmp = DisplayGroupUpdatedProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(displayGroupUpdatedProto), null);
+        }
+
+        public event Action<IBApi.protobuf.MarketDepthExchanges> MarketDepthExchangesProtoBuf;
+        void EWrapper.marketDepthExchangesProtoBuf(IBApi.protobuf.MarketDepthExchanges marketDepthExchangesProto)
+        {
+            var tmp = MarketDepthExchangesProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(marketDepthExchangesProto), null);
+        }
+
+        public event Action<IBApi.protobuf.ConfigResponse> ConfigResponseProtoBuf;
+        void EWrapper.configResponseProtoBuf(IBApi.protobuf.ConfigResponse configResponseProto)
+        {
+            var tmp = ConfigResponseProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(configResponseProto), null);
+        }
+
+        public event Action<IBApi.protobuf.UpdateConfigResponse> UpdateConfigResponseProtoBuf;
+        void EWrapper.updateConfigResponseProtoBuf(IBApi.protobuf.UpdateConfigResponse updateConfigResponseProto)
+        {
+            var tmp = UpdateConfigResponseProtoBuf;
+            if (tmp != null)
+                sc.Post(t => tmp(updateConfigResponseProto), null);
+        }
+
     }
 }

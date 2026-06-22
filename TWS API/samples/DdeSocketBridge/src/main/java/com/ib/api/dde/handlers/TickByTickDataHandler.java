@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -42,6 +42,9 @@ public class TickByTickDataHandler extends MarketDataBaseHandler {
     /** Method sends tick-by-tick data request to TWS */
     public byte[] handleTickByTickDataRequest(String requestStr, byte[] data) {
         TickByTickRequest request = m_requestParser.parseTickByTickRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending tick-by-tick data request: id=" + request.requestId() + " for contract=" + Utils.shortContractString(request.contract()) + " tickType=" + request.tickType());
         byte[] ret = handleMarketDataBaseRequest(request); 
         clientSocket().reqTickByTickData(request.requestId(), request.contract(), request.tickType(), 0, request.ignoreSize());
@@ -51,6 +54,9 @@ public class TickByTickDataHandler extends MarketDataBaseHandler {
     /** Method sends tick-by-tick request to TWS */
     public byte[] handleTickByTickDataRequestExt(String requestStr, byte[] data) {
         TickByTickRequest request = m_requestParser.parseTickByTickRequestExt(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending tick-by-tick data request: id=" + request.requestId() + " for contract=" + Utils.shortContractString(request.contract()));
         TickByTickDataMap dataMap = new TickByTickDataMap(request);
         dataMap.numberOfRows(request.numberOfRows());

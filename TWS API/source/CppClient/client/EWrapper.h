@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -24,6 +24,88 @@
 #include "HistoricalTickLast.h"
 #include "Decimal.h"
 #include "HistoricalSession.h"
+
+#include "ExecutionDetails.pb.h"
+#include "ExecutionDetailsEnd.pb.h"
+#include "ErrorMessage.pb.h"
+#include "OpenOrder.pb.h"
+#include "OpenOrdersEnd.pb.h"
+#include "OrderStatus.pb.h"
+#include "CompletedOrder.pb.h"
+#include "CompletedOrdersEnd.pb.h"
+#include "OrderBound.pb.h"
+#include "ContractData.pb.h"
+#include "ContractDataEnd.pb.h"
+#include "TickPrice.pb.h"
+#include "TickSize.pb.h"
+#include "TickOptionComputation.pb.h"
+#include "TickGeneric.pb.h"
+#include "TickString.pb.h"
+#include "TickSnapshotEnd.pb.h"
+#include "MarketDepth.pb.h"
+#include "MarketDepthL2.pb.h"
+#include "MarketDataType.pb.h"
+#include "TickReqParams.pb.h"
+#include "AccountValue.pb.h"
+#include "PortfolioValue.pb.h"
+#include "AccountUpdateTime.pb.h"
+#include "AccountDataEnd.pb.h"
+#include "ManagedAccounts.pb.h"
+#include "Position.pb.h"
+#include "PositionEnd.pb.h"
+#include "AccountSummary.pb.h"
+#include "AccountSummaryEnd.pb.h"
+#include "PositionMulti.pb.h"
+#include "PositionMultiEnd.pb.h"
+#include "AccountUpdateMulti.pb.h"
+#include "AccountUpdateMultiEnd.pb.h"
+#include "HistoricalData.pb.h"
+#include "HistoricalDataUpdate.pb.h"
+#include "HistoricalDataEnd.pb.h"
+#include "RealTimeBarTick.pb.h"
+#include "HeadTimestamp.pb.h"
+#include "HistogramData.pb.h"
+#include "HistoricalTicks.pb.h"
+#include "HistoricalTicksBidAsk.pb.h"
+#include "HistoricalTicksLast.pb.h"
+#include "TickByTickData.pb.h"
+#include "NewsBulletin.pb.h"
+#include "NewsArticle.pb.h"
+#include "NewsProviders.pb.h"
+#include "HistoricalNews.pb.h"
+#include "HistoricalNewsEnd.pb.h"
+#include "WshMetaData.pb.h"
+#include "WshEventData.pb.h"
+#include "TickNews.pb.h"
+#include "ScannerParameters.pb.h"
+#include "ScannerData.pb.h"
+#include "FundamentalsData.pb.h"
+#include "PnL.pb.h"
+#include "PnLSingle.pb.h"
+#include "ReceiveFA.pb.h"
+#include "ReplaceFAEnd.pb.h"
+#include "CommissionAndFeesReport.pb.h"
+#include "HistoricalSchedule.pb.h"
+#include "RerouteMarketDataRequest.pb.h"
+#include "RerouteMarketDepthRequest.pb.h"
+#include "SecDefOptParameter.pb.h"
+#include "SecDefOptParameterEnd.pb.h"
+#include "SoftDollarTiers.pb.h"
+#include "FamilyCodes.pb.h"
+#include "SymbolSamples.pb.h"
+#include "SmartComponents.pb.h"
+#include "MarketRule.pb.h"
+#include "UserInfo.pb.h"
+#include "NextValidId.pb.h"
+#include "CurrentTime.pb.h"
+#include "CurrentTimeInMillis.pb.h"
+#include "VerifyMessageApi.pb.h"
+#include "VerifyCompleted.pb.h"
+#include "DisplayGroupList.pb.h"
+#include "DisplayGroupUpdated.pb.h"
+#include "MarketDepthExchanges.pb.h"
+#include "ConfigResponse.pb.h"
+#include "UpdateConfigResponse.pb.h"
 
 enum TickType { BID_SIZE, BID, ASK, ASK_SIZE, LAST, LAST_SIZE,
 				HIGH, LOW, VOLUME, CLOSE,
@@ -139,7 +221,7 @@ struct Order;
 struct OrderState;
 struct Execution;
 struct DeltaNeutralContract;
-struct CommissionReport;
+struct CommissionAndFeesReport;
 
 class EWrapper
 {

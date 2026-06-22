@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.utils;
@@ -35,7 +35,7 @@ public class ContractDetailsUtils {
         item.add(Utils.toString(contractDetails.contract().getSecType()));
         item.add(Utils.toString(contractDetails.contract().lastTradeDateOrContractMonth()));
         item.add(Utils.toString(contractDetails.contract().lastTradeDate()));
-        item.add(Utils.toString(contractDetails.contract().strike()));
+        item.add(Utils.toStringMax(contractDetails.contract().strike()));
         item.add(Utils.toString(contractDetails.contract().getRight()));
         item.add(Utils.toString(contractDetails.contract().exchange()));
         item.add(Utils.toString(contractDetails.contract().currency()));
@@ -82,6 +82,12 @@ public class ContractDetailsUtils {
         item.add(Utils.toString(contractDetails.minSize()));
         item.add(Utils.toString(contractDetails.sizeIncrement()));
         item.add(Utils.toString(contractDetails.suggestedSizeIncrement()));
+        item.add(Utils.toString(contractDetails.minAlgoSize()));
+        item.add(Utils.toString(contractDetails.lastPricePrecision()));
+        item.add(Utils.toString(contractDetails.lastSizePrecision()));
+        item.add(Utils.toString(contractDetails.eventContract1()));
+        item.add(Utils.toString(contractDetails.eventContractDescription1()));
+        item.add(Utils.toString(contractDetails.eventContractDescription2()));
         item.add(Utils.toString(contractDetails.fundName()));
         item.add(Utils.toString(contractDetails.fundFamily()));
         item.add(Utils.toString(contractDetails.fundType()));
@@ -145,6 +151,15 @@ public class ContractDetailsUtils {
         item.add(Utils.toString(contractDetails.nextOptionPartial()));
         item.add(Utils.toString(contractDetails.notes()));
         item.add(Utils.toString(contractDetails.longName()));
+        item.add(Utils.toString(contractDetails.timeZoneId()));
+        if (Utils.isNotNull(contractDetails.tradingHours())) {
+            item.add(Utils.LONGVALUE + RequestParser.PARAM_SEPARATOR + Utils.toString(Utils.calcNumOfChunks(contractDetails.tradingHours(), 255)));
+            item.addAll(Utils.chunkStringByLength(contractDetails.tradingHours(), 255)); // long string
+        }
+        if (Utils.isNotNull(contractDetails.liquidHours())) {
+            item.add(Utils.LONGVALUE + RequestParser.PARAM_SEPARATOR + Utils.toString(Utils.calcNumOfChunks(contractDetails.liquidHours(), 255)));
+            item.addAll(Utils.chunkStringByLength(contractDetails.liquidHours(), 255)); // long string
+        }
         item.add(Utils.toString(contractDetails.evRule()));
         item.add(Utils.toString(contractDetails.evMultiplier()));
         item.add(Utils.tagValueListToString(contractDetails.secIdList()));

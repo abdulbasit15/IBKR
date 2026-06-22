@@ -303,8 +303,8 @@ Private Function GenerateSheetName(contractInfo As TWSLib.IContract, endDateTime
     GenerateSheetName = Left(s, 31)
 End Function
 
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
-    queryTable(id - ID_HISTDATA, Col_HIST_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
+    queryTable(id - ID_HISTDATA, Col_HIST_STATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
 End Sub
 
 Public Sub Initialise()

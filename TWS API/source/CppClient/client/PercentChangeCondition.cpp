@@ -17,7 +17,7 @@ std::string PercentChangeCondition::valueToString() const {
 
 void PercentChangeCondition::valueFromString(const std::string & v) {
 	std::stringstream tmp;
-	
+
 	tmp << v;
 	tmp >> m_changePercent;
 }

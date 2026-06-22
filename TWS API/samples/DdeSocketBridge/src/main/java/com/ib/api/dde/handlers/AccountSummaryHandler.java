@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -31,11 +31,19 @@ public class AccountSummaryHandler extends AccountUpdatesHandler {
     public String handleAccountSummaryRequest(String requestStr) {
         AccountSummaryRequest request = m_requestParser.parseAccountSummaryRequest(requestStr);
         System.out.println("Handling account summary request: id=" + request.requestId() + " group=" + request.group());
+        AccountUpdateDataMap accountUpdateDataMap = m_accountUpdateDataMap.get(request.requestId());
+        if (accountUpdateDataMap == null) {
+            return null;
+        }
         return handleAccountUpdatesRequest(request);
     }
 
     public byte[] handleAccountSummaryRequestWithData(String requestStr, byte[] data) {
         AccountSummaryRequest request = m_requestParser.parseAccountSummaryRequestWithData(requestStr + "?", data);
+        if (request == null) {
+            return null;
+        }
+        System.out.println("Handling account summary request with data: id=" + request.requestId() + " group=" + request.group());
         AccountUpdateDataMap accountUpdateDataMap = m_accountUpdateDataMap.get(request.requestId());
         if (accountUpdateDataMap == null) {
             accountUpdateDataMap = new AccountUpdateDataMap(request);
@@ -69,6 +77,9 @@ public class AccountSummaryHandler extends AccountUpdatesHandler {
 
         /** Method parses DDE request string to AccoutSummaryRequest with data */
         private AccountSummaryRequest parseAccountSummaryRequestWithData(String requestStr, byte[] data) {
+            if (data == null) {
+                return null;
+            }
             int requestId = -1;
             String[] requestTokens = requestStr.split(DDE_REQUEST_SEPARATOR_PARSE);
             if (requestTokens.length > 0) {

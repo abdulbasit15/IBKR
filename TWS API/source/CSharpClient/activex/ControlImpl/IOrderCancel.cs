@@ -16,9 +16,7 @@ namespace TWSLib
         string extOperator { get; set; }
 
         [DispId(3)]
-        string externalUserId { get; set; }
-
-        [DispId(4)]
         int manualOrderIndicator { get; set; }
+
     }
 }

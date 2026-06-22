@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -32,6 +32,9 @@ public class MarketDataHandler extends MarketDataBaseHandler {
     /* *****************************************************************************************************/
     /** Method sends market data request to TWS */
     public byte[] handleMarketDataRequest(String requestStr, byte[] data) {
+        if (data == null) {
+            return null;
+        }
         MarketDataRequest request = m_requestParser.parseMarketDataRequest(requestStr, data);
         System.out.println("Sending market data request: id=" + request.requestId() + " for contract=" + Utils.shortContractString(request.contract()) + " genTicks=" + request.genericTicks());
         byte[] ret = handleMarketDataBaseRequest(request); 

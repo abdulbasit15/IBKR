@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -49,5 +49,11 @@ namespace TWSLib
         string lastLiquidity { get; }
         [DispId(19)]
         bool pendingPriceRevision { get; }
+        [DispId(20)]
+        string permIdStr { get; }
+        [DispId(21)]
+        string submitter { get; }
+        [DispId(22)]
+        string optExerciseOrLapseType { get; }
     }
 }

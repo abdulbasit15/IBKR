@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ComboLegForm 
    Caption         =   "Combination Legs"
    ClientHeight    =   7215
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   10065
+   ClientLeft      =   48
+   ClientTop       =   432
+   ClientWidth     =   10064
    OleObjectBlob   =   "ComboLegForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End

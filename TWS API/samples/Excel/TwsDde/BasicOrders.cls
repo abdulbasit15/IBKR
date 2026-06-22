@@ -21,6 +21,8 @@ Const STR_WHAT_IF_REQUEST = "whatIfRequest"
 
 ' cells
 Const CELL_SERVER_NAME = "B5" ' cell with server name
+Const CELL_GLOBAL_CANCEL_EXT_OPERATOR = "M5" ' cell with global cancel ext operator value
+Const CELL_GLOBAL_CANCEL_MANUAL_ORDER_INDICATOR = "N5" ' cell with global cancel manual order indicator
 
 ' columns
 Const startOfContractColumns = 1 ' contract first column index (symbol)
@@ -28,13 +30,16 @@ Const orderBaseColumnsStart = 17 ' index of first column in Order Description
 Const orderBaseColumnsEnd = 21 ' index of last column in Order Description
 Const errorColumnIndex = 22 ' index of error column
 Const idColumnIndex = 23 ' index of id column
-Const idCommissionIndex = 34 ' index of commission column
-Const idManualOrderCancelTime = 160 ' index of manual order cancel time column
-Const idExtOperator = 145 ' index of ext operator column
-Const idExternalUserId = 168 ' index of external user id column
-Const idManualOrderIndicator = 169 ' index of manual order indicator column
-Const orderExtColumnsStart = 46 ' index of first column in Extended Order Attributes
-Const orderExtColumnsEnd = 169 ' index of last column in Extended Order Attributes
+Const idCommissionAndFeesIndex = 34 ' index of commission and fees column
+Const idManualOrderCancelTime = 174 ' index of manual order cancel time column
+Const idExtOperator = 159 ' index of ext operator column
+Const idManualOrderIndicator = 183 ' index of manual order indicator column
+Const idSlOrderId = 192 ' stop-loss order id
+Const idSlOrderType = 193 ' stop-loss order type
+Const idPtOrderId = 194 ' profit-taker order id
+Const idPtOrderType = 195 ' profit-taker order type
+Const orderExtColumnsStart = 59 ' index of first column in Extended Order Attributes
+Const orderExtColumnsEnd = 195 ' index of last column in Extended Order Attributes
 
 ' rows
 Const dataStartRowIndex = 10 ' starting row of data
@@ -43,6 +48,8 @@ Const dataStartRowIndex = 10 ' starting row of data
 Dim orderStatusColumnsArray() As Variant
 Dim contractColumnsArray() As Variant
 Dim whatIfColumnsArray() As Variant
+
+
 
 ' ========================================================
 ' contract columns
@@ -89,8 +96,14 @@ Private Function getWhatIfColumns() As Variant()
         GoTo getWhatIfColumnsEnd
     End If
     
-    whatIfColumnsArray = Array("commission", "commissionCurrency", "currentEquityWithLoan", "currentInitMargin", "currentMaintMargin", _
-        "changeEquityWithLoan", "changeInitMargin", "changeMaintMargin", "postEquityWithLoan", "postInitMargin", "postMaintMargin", "bondAccruedInterest")
+    whatIfColumnsArray = Array("commissionAndFees", "commissionAndFeesCurrency", "currentEquityWithLoan", "currentInitMargin", "currentMaintMargin", _
+        "changeEquityWithLoan", "changeInitMargin", "changeMaintMargin", "postEquityWithLoan", "postInitMargin", "postMaintMargin", _
+        "marginCurrency", _
+        "equityWithLoanBeforeOutsideRTH", "initMarginBeforeOutsideRTH", "maintMarginBeforeOutsideRTH", _
+        "equityWithLoanChangeOutsideRTH", "initMarginChangeOutsideRTH", "maintMarginChangeOutsideRTH", _
+        "equityWithLoanAfterOutsideRTH", "initMarginAfterOutsideRTH", "maintMarginAfterOutsideRTH", _
+        "suggestedSize", "rejectReason", "orderAllocations", _
+        "bondAccruedInterest")
 
 getWhatIfColumnsEnd:
     getWhatIfColumns = whatIfColumnsArray
@@ -100,7 +113,7 @@ End Function
 ' copies extended order attributes to basic orders page
 ' ========================================================
 Sub applyTemplate()
-    Call OrderFunctions.applyTemplate(Selection.rows, orderExtColumnsStart)
+    Call OrderFunctions.applyTemplate(Selection.Rows, orderExtColumnsStart)
 End Sub
 
 ' ========================================================
@@ -108,12 +121,16 @@ End Sub
 ' ========================================================
 Sub clearOrder()
     Dim server As String, id As String, i As Integer, row As Range, lastRowIndex As Integer
+    Dim chan As Long
     
     server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
     If server = util.STR_EMPTY Then Exit Sub
 
+    On Error GoTo EndSub
+    chan = Application.DDEInitiate(server, STR_CLEARORDER)
+
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
             If .Cells(row.row, idColumnIndex).value = STR_EMPTY Then GoTo Continue
             If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -122,14 +139,20 @@ Sub clearOrder()
             
             clearOrderStatusColumns row
             clearWhatIfColumns row
+            Cells(row.row, idSlOrderId).value = ""
+            Cells(row.row, idPtOrderId).value = ""
             
-            util.sendRequest server, STR_CLEARORDER, id
+            util.sendRequestForChannel server, STR_CLEARORDER, id, chan
             
 Continue:
         Next row
     
         .Cells(lastRowIndex, 1).offset(1, 0).Activate
     End With
+    
+    Application.DDETerminate chan
+EndSub:
+
 End Sub
 
 ' ========================================================
@@ -140,12 +163,9 @@ Sub clearOrderStatusColumns(cell As Range)
     With Worksheets(STR_SHEET_NAME)
         .Cells(cell.row, idColumnIndex).value = util.STR_EMPTY
         .Cells(cell.row, errorColumnIndex).value = util.STR_EMPTY
-        
         ' order status columns
         orderStatusColumnsArray = getOrderStatusColumns()
-        For i = 0 To UBound(orderStatusColumnsArray) - LBound(orderStatusColumnsArray)
-            .Cells(cell.row, idColumnIndex + 1 + i).ClearContents
-        Next i
+        Range(.Cells(cell.row, idColumnIndex + 1), .Cells(cell.row, idColumnIndex + (UBound(orderStatusColumnsArray) - LBound(orderStatusColumnsArray) + 1))).ClearContents
     End With
 End Sub
 
@@ -157,9 +177,7 @@ Sub clearWhatIfColumns(cell As Range)
     With Worksheets(STR_SHEET_NAME)
         ' what-if columns
         whatIfColumnsArray = getWhatIfColumns()
-        For i = 0 To UBound(whatIfColumnsArray) - LBound(whatIfColumnsArray)
-            .Cells(cell.row, idCommissionIndex + i).ClearContents
-        Next i
+        Range(.Cells(cell.row, idCommissionAndFeesIndex), .Cells(cell.row, idCommissionAndFeesIndex + (UBound(whatIfColumnsArray) - LBound(whatIfColumnsArray) + 1))).ClearContents
     End With
 End Sub
 
@@ -168,9 +186,17 @@ End Sub
 ' ========================================================
 Sub globalCancel()
     Dim server As String
+    Dim extOperator As String, manualOrderIndicator As String
+    
     server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
     If server = util.STR_EMPTY Then Exit Sub
-    util.sendRequest server, STR_GLOBAL_CANCEL, util.IDENTIFIER_ZERO
+    
+    With Worksheets(STR_SHEET_NAME)
+        extOperator = .Range(CELL_GLOBAL_CANCEL_EXT_OPERATOR).value
+        manualOrderIndicator = .Range(CELL_GLOBAL_CANCEL_MANUAL_ORDER_INDICATOR).value
+    End With
+    
+    util.sendRequest server, STR_GLOBAL_CANCEL, IDENTIFIER_ZERO & util.QMARK & STR_EMPTY & util.UNDERSCORE & extOperator & util.UNDERSCORE & manualOrderIndicator
 End Sub
 
 ' ========================================================
@@ -178,13 +204,17 @@ End Sub
 ' ========================================================
 Sub cancelOrder()
     Dim server As String, id As String, manualOrderCancelTime As String, i As Integer, row As Range, lastRowIndex As Integer
-    Dim extOperator As String, externalUserId As String, manualOrderIndicator As String
+    Dim extOperator As String, manualOrderIndicator As String
+    Dim chan As Long
     
     server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
     If server = util.STR_EMPTY Then Exit Sub
 
+    On Error GoTo EndSub
+    chan = Application.DDEInitiate(server, STR_CANCELORDER)
+
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
             If .Cells(row.row, idColumnIndex).value = STR_EMPTY Then GoTo Continue
             If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -192,10 +222,9 @@ Sub cancelOrder()
             id = .Cells(row.row, idColumnIndex).value
             manualOrderCancelTime = .Cells(row.row, idManualOrderCancelTime).value
             extOperator = .Cells(row.row, idExtOperator).value
-            externalUserId = .Cells(row.row, idExternalUserId).value
             manualOrderIndicator = .Cells(row.row, idManualOrderIndicator).value
             
-            util.sendRequest server, STR_CANCELORDER, id & util.QMARK & manualOrderCancelTime & util.UNDERSCORE & extOperator & util.UNDERSCORE & externalUserId & util.UNDERSCORE & manualOrderIndicator
+            util.sendRequestForChannel server, STR_CANCELORDER, id & util.QMARK & manualOrderCancelTime & util.UNDERSCORE & extOperator & util.UNDERSCORE & manualOrderIndicator, chan
             
 Continue:
         Next row
@@ -204,66 +233,137 @@ Continue:
         
     End With
     
+    Application.DDETerminate chan
+EndSub:
+
 End Sub
+
 ' ========================================================
-' place order for active row
+' place orders for active rows
 ' ========================================================
 Sub placeOrder()
     Dim row As Range, server As String, lastRowIndex As Integer
+    Dim rowsData() As RowProcessingData
+    Dim ids() As String
+    Dim rowCount As Integer
+    Dim i As Integer, idIndex As Integer
+    Dim baseId As Long
+    Dim baseIdStr As String
     
     server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
     If server = util.STR_EMPTY Then Exit Sub
-
-    For Each row In Selection.rows
-        lastRowIndex = row.row
-        If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
-        sendPlaceOrder server, row
-        
-Continue:
+    
+    ' Count and initialize
+    rowCount = 0
+    For Each row In Selection.Rows
+        If util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then
+            rowCount = rowCount + 1
+        End If
     Next row
     
+    If rowCount = 0 Then Exit Sub
+    ReDim rowsData(1 To rowCount)
+    ReDim ids(1 To rowCount)
+    
+    Dim placeOrderStr As String
+    If cbWhatIf.value = True Then
+        placeOrderStr = STR_WHAT_IF
+    Else
+        placeOrderStr = STR_PLACEORDER
+    End If
+    
+    ' ========================================================
+    ' FIRST LOOP: Generate sequential IDs
+    ' ========================================================
+    i = 0
+    idIndex = 0
+    With Worksheets(STR_SHEET_NAME)
+    
+        For Each row In Selection.Rows
+            lastRowIndex = row.row
+            If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue2
+            
+            i = i + 1
+            idIndex = idIndex + 1
+            Set rowsData(i).rowRange = row
+            
+            baseIdStr = .Cells(row.row, errorColumnIndex + 1).value
+            
+            If baseIdStr = util.STR_EMPTY Then ' none exists yet -- is original placement as opposed to modify
+                If i = 1 Then
+                    baseIdStr = OrderFunctions.makeId(server)
+                    If baseIdStr = util.STR_EMPTY Then Exit Sub
+                    
+                    baseId = CLng(baseIdStr)
+                    rowsData(i).id = CStr(util.IDENTIFIER_PREFIX & baseId)
+                Else
+                    rowsData(i).id = CStr(util.IDENTIFIER_PREFIX & baseId + idIndex - 1)
+                End If
+                
+                If .Cells(row.row, idSlOrderType).value <> util.STR_EMPTY Then
+                    idIndex = idIndex + 1
+                    .Cells(row.row, idSlOrderId).value = CStr(baseId + idIndex - 1)
+                End If
+                If .Cells(row.row, idPtOrderType).value <> util.STR_EMPTY Then
+                    idIndex = idIndex + 1
+                    .Cells(row.row, idPtOrderId).value = CStr(baseId + idIndex - 1)
+                End If
+                
+            Else
+                baseId = CLng(Right(baseIdStr, Len(baseIdStr) - 2))
+                rowsData(i).id = CStr(util.IDENTIFIER_PREFIX & baseId)
+            End If
+            
+            rowsData(i).isValid = True
+            ids(i) = rowsData(i).id
+            
+Continue2:
+        Next row
+    End With
+    
+    ' ========================================================
+    ' Send orders
+    ' ========================================================
+    util.sendOrders Worksheets(STR_SHEET_NAME), server, placeOrderStr, ids, Selection.Rows, _
+                 startOfContractColumns, getContractColumns(), idColumnIndex, _
+                 orderBaseColumnsStart, orderBaseColumnsEnd, orderExtColumnsStart, orderExtColumnsEnd
+    
+    ' ========================================================
+    ' SECOND LOOP: Fill cells and formulas
+    ' ========================================================
+    For i = 1 To rowCount
+        If rowsData(i).isValid Then
+            fillCellsAndFormulas server, rowsData(i).rowRange, rowsData(i).id
+        End If
+    Next i
+    
     Worksheets(STR_SHEET_NAME).Cells(lastRowIndex, 1).offset(1, 0).Activate
-
 End Sub
 
 ' ========================================================
-' sends place order for row
+' Fill cells and formulas of active rows
 ' ========================================================
-Sub sendPlaceOrder(server As String, cell As Range)
-
-    ' get id
-    Dim id As String
-    Dim placeOrderStr As String
+Sub fillCellsAndFormulas(server As String, cell As Range, id As String)
     Dim requestStr As String
     Dim i As Integer
     Dim columnsArray() As Variant
     Dim columnIndex As Integer
-
+    
     With Worksheets(STR_SHEET_NAME)
-        id = .Cells(cell.row, errorColumnIndex + 1).value
-        If id = util.STR_EMPTY Then ' none exists yet -- is original placement as opposed to modify
-            id = OrderFunctions.makeId(server)
-            If id = STR_EMPTY Then
-                Exit Sub
-            End If
-            ' fill "id" column with id
-            .Cells(cell.row, errorColumnIndex + 1).value = id
-        End If
+        If id = util.STR_EMPTY Then Exit Sub
         
-        ' what-if
         If cbWhatIf.value = True Then
-            placeOrderStr = STR_WHAT_IF
             requestStr = STR_WHAT_IF_REQUEST
             columnsArray = getWhatIfColumns()
-            columnIndex = idCommissionIndex
+            columnIndex = idCommissionAndFeesIndex
         Else
-            placeOrderStr = STR_PLACEORDER
             requestStr = STR_ORDERSTATUS
             columnsArray = getOrderStatusColumns()
             columnIndex = idColumnIndex + 1
         End If
         
-        ' fill "error" column with formula
+        .Cells(cell.row, errorColumnIndex + 1).value = id
+        
         .Cells(cell.row, errorColumnIndex).Formula = util.composeLink(server, requestStr, id, util.STR_ERROR)
         If util.cleanOnError(.Cells(cell.row, errorColumnIndex)) Then
             clearOrderStatusColumns cell
@@ -271,13 +371,8 @@ Sub sendPlaceOrder(server As String, cell As Range)
             Exit Sub
         End If
         
-        ' send request
-        util.sendPoke Worksheets(STR_SHEET_NAME), server, placeOrderStr, id, cell, startOfContractColumns, getContractColumns(), 0, idColumnIndex, orderBaseColumnsStart, orderBaseColumnsEnd, orderExtColumnsStart, orderExtColumnsEnd
-        
-        ' fill columns with formulas
         For i = 0 To UBound(columnsArray) - LBound(columnsArray)
             .Cells(cell.row, columnIndex + i).Formula = util.composeLink(server, requestStr, id, columnsArray(i))
         Next i
     End With
-
 End Sub

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -33,6 +33,9 @@ public class RealTimeBarsHandler extends HistoricalDataBaseHandler {
     /** Method sends real time bars request to TWS */
     public byte[] handleRealTimeBarsRequest(String requestStr, byte[] data) {
         RealTimeBarsRequest request = m_requestParser.parseRealTimeBarsRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending real time bars request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()));
         byte[] ret = handleHistoricalDataBaseRequest(request); 
         clientSocket().reqRealTimeBars(request.requestId(), request.contract(), request.barSize(), request.whatToShow(), request.useRth(), null);

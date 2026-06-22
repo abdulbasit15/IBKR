@@ -24,7 +24,7 @@ EReaderOSSignal::EReaderOSSignal(unsigned long waitTimeout)
     ok = ok && !pthread_condattr_setclock(&m_condattr, CLOCK_MONOTONIC);
 #endif
     ok = ok && !pthread_cond_init(&m_evMsgs, &m_condattr);
-    open = false; 
+    open = false;
 #elif defined(IB_WIN32)
 	m_evMsgs = CreateEvent(0, false, false, 0);
     ok = (NULL != m_evMsgs);
@@ -65,7 +65,7 @@ void EReaderOSSignal::issueSignal() {
 
 void EReaderOSSignal::waitForSignal() {
 #if defined(IB_POSIX)
-    pthread_mutex_lock(&m_mutex); 
+    pthread_mutex_lock(&m_mutex);
     if (!open) {
         if ( m_waitTimeout == INFINITE ) {
             pthread_cond_wait(&m_evMsgs, &m_mutex);

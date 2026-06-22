@@ -206,6 +206,13 @@ Public Enum TickerColumns
     Col_EFPCLOSEFORMATTEDBASISPOINTS
     Col_EFPCLOSETOTALDIVIDENDS
     Col_EFPCLOSEDIVIDENDIMPACT
+    
+' Tick Req Params columns
+    Col_MINTICK
+    Col_BBOEXCHANGE
+    Col_SNAPSHOTPERMISSIONS
+    Col_LASTPRICEPRECISION
+    Col_LASTSIZEPRECISION
 End Enum
 
 ' MktDataRecord (tickers)
@@ -235,7 +242,7 @@ Private Type MktDataRecord
     ' tick size
     bidSize As Variant
     askSize As Variant
-    LastSize As Variant
+    lastSize As Variant
     VolumeTick As Variant
     AvgVolume As Variant
     OptCallOpenInterest As Variant
@@ -354,6 +361,14 @@ Private Type MktDataRecord
     BidYield As Double
     AskYield As Double
     LastYield As Double
+    
+    ' tick req params
+    minTick As String
+    bboExchange As String
+    snapshotPermissions As Integer
+    lastPricePrecision As String
+    lastSizePrecision As String
+    
 End Type
 
 ' variables
@@ -383,7 +398,7 @@ Private Sub RefreshInactive_Click()
 End Sub
 
 Public Sub Initialise()
-    Set tickerDataTable = Tickers.Range("$Q$11:$EU$128")
+    Set tickerDataTable = Tickers.Range("$Q$11:$FM$128")
     Set contractTable = Tickers.Range("$A$11:$P$128")
 End Sub
 
@@ -445,8 +460,8 @@ Private Sub RepaintMktDataRow(ByVal i As Long)
     With arMktData(i)
         ' all
         
-        If tickerDataTable(i, Col_LASTTIMESTAMP).value <> Util.ConvertLongToDateStr(Val(.LastTimeStamp)) Then
-            tickerDataTable(i, Col_LASTTIMESTAMP).value = Util.ConvertLongToDateStr(Val(.LastTimeStamp))
+        If tickerDataTable(i, Col_LASTTIMESTAMP).value <> Util.ConvertLongStrToDateStr(.LastTimeStamp) Then
+            tickerDataTable(i, Col_LASTTIMESTAMP).value = Util.ConvertLongStrToDateStr(.LastTimeStamp)
         End If
         If tickerDataTable(i, Col_BIDPRICE).value <> .bidPrice Then
             tickerDataTable(i, Col_BIDPRICE).value = .bidPrice
@@ -475,8 +490,8 @@ Private Sub RepaintMktDataRow(ByVal i As Long)
         If tickerDataTable(i, Col_OPENPRICE).value <> .OpenPrice Then
             tickerDataTable(i, Col_OPENPRICE).value = .OpenPrice
         End If
-        If tickerDataTable(i, Col_LASTSIZE).value <> Util.DecimalToString(.LastSize) Then
-            tickerDataTable(i, Col_LASTSIZE).value = Util.DecimalToString(.LastSize)
+        If tickerDataTable(i, Col_LASTSIZE).value <> Util.DecimalToString(.lastSize) Then
+            tickerDataTable(i, Col_LASTSIZE).value = Util.DecimalToString(.lastSize)
         End If
         If tickerDataTable(i, Col_VOLUME).value <> Util.DecimalToString(.VolumeTick) Then
             tickerDataTable(i, Col_VOLUME).value = Util.DecimalToString(.VolumeTick)
@@ -986,6 +1001,22 @@ Private Sub RepaintMktDataRow(ByVal i As Long)
             End If
         End If
     
+        If tickerDataTable(i, Col_MINTICK).value <> .minTick Then
+            tickerDataTable(i, Col_MINTICK).value = .minTick
+        End If
+        If tickerDataTable(i, Col_BBOEXCHANGE).value <> .bboExchange Then
+            tickerDataTable(i, Col_BBOEXCHANGE).value = .bboExchange
+        End If
+        If tickerDataTable(i, Col_SNAPSHOTPERMISSIONS).value <> .snapshotPermissions Then
+            tickerDataTable(i, Col_SNAPSHOTPERMISSIONS).value = .snapshotPermissions
+        End If
+        If tickerDataTable(i, Col_LASTPRICEPRECISION).value <> .lastPricePrecision Then
+            tickerDataTable(i, Col_LASTPRICEPRECISION).value = .lastPricePrecision
+        End If
+        If tickerDataTable(i, Col_LASTSIZEPRECISION).value <> .lastSizePrecision Then
+            tickerDataTable(i, Col_LASTSIZEPRECISION).value = .lastSizePrecision
+        End If
+    
     End With
 End Sub
 
@@ -1037,7 +1068,7 @@ Private Sub CalculateImpliedVolatility_Click()
                 .Symbol = UCase(contractTable(index, Col_SYMBOL).value)
                 .SecType = UCase(contractTable(index, Col_SECTYPE).value)
                 .lastTradeDateOrContractMonth = contractTable(index, Col_LASTTRADEDATE).value
-                .Strike = contractTable(index, Col_STRIKE).value
+                .Strike = Util.SetNonEmptyValue(contractTable(index, Col_STRIKE).value, .Strike)
                 .Right = UCase(contractTable(index, Col_RIGHT).value)
                 .multiplier = UCase(contractTable(index, Col_MULTIPLIER).value)
                 .Exchange = UCase(contractTable(index, Col_EXCH).value)
@@ -1088,7 +1119,7 @@ Private Sub CalculateOptionPrice_Click()
                 .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
                 .SecType = UCase(contractTable(id, Col_SECTYPE).value)
                 .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-                .Strike = contractTable(id, Col_STRIKE).value
+                .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
                 .Right = UCase(contractTable(id, Col_RIGHT).value)
                 .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
                 .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -1285,6 +1316,11 @@ Private Sub ClearMarketDataCells(ByVal row As Integer)
     tickerDataTable(row, Col_ETFFROZENNAVLAST).value = STR_EMPTY
     tickerDataTable(row, Col_ETFNAVHIGH).value = STR_EMPTY
     tickerDataTable(row, Col_ETFNAVLOW).value = STR_EMPTY
+    tickerDataTable(row, Col_MINTICK).value = STR_EMPTY
+    tickerDataTable(row, Col_BBOEXCHANGE).value = STR_EMPTY
+    tickerDataTable(row, Col_SNAPSHOTPERMISSIONS).value = STR_EMPTY
+    tickerDataTable(row, Col_LASTPRICEPRECISION).value = STR_EMPTY
+    tickerDataTable(row, Col_LASTSIZEPRECISION).value = STR_EMPTY
 End Sub
 
 ' cancel calculate option price click
@@ -1364,7 +1400,7 @@ Sub RequestMarketData_Click()
                 .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
                 .SecType = UCase(contractTable(id, Col_SECTYPE).value)
                 .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-                .Strike = contractTable(id, Col_STRIKE).value
+                .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
                 .Right = UCase(contractTable(id, Col_RIGHT).value)
                 .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
                 .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -1482,7 +1518,7 @@ Private Sub CancelMarketDataSubscription(ByVal tickerIndex As Long)
 
         .bidSize = 0
         .askSize = 0
-        .LastSize = 0
+        .lastSize = 0
         .VolumeTick = 0
         .AvgVolume = 0
         .OptCallOpenInterest = 0
@@ -1592,6 +1628,11 @@ Private Sub CancelMarketDataSubscription(ByVal tickerIndex As Long)
         .TradeRate = 0
         .VolumeRate = 0
         .LastRTHTrade = 0
+        .minTick = STR_EMPTY
+        .bboExchange = STR_EMPTY
+        .snapshotPermissions = 0
+        .lastPricePrecision = STR_EMPTY
+        .lastSizePrecision = STR_EMPTY
     End With
 
     ' clear appropriate cells
@@ -1732,7 +1773,7 @@ Public Sub UpdateTickersSheetWithSize(id As Long, tickType As Long, Size As Vari
             Case ASK_SIZE
                 .askSize = Size
             Case LAST_SIZE
-                .LastSize = Size
+                .lastSize = Size
             Case VOLUME_TICK
                 .VolumeTick = Size
             Case AVG_VOLUME
@@ -1756,7 +1797,7 @@ Public Sub UpdateTickersSheetWithSize(id As Long, tickType As Long, Size As Vari
             Case DELAYED_ASK_SIZE
                 .askSize = Size
             Case DELAYED_LAST_SIZE
-                .LastSize = Size
+                .lastSize = Size
             Case DELAYED_VOLUME
                 .VolumeTick = Size
             Case AVG_OPT_VOLUME
@@ -2096,7 +2137,7 @@ Public Sub UpdateTickersSheetWithTickGeneric(ByVal id As Long, ByVal tickType As
 End Sub
 
 ' process error
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
     
     ' handle errors
     If errorCode = ERROR_DUPLICATE_TICKER_ID Then
@@ -2109,17 +2150,17 @@ Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMs
         If id >= ID_CALC_OPTION_PRICE Then
             id = id - ID_CALC_OPTION_PRICE
             If contractTable(id, Col_SECTYPE).value <> STR_EMPTY Then
-                tickerDataTable(id, Col_CALCOPTPRICESTATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+                tickerDataTable(id, Col_CALCOPTPRICESTATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
             End If
         ElseIf id >= ID_CALC_IMPL_VOL And id < ID_CALC_OPTION_PRICE Then
             id = id - ID_CALC_IMPL_VOL
             If contractTable(id, Col_SECTYPE).value <> STR_EMPTY Then
-                tickerDataTable(id, Col_CALCIMPLVOLSTATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+                tickerDataTable(id, Col_CALCIMPLVOLSTATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
             End If
         Else
             id = id - ID_TICKERS
             If contractTable(id, Col_SECTYPE).value <> STR_EMPTY Then
-                tickerDataTable(id, Col_TICKER_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+                tickerDataTable(id, Col_TICKER_STATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
             End If
         End If
     End If
@@ -2142,6 +2183,23 @@ Public Sub UpdateMarketDataType(ByVal id As Long, ByVal marketDataType As Long)
     End If
 End Sub
 
+        
+'update tick req params
+Public Sub UpdateTickersSheetWithTickReqParams(ByVal tickReqParams As TWSLib.ITickReqParams)
+    Dim id As Integer
+    
+    id = tickReqParams.reqId - ID_TICKERS
 
+    With arMktData(id)
+        .minTick = tickReqParams.minTick
+        .bboExchange = tickReqParams.bboExchange
+        .snapshotPermissions = tickReqParams.snapshotPermissions
+        .lastPricePrecision = tickReqParams.lastPricePrecision
+        .lastSizePrecision = tickReqParams.lastSizePrecision
+    End With
 
+    If Not timerIsArmed Then
+        ArmTimer
+    End If
 
+End Sub

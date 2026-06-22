@@ -115,7 +115,7 @@ namespace IBSampleApp.ui
 
             int index = GetIndex(dataMessage.RequestId);
 
-            if (index < 0) return;
+            if (index < 0 || index >= 79999999) return;
 
             grid[MARKET_DATA_TYPE_INDEX, index].Value = MarketDataType.get(dataMessage.MarketDataType).Name;
         }

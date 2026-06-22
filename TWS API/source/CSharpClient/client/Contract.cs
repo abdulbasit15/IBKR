@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System.Collections.Generic;
@@ -141,6 +141,11 @@ namespace IBApi
          * @sa DeltaNeutralContract
          */
         public DeltaNeutralContract DeltaNeutralContract { get; set; }
+
+        public Contract()
+        {
+            Strike = double.MaxValue;
+        }
 
         public override string ToString() => $"{SecType} {Symbol} {Currency} {Exchange}";
     }

@@ -30,18 +30,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
     "#define _AFX_NO_OLE_RESOURCES\r\n"
@@ -67,8 +67,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 10,30,01,0
- PRODUCTVERSION 10,30,01,0
+ FILEVERSION 10,45,01,0
+ PRODUCTVERSION 10,45,01,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -85,12 +85,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Interactive Brokers"
             VALUE "FileDescription", "TwsSocketClient DLL"
-            VALUE "FileVersion", "10.30.01"
+            VALUE "FileVersion", "10.45.01"
             VALUE "InternalName", "TwsSocketClient"
             VALUE "LegalCopyright", "Copyright (C) 2006"
             VALUE "OriginalFilename", "TwsSocketClient.DLL"
             VALUE "ProductName", "TwsSocketClient Dynamic Link Library"
-            VALUE "ProductVersion", "10.30.01"
+            VALUE "ProductVersion", "10.45.01"
         END
     END
     BLOCK "VarFileInfo"

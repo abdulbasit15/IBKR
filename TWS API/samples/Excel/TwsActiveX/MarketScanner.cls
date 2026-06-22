@@ -168,7 +168,7 @@ Public Sub UpdateScannerData(ByVal reqId As Long, ByVal rank As Long, ByVal Cont
         .Cells(2).value = contract.Symbol
         .Cells(3).value = contract.SecType
         .Cells(4).value = contract.lastTradeDateOrContractMonth
-        .Cells(5).value = contract.Strike
+        .Cells(5).value = Util.DblMaxStr(contract.Strike)
         .Cells(6).value = contract.Right
         .Cells(7).value = contract.Exchange
     
@@ -238,14 +238,14 @@ Private Function GenerateSheetName(subscriptionInfo As TWSLib.IScannerSubscripti
     GenerateSheetName = Left(s, 31)
 End Function
 
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
     
     ' handle errors
     If errorCode = ERROR_DUPLICATE_TICKER_ID Then
         MsgBox STR_ALREADY_SUBSCRIBED
         controlTable(id - ID_MARKETSCANNER, Col_STATUS).value = STR_SUBSCRIBED
     Else
-        controlTable(id - ID_MARKETSCANNER, Col_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+        controlTable(id - ID_MARKETSCANNER, Col_STATUS).value = STR_ERROR + errorTime + STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
     End If
         
 End Sub

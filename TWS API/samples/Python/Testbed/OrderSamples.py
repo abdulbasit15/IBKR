@@ -1,5 +1,5 @@
 """
-Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 """
 
@@ -389,6 +389,7 @@ class OrderSamples:
         order.orderType = "LMT"
         order.totalQuantity = quantity
         order.lmtPrice = limitPrice
+        order.tif = "DAY"
         # ! [limitorder]
         return order
         
@@ -999,7 +1000,7 @@ class OrderSamples:
         order.adjustedOrderType = "TRAIL"
         #With a stop price of...
         order.adjustedStopPrice = adjustedStopPrice
-        #traling by and amount (0) or a percent (100)...
+        #trailing by and amount (0) or a percent (100)...
         order.adjustableTrailingUnit = trailUnit
         #of...
         order.adjustedTrailingAmount = adjustedTrailAmount
@@ -1198,6 +1199,15 @@ class OrderSamples:
         return order
 
     @staticmethod
+    def LimitOrderWithIncludeOvernight(action:str, quantity:Decimal, limitPrice:float):
+
+        # ! [limit_order_with_include_overnight]
+        order = OrderSamples.LimitOrder(action, quantity, limitPrice)
+        order.includeOvernight = True
+        # ! [limit_order_with_include_overnight]
+        return order
+
+    @staticmethod
     def CancelOrderEmpty():
         # ! [cancel_order_empty]
         orderCancel = OrderCancel()
@@ -1211,35 +1221,47 @@ class OrderSamples:
         orderCancel.manualOrderCancelTime = manualOrderCancelTime
         # ! [cancel_order_with_manual_time]
         return orderCancel
-    
+
     @staticmethod
-    def Rfq():
-        # ! [rfq]
-        order = OrderSamples.RfqEmpty()
-        order.extOperator = "Ext Operator 1"
-        order.externalUserId = "External User Id 1"
-        order.manualOrderIndicator = 1
-        # ! [rfq]
-        return order
-    
-    @staticmethod
-    def RfqEmpty():
-        # ! [rfq_empty]
-        order = Order()
-        order.orderType = "QUOTE"
-        order.totalQuantity = Decimal("1")
-        # ! [rfq_empty]
+    def LimitOrderWithCmeTaggingFields(action: str, quantity: Decimal, limitPrice: float, extOperator: str, manualOrderIndicator: int):
+        # ! [limit_order_with_cme_tagging_fields]
+        order = OrderSamples.LimitOrder(action, quantity, limitPrice)
+        order.extOperator = extOperator
+        order.manualOrderIndicator = manualOrderIndicator
+        # ! [limit_order_with_cme_tagging_fields]
         return order
 
     @staticmethod
-    def RfqCancel():
-        # ! [rfq_cancel]
+    def OrderCancelWithCmeTaggingFields(extOperator: str, manualOrderIndicator: int):
+        # ! [order_cancel_with_cme_tagging_fields]
         orderCancel = OrderCancel()
-        orderCancel.extOperator = "Ext Operator 2"
-        orderCancel.externalUserId = "External User Id 2"
-        orderCancel.manualOrderIndicator = 1
-        # ! [rfq_cancel]
+        orderCancel.extOperator = extOperator
+        orderCancel.manualOrderIndicator = manualOrderIndicator
+        # ! [order_cancel_with_cme_tagging_fields]
         return orderCancel
+    
+    @staticmethod
+    def LimitOnCloseOrderWithImbalanceOnly(action:str, quantity:Decimal, limitPrice:float):
+        # ! [limit_on_close_order_with_imbalance_only]
+        order = Order()
+        order.action = action
+        order.orderType = "LOC"
+        order.totalQuantity = quantity
+        order.lmtPrice = limitPrice
+        order.imbalanceOnly = True
+        # ! [limit_on_close_order_with_imbalance_only]
+        return order
+
+    @staticmethod
+    def LimitOrderWithStopLossAndProfitTaker(action:str, quantity:Decimal, limitPrice:float, slOrderId:int, ptOrderId:int):
+        # ! [limit_order_with_stop_loss_and_protif_taker]
+        order = OrderSamples.LimitOrder(action, quantity, limitPrice)
+        order.slOrderId = slOrderId
+        order.slOrderType = "PRESET"
+        order.ptOrderId = ptOrderId
+        order.ptOrderType = "PRESET"
+        # ! [limit_order_with_stop_loss_and_protif_taker]
+        return order;
 
 def Test():
     os = OrderSamples() # @UnusedVariable

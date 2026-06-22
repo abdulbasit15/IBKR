@@ -20,6 +20,8 @@ Const CELL_EXECFILTER_SYMBOL = "D6"
 Const CELL_EXECFILTER_SECTYPE = "E6"
 Const CELL_EXECFILTER_EXCH = "F6"
 Const CELL_EXECFILTER_SIDE = "G6"
+Const CELL_EXECFILTER_LASTNDAYS = "H6"
+Const CELL_EXECFILTER_SPECIFICDATES = "I6"
 
 ' contract id not in standard column
 Const Col_CONID = 11
@@ -44,6 +46,8 @@ Private Enum ExecutionDetailsColumns
     Col_MODELCODE
     Col_LASTLIQUIDITY
     Col_PENDINGPRICEREVISION
+    Col_SUBMITTER
+    Col_OPTEXERCISEORLAPSETYPE
 End Enum
 
 ' local variables
@@ -65,7 +69,17 @@ Private Sub RequestExecutions_Click()
     ' apply execution filter
     Dim lExecFilter As TWSLib.IExecutionFilter
     Set lExecFilter = Api.Tws.createExecutionFilter()
-
+    
+    Dim arrSpecificDatesStr() As String
+    arrSpecificDatesStr = Split(Range(CELL_EXECFILTER_SPECIFICDATES).value, ",")
+    
+    Dim arrSpecificDatesLong As TWSLib.IIntegerList
+    Set arrSpecificDatesLong = Api.Tws.createIntegerList()
+    Dim i As Integer
+    For i = LBound(arrSpecificDatesStr) To UBound(arrSpecificDatesStr)
+        arrSpecificDatesLong.Add (CLng(arrSpecificDatesStr(i)))
+    Next i
+    
     With lExecFilter
         .clientId = Range(CELL_EXECFILTER_CLIENTID).value
         .acctCode = Range(CELL_EXECFILTER_ACCTCODE).value
@@ -74,6 +88,10 @@ Private Sub RequestExecutions_Click()
         .SecType = Range(CELL_EXECFILTER_SECTYPE).value
         .Exchange = Range(CELL_EXECFILTER_EXCH).value
         .side = Range(CELL_EXECFILTER_SIDE).value
+        If Range(CELL_EXECFILTER_LASTNDAYS).value > 0 Then
+            .lastNDays = Range(CELL_EXECFILTER_LASTNDAYS).value
+        End If
+        Set .specificDates = arrSpecificDatesLong
     End With
 
     Api.Tws.reqExecutionsEx ActiveCell.row, lExecFilter
@@ -102,7 +120,7 @@ Public Sub UpdateExecution(ByVal orderId As Long, ByVal contract As TWSLib.ICont
             contractTable(rowId, Col_SYMBOL).value = .Symbol
             contractTable(rowId, Col_SECTYPE).value = .SecType
             contractTable(rowId, Col_LASTTRADEDATE).value = .lastTradeDateOrContractMonth
-            contractTable(rowId, Col_STRIKE).value = .Strike
+            contractTable(rowId, Col_STRIKE).value = Util.DblMaxStr(.Strike)
             contractTable(rowId, Col_RIGHT).value = .Right
             contractTable(rowId, Col_MULTIPLIER).value = .multiplier
             contractTable(rowId, Col_EXCH).value = .Exchange
@@ -124,7 +142,7 @@ Public Sub UpdateExecution(ByVal orderId As Long, ByVal contract As TWSLib.ICont
             executionsTable(rowId, Col_CUMQTY).value = Util.DecimalToString(.cumQty)
             executionsTable(rowId, Col_PRICE).value = .price
             executionsTable(rowId, Col_AVGPRICE).value = .avgPrice
-            executionsTable(rowId, Col_PERMID).value = .permId
+            executionsTable(rowId, Col_PERMID).value = .permIdStr
             executionsTable(rowId, Col_LIQUIDATION).value = .liquidation
             executionsTable(rowId, Col_CLIENTID).value = .clientId
             executionsTable(rowId, Col_ORDERREF).value = .orderRef
@@ -133,6 +151,8 @@ Public Sub UpdateExecution(ByVal orderId As Long, ByVal contract As TWSLib.ICont
             executionsTable(rowId, Col_MODELCODE).value = .modelCode
             executionsTable(rowId, Col_LASTLIQUIDITY).value = .lastLiquidity
             executionsTable(rowId, Col_PENDINGPRICEREVISION).value = .pendingPriceRevision
+            executionsTable(rowId, Col_SUBMITTER).value = .submitter
+            executionsTable(rowId, Col_OPTEXERCISEORLAPSETYPE).value = .optExerciseOrLapseType
         End With
     
         rowId = rowId + 1
@@ -142,7 +162,7 @@ End Sub
 
 Public Sub Initialise()
     Set contractTable = Me.Range("$A$11:$K$1000")
-    Set executionsTable = Me.Range("$L$11:$AD$1000")
+    Set executionsTable = Me.Range("$L$11:$AF$1000")
     Clear
 End Sub
 

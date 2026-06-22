@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 #include "StdAfx.h"
 
@@ -15,7 +15,7 @@
      *  - Often the quickest way is by looking for it in the TWS and looking at its description there (double click).
      *  - The TWS' symbol corresponds to the API's localSymbol. Keep this in mind when defining Futures or Options.
      *  - The TWS' underlying's symbol can usually be mapped to the API's symbol.
-     *  
+     *
      * Any stock or option symbols displayed are for illustrative purposes only and are not intended to portray a recommendation.
      */
 
@@ -207,7 +207,7 @@ Contract ContractSamples::BondWithCusip() {
 	//! [bondwithcusip]
 	return contract;
 }
-	
+
 Contract ContractSamples::Bond() {
 	//! [bond]
 	Contract contract;
@@ -216,7 +216,7 @@ Contract ContractSamples::Bond() {
 	//! [bond]
 	return contract;
 }
-	
+
 Contract ContractSamples::MutualFund() {
 	//! [fundcontract]
 	Contract contract;
@@ -269,7 +269,7 @@ Contract ContractSamples::OptionAtBox(){
 
 	/*
      * Option contracts require far more information since there are many contracts having the exact same
-     * attributes such as symbol, currency, strike, etc. 
+     * attributes such as symbol, currency, strike, etc.
      */
 Contract ContractSamples::OptionWithTradingClass(){
 	//! [optcontract_tradingclass]
@@ -323,18 +323,18 @@ Contract ContractSamples::DutchWarrant(){
 Contract ContractSamples::SimpleFuture(){
 	//! [futcontract]
 	Contract contract;
-	contract.symbol = "GBL";
+	contract.symbol = "ES";
 	contract.secType = "FUT";
-	contract.exchange = "EUREX";
-	contract.currency = "EUR";
-	contract.lastTradeDateOrContractMonth = "202303";
+	contract.exchange = "CME";
+	contract.currency = "USD";
+	contract.lastTradeDateOrContractMonth = "202503";
 	//! [futcontract]
 	return contract;
 }
 
 	/*
      * Rather than giving expiration dates we can also provide the local symbol
-     * attributes such as symbol, currency, strike, etc. 
+     * attributes such as symbol, currency, strike, etc.
      */
 Contract ContractSamples::FutureWithLocalSymbol(){
 	//! [futcontract_local_symbol]
@@ -406,7 +406,7 @@ Contract ContractSamples::Warrants(){
 
 	/*
      * It is also possible to define contracts based on their ISIN (IBKR STK sample).
-     * 
+     *
      */
 Contract ContractSamples::ByISIN(){
 	Contract contract;
@@ -742,4 +742,39 @@ Contract ContractSamples::Fund() {
 	//! [fundcontract]
 	return contract;
 }
-   
+
+Contract ContractSamples::OptForecastx() {
+	//! [optforecastxcontract]
+	Contract contract;
+	contract.symbol = "CPIY";
+	contract.secType = "OPT";
+	contract.lastTradeDateOrContractMonth = "202612";
+	contract.currency = "USD";
+	contract.exchange = "FORECASTX";
+	//! [optforecastxcontract]
+	return contract;
+}
+
+Contract ContractSamples::OptForecastxZeroStrike() {
+	//! [optforecastxcontract]
+	Contract contract;
+	contract.symbol = "CPIY";
+	contract.secType = "OPT";
+	contract.lastTradeDateOrContractMonth = "202612";
+	contract.currency = "USD";
+	contract.strike = 0;
+	contract.right = "C";
+	contract.exchange = "FORECASTX";
+	//! [optforecastxcontract]
+	return contract;
+}
+
+Contract ContractSamples::OptForecastxByConId() {
+	//! [optforecastxbyconid]
+	Contract contract;
+	contract.conId = 789013783;
+	contract.exchange = "FORECASTX";
+	//! [optforecastxbyconid]
+	return contract;
+}
+

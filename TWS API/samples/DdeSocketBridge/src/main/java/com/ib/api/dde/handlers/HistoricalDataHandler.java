@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -34,6 +34,9 @@ public class HistoricalDataHandler extends HistoricalDataBaseHandler {
     /** Method sends historical data request to TWS */
     public byte[] handleHistoricalDataRequest(String requestStr, byte[] data) {
         HistoricalDataRequest request = m_requestParser.parseHistoricalDataRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending historical data request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()));
         byte[] ret = handleHistoricalDataBaseRequest(request);
         clientSocket().reqHistoricalData(request.requestId(), request.contract(), request.endDateTime(), request.durationStr(), 

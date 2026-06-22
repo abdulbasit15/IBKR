@@ -5,7 +5,7 @@ Const STR_GET_NEXT_VALID_ID = "getNextValidId"
 Public Const EXTENDED_WORKSHEET = "ExtendedOrderAttributes"
 Public Const EXTENDED_ATTRIB_COL = "d"
 Public Const FIRST_EXTENDED_ROW = 7
-Public Const LAST_EXTENDED_ROW = 130
+Public Const LAST_EXTENDED_ROW = 142
 Const DAYS_PRIOR_TO_DDE_API = 43151
 Const orderMult = 1000000
 
@@ -13,7 +13,7 @@ Sub applyTemplate(ByRef orderRange As Range, ByVal extendedAttribColumn As Integ
     Dim orderRowCtr As Integer, extRowCtr As Integer, orderCol As Integer
     Dim orderRow As Range
     Dim orderSheet As Worksheet
-    For Each orderRow In orderRange.rows
+    For Each orderRow In orderRange.Rows
         orderRowCtr = orderRow.row
         For extRowCtr = OrderFunctions.FIRST_EXTENDED_ROW To OrderFunctions.LAST_EXTENDED_ROW
             orderCol = extendedAttribColumn + extRowCtr - OrderFunctions.FIRST_EXTENDED_ROW
@@ -33,7 +33,7 @@ Function makeId(server As String) As String
         If dimension = 1 Then
             Dim i As Integer
             For i = 1 To UBound(result) - LBound(result) + 1
-                makeId = util.IDENTIFIER_PREFIX & result(i)
+                makeId = result(i)
             Next i
         Else
             makeId = STR_EMPTY

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package TestJavaClient;
@@ -26,7 +26,7 @@ public class HistoricalNewsDlg extends JDialog {
 
     private JTextField 	m_requestId = new JTextField("0");
     private JTextField 	m_conId = new JTextField("8314");
-    private JTextField 	m_providerCodes = new JTextField("BZ+FLY");
+    private JTextField 	m_providerCodes = new JTextField("BRFUPDN+BRFG");
     private JTextField 	m_startDateTime = new JTextField();
     private JTextField 	m_endDateTime = new JTextField();
     private JTextField 	m_totalResults = new JTextField("10");
@@ -44,9 +44,8 @@ public class HistoricalNewsDlg extends JDialog {
 
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.0");
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DATE, -3);
+        cal.add(Calendar.DATE, -10);
         m_endDateTime.setText(df.format(cal.getTime()));
-        cal.add(Calendar.DATE, -1);
         m_startDateTime.setText(df.format(cal.getTime()));
 
         // create button panel
@@ -68,9 +67,9 @@ public class HistoricalNewsDlg extends JDialog {
         midPanel.add( m_conId);
         midPanel.add( new JLabel( "Provider Codes") );
         midPanel.add( m_providerCodes);
-        midPanel.add( new JLabel( "Start Date/Time (yyyy-MM-dd HH:mm:ss.0)") );
+        midPanel.add( new JLabel( "Start Date/Time - News: all historical up to that moment") );
         midPanel.add( m_startDateTime);
-        midPanel.add( new JLabel( "End Date/Time (yyyy-MM-dd HH:mm:ss.0)") );
+        midPanel.add( new JLabel( "End Date/Time - News: from that moment up to now") );
         midPanel.add( m_endDateTime);
         midPanel.add( new JLabel( "Total Results") );
         midPanel.add( m_totalResults);

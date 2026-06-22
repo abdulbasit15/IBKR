@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.client;
@@ -27,6 +27,16 @@ class Builder implements ObjectOutput {
 	public void send(int a) throws EClientException {
         send( String.valueOf(a) );
 	}
+
+    public void sendRawInt(int intValue) throws IOException {
+        byte[] byteArray = new byte[4];
+        intToBytes(intValue, byteArray, 0);
+        m_sb.write(byteArray);
+    }
+
+    public void sendByteArray(byte[] byteArray) throws EClientException {
+        m_sb.writeBytes(byteArray);
+    }
 
 	public void sendMax(int a) throws EClientException {
 		send( a == Integer.MAX_VALUE ? "" : String.valueOf( a) );
@@ -78,7 +88,7 @@ class Builder implements ObjectOutput {
         send(contract.symbol());
         send(contract.getSecType());
         send(contract.lastTradeDateOrContractMonth());
-        send(contract.strike());
+        sendMax(contract.strike());
         send(contract.getRight());
         send(contract.multiplier());
         send(contract.exchange());
@@ -109,6 +119,14 @@ class Builder implements ObjectOutput {
         b[position+1] = (byte)(0xff & (val >> 16));
         b[position+2] = (byte)(0xff & (val >> 8));
         b[position+3] = (byte)(0xff & val);
+    }
+
+    public static int bytesToInt(byte b[], int position) {
+        int intValue = ( ((b[position    ] & 0xff) << 24)
+                       | ((b[position + 1] & 0xff) << 16)
+                       | ((b[position + 2] & 0xff) <<  8)
+                       |  (b[position + 3] & 0xff) );
+        return intValue;
     }
     
     static boolean isAsciiPrintable(String str) {

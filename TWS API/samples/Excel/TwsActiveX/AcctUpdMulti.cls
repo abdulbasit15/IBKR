@@ -94,11 +94,11 @@ Private Sub ClearAccountUpdatesMulti_Click()
 End Sub
 
 ' find row in account table by key and currency
-Private Function FindRowByKeyAndCurency(key As String, curency As String)
+Private Function FindRowByKeyAndCurency(accountKey As String, accountCurrency As String)
     Dim i As Long
     For i = 1 To accountUpdatesTable.Rows.Count
-        If (accountUpdatesTable(i, Col_ACCOUNT_KEY).value Like key And _
-                accountUpdatesTable(i, Col_ACCOUNT_CURRENCY).value Like curency) Or _
+        If (accountUpdatesTable(i, Col_ACCOUNT_KEY).value Like accountKey And _
+                accountUpdatesTable(i, Col_ACCOUNT_CURRENCY).value Like accountCurrency) Or _
             accountUpdatesTable(i, Col_ACCOUNT_KEY).value = STR_EMPTY _
         Then
             Exit For
@@ -111,15 +111,15 @@ End Function
 ' public methods
 '=================
 ' account update multi
-Public Sub AccountUpdateMulti(ByVal requestId As Long, ByVal Account As String, ByVal modelCode As String, ByVal key As String, ByVal value As String, ByVal curency As String)
+Public Sub AccountUpdateMulti(ByVal requestId As Long, ByVal accountId As String, ByVal modelCode As String, ByVal accountKey As String, ByVal accountValue As String, ByVal accountCurrency As String)
     Dim rowId As Long
-    rowId = FindRowByKeyAndCurency(key, curency)
+    rowId = FindRowByKeyAndCurency(accountKey, accountCurrency)
     
-    accountUpdatesTable(rowId, Col_ACCOUNT_KEY).value = key
-    accountUpdatesTable(rowId, Col_ACCOUNT_ID).value = Account
+    accountUpdatesTable(rowId, Col_ACCOUNT_KEY).value = accountKey
+    accountUpdatesTable(rowId, Col_ACCOUNT_ID).value = accountId
     accountUpdatesTable(rowId, Col_MODELCODE).value = modelCode
-    accountUpdatesTable(rowId, Col_ACCOUNT_VALUE).value = value
-    accountUpdatesTable(rowId, Col_ACCOUNT_CURRENCY).value = curency
+    accountUpdatesTable(rowId, Col_ACCOUNT_VALUE).value = accountValue
+    accountUpdatesTable(rowId, Col_ACCOUNT_CURRENCY).value = accountCurrency
     
 End Sub
 

@@ -108,7 +108,7 @@ Sub cancelMarketDepth()
     If server = util.STR_EMPTY Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
          
             If .Cells(row.row, idColumnIndex).value = STR_EMPTY Then GoTo Continue
             If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -159,7 +159,7 @@ Sub requestMarketDepth()
     server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
     If server = STR_EMPTY Then Exit Sub
      
-    For Each row In Selection.rows
+    For Each row In Selection.Rows
      
         If Worksheets(STR_SHEET_NAME).Cells(row.row, idColumnIndex).value <> STR_EMPTY Then GoTo Continue
         If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -192,7 +192,7 @@ Sub sendMarketDepthRequest(server As String, cell As Range)
         End If
     
         ' send request
-        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQMKTDEPTH, id & util.QMARK & isSmartDepth, cell, startOfContractColumns, getContractColumns(), 0, idColumnIndex, 0, 0, 0, 0
+        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQMKTDEPTH, id & util.QMARK & isSmartDepth, cell, startOfContractColumns, getContractColumns(), 0, idColumnIndex
     
         ' fill error column with formula
         .Cells(cell.row, errorColumnIndex).Formula = util.composeLink(server, STR_MKT_DEPTH_TICK, id, util.STR_ERROR)
@@ -224,7 +224,7 @@ Sub cancelAllMktDepth()
 
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 isSmartDepth = .Cells(row.row, isSmartDepthColumnIndex).value
@@ -247,7 +247,7 @@ Sub requestAllMktDepth()
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
         Dim row As Range, cell As Range
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 sendMarketDepthRequest server, cell

@@ -6,7 +6,7 @@
 #include "Order.h"
 
 //! [arrivalpx_params]
-void AvailableAlgoParams::FillArrivalPriceParams(Order& baseOrder, double maxPctVol, std::string riskAversion, std::string startTime, std::string endTime, 
+void AvailableAlgoParams::FillArrivalPriceParams(Order& baseOrder, double maxPctVol, std::string riskAversion, std::string startTime, std::string endTime,
 	bool forceCompletion, bool allowPastTime){
 	baseOrder.algoStrategy = "ArrivalPx";
 	baseOrder.algoParams.reset(new TagValueList());
@@ -67,7 +67,7 @@ void AvailableAlgoParams::FillTwapParams(Order& baseOrder, std::string strategyT
 	baseOrder.algoParams->push_back(tag2);
 	baseOrder.algoParams->push_back(tag3);
 	baseOrder.algoParams->push_back(tag4);
-	
+
 }
 //! [twap_params]
 
@@ -163,7 +163,7 @@ void AvailableAlgoParams::FillClosePriceParams(Order& baseOrder, double maxPctVo
 //! [closepx_params]
 
 //! [pctvolpx_params]
-void AvailableAlgoParams::FillPriceVariantPctVolParams(Order baseOrder, double pctVol, double deltaPctVol, double minPctVol4Px, 
+void AvailableAlgoParams::FillPriceVariantPctVolParams(Order baseOrder, double pctVol, double deltaPctVol, double minPctVol4Px,
 													   double maxPctVol4Px, std::string startTime, std::string endTime, bool noTakeLiq){
 	baseOrder.algoStrategy = "PctVolPx";
 	baseOrder.algoParams.reset(new TagValueList());
@@ -185,7 +185,7 @@ void AvailableAlgoParams::FillPriceVariantPctVolParams(Order baseOrder, double p
 //! [pctvolpx_params]
 
 //! [pctvolsz_params]
-void AvailableAlgoParams::FillSizeVariantPctVolParams(Order baseOrder, double startPctVol, double endPctVol, 
+void AvailableAlgoParams::FillSizeVariantPctVolParams(Order baseOrder, double startPctVol, double endPctVol,
 								std::string startTime, std::string endTime, bool noTakeLiq){
 	baseOrder.algoStrategy = "PctVolSz";
 	baseOrder.algoParams.reset(new TagValueList());
@@ -203,7 +203,7 @@ void AvailableAlgoParams::FillSizeVariantPctVolParams(Order baseOrder, double st
 //! [pctvolsz_params]
 
 //! [pctvoltm_params]
-void AvailableAlgoParams::FillTimeVariantPctVolParams(Order baseOrder, double startPctVol, double endPctVol, std::string startTime, 
+void AvailableAlgoParams::FillTimeVariantPctVolParams(Order baseOrder, double startPctVol, double endPctVol, std::string startTime,
 								 std::string endTime, bool noTakeLiq){
 	baseOrder.algoStrategy = "PctVolTm";
 	baseOrder.algoParams.reset(new TagValueList());
@@ -221,8 +221,8 @@ void AvailableAlgoParams::FillTimeVariantPctVolParams(Order baseOrder, double st
 //! [pctvoltm_params]
 
 //! [jefferies_vwap_params]
-void AvailableAlgoParams::FillJefferiesVWAPParams(Order baseOrder, std::string startTime, std::string endTime, double relativeLimit, 
-		double maxVolumeRate, std::string excludeAuctions, double triggerPrice, double wowPrice, int minFillSize, double wowOrderPct, 
+void AvailableAlgoParams::FillJefferiesVWAPParams(Order baseOrder, std::string startTime, std::string endTime, double relativeLimit,
+		double maxVolumeRate, std::string excludeAuctions, double triggerPrice, double wowPrice, int minFillSize, double wowOrderPct,
 		std::string wowMode, bool isBuyBack, std::string wowReference){
 	baseOrder.algoStrategy = "VWAP";
 	baseOrder.algoParams.reset(new TagValueList());
@@ -256,7 +256,7 @@ void AvailableAlgoParams::FillJefferiesVWAPParams(Order baseOrder, std::string s
 //! [csfb_inline_params]
 void AvailableAlgoParams::FillCSFBInlineParams(Order baseOrder, std::string startTime, std::string endTime, std::string execStyle, int minPercent,
 		int maxPercent, int displaySize, std::string auction, bool blockFinder, double blockPrice, int minBlockSize, int maxBlockSize, double iWouldPrice){
-	
+
 	// must be direct-routed to "CSFBALGO"
 
 	baseOrder.algoStrategy = "INLINE";

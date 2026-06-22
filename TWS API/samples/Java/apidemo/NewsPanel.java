@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package apidemo;
@@ -415,7 +415,7 @@ class NewsPanel extends JPanel {
     
     class HistoricalNewsRequestPanel extends JPanel {
         protected UpperField m_conId = new UpperField("8314");
-        protected JTextField m_providerCodes = new JTextField("BZ+FLY");
+        protected JTextField m_providerCodes = new JTextField("BRFUPDN+BRFG");
         protected JTextField m_startDateTime = new JTextField();
         protected JTextField m_endDateTime = new JTextField();
         protected UpperField m_totalResults = new UpperField("10");
@@ -424,9 +424,8 @@ class NewsPanel extends JPanel {
 
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.0");
             Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.DATE, -3);
+            cal.add(Calendar.DATE, -10);
             m_endDateTime.setText(df.format(cal.getTime()));
-            cal.add(Calendar.DATE, -1);
             m_startDateTime.setText(df.format(cal.getTime()));
 
             HtmlButton but = new HtmlButton( "Request Historical News") {
@@ -438,8 +437,8 @@ class NewsPanel extends JPanel {
             VerticalPanel topPanel = new VerticalPanel();
             topPanel.add( "Contract Id", m_conId);
             topPanel.add( "Provider Codes", m_providerCodes);
-            topPanel.add( "Start Date/Time", m_startDateTime, Box.createHorizontalStrut(30), but);
-            topPanel.add( "End Date/Time", m_endDateTime);
+            topPanel.add( "Start Date/Time - News: all historical up to that moment", m_startDateTime, Box.createHorizontalStrut(30), but);
+            topPanel.add( "End Date/Time - News: from that moment up to now", m_endDateTime);
             topPanel.add( "Total Results", m_totalResults);
 
             setLayout( new BorderLayout() );

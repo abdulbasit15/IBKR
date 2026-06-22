@@ -1,7 +1,13 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35707.178
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwsRtdServer", "TwsRtdServer.csproj", "{C8900FAD-7FCC-4FF3-B2E4-2CEA9FFA128D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{51376334-C6BE-46C9-874D-6000D5A2CDFE} = {51376334-C6BE-46C9-874D-6000D5A2CDFE}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpAPI", "..\client\CSharpAPI.csproj", "{51376334-C6BE-46C9-874D-6000D5A2CDFE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,6 +20,10 @@ Global
 		{C8900FAD-7FCC-4FF3-B2E4-2CEA9FFA128D}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{C8900FAD-7FCC-4FF3-B2E4-2CEA9FFA128D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8900FAD-7FCC-4FF3-B2E4-2CEA9FFA128D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51376334-C6BE-46C9-874D-6000D5A2CDFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51376334-C6BE-46C9-874D-6000D5A2CDFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51376334-C6BE-46C9-874D-6000D5A2CDFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51376334-C6BE-46C9-874D-6000D5A2CDFE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

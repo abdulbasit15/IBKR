@@ -32,13 +32,11 @@ public:
 	void eDisconnect(bool resetState = true);
 
 	bool isSocketOK() const;
-	int fd() const;
+	SOCKET fd() const;
     bool asyncEConnect() const;
     void asyncEConnect(bool val);
     ESocket *getTransport();
 
-    void allowRedirect(bool v);
-    bool allowRedirect() const; 
 
 private:
 
@@ -61,18 +59,14 @@ private:
 
 private:
 
-	std::atomic<int> m_fd;
-    bool m_allowRedirect;    
+    std::atomic<SOCKET> m_fd;
+    bool m_sockInit;
     bool m_asyncEConnect;
     EReaderSignal *m_pSignal;
-    int m_redirectCount;
-
-    static const int REDIRECT_COUNT_MAX = 2;
 
 //EClientMsgSink implementation
 public:
     void serverVersion(int version, const char *time);
-    void redirect(const char *host, int port);    
 
 		// Register EReader for safe thread shutdown.
 public:

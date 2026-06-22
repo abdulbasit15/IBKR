@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} TickerForm 
    Caption         =   "Ticker"
    ClientHeight    =   6750
-   ClientLeft      =   45
-   ClientTop       =   330
-   ClientWidth     =   4890
+   ClientLeft      =   48
+   ClientTop       =   328
+   ClientWidth     =   4888
    OleObjectBlob   =   "TickerForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -18,7 +18,7 @@ Public Sub ShowForm()
     secType.Text = ActiveCell.offset(0, 1).value
     lastTradeDate.Text = ActiveCell.offset(0, 2).value
     strike.Text = ActiveCell.offset(0, 3).value
-    right.Text = ActiveCell.offset(0, 4).value
+    Right.Text = ActiveCell.offset(0, 4).value
     multiplier.Text = ActiveCell.offset(0, 5).value
     tradingClass.Text = ActiveCell.offset(0, 6).value
     exchange.Text = ActiveCell.offset(0, 7).value
@@ -37,7 +37,7 @@ Private Sub Ok_Click()
     ActiveCell.offset(0, 1).value = secType.Text
     ActiveCell.offset(0, 2).value = lastTradeDate.Text
     ActiveCell.offset(0, 3).value = strike.Text
-    ActiveCell.offset(0, 4).value = right.Text
+    ActiveCell.offset(0, 4).value = Right.Text
     ActiveCell.offset(0, 5).value = multiplier.Text
     ActiveCell.offset(0, 6).value = tradingClass.Text
     ActiveCell.offset(0, 7).value = exchange.Text
@@ -65,8 +65,8 @@ Private Sub UserForm_Initialize()
     secType.AddItem util.IOPT
     secType.AddItem util.BAG
     
-    right.AddItem util.CPUT
-    right.AddItem util.CCALL
+    Right.AddItem util.CPUT
+    Right.AddItem util.CCALL
 
 End Sub
 

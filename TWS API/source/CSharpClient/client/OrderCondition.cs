@@ -14,7 +14,7 @@ namespace IBApi
         Margin = 4,
         Execution = 5,
         Volume = 6,
-        PercentCange = 7
+        PercentChange = 7,
     }
 
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -37,7 +37,7 @@ namespace IBApi
                     rval = new MarginCondition();
                     break;
 
-                case OrderConditionType.PercentCange:
+                case OrderConditionType.PercentChange:
                     rval = new PercentChangeCondition();
                     break;
 
@@ -93,12 +93,12 @@ namespace IBApi
     {
         public StringSuffixParser(string str) => Rest = str;
 
-        private string SkipSuffix(string perfix) => Rest.Substring(Rest.IndexOf(perfix) + perfix.Length);
+        private string SkipSuffix(string prefix) => Rest.Substring(Rest.IndexOf(prefix) + prefix.Length);
 
-        public string GetNextSuffixedValue(string perfix)
+        public string GetNextSuffixedValue(string prefix)
         {
-            var rval = Rest.Substring(0, Rest.IndexOf(perfix));
-            Rest = SkipSuffix(perfix);
+            var rval = Rest.Substring(0, Rest.IndexOf(prefix));
+            Rest = SkipSuffix(prefix);
 
             return rval;
         }

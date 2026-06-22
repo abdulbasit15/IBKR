@@ -278,11 +278,11 @@ Namespace Samples
         Public Shared Function SimpleFuture() As Contract
             '! [futcontract]
             Dim contract As Contract = New Contract
-            contract.Symbol = "GBL"
+            contract.Symbol = "ES"
             contract.SecType = "FUT"
-            contract.Exchange = "EUREX"
-            contract.Currency = "EUR"
-            contract.LastTradeDateOrContractMonth = "202303"
+            contract.Exchange = "CME"
+            contract.Currency = "USD"
+            contract.LastTradeDateOrContractMonth = "202503"
             '! [futcontract]
             Return contract
         End Function
@@ -716,6 +716,41 @@ Namespace Samples
             contract.Exchange = "ALLFUNDS"
             contract.Currency = "USD"
             '! [fundcontract]
+            Return contract
+        End Function
+
+        Public Shared Function OptForecastx() As Contract
+            '! [optforecastxcontract]
+            Dim contract As Contract = New Contract()
+            contract.Symbol = "CPIY"
+            contract.SecType = "OPT"
+            contract.LastTradeDateOrContractMonth = "202612"
+            contract.Currency = "USD"
+            contract.Exchange = "FORECASTX"
+            '! [optforecastxcontract]
+            Return contract
+        End Function
+
+        Public Shared Function OptForecastxZeroStrike() As Contract
+            '! [optforecastxcontract]
+            Dim contract As Contract = New Contract()
+            contract.Symbol = "CPIY"
+            contract.SecType = "OPT"
+            contract.LastTradeDateOrContractMonth = "202612"
+            contract.Currency = "USD"
+            contract.Strike = 0
+            contract.Right = "C"
+            contract.Exchange = "FORECASTX"
+            '! [optforecastxcontract]
+            Return contract
+        End Function
+
+        Public Shared Function OptForecastxByConId() As Contract
+            '! [optforecastxbyconid]
+            Dim contract As Contract = New Contract()
+            contract.ConId = 789013783
+            contract.Exchange = "FORECASTX"
+            '! [optforecastxbyconid]
             Return contract
         End Function
 

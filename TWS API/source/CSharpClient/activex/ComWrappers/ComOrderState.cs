@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using IBApi;
@@ -109,40 +109,40 @@ namespace TWSLib
         }
 
         /**
-          * @brief The order's generated commission.
+          * @brief The order's generated commission and fees.
           */
-        public double Commission
+        public double CommissionAndFees
         {
-            get { return data !=null ? data.Commission : default(double); }
-            set { if (data != null) data.Commission = value; }
+            get { return data !=null ? data.CommissionAndFees : default(double); }
+            set { if (data != null) data.CommissionAndFees = value; }
         }
 
         /**
-        * @brief The execution's minimum commission.
+        * @brief The execution's minimum commission and fees.
         */
-        public double MinCommission
+        public double MinCommissionAndFees
         {
-            get { return data !=null ? data.MinCommission : default(double); }
-            set { if (data != null) data.MinCommission = value; }
+            get { return data !=null ? data.MinCommissionAndFees : default(double); }
+            set { if (data != null) data.MinCommissionAndFees = value; }
         }
 
         /**
-        * @brief The executions maximum commission.
+        * @brief The executions maximum commission and fees.
         */
-        public double MaxCommission
+        public double MaxCommissionAndFees
         {
-            get { return data !=null ? data.MaxCommission : default(double); }
-            set { if (data != null) data.MaxCommission = value; }
+            get { return data !=null ? data.MaxCommissionAndFees : default(double); }
+            set { if (data != null) data.MaxCommissionAndFees = value; }
         }
 
         /**
-         * @brief The generated commission currency
-         * @sa CommissionReport
+         * @brief The generated commission and fees currency
+         * @sa CommissionAndFeesReport
          */
-        public string CommissionCurrency
+        public string CommissionAndFeesCurrency
         {
-            get { return data !=null ? data.CommissionCurrency : default(string); }
-            set { if (data != null) data.CommissionCurrency = value; }
+            get { return data !=null ? data.CommissionAndFeesCurrency : default(string); }
+            set { if (data != null) data.CommissionAndFeesCurrency = value; }
         }
 
         /**
@@ -172,6 +172,127 @@ namespace TWSLib
             set { if (data != null) data.CompletedStatus = value; }
         }
 
+        /**
+         * @brief Margin currency
+         */
+        public string MarginCurrency
+        {
+            get { return data != null ? data.MarginCurrency : default(string); }
+            set { if (data != null) data.MarginCurrency = value; }
+        }
+
+        /**
+         * @brief The account's current initial margin outside RTH
+         */
+        public double InitMarginBeforeOutsideRTH
+        {
+            get { return data != null ? data.InitMarginBeforeOutsideRTH : default(double); }
+            set { if (data != null) data.InitMarginBeforeOutsideRTH = value; }
+        }
+
+        /**
+        * @brief The account's current maintenance margin outside RTH
+        */
+        public double MaintMarginBeforeOutsideRTH
+        {
+            get { return data != null ? data.MaintMarginBeforeOutsideRTH : default(double); }
+            set { if (data != null) data.MaintMarginBeforeOutsideRTH = value; }
+        }
+
+        /**
+        * @brief The account's current equity with loan outside RTH
+        */
+        public double EquityWithLoanBeforeOutsideRTH
+        {
+            get { return data != null ? data.EquityWithLoanBeforeOutsideRTH : default(double); }
+            set { if (data != null) data.EquityWithLoanBeforeOutsideRTH = value; }
+        }
+
+        /**
+         * @brief The change of the account's initial margin outside RTH
+         */
+        public double InitMarginChangeOutsideRTH
+        {
+            get { return data != null ? data.InitMarginChangeOutsideRTH : default(double); }
+            set { if (data != null) data.InitMarginChangeOutsideRTH = value; }
+        }
+
+        /**
+        * @brief The change of the account's maintenance margin outside RTH
+        */
+        public double MaintMarginChangeOutsideRTH
+        {
+            get { return data != null ? data.MaintMarginChangeOutsideRTH : default(double); }
+            set { if (data != null) data.MaintMarginChangeOutsideRTH = value; }
+        }
+
+        /**
+        * @brief The change of the account's equity with loan outside RTH
+        */
+        public double EquityWithLoanChangeOutsideRTH
+        {
+            get { return data != null ? data.EquityWithLoanChangeOutsideRTH : default(double); }
+            set { if (data != null) data.EquityWithLoanChangeOutsideRTH = value; }
+        }
+
+        /**
+         * @brief The order's impact on the account's initial margin outside RTH
+         */
+        public double InitMarginAfterOutsideRTH
+        {
+            get { return data != null ? data.InitMarginAfterOutsideRTH : default(double); }
+            set { if (data != null) data.InitMarginAfterOutsideRTH = value; }
+        }
+
+        /**
+        * @brief The order's impact on the account's maintenance margin outside RTH
+        */
+        public double MaintMarginAfterOutsideRTH
+        {
+            get { return data != null ? data.MaintMarginAfterOutsideRTH : default(double); }
+            set { if (data != null) data.MaintMarginAfterOutsideRTH = value; }
+        }
+
+        /**
+        * @brief Shows the impact the order would have on the account's equity with loan outside RTH
+        */
+        public double EquityWithLoanAfterOutsideRTH
+        {
+            get { return data != null ? data.EquityWithLoanAfterOutsideRTH : default(double); }
+            set { if (data != null) data.EquityWithLoanAfterOutsideRTH = value; }
+        }
+
+        /**
+        * @brief Suggested size
+        */
+        public object SuggestedSize
+        {
+            get { return data != null ? data.SuggestedSize : default(object); }
+            set { if (data != null) data.SuggestedSize = Util.GetDecimal(value); }
+        }
+
+        /**
+        * @brief Reject reason
+        */
+        public string RejectReason
+        {
+            get { return data != null ? data.RejectReason : default(string); }
+            set { if (data != null) data.RejectReason = value; }
+        }
+
+        object TWSLib.IOrderState.orderAllocations
+        {
+            get
+            {
+                return data.OrderAllocations != null ? new TWSLib.ComOrderAllocationList(new ComList<ComOrderAllocation, OrderAllocation>(data.OrderAllocations)) : null;
+            }
+
+            set
+            {
+                data.OrderAllocations = value != null ? (value as TWSLib.ComOrderAllocationList) : null;
+            }
+        }
+
         public override bool Equals(Object other)
         {
 
@@ -183,9 +304,9 @@ namespace TWSLib
 
             OrderState state = (OrderState)other;
 
-            if (Commission != state.Commission ||
-                MinCommission != state.MinCommission ||
-                MaxCommission != state.MaxCommission)
+            if (CommissionAndFees != state.CommissionAndFees ||
+                MinCommissionAndFees != state.MinCommissionAndFees ||
+                MaxCommissionAndFees != state.MaxCommissionAndFees)
             {
                 return false;
             }
@@ -200,7 +321,7 @@ namespace TWSLib
                 Util.StringCompare(InitMarginAfter, state.InitMarginAfter) != 0 ||
                 Util.StringCompare(MaintMarginAfter, state.MaintMarginAfter) != 0 ||
                 Util.StringCompare(EquityWithLoanAfter, state.EquityWithLoanAfter) != 0 ||
-                Util.StringCompare(CommissionCurrency, state.CommissionCurrency) != 0 ||
+                Util.StringCompare(CommissionAndFeesCurrency, state.CommissionAndFeesCurrency) != 0 ||
                 Util.StringCompare(CompletedTime, state.CompletedTime) != 0 ||
                 Util.StringCompare(CompletedStatus, state.CompletedStatus) != 0)
             {
@@ -260,24 +381,84 @@ namespace TWSLib
             get { return EquityWithLoanAfter; }
         }
 
-        double TWSLib.IOrderState.commission
+        double TWSLib.IOrderState.commissionAndFees
         {
-            get { return Commission; }
+            get { return CommissionAndFees; }
         }
 
-        double TWSLib.IOrderState.minCommission
+        double TWSLib.IOrderState.minCommissionAndFees
         {
-            get { return MinCommission; }
+            get { return MinCommissionAndFees; }
         }
 
-        double TWSLib.IOrderState.maxCommission
+        double TWSLib.IOrderState.maxCommissionAndFees
         {
-            get { return MaxCommission; }
+            get { return MaxCommissionAndFees; }
         }
 
-        string TWSLib.IOrderState.commissionCurrency
+        string TWSLib.IOrderState.commissionAndFeesCurrency
         {
-            get { return CommissionCurrency; }
+            get { return CommissionAndFeesCurrency; }
+        }
+
+        string TWSLib.IOrderState.marginCurrency
+        {
+            get { return MarginCurrency; }
+        }
+
+        double TWSLib.IOrderState.initMarginBeforeOutsideRTH
+        {
+            get { return InitMarginBeforeOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.maintMarginBeforeOutsideRTH
+        {
+            get { return MaintMarginBeforeOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.equityWithLoanBeforeOutsideRTH
+        {
+            get { return EquityWithLoanBeforeOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.initMarginChangeOutsideRTH
+        {
+            get { return InitMarginChangeOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.maintMarginChangeOutsideRTH
+        {
+            get { return MaintMarginChangeOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.equityWithLoanChangeOutsideRTH
+        {
+            get { return EquityWithLoanChangeOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.initMarginAfterOutsideRTH
+        {
+            get { return InitMarginAfterOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.maintMarginAfterOutsideRTH
+        {
+            get { return MaintMarginAfterOutsideRTH; }
+        }
+
+        double TWSLib.IOrderState.equityWithLoanAfterOutsideRTH
+        {
+            get { return EquityWithLoanAfterOutsideRTH; }
+        }
+
+        object TWSLib.IOrderState.suggestedSize
+        {
+            get { return SuggestedSize; }
+        }
+
+        string TWSLib.IOrderState.rejectReason
+        {
+            get { return RejectReason; }
         }
 
         string TWSLib.IOrderState.warningText

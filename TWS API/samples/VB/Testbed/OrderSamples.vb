@@ -1,4 +1,4 @@
-' Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 Imports IBApi
@@ -383,6 +383,7 @@ Namespace Samples
             order.OrderType = "LMT"
             order.TotalQuantity = quantity
             order.LmtPrice = limitPrice
+            order.Tif = "DAY"
             '! [limitorder]
             Return order
         End Function
@@ -981,7 +982,7 @@ Namespace Samples
             order.AdjustedOrderType = "TRAIL"
             'With a stop price of...
             order.AdjustedStopPrice = adjustedStopPrice
-            'traling by And amount (0) Or a percent (100)...
+            'trailing by And amount (0) Or a percent (100)...
             order.AdjustableTrailingUnit = trailUnit
             'of...
             order.AdjustedTrailingAmount = adjustedTrailAmount
@@ -993,6 +994,7 @@ Namespace Samples
             '! [whatiflimitorder]
             Dim order As Order = LimitOrder(action, quantity, limitPrice)
             order.WhatIf = True
+            order.Tif = "DAY"
             '! [whatiflimitorder]
             Return order
         End Function
@@ -1049,7 +1051,7 @@ Namespace Samples
         Public Shared Function PercentageChangeCondition(pctChange As Double, conId As Integer, exchange As String, isMore As Boolean, isConjunction As Boolean) As PercentChangeCondition
 
             '! [percentage_condition]
-            Dim pctChangeCondition As PercentChangeCondition = OrderCondition.Create(OrderConditionType.PercentCange) 'cast (PercentChangeCondition)
+            Dim pctChangeCondition As PercentChangeCondition = OrderCondition.Create(OrderConditionType.PercentChange) 'cast (PercentChangeCondition)
             'If there Is a price percent change measured against last close price above Or below...
             pctChangeCondition.IsMore = isMore
             'this amount...
@@ -1172,6 +1174,14 @@ Namespace Samples
             Return order
         End Function
 
+        Public Shared Function LimitOrderWithIncludeOvernight(action As String, quantity As Decimal, limitPrice As Double) As Order
+            '! [limit_order_with_include_overnight]
+            Dim order As Order = OrderSamples.LimitOrder(action, quantity, limitPrice)
+            order.IncludeOvernight = True
+            '! [limit_order_with_include_overnight]
+            Return order
+        End Function
+
         Public Shared Function OrderCancelEmpty() As OrderCancel
             '! [order_cancel_empty]
             Dim orderCancel As OrderCancel = New OrderCancel
@@ -1187,34 +1197,47 @@ Namespace Samples
             Return orderCancel
         End Function
 
-        Public Shared Function Rfq() As Order
-            '! [rfq]
-            Dim order As Order = OrderSamples.RfqEmpty()
-            order.ExtOperator = "Ext Operator 1"
-            order.ExternalUserId = "External User Id 1"
-            order.ManualOrderIndicator = 1
-            '! [rfq]
-            Return Order
-        End Function
-
-        Public Shared Function RfqEmpty() As Order
-            '! [rfq_empty]
-            Dim order As Order = New Order
-            order.OrderType = "QUOTE"
-            order.TotalQuantity = 1
-            '! [rfq_empty]
+        Public Shared Function LimitOrderWithCmeTaggingFields(action As String, quantity As Decimal, limitPrice As Double, extOperator As String, manualOrderIndicator As Integer) As Order
+            '! [limit_order_with_cme_tagging_fields]
+            Dim order As Order = OrderSamples.LimitOrder(action, quantity, limitPrice)
+            order.ExtOperator = extOperator
+            order.ManualOrderIndicator = manualOrderIndicator
+            ' ! [limit_order_with_cme_tagging_fields]
             Return order
         End Function
 
-        Public Shared Function RfqCancel() As OrderCancel
-            '! [rfq_cancel]
+        Public Shared Function OrderCancelWithCmeTaggingFields(extOperator As String, manualOrderIndicator As Integer) As OrderCancel
+            '! [order_cancel_with_cme_tagging_fields]
             Dim orderCancel As OrderCancel = New OrderCancel
-            orderCancel.ExtOperator = "Ext Operator 2"
-            orderCancel.ExternalUserId = "External User Id 2"
-            orderCancel.ManualOrderIndicator = 1
-            '! [rfq_cancel]
+            orderCancel.ExtOperator = extOperator
+            orderCancel.ManualOrderIndicator = manualOrderIndicator
+            '! [order_cancel_with_cme_tagging_fields]
             Return orderCancel
         End Function
+
+        Public Shared Function LimitOnCloseOrderWithImbalanceOnly(action As String, quantity As Decimal, limitPrice As Double) As Order
+            '! [limit_on_close_order_with_imbalance_only]
+            Dim order As Order = New Order
+            order.Action = action
+            order.OrderType = "LOC"
+            order.TotalQuantity = quantity
+            order.LmtPrice = limitPrice
+            order.ImbalanceOnly = True
+            '! [limit_on_close_order_with_imbalance_only]
+            Return order
+        End Function
+
+        Public Shared Function LimitOrderWithStopLossAndProfitTaker(action As String, quantity As Decimal, limitPrice As Double, slOrderId As Integer, ptOrderId As Integer) As Order
+            '! [limit_order_with_stop_loss_and_profit_taker]
+            Dim order As Order = OrderSamples.LimitOrder(action, quantity, limitPrice)
+            order.SlOrderId = slOrderId
+            order.SlOrderType = "PRESET"
+            order.PtOrderId = ptOrderId
+            order.PtOrderType = "PRESET"
+            '! [limit_order_with_stop_loss_and_profit_taker]
+            Return order
+        End Function
+
     End Class
 
 End Namespace

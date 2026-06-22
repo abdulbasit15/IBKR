@@ -4,6 +4,7 @@
 package apidemo;
 
 import static com.ib.controller.Formats.fmt;
+import static com.ib.controller.Formats.fmt6;
 import static com.ib.controller.Formats.fmt8;
 import static com.ib.controller.Formats.fmtPct;
 import static com.ib.controller.Formats.fmtTime;
@@ -19,13 +20,13 @@ import com.ib.client.MarketDataType;
 import com.ib.client.TickAttrib;
 import com.ib.client.TickType;
 import com.ib.client.Util;
+import com.ib.client.protobuf.TickReqParamsProto;
 import com.ib.controller.ApiController.TopMktDataAdapter;
-import com.ib.controller.Formats;
 
 class TopModel extends AbstractTableModel {
 	private List<TopRow> m_rows = new ArrayList<>();
 	private MarketDataPanel m_parentPanel;
-	private static final int CANCEL_CHBX_COL_INDEX = 30;
+	private static final int CANCEL_CHBX_COL_INDEX = 33;
 	String m_genericTicks = "";
 
 	TopModel(MarketDataPanel parentPanel) {
@@ -82,7 +83,7 @@ class TopModel extends AbstractTableModel {
 	}
 	
 	@Override public int getColumnCount() {
-		return 31;
+		return 34;
 	}
 	
 	@Override public String getColumnName(int col) {
@@ -101,22 +102,25 @@ class TopModel extends AbstractTableModel {
 			case 11: return "Ask Past Limit";
 			case 12: return "Pre Open Ask";
 			case 13: return "Last";
-			case 14: return "Time";
-			case 15: return "Change";
-			case 16: return "Volume";
-			case 17: return "Min Tick";
-			case 18: return "BBO Exchange";
-			case 19: return "Snapshot Permissions";
-			case 20: return "Close";
-			case 21: return "Open";
-			case 22: return "Market Data Type";
-			case 23: return "Futures Open Interest";
-			case 24: return "Avg Opt Volume";
-            case 25: return "Shortable Shares";
-            case 26: return "Estimated IPO Midpoint";
-            case 27: return "Final IPO Last";
-            case 28: return "Yield Bid";
-            case 29: return "Yield Ask";
+			case 14: return "Last Size";
+			case 15: return "Time";
+			case 16: return "Change";
+			case 17: return "Volume";
+			case 18: return "Min Tick";
+			case 19: return "BBO Exchange";
+			case 20: return "Snapshot Permissions";
+			case 21: return "Close";
+			case 22: return "Open";
+			case 23: return "Market Data Type";
+			case 24: return "Futures Open Interest";
+			case 25: return "Avg Opt Volume";
+            case 26: return "Shortable Shares";
+            case 27: return "Estimated IPO Midpoint";
+            case 28: return "Final IPO Last";
+            case 29: return "Yield Bid";
+            case 30: return "Yield Ask";
+            case 31: return "Last Price Precision";
+            case 32: return "Last Size Precision";
 			case CANCEL_CHBX_COL_INDEX: return "Cancel";
 
 			default: return null;
@@ -139,24 +143,27 @@ class TopModel extends AbstractTableModel {
 			case 10: return row.m_askCanAutoExecute;
 			case 11: return row.m_askPastLimit;
 			case 12: return row.m_preOpenAsk;
-			case 13: return fmt( row.m_last);
-			case 14: return fmtTime( row.m_lastTime);
-			case 15: return row.change();
-			case 16: return row.m_volume;
-			case 17: return fmt8(row.m_minTick);
-			case 18: return row.m_bboExch;
-			case 19: return Util.IntMaxString(row.m_snapshotPermissions);
-			case 20: return fmt( row.m_close);
-			case 21: return fmt( row.m_open);
-			case 22: return row.m_marketDataType;
-			case 23: return row.m_futuresOpenInterest;
-			case 24: return row.m_avgOptVolume;
-            case 25: return row.m_shortableShares;
-            case 26: return row.m_estimatedIPOMidpoint;
-            case 27: return row.m_finalIPOLast;
-            case 28: return row.m_yieldBid;
-            case 29: return row.m_yieldAsk;
-            
+			case 13: return fmt6( row.m_last);
+			case 14: return row.m_lastSize;
+			case 15: return fmtTime( row.m_lastTime);
+			case 16: return row.change();
+			case 17: return row.m_volume;
+			case 18: return fmt8(row.m_minTick);
+			case 19: return row.m_bboExch;
+			case 20: return Util.IntMaxString(row.m_snapshotPermissions);
+			case 21: return fmt( row.m_close);
+			case 22: return fmt( row.m_open);
+			case 23: return row.m_marketDataType;
+			case 24: return row.m_futuresOpenInterest;
+			case 25: return row.m_avgOptVolume;
+            case 26: return row.m_shortableShares;
+            case 27: return row.m_estimatedIPOMidpoint;
+            case 28: return row.m_finalIPOLast;
+            case 29: return row.m_yieldBid;
+            case 30: return row.m_yieldAsk;
+            case 31: return row.m_lastPricePrecision;
+            case 32: return row.m_lastSizePrecision;
+
 			case CANCEL_CHBX_COL_INDEX: return row.m_cancel;
 			default: return null;
 		}
@@ -184,6 +191,7 @@ class TopModel extends AbstractTableModel {
 		double m_bid;
 		double m_ask;
 		double m_last;
+		Decimal m_lastSize;
 		long m_lastTime;
 		Decimal m_bidSize;
 		Decimal m_askSize;
@@ -207,7 +215,9 @@ class TopModel extends AbstractTableModel {
 		double m_finalIPOLast;
 		double m_yieldBid;
 		double m_yieldAsk;
-		
+        Decimal m_lastPricePrecision;
+        Decimal m_lastSizePrecision;
+
 		TopRow( AbstractTableModel model, String description, MarketDataPanel parentPanel) {
 			m_model = model;
 			m_description = description;
@@ -283,6 +293,10 @@ class TopModel extends AbstractTableModel {
 			}
 			
 			switch( tickType) {
+				case LAST_SIZE:
+				case DELAYED_LAST_SIZE:
+					m_lastSize = size;
+					break;
 				case BID_SIZE:
 				case DELAYED_BID_SIZE:
 					m_bidSize = size;
@@ -324,13 +338,16 @@ class TopModel extends AbstractTableModel {
 			m_model.fireTableDataChanged();
 		}
 
-		@Override public void tickReqParams(int tickerId, double minTick, String bboExchange, int snapshotPermissions) {
-			m_minTick = minTick;
-			m_bboExch = bboExchange;
-			m_snapshotPermissions = snapshotPermissions;
-			
-			m_parentPanel.addBboExch(bboExchange);
-			m_model.fireTableDataChanged();
-		}
+        @Override public void tickReqParamsProtoBuf(TickReqParamsProto.TickReqParams tickReqParamsProto) {
+            m_minTick = tickReqParamsProto.hasMinTick() ? Double.parseDouble(tickReqParamsProto.getMinTick()) : Double.MAX_VALUE;
+            m_bboExch = tickReqParamsProto.hasBboExchange() ? tickReqParamsProto.getBboExchange() : "";
+            m_snapshotPermissions = tickReqParamsProto.hasSnapshotPermissions() ? tickReqParamsProto.getSnapshotPermissions() : Integer.MAX_VALUE;
+            m_lastPricePrecision = tickReqParamsProto.hasLastPricePrecision() ? Util.stringToDecimal(tickReqParamsProto.getLastPricePrecision()) : Decimal.INVALID;
+            m_lastSizePrecision = tickReqParamsProto.hasLastSizePrecision() ? Util.stringToDecimal(tickReqParamsProto.getLastSizePrecision()) : Decimal.INVALID;
+
+            m_parentPanel.addBboExch(m_bboExch);
+            m_model.fireTableDataChanged();
+        }
+
 	}
 }

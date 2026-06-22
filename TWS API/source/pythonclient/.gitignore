@@ -8,9 +8,6 @@ core
 *.xml
 MANIFEST
 dist
-dist/
-dist_*/
-dist*/
 build
 .idea
 *.egg-info

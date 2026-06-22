@@ -1,5 +1,5 @@
 """
-Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 """
 
@@ -9,6 +9,7 @@ from ibapi.softdollartier import SoftDollarTier
 from ibapi.utils import decimalMaxString
 from ibapi.utils import intMaxString
 from ibapi.utils import floatMaxString
+from ibapi.utils import longMaxString
 
 # enum Origin
 (CUSTOMER, FIRM, UNKNOWN) = range(3)
@@ -51,7 +52,7 @@ class Order(Object):
             0  # 1 = CANCEL_WITH_BLOCK, 2 = REDUCE_WITH_BLOCK, 3 = REDUCE_NON_BLOCK
         )
         self.orderRef = ""
-        self.transmit = True  # if false, order will be created but not transmited
+        self.transmit = True  # if false, order will be created but not transmitted
         self.parentId = 0  # Parent order id, to associate Auto STP or TRAIL orders with the original order.
         self.blockOrder = False
         self.sweepToFill = False
@@ -138,6 +139,7 @@ class Order(Object):
         # HEDGE ORDERS
         self.hedgeType = ""  # 'D' - delta, 'B' - beta, 'F' - FX, 'P' - pair
         self.hedgeParam = ""  # 'beta=X' value for beta hedge, 'ratio=Y' for pair hedge
+        self.hedgeMaxSize = UNSET_INTEGER  # type: int
 
         # Clearing info
         self.account = ""  # IB account
@@ -211,7 +213,7 @@ class Order(Object):
         self.autoCancelParent = False
         self.shareholder = ""
         self.imbalanceOnly = False
-        self.routeMarketableToBbo = False
+        self.routeMarketableToBbo = None
         self.parentPermId = 0
 
         self.usePriceMgmtAlgo = None
@@ -227,15 +229,27 @@ class Order(Object):
         self.customerAccount = ""
         self.professionalCustomer = False
         self.bondAccruedInterest = ""
-
-        self.externalUserId = ""
+        self.includeOvernight = False
         self.manualOrderIndicator = UNSET_INTEGER
+        self.submitter = ""
+        self.postOnly = False
+        self.allowPreOpen = False
+        self.ignoreOpenAuction = False
+        self.deactivate = False
+        self.seekPriceImprovement = None
+        self.whatIfType = UNSET_INTEGER
+
+        # attached orders
+        self.slOrderId = UNSET_INTEGER
+        self.slOrderType = ""
+        self.ptOrderId = UNSET_INTEGER
+        self.ptOrderType = ""
 
     def __str__(self):
         s = "%s,%s,%s:" % (
             intMaxString(self.orderId),
             intMaxString(self.clientId),
-            intMaxString(self.permId),
+            longMaxString(self.permId),
         )
 
         s += " %s %s %s@%s" % (

@@ -59,17 +59,16 @@ void EReader::start() {
 }
 
 void EReader::stop() {
-#if defined(IB_POSIX)
-  if (!pthread_equal(pthread_self(), m_hReadThread)) {
-    m_isAlive = false;
-    pthread_join(m_hReadThread, NULL);
-  }
-#elif defined(IB_WIN32)
   if (m_hReadThread) {
     m_isAlive = false;
-    WaitForSingleObject(m_hReadThread, INFINITE);
-  }
+#if defined(IB_POSIX)
+    if (!pthread_equal(pthread_self(), m_hReadThread))
+      pthread_join(m_hReadThread, NULL);
+#elif defined(IB_WIN32)
+    if (!(GetCurrentThreadId() == GetThreadId(m_hReadThread)))
+      WaitForSingleObject(m_hReadThread, INFINITE);
 #endif
+  }
 }
 
 #if defined(IB_POSIX)
@@ -127,7 +126,7 @@ bool EReader::processNonBlockingSelect() {
   tval.tv_usec = 100 * 1000; //100 ms
   tval.tv_sec = 0;
 
-  if (m_pClientSocket->fd() >= 0) {
+  if (m_pClientSocket->isSocketOK()) {
 
     FD_ZERO(&readSet);
     FD_ZERO(&writeSet);
@@ -138,7 +137,7 @@ bool EReader::processNonBlockingSelect() {
       FD_SET(m_pClientSocket->fd(), &writeSet);
     FD_SET(m_pClientSocket->fd(), &errorSet);
 
-    int ret = select(m_pClientSocket->fd() + 1, &readSet, &writeSet, &errorSet, &tval);
+    int ret = select((int)m_pClientSocket->fd() + 1, &readSet, &writeSet, &errorSet, &tval);
 
     if (ret == 0) { // timeout
       return false;
@@ -149,7 +148,7 @@ bool EReader::processNonBlockingSelect() {
       return false;
     }
 
-    if (m_pClientSocket->fd() < 0)
+    if (!m_pClientSocket->isSocketOK())
       return false;
 
     if (FD_ISSET(m_pClientSocket->fd(), &errorSet)) {
@@ -157,7 +156,7 @@ bool EReader::processNonBlockingSelect() {
       m_pClientSocket->onError();
     }
 
-    if (m_pClientSocket->fd() < 0)
+    if (!m_pClientSocket->isSocketOK())
       return false;
 
     if (FD_ISSET(m_pClientSocket->fd(), &writeSet)) {
@@ -165,7 +164,7 @@ bool EReader::processNonBlockingSelect() {
       onSend();
     }
 
-    if (m_pClientSocket->fd() < 0)
+    if (!m_pClientSocket->isSocketOK())
       return false;
 
     if (FD_ISSET(m_pClientSocket->fd(), &readSet)) {

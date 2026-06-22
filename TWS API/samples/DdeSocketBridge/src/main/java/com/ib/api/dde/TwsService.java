@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde;
@@ -38,17 +38,6 @@ import com.ib.api.dde.handlers.RealTimeBarsHandler;
 import com.ib.api.dde.handlers.ScannerDataHandler;
 import com.ib.api.dde.handlers.SecDefOptParamsHandler;
 import com.ib.api.dde.handlers.TickByTickDataHandler;
-import com.ib.api.dde.old.handlers.OldAccountPortfolioHandler;
-import com.ib.api.dde.old.handlers.OldContractDetailsHandler;
-import com.ib.api.dde.old.handlers.OldErrorsHandler;
-import com.ib.api.dde.old.handlers.OldExecutionsHandler;
-import com.ib.api.dde.old.handlers.OldHistoricalDataHandler;
-import com.ib.api.dde.old.handlers.OldMarketDataHandler;
-import com.ib.api.dde.old.handlers.OldMarketDepthHandler;
-import com.ib.api.dde.old.handlers.OldMiscHandler;
-import com.ib.api.dde.old.handlers.OldNewsHandler;
-import com.ib.api.dde.old.handlers.OldOrdersHandler;
-import com.ib.api.dde.old.handlers.OldScannerDataHandler;
 import com.ib.api.dde.socket2dde.data.AccountUpdateData;
 import com.ib.api.dde.socket2dde.data.ErrorData;
 import com.ib.api.dde.socket2dde.data.ExecutionData;
@@ -66,7 +55,7 @@ import com.ib.api.dde.socket2dde.notifications.DdeNotificationEvent;
 import com.ib.api.dde.utils.Utils;
 import com.ib.api.impl.EWrapperImpl;
 import com.ib.client.Bar;
-import com.ib.client.CommissionReport;
+import com.ib.client.CommissionAndFeesReport;
 import com.ib.client.ContractDescription;
 import com.ib.client.ContractDetails;
 import com.ib.client.DepthMktDataDescription;
@@ -124,19 +113,6 @@ public class TwsService {
     private final HistoricalScheduleHandler m_historicalScheduleHandler;
     
     private int m_nextValidId = 0;
-    
-    // old-style
-    private final OldMarketDataHandler m_oldMarketDataHandler;
-    private final OldErrorsHandler m_oldErrorsHandler;
-    private final OldNewsHandler m_oldNewsHandler;
-    private final OldOrdersHandler m_oldOrdersHandler;
-    private final OldExecutionsHandler m_oldExecutionsHandler;
-    private final OldAccountPortfolioHandler m_oldAccountPortfolioHandler;
-    private final OldMarketDepthHandler m_oldMarketDepthHandler;
-    private final OldScannerDataHandler m_oldScannerDataHandler;
-    private final OldContractDetailsHandler m_oldContractDetailsHandler;
-    private final OldHistoricalDataHandler m_oldHistoricalDataHandler;
-    private final OldMiscHandler m_oldMiscHandler;
 
     public void incrementNextValidId() { m_nextValidId++; } 
     
@@ -179,27 +155,12 @@ public class TwsService {
         m_miscHandler = new MiscHandler(m_clientSocket, this);
         m_histogramDataHandler = new HistogramDataHandler(m_clientSocket, this);
         m_historicalScheduleHandler = new HistoricalScheduleHandler(m_clientSocket, this);
-
-        // old-style
-        m_oldMarketDataHandler = new OldMarketDataHandler(m_clientSocket, this);
-        m_oldErrorsHandler = new OldErrorsHandler(this);
-        m_oldNewsHandler = new OldNewsHandler(m_clientSocket, this);
-        m_oldOrdersHandler = new OldOrdersHandler(m_clientSocket, this);
-        m_oldExecutionsHandler = new OldExecutionsHandler(m_clientSocket, this);
-        m_oldAccountPortfolioHandler = new OldAccountPortfolioHandler(m_clientSocket, this);
-        m_oldMarketDepthHandler = new OldMarketDepthHandler(m_clientSocket, this);
-        m_oldScannerDataHandler = new OldScannerDataHandler(m_clientSocket, this);
-        m_oldContractDetailsHandler = new OldContractDetailsHandler(m_clientSocket, this);
-        m_oldHistoricalDataHandler = new OldHistoricalDataHandler(m_clientSocket, this);
-        m_oldMiscHandler = new OldMiscHandler(m_clientSocket, this);
-
     }
 
     /** Method sends DDE message to TWS */
     @SuppressWarnings("unchecked") 
     public <T> T sendDdeToTws(String topic, String requestStr, T data, boolean withData) {
         m_miscHandler.resetAccountTime();
-        m_oldMiscHandler.resetAccountTime();
         
         DdeRequestType requestType = DdeRequestType.getRequestType(topic);
         switch(requestType) {
@@ -210,7 +171,7 @@ public class TwsService {
 
             // place order
             case PLACE_ORDER:
-                return (T) m_ordersHandler.handlePlaceOrderRequest(requestStr, (byte[]) data, false);
+                return withData ? (T) m_ordersHandler.handlePlaceOrderRequest(requestStr, (byte[]) data, false) : (T) returnError(topic);
             case CANCEL_ORDER:
                 return (T) m_ordersHandler.handleCancelOrderRequest(requestStr);
             case CLEAR_ORDER:
@@ -218,13 +179,13 @@ public class TwsService {
             case ORDER_STATUS:
                 return (T) m_ordersHandler.handleOrderStatusRequest(requestStr);
             case WHAT_IF:
-                return (T) m_ordersHandler.handlePlaceOrderRequest(requestStr, (byte[]) data, true);
+                return withData ? (T) m_ordersHandler.handlePlaceOrderRequest(requestStr, (byte[]) data, true) : (T) returnError(topic);
             case WHAT_IF_REQUEST:
                 return (T) m_ordersHandler.handleWhatIfRequest(requestStr);
 
             // market data
             case REQUEST_MARKET_DATA:
-                return (T) m_marketDataHandler.handleMarketDataRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_marketDataHandler.handleMarketDataRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case REQUEST_MARKET_DATA_LONG_VALUE:
                 return (T) m_marketDataHandler.handleTickLongValueRequest(requestStr);
             case CANCEL_MARKET_DATA:
@@ -283,8 +244,8 @@ public class TwsService {
             // account summary
             case REQ_ACCOUNT_SUMMARY:
                 return withData ? 
-                       (data == null ? (T) m_accountSummaryHandler.handleAccountSummaryArrayRequest(requestStr) : (T) m_accountSummaryHandler.handleAccountSummaryRequestWithData(requestStr, (byte[]) data))
-                        : (T) m_accountSummaryHandler.handleAccountSummaryRequest(requestStr);
+                        data == null ? (T) m_accountSummaryHandler.handleAccountSummaryArrayRequest(requestStr) : (T) m_accountSummaryHandler.handleAccountSummaryRequestWithData(requestStr, (byte[]) data)
+                        : returnNotNullOrError(requestType.topic(), (T) m_accountSummaryHandler.handleAccountSummaryRequest(requestStr));
             case REQ_ACCOUNT_SUMMARY_ERROR:
                 return (T) m_accountSummaryHandler.handleAccountUpdatesErrorRequest(requestStr, DdeRequestType.REQ_ACCOUNT_SUMMARY_ERROR);
             case CANCEL_ACCOUNT_SUMMARY:
@@ -302,7 +263,7 @@ public class TwsService {
 
             // market depth
             case REQUEST_MARKET_DEPTH:
-                return (T) m_marketDepthHandler.handleMarketDepthRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_marketDepthHandler.handleMarketDepthRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case CANCEL_MARKET_DEPTH:
                 return (T) m_marketDepthHandler.handleMktDepthCancel(requestStr);
             case MARKET_DEPTH_TICK:
@@ -310,7 +271,7 @@ public class TwsService {
 
             // scanner
             case REQUEST_SCANNER_SUBSCRIPTION:
-                return data == null ? (T) m_scannerDataHandler.handleScannerDataArrayRequest(requestStr) : (T) m_scannerDataHandler.handleScannerSubscriptionRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_scannerDataHandler.handleScannerDataArrayRequest(requestStr)) : (T) m_scannerDataHandler.handleScannerSubscriptionRequest(requestStr, (byte[]) data) ;
             case CANCEL_SCANNER_SUBSCRIPTION:
                 return (T) m_scannerDataHandler.handleScannerSubscriptionCancel(requestStr);
             case REQUEST_SCANNER_PARAMETERS:
@@ -320,7 +281,7 @@ public class TwsService {
 
             // contract details
             case REQUEST_CONTRACT_DETAILS:
-                return data == null ? (T) m_contractDetailsHandler.handleContractDetailsArrayRequest(requestStr) : (T) m_contractDetailsHandler.handleContractDetailsRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_contractDetailsHandler.handleContractDetailsArrayRequest(requestStr)) : (T) m_contractDetailsHandler.handleContractDetailsRequest(requestStr, (byte[]) data);
             case CANCEL_CONTRACT_DETAILS:
                 return (T) m_contractDetailsHandler.handleContractDetailsCancel(requestStr);
             case CONTRACT_DETAILS_TICK:
@@ -328,7 +289,7 @@ public class TwsService {
 
             // historical data
             case REQUEST_HISTORICAL_DATA:
-                return data == null ? (T) m_historicalDataHandler.handleHistoricalDataArrayRequest(requestStr) : (T) m_historicalDataHandler.handleHistoricalDataRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_historicalDataHandler.handleHistoricalDataArrayRequest(requestStr)) : (T) m_historicalDataHandler.handleHistoricalDataRequest(requestStr, (byte[]) data);
             case CANCEL_HISTORICAL_DATA:
                 return (T) m_historicalDataHandler.handleHistoricalDataCancel(requestStr);
             case HISTORICAL_DATA_TICK:
@@ -336,7 +297,7 @@ public class TwsService {
 
             // real-time bars
             case REQUEST_REAL_TIME_BARS:
-                return data == null ? (T) m_realTimeBarsHandler.handleRealTimeBarsArrayRequest(requestStr) : (T) m_realTimeBarsHandler.handleRealTimeBarsRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_realTimeBarsHandler.handleRealTimeBarsArrayRequest(requestStr)) : (T) m_realTimeBarsHandler.handleRealTimeBarsRequest(requestStr, (byte[]) data);
             case CANCEL_REAL_TIME_BARS:
                 return (T) m_realTimeBarsHandler.handleRealTimeBarsCancel(requestStr);
             case REAL_TIME_BARS_TICK:
@@ -344,11 +305,11 @@ public class TwsService {
 
             // tick-by-tick
             case REQUEST_TICK_BY_TICK_DATA:
-                return (T) m_tickByTickDataHandler.handleTickByTickDataRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_tickByTickDataHandler.handleTickByTickDataRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case CANCEL_TICK_BY_TICK_DATA:
                 return (T) m_tickByTickDataHandler.handleTickByTickDataCancel(requestStr);
             case REQUEST_TICK_BY_TICK_DATA_EXT:
-                return (T) m_tickByTickDataHandler.handleTickByTickDataRequestExt(requestStr, (byte[]) data);
+                return withData ? (T) m_tickByTickDataHandler.handleTickByTickDataRequestExt(requestStr, (byte[]) data) : (T) returnError(topic);
             case CANCEL_TICK_BY_TICK_DATA_EXT:
                 return (T) m_tickByTickDataHandler.handleTickByTickDataCancelExt(requestStr);
             case TICK_BY_TICK_DATA_TICK:
@@ -358,7 +319,7 @@ public class TwsService {
 
             // fundamentals
             case REQUEST_FUNDAMENTAL_DATA:
-                return data == null ? (T) m_fundamentalDataHandler.handleFundamentalDataArrayRequest(requestStr) : (T) m_fundamentalDataHandler.handleFundamentalDataRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_fundamentalDataHandler.handleFundamentalDataArrayRequest(requestStr)) : (T) m_fundamentalDataHandler.handleFundamentalDataRequest(requestStr, (byte[]) data);
             case CANCEL_FUNDAMENTAL_DATA:
                 return (T) m_fundamentalDataHandler.handleFundamentalDataCancel(requestStr);
             case FUNDAMENTAL_DATA_TICK:
@@ -366,7 +327,7 @@ public class TwsService {
 
             // historical ticks
             case REQUEST_HISTORICAL_TICKS:
-                return data == null ? (T) m_historicalTicksHandler.handleHistoricalTicksArrayRequest(requestStr) : (T) m_historicalTicksHandler.handleHistoricalTicksRequest(requestStr, (byte[]) data);
+              return data == null ? (T) m_historicalTicksHandler.handleHistoricalTicksArrayRequest(requestStr) : (T) m_historicalTicksHandler.handleHistoricalTicksRequest(requestStr, (byte[]) data);
             case CANCEL_HISTORICAL_TICKS:
                 return (T) m_historicalTicksHandler.handleHistoricalTicksCancel(requestStr);
             case HISTORICAL_TICKS_TICK:
@@ -374,7 +335,7 @@ public class TwsService {
 
             // sec-def opt params
             case REQUEST_SEC_DEF_OPT_PARAMS:
-                return data == null ? (T) m_secDefOptParamsHandler.handleSecDefOptParamsArrayRequest(requestStr) : (T) m_secDefOptParamsHandler.handleSecDefOptParamsRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_secDefOptParamsHandler.handleSecDefOptParamsArrayRequest(requestStr)) : (T) m_secDefOptParamsHandler.handleSecDefOptParamsRequest(requestStr, (byte[]) data);
             case CANCEL_SEC_DEF_OPT_PARAMS:
                 return (T) m_secDefOptParamsHandler.handleSecDefOptParamsCancel(requestStr);
             case SEC_DEF_OPT_PARAMS_TICK:
@@ -390,7 +351,7 @@ public class TwsService {
 
             // head timestamp
             case REQUEST_HEAD_TIMESTAMP:
-                return (T) m_headTimestampHandler.handleHeadTimestampRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_headTimestampHandler.handleHeadTimestampRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case CANCEL_HEAD_TIMESTAMP:
                 return (T) m_headTimestampHandler.handleHeadTimestampCancel(requestStr);
             case HEAD_TIMESTAMP_TICK:
@@ -410,7 +371,7 @@ public class TwsService {
 
             // news ticks
             case REQ_NEWS_TICKS:
-                return data == null ? (T) m_newsDataHandler.handleNewsTicksArrayRequest(requestStr) : (T) m_newsDataHandler.handleNewsTicksRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_newsDataHandler.handleNewsTicksArrayRequest(requestStr)) : (T) m_newsDataHandler.handleNewsTicksRequest(requestStr, (byte[]) data);
             case CANCEL_NEWS_TICKS:
                 return (T) m_newsDataHandler.handleNewsTicksCancel(requestStr);
             case NEWS_TICKS_TICK:
@@ -422,7 +383,7 @@ public class TwsService {
 
             // historical news
             case REQUEST_HISTORICAL_NEWS:
-                return data == null ? (T) m_newsDataHandler.handleHistoricalNewsArrayRequest(requestStr) : (T) m_newsDataHandler.handleHistoricalNewsRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_newsDataHandler.handleHistoricalNewsArrayRequest(requestStr)) : (T) m_newsDataHandler.handleHistoricalNewsRequest(requestStr, (byte[]) data);
             case CANCEL_HISTORICAL_NEWS:
                 return (T) m_newsDataHandler.handleHistoricalNewsCancel(requestStr);
             case HISTORICAL_NEWS_TICK:
@@ -430,7 +391,7 @@ public class TwsService {
 
             // news article
             case REQUEST_NEWS_ARTICLE:
-                return (T) m_newsDataHandler.handleNewsArticleRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_newsDataHandler.handleNewsArticleRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case CANCEL_NEWS_ARTICLE:
                 return (T) m_newsDataHandler.handleNewsArticleCancel(requestStr);
             case REQUEST_NEWS_ARTICLE_LONG_VALUE:
@@ -444,7 +405,7 @@ public class TwsService {
 
             // PnL
             case REQUEST_PNL:
-                return (T) m_pnlHandler.handlePnLRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_pnlHandler.handlePnLRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case CANCEL_PNL:
                 return (T) m_pnlHandler.handlePnLCancel(requestStr);
             case PNL_TICK:
@@ -452,7 +413,7 @@ public class TwsService {
 
             // calculate implied volatility
             case CALCULATE_IMPLIED_VOLATILITY:
-                return (T) m_calcImplVolOptPriceHandler.handleCalculateRequest(requestStr, (byte[]) data, DdeRequestType.CALCULATE_IMPLIED_VOLATILITY);
+            	return withData ? (T) m_calcImplVolOptPriceHandler.handleCalculateRequest(requestStr, (byte[]) data, DdeRequestType.CALCULATE_IMPLIED_VOLATILITY) : (T) returnError(topic);
             case CANCEL_CALCULATE_IMPLIED_VOLATILITY:
                 return (T) m_calcImplVolOptPriceHandler.handleCalculateCancel(requestStr, DdeRequestType.CANCEL_CALCULATE_IMPLIED_VOLATILITY);
             case CALCULATE_IMPLIED_VOLATILITY_TICK:
@@ -460,7 +421,7 @@ public class TwsService {
 
             // calculate option price
             case CALCULATE_OPTION_PRICE:
-                return (T) m_calcImplVolOptPriceHandler.handleCalculateRequest(requestStr, (byte[]) data, DdeRequestType.CALCULATE_OPTION_PRICE);
+                return withData ? (T) m_calcImplVolOptPriceHandler.handleCalculateRequest(requestStr, (byte[]) data, DdeRequestType.CALCULATE_OPTION_PRICE) : (T) returnError(topic);
             case CANCEL_CALCULATE_OPTION_PRICE:
                 return (T) m_calcImplVolOptPriceHandler.handleCalculateCancel(requestStr, DdeRequestType.CANCEL_CALCULATE_OPTION_PRICE);
             case CALCULATE_OPTION_PRICE_TICK:
@@ -468,14 +429,18 @@ public class TwsService {
 
             // exercise options
             case EXERCISE_OPTIONS:
-                return (T) m_exerciseOptionsHandler.handleExerciseOptionsRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_exerciseOptionsHandler.handleExerciseOptionsRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case EXERCISE_OPTIONS_TICK:
                 return (T) m_exerciseOptionsHandler.handleExerciseOptionsTickRequest(requestStr);
 
             // current time
             case REQ_CURRENT_TIME:
-                return (T) m_miscHandler.handleCurrentTimeRequest();
+                return withData ? (T) new byte[0] : (T) m_miscHandler.handleCurrentTimeRequest();
 
+            // current time in millis
+            case REQ_CURRENT_TIME_IN_MILLIS:
+                return withData ? (T) new byte[0] : (T) m_miscHandler.handleCurrentTimeInMillisRequest();
+                
             // market rule
             case REQUEST_MARKET_RULE:
                 return withData ? (T) m_contractDetailsHandler.handleMarketRuleArrayRequest(requestStr) : (T) m_contractDetailsHandler.handleMarketRuleRequest(requestStr);
@@ -494,7 +459,7 @@ public class TwsService {
 
             // histogram data
             case REQUEST_HISTOGRAM_DATA:
-                return data == null ? (T) m_histogramDataHandler.handleHistogramDataArrayRequest(requestStr) : (T) m_histogramDataHandler.handleHistogramDataRequest(requestStr, (byte[]) data);
+                return data == null ? returnNotNullOrError(requestType.topic(), (T) m_histogramDataHandler.handleHistogramDataArrayRequest(requestStr)) : (T) m_histogramDataHandler.handleHistogramDataRequest(requestStr, (byte[]) data);
             case CANCEL_HISTOGRAM_DATA:
                 return (T) m_histogramDataHandler.handleHistogramDataCancel(requestStr);
             case HISTOGRAM_DATA_TICK:
@@ -506,7 +471,7 @@ public class TwsService {
             case REQUEST_FA_ERROR:
                 return (T) m_accountUpdatesMultiHandler.handleFARequestError(requestStr);
             case REPLACE_FA:
-                return withData ? (T) m_accountUpdatesMultiHandler.handleFAReplace(requestStr, (byte[]) data) : (T) m_accountUpdatesMultiHandler.handleFAReplaceStatus(requestStr);
+                return withData ? (T) m_accountUpdatesMultiHandler.handleFAReplace(requestStr, (byte[]) data) : returnNotNullOrError(requestType.topic(), (T) m_accountUpdatesMultiHandler.handleFAReplaceStatus(requestStr));
             case REPLACE_FA_ERROR:
                 return (T) m_accountUpdatesMultiHandler.handleFAReplaceError(requestStr);
 
@@ -520,7 +485,7 @@ public class TwsService {
 
             // historical schedule
             case REQUEST_HISTORICAL_SCHEDULE:
-                return (T) m_historicalScheduleHandler.handleHistoricalScheduleRequest(requestStr, (byte[]) data);
+                return withData ? (T) m_historicalScheduleHandler.handleHistoricalScheduleRequest(requestStr, (byte[]) data) : (T) returnError(topic);
             case CANCEL_HISTORICAL_SCHEDULE:
                 return (T) m_historicalScheduleHandler.handleHistoricalScheduleCancel(requestStr);
             case HISTORICAL_SCHEDULE_TICK:
@@ -530,48 +495,6 @@ public class TwsService {
             case REQ_USER_INFO:
                 return (T) m_miscHandler.handleUserInfoRequest();
                 
-            // old-style
-            case TIK:
-                return (T) m_oldMarketDataHandler.handleTickRequest(requestStr, false);
-            case ERR:
-                return (T) m_oldErrorsHandler.handleErrorRequest(requestStr);
-            case GEN_TIK:
-                return (T) m_oldMarketDataHandler.handleTickRequest(requestStr, true);
-            case PROCESS_RATE:
-                return (T) "Setting processing rate is not supported";
-            case REFRESH_RATE:
-                return (T) "Setting refresh rate is not supported";
-            case LOG_LEVEL:
-                setServerLogLevel(requestStr);
-                return (T) requestStr;
-            case CALC_IMPL_VOL:
-                return (T) m_oldMarketDataHandler.handleCalcImplVolRequest(requestStr);
-            case CALC_OPTION_PRICE:
-                return (T) m_oldMarketDataHandler.handleCalcOptionPriceRequest(requestStr);
-            case NEWS:
-                return (T) m_oldNewsHandler.handleNewsBulletinsRequest(requestStr);
-            case ORD:
-                return (T) m_oldOrdersHandler.handlePlaceOrderRequest(requestStr);
-            case OPENS:
-                return withData ? (T) m_oldOrdersHandler.handleOpenOrdersArrayRequest(requestStr) : (T) m_oldOrdersHandler.handleOpenOrdersRequest(requestStr);
-            case EXECS:
-                return withData ? (T) m_oldExecutionsHandler.handleExecutionsArrayRequest(requestStr) : (T) m_oldExecutionsHandler.handleExecutionsRequest(requestStr);
-            case ACCT:
-                return (T) m_oldMiscHandler.handleAccountUpdateTimeRequest();
-            case ACCTS:
-                return withData ? (T) m_oldAccountPortfolioHandler.handleAccountDataArrayRequest(requestStr) : (T) m_oldAccountPortfolioHandler.handleAccountDataRequest(requestStr);
-            case PORTS:
-                return withData ? (T) m_oldAccountPortfolioHandler.handlePortfolioArrayRequest(requestStr) : (T) m_oldAccountPortfolioHandler.handlePortfolioRequest(requestStr);
-            case FAACCTS:
-                return (T) m_oldMiscHandler.handleManagedAccountsRequestOld(requestStr);
-            case MKTDEPTH:
-                return (T) m_oldMarketDepthHandler.handleMktDepthTickRequest(requestStr);
-            case SCAN:
-                return withData ? (T) m_oldScannerDataHandler.handleScannerDataArrayRequest(requestStr) : (T) m_oldScannerDataHandler.handleScannerSubscriptionRequest(requestStr);
-            case CONTRACT:
-                return (T) m_oldContractDetailsHandler.handleContractDetailsTickRequest(requestStr);
-            case HIST:
-                return withData ? (T) m_oldHistoricalDataHandler.handleHistoricalDataArrayRequest(requestStr) : (T) m_oldHistoricalDataHandler.handleHistoricalDataRequest(requestStr);
             default:
                 break;
         }
@@ -579,6 +502,20 @@ public class TwsService {
         return withData ? null : (T) DdeRequestStatus.UNKNOWN.name();
     }
 
+    @SuppressWarnings("unchecked")
+    private <T> T returnNotNullOrError(String topic, T value) {
+        if (value == null) {
+            return (T) returnError(topic);
+        }
+        return (T) value;
+    }
+    
+    private String returnError(String topic) {
+        String errorText = "Error: topic " + topic + " cannot be requested such way";
+        System.out.println(errorText);
+        return errorText;
+    }
+    
     /** Method stops DDE advise loop */
     public void stopAdviseDde(String topic, String requestStr) {
         DdeRequestType requestType = DdeRequestType.getRequestType(topic);
@@ -707,40 +644,7 @@ public class TwsService {
             case HISTORICAL_SCHEDULE_TICK:
                 m_historicalScheduleHandler.handleHistoricalScheduleCancel(requestStr);
                 break;
-                
-            
-            // old-style
-            case TIK:
-                m_oldMarketDataHandler.handleTickStopAdvise(requestStr);
-                break;
-            case ERR:
-                m_oldErrorsHandler.handleErrorStopAdvise(requestStr);
-                break;
-            case NEWS:
-                m_oldNewsHandler.handleNewsBulletinsStopAdvise(requestStr);
-                break;
-            case OPENS:
-                m_oldOrdersHandler.handleOpenOrdersStopAdvise(requestStr);
-                break;
-            case EXECS:
-                m_oldExecutionsHandler.handleExecutionsStopAdvise(requestStr);
-                break;
-            case ACCTS:
-                m_oldAccountPortfolioHandler.handleAccountDataStopAdvise(requestStr);
-                break;
-            case PORTS:
-                m_oldAccountPortfolioHandler.handlePortfolioStopAdvise(requestStr);
-                break;
-            case MKTDEPTH:
-                m_oldMarketDepthHandler.handleMktDepthTickStopAdvise(requestStr);
-                break;
-            case SCAN:
-                m_oldScannerDataHandler.handleScannerSubscriptionStopAdvise(requestStr);
-                break;
-            case CONTRACT:
-                m_oldContractDetailsHandler.handleContractDetailsTickStopAdvise(requestStr);
-            case HIST:
-                m_oldHistoricalDataHandler.handleHistoricalDataStopAdvise(requestStr);
+
             default:
                 break;
         }
@@ -811,7 +715,6 @@ public class TwsService {
     /** Method updates market data */
     public void updateMarketData(int requestId, String fieldStr, Object value, DdeRequestStatus status) {
         m_marketDataHandler.updateMarketData(requestId, DdeRequestType.TICK.topic(), fieldStr, value, status);
-        m_oldMarketDataHandler.updateMarketData(requestId, fieldStr, value, status);
     }
     
     /** Method updates market data error */
@@ -819,8 +722,9 @@ public class TwsService {
         m_marketDataHandler.updateMarketDataError(requestId, errorMsgStr, DdeRequestType.TICK.topic());
     }
     
-    /** Method sets market data type to 4 (Delayed-Frozen) */
+    /** Method allows market data type of 2 (Frozen) and 4 (Delayed-Frozen) */
     public void setMarketDataType() {
+        m_clientSocket.reqMarketDataType(2);
         m_clientSocket.reqMarketDataType(4);
     }
 
@@ -835,19 +739,16 @@ public class TwsService {
     /** Method updates order status for orderId */
     public void updateOrderStatus(OrderStatusData orderStatus) {
         m_ordersHandler.updateOrderStatus(orderStatus);
-        m_oldOrdersHandler.updateOrderStatus(orderStatus);
     }
 
     /** Method updates open order data */
     public void updateOpenOrderData(OpenOrderData openOrderData) {
         m_ordersHandler.updateOpenOrderData(openOrderData);
-        m_oldOrdersHandler.updateOpenOrderData(openOrderData);
     }
 
     /** Method updates open order end */
     public void updateOpenOrderEnd() {
         m_ordersHandler.updateOpenOrderEnd();
-        m_oldOrdersHandler.updateOpenOrderEnd();
     }
 
     /** Method updates completed order data */
@@ -866,7 +767,6 @@ public class TwsService {
     /** Method updates error data */
     public void addErrorMessage(ErrorData errorData) {
         m_errorsHandler.addErrorData(errorData);
-        m_oldErrorsHandler.updateErrorData(errorData);
     }
 
     /* *****************************************************************************************************
@@ -917,13 +817,11 @@ public class TwsService {
     /** Method updates execution data */
     public void updateExecution(int requestId, ExecutionData executionData) {
         m_executionsHandler.updateExecution(requestId, executionData);
-        m_oldExecutionsHandler.updateExecution(requestId, executionData);
     }
 
     /** Method updates execution end */
     public void updateExecutionEnd(int requestId) {
         m_executionsHandler.updateExecutionEnd(requestId);
-        m_oldExecutionsHandler.updateExecutionEnd(requestId);
     }
 
     /** Method updates execution error */
@@ -931,9 +829,9 @@ public class TwsService {
         m_executionsHandler.updateExecutionError(requestId, errorMsgStr);
     }
 
-    /** Method updates commission report */
-    public void updateCommissionReport(CommissionReport commissionReport) {
-        m_executionsHandler.updateCommissionReport(commissionReport);
+    /** Method updates commission and fees report */
+    public void updateCommissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport) {
+        m_executionsHandler.updateCommissionAndFeesReport(commissionAndFeesReport);
     }
     
     /* *****************************************************************************************************
@@ -950,7 +848,6 @@ public class TwsService {
                 break;
             case REQ_ACCOUNT_PORTFOLIO:
                 m_accountPortfolioHandler.updateAccountData(accountUpdateData, ddeRequestType);
-                m_oldAccountPortfolioHandler.updateAccountData(accountUpdateData, DdeRequestType.ACCTS);
                 break;
             default:
                 break;
@@ -968,8 +865,6 @@ public class TwsService {
                 break;
             case REQ_ACCOUNT_PORTFOLIO:
                 m_accountPortfolioHandler.updateAccountDataEnd(requestId, ddeRequestType);
-                m_oldAccountPortfolioHandler.updateAccountDataEnd(requestId, DdeRequestType.ACCTS);
-                m_oldAccountPortfolioHandler.updatePortfolioDataEnd(requestId, DdeRequestType.PORTS);
                 break;
             default:
                 break;
@@ -999,7 +894,6 @@ public class TwsService {
     /** Method updates account time */
     public void updateAccountTime(String timeStamp) {
         m_miscHandler.updateAccountTime(timeStamp);
-        m_oldMiscHandler.updateAccountTime(timeStamp);
     }
 
     /* *****************************************************************************************************
@@ -1008,7 +902,6 @@ public class TwsService {
     /** Method updates managed accounts */
     public void updateManagedAccounts(String accountsList) {
         m_miscHandler.updateManagedAccounts(accountsList);
-        m_oldMiscHandler.updateManagedAccounts(accountsList);
     }
     
     /* *****************************************************************************************************
@@ -1016,7 +909,6 @@ public class TwsService {
     /* *****************************************************************************************************/
     public void updatePortfolio(PositionData positionData) {
         m_accountPortfolioHandler.updatePortfolio(positionData);
-        m_oldAccountPortfolioHandler.updatePortfolio(positionData);
     }
 
     /* *****************************************************************************************************
@@ -1025,7 +917,6 @@ public class TwsService {
     /** Method updates market depth */
     public void updateMarketDepthData(int requestId, MarketDepthData marketDepthData, DdeRequestStatus status) {
         m_marketDepthHandler.updateMarketDepthData(requestId, marketDepthData, status);
-        m_oldMarketDepthHandler.updateMarketDepthData(requestId, marketDepthData, status);
     }
     
     /** Method updates market depth error */
@@ -1044,13 +935,11 @@ public class TwsService {
     /** Method updates scanner data */
     public void updateScannerData(int requestId, ScannerData scannerData) {
         m_scannerDataHandler.updateScannerData(requestId, scannerData);
-        m_oldScannerDataHandler.updateScannerData(requestId, scannerData);
     }
 
     /** Method updates scanner data end */
     public void updateScannerDataEnd(int requestId) {
         m_scannerDataHandler.updateScannerDataEnd(requestId);
-        m_oldScannerDataHandler.updateScannerDataEnd(requestId);
     }
     
     /** Method updates scanner subscription error */
@@ -1069,13 +958,11 @@ public class TwsService {
     /** Method updates contract details */
     public void updateContractDetails(int requestId, ContractDetails contractDetails) {
         m_contractDetailsHandler.updateContractDetails(requestId, contractDetails);
-        m_oldContractDetailsHandler.updateContractDetails(requestId, contractDetails);
     }
 
     /** Method updates contract details end */
     public void updateContractDetailsEnd(int requestId) {
         m_contractDetailsHandler.updateContractDetailsEnd(requestId);
-        m_oldContractDetailsHandler.updateContractDetailsEnd(requestId);
     }
 
     /** Method updates contract details request error */
@@ -1089,13 +976,11 @@ public class TwsService {
     /** Method updates historical data */
     public void updateHistoricalData(int requestId, Bar bar) {
         m_historicalDataHandler.updateHistoricalData(requestId, bar);
-        m_oldHistoricalDataHandler.updateHistoricalData(requestId, bar);
     }
 
     /** Method updates historical data end */
     public void updateHistoricalDataEnd(int requestId) {
         m_historicalDataHandler.updateHistoricalDataEnd(requestId, DdeRequestType.HISTORICAL_DATA_TICK.topic());
-        m_oldHistoricalDataHandler.updateHistoricalDataEnd(requestId);
     }
 
     public void liveUpdateHistoricalData(int requestId, Bar bar) {
@@ -1235,7 +1120,6 @@ public class TwsService {
     /** Method updates news bulletins */
     public void updateNewsBulletins(NewsBulletinData newsBulletinData) {
         m_newsDataHandler.updateNewsBulletinData(newsBulletinData);
-        m_oldNewsHandler.updateNewsBulletinData(newsBulletinData);
     }
     
     /** Method updates news data */
@@ -1287,7 +1171,6 @@ public class TwsService {
     /** Method updates custom option computation */
     public void updateCustomOptionComputation(int requestId, String fieldStr, Object value, DdeRequestStatus status, DdeRequestType requestType) {
         m_calcImplVolOptPriceHandler.updateMarketData(requestId, requestType.topic(), fieldStr, value, status);
-        m_oldMarketDataHandler.updateCustomOptionComputation(requestId, fieldStr, value, status);
     }
     
     /** Method updates calculate implied volatility/option price request error */
@@ -1316,6 +1199,14 @@ public class TwsService {
         m_miscHandler.updateCurrentTime(currentTime);
     }
 
+    /* *****************************************************************************************************
+     *                                      Current Time In Millis
+    /* *****************************************************************************************************/
+    /** Method updates current time in millis */
+    public void updateCurrentTimeInMillis(long timeInMillis) {
+        m_miscHandler.updateCurrentTimeInMillis(timeInMillis);
+    }
+    
     /* *****************************************************************************************************
      *                                          Next Valid Id
     /* *****************************************************************************************************/

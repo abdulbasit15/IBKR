@@ -32,7 +32,7 @@ Private headTimestampTable As Range
 '==================
 
 
-' clear head timestemp table
+' clear head timestamp table
 Private Sub ClearHeadTimestampTable_Click()
     headTimestampTable.ClearContents
 End Sub
@@ -42,10 +42,8 @@ Private Sub CreateTicker_Click()
     TickerForm.ShowForm contractTable
 End Sub
 
-' request head timestemp
+' request head timestamp
 Public Sub RequestHeadTimestamp_Click()
-Attribute RequestHeadTimestamp_Click.VB_Description = "Request Real Time Bars"
-Attribute RequestHeadTimestamp_Click.VB_ProcData.VB_Invoke_Func = "T\n14"
     If Not CheckConnected Then Exit Sub
     
     Dim id As Integer
@@ -65,7 +63,7 @@ Attribute RequestHeadTimestamp_Click.VB_ProcData.VB_Invoke_Func = "T\n14"
                 .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
                 .SecType = UCase(contractTable(id, Col_SECTYPE).value)
                 .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-                .Strike = contractTable(id, Col_STRIKE).value
+                .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
                 .Right = IIf(UCase(contractTable(id, Col_RIGHT).value) = "", 0#, UCase(contractTable(id, Col_RIGHT).value))
                 .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
                 .Exchange = UCase(contractTable(id, Col_EXCH).value)

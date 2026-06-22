@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -33,6 +33,9 @@ public class SecDefOptParamsHandler extends BaseListDataHandler<SecDefOptParamsD
     /** Method sends security definition option parameters request to TWS */
     public byte[] handleSecDefOptParamsRequest(String requestStr, byte[] data) {
         SecDefOptParamsRequest request = m_requestParser.parseSecDefOptParamsRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending sec def opt params request: id=" + request.requestId() + " underlyingSymbol=" + request.underlyingSymbol() + 
                 " futFopExchange=" + request.futFopExchange() + " underlyingSecType=" + request.underlyingSecType() + 
                 " underlyingConId=" + request.underlyingConId());

@@ -1,4 +1,4 @@
-' Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 Imports IBApi
@@ -205,10 +205,13 @@ Module MainModule
         '*******************
         'wshCalendarOperations(client)
 
-        '**********
-        '** RFQ ***
-        '**********
-        rfqOperations(client, nextValidId)
+        '*************
+        '** Config ***
+        '*************
+        'configOperations(client)
+
+        'orderParentChildOperations(client, nextValidId)
+        newsOperationsProto(client)
 
         Thread.Sleep(15000)
         Console.WriteLine("Done")
@@ -241,11 +244,17 @@ Module MainModule
     End Sub
 
     Private Sub historicalTicks(client As EClientSocket)
-		' [reqhistoricalticks]
+        ' [reqhistoricalticks]
         client.reqHistoricalTicks(18001, ContractSamples.USStockAtSmart(), "20170712 21:39:33 US/Eastern", Nothing, 10, "TRADES", 1, True, Nothing)
         client.reqHistoricalTicks(18002, ContractSamples.USStockAtSmart(), "20170712 21:39:33 US/Eastern", Nothing, 10, "BID_ASK", 1, True, Nothing)
         client.reqHistoricalTicks(18003, ContractSamples.USStockAtSmart(), "20170712 21:39:33 US/Eastern", Nothing, 10, "MIDPOINT", 1, True, Nothing)
-		' [reqhistoricalticks]
+        ' [reqhistoricalticks]
+
+        Thread.Sleep(1000)
+
+        '! [cancelhistoricalticks]
+        client.cancelHistoricalTicks(18001)
+        '! [cancelhistoricalticks]
     End Sub
 
     Private Sub pnl(client As EClientSocket)
@@ -497,6 +506,9 @@ Module MainModule
         client.reqContractDetails(219, ContractSamples.FundContract())
         client.reqContractDetails(220, ContractSamples.USStock())
         client.reqContractDetails(221, ContractSamples.USStockAtSmart())
+        client.reqContractDetails(222, ContractSamples.OptForecastx())
+        client.reqContractDetails(223, ContractSamples.OptForecastxZeroStrike())
+        client.reqContractDetails(224, ContractSamples.OptForecastxByConId())
         '! [reqcontractdetails]
 
         '! [reqcontractdetailsnews]
@@ -508,6 +520,10 @@ Module MainModule
         '! [reqmatchingsymbols]
         client.reqMatchingSymbols(218, "IBM")
         '! [reqmatchingsymbols]
+
+        '! [cancelcontractdata]
+        client.cancelContractData(209)
+        '! [cancelcontractdata]
     End Sub
 
     Private Sub marketScanners(client As EClientSocket)
@@ -779,12 +795,34 @@ Module MainModule
         '! [cancelorder]
         '** Cancel all orders for all accounts ***
         '! [reqglobalcancel]
-        client.reqGlobalCancel()
+        client.reqGlobalCancel(OrderSamples.OrderCancelEmpty())
         '! [reqglobalcancel]
         '** Request the day's executions ***
         '! [reqexecutions]
-        client.reqExecutions(10001, New ExecutionFilter())
+        Dim executionFilter1 As IBApi.ExecutionFilter = New IBApi.ExecutionFilter()
+        executionFilter1.LastNDays = 7
+        client.reqExecutions(10001, executionFilter1)
+        Dim executionFilter2 As IBApi.ExecutionFilter = New IBApi.ExecutionFilter()
+        Dim specificDates1 As List(Of Integer) = New List(Of Integer) From {20250307, 20250312}
+        executionFilter2.SpecificDates = specificDates1
+        client.reqExecutions(10002, executionFilter2)
         '! [reqexecutions]
+
+        '! [reqexecutions_protobuf]
+        Dim executionFilterProto1 As New IBApi.protobuf.ExecutionFilter()
+        executionFilterProto1.LastNDays = 7
+        Dim executionRequestProto1 As New IBApi.protobuf.ExecutionRequest()
+        executionRequestProto1.ReqId = 10003
+        executionRequestProto1.ExecutionFilter = executionFilterProto1
+        client.reqExecutionsProtoBuf(executionRequestProto1)
+        Dim executionFilterProto2 As New IBApi.protobuf.ExecutionFilter()
+        Dim specificDates2 As List(Of Integer) = New List(Of Integer) From {20250512, 20250513, 20250514}
+        executionFilterProto2.SpecificDates.AddRange(specificDates2)
+        Dim executionRequestProto2 As New IBApi.protobuf.ExecutionRequest()
+        executionRequestProto2.ReqId = 10004
+        executionRequestProto2.ExecutionFilter = executionFilterProto2
+        client.reqExecutionsProtoBuf(executionRequestProto2)
+        '! [reqexecutions_protobuf]
 
         '! [reqcompletedorders]
         client.reqCompletedOrders(False)
@@ -817,6 +855,32 @@ Module MainModule
         '! [order_submission_with_customer_account]
         client.placeOrder(increment(nextOrderId), ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithCustomerAccount("BUY", Util.StringToDecimal("100"), 111.11, "CustAcct"))
         '! [order_submission_with_customer_account]
+
+        '! [order_submission_with_include_overnight]
+        client.placeOrder(increment(nextOrderId), ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithIncludeOvernight("BUY", Util.StringToDecimal("100"), 111.11))
+        '! [order_submission_with_include_overnight]
+
+        '! [cme_tagging_fields]
+        client.placeOrder(increment(nextOrderId), ContractSamples.SimpleFuture(), OrderSamples.LimitOrderWithCmeTaggingFields("BUY", Util.StringToDecimal("1"), 5333, "ABCD", 1))
+        Thread.Sleep(5000)
+        client.cancelOrder(nextOrderId - 1, OrderSamples.OrderCancelWithCmeTaggingFields("BCDE", 0))
+        Thread.Sleep(2000)
+        client.placeOrder(increment(nextOrderId), ContractSamples.SimpleFuture(), OrderSamples.LimitOrderWithCmeTaggingFields("BUY", Util.StringToDecimal("1"), 5444, "CDEF", 0))
+        Thread.Sleep(5000)
+        client.reqGlobalCancel(OrderSamples.OrderCancelWithCmeTaggingFields("DEFG", 1))
+        '! [cme_tagging_fields]
+
+        '! [order_submission_with_imbalance_only]
+        client.placeOrder(increment(nextOrderId), ContractSamples.USStockAtSmart(), OrderSamples.LimitOnCloseOrderWithImbalanceOnly("BUY", Util.StringToDecimal("100"), 44.44))
+        '! [order_submission_with_imbalance_only]
+
+        '! [zero_strike_opt_order]
+        client.placeOrder(increment(nextOrderId), ContractSamples.OptForecastxZeroStrike(), OrderSamples.LimitOrder("BUY", Util.StringToDecimal("1"), 0.05))
+        '! [zero_strike_opt_order]
+
+        '! [limit_order_with_stop_loss_and_profit_taker]
+        client.placeOrder(increment(nextOrderId), ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithStopLossAndProfitTaker("BUY", Util.StringToDecimal("100"), 40, increment(nextOrderId), increment(nextOrderId)))
+        '! [limit_order_with_stop_loss_and_profit_taker]
     End Sub
 
     Private Sub newsOperations(client As EClientSocket)
@@ -1044,6 +1108,11 @@ Module MainModule
         client.reqCurrentTime()
         '** Setting TWS logging level  ***
         client.setServerLogLevel(1)
+
+        Thread.Sleep(3000)
+
+        '** Request TWS' current time in millis ***
+        client.reqCurrentTimeInMillis()
     End Sub
 
     Private Sub linkingOperations(client As EClientSocket)
@@ -1135,8 +1204,7 @@ Module MainModule
         client.reqContractDetails(18001, ContractSamples.ContFut())
 
         '! [reqhistoricaldatacontfut]
-        Dim queryTime As String = DateTime.Now.ToUniversalTime.ToString("yyyyMMdd-HH:mm:ss")
-        client.reqHistoricalData(18002, ContractSamples.ContFut(), queryTime, "1 Y", "1 month", "TRADES", 0, 1, False, Nothing)
+        client.reqHistoricalData(18002, ContractSamples.ContFut(), "", "1 Y", "1 month", "TRADES", 0, 1, False, Nothing)
         Thread.Sleep(10000)
         client.cancelHistoricalData(18002)
         '! [reqhistoricaldatacontfut]
@@ -1197,22 +1265,52 @@ Module MainModule
         '! [ibkratssubmit]
     End Sub
 
-    Private Sub rfqOperations(client As EClientSocket, nextOrderId As Integer)
-        '! [rfq_submission]
-        client.placeOrder(increment(nextOrderId), ContractSamples.BondWithCusip(), OrderSamples.RfqEmpty())
-        '! [rfq_submission]
+    Private Sub configOperations(client As EClientSocket)
+        '! [request_config]
+        Dim configRequestProto As New IBApi.protobuf.ConfigRequest()
+        configRequestProto.ReqId = 20001
+        client.reqConfigProtoBuf(configRequestProto)
+        '! [request_config]
 
-        'Thread.Sleep(5000)
+        '! [update_api_settings_config_request]
+        client.updateConfigProtoBuf(ConfigSamples.UpdateConfigApiSettings(20002))
+        '! [update_api_settings_config_request]
 
-        '! [rfq_cancel]
-        client.cancelOrder(nextOrderId - 1, OrderSamples.RfqCancel())
-        '! [rfq_cancel]
+        '! [update_orders_config_request]
+        client.updateConfigProtoBuf(ConfigSamples.UpdateOrdersConfig(20003))
+        '! [update_orders_config_request]
+
+        '! [update_message_config_request]
+        client.updateConfigProtoBuf(ConfigSamples.UpdateMessageConfigConfirmMandatoryCapPriceAccepted(20004))
+        '! [update_message_config_request]
+
+        '! [update_config_request_order_id_reset]
+        client.updateConfigProtoBuf(ConfigSamples.UpdateConfigOrderIdReset(20005))
+        '! [update_config_request_order_id_reset]
+
+        Thread.Sleep(1000)
+    End Sub
+
+    Private Sub orderParentChildOperations(client As EClientSocket, nextOrderId As Integer)
+        '! [beta_hedge_order]
+        Dim parentOrderId As Integer = increment(nextOrderId)
+        Dim childOrderId As Integer = increment(nextOrderId)
+        client.placeOrderProtoBuf(OrderSamplesProto.CreatePlaceOrderRequest(parentOrderId, ContractSamplesProto.IBMStockAtSmart(), OrderSamplesProto.LimitOrder("BUY", Util.StringToDecimal("100"), 40, False)))
+        Thread.Sleep(1000)
+        client.placeOrderProtoBuf(OrderSamplesProto.CreatePlaceOrderRequest(childOrderId, ContractSamplesProto.MSFTStockAtSmart(), OrderSamplesProto.BetaHedgeOrder(parentOrderId, "SELL", "0.05", 75, True)))
+        '! [beta_hedge_order]
+    End Sub
+
+    Private Sub newsOperationsProto(client As EClientSocket)
+        '! [request_historical_news_with_end_time]
+        client.reqHistoricalNewsProtoBuf(NewsSamplesProto.HistoricalNewsRequestWithEndTime(10001))
+        '! [request_historical_news_with_end_time]
 
         Thread.Sleep(1000)
 
-        '! [rfq_submission]
-        client.placeOrder(increment(nextOrderId), ContractSamples.BondWithCusip(), OrderSamples.Rfq())
-        '! [rfq_submission]
+        '! [request_historical_news_with_start_time]
+        client.reqHistoricalNewsProtoBuf(NewsSamplesProto.HistoricalNewsRequestWithStartTime(10002))
+        '! [request_historical_news_with_start_time]
     End Sub
 
 End Module

@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 #include "StdAfx.h"
 
@@ -9,7 +9,7 @@
 #include <cfloat>
 #include <platformspecific.h>
 
-static const std::string base64_chars = 
+static const std::string base64_chars =
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
              "abcdefghijklmnopqrstuvwxyz"
              "0123456789+/";
@@ -84,10 +84,6 @@ std::string Utils::intMaxString(int value) {
     return value == INT_MAX ? "" : std::to_string(value);
 }
 
-std::string Utils::longMaxString(long value) {
-    return value == LONG_MAX ? "" : std::to_string(value);
-}
-
 std::string Utils::llongMaxString(long long value) {
     return value == LLONG_MAX ? "" : std::to_string(value);
 }
@@ -102,8 +98,10 @@ std::string Utils::getFundDistributionPolicyIndicatorName(FundDistributionPolicy
         return "Accumulation Fund";
     case FundDistributionPolicyIndicator::IncomeFund:
         return "Income Fund";
+    case FundDistributionPolicyIndicator::None:
+        return "None";
     }
-    return "None";
+    return "";
 }
 
 std::string Utils::getFundAssetTypeName(FundAssetType fundAssetType) {
@@ -124,6 +122,32 @@ std::string Utils::getFundAssetTypeName(FundAssetType fundAssetType) {
         return "Guaranteed";
     case FundAssetType::Alternative:
         return "Alternative";
+    case FundAssetType::None:
+        return "None";
     }
-    return "None";
+    return "";
+}
+
+std::string Utils::getOptionExerciseTypeName(OptionExerciseType optionExerciseType) {
+    switch (optionExerciseType) {
+    case OptionExerciseType::None:
+        return "None";
+    case OptionExerciseType::Exercise:
+        return "Exercise";
+    case OptionExerciseType::Lapse:
+        return "Lapse";
+    case OptionExerciseType::DoNothing:
+        return "DoNothing";
+    case OptionExerciseType::Assigned:
+        return "Assigned";
+    case OptionExerciseType::AutoexerciseClearing:
+        return "AutoexerciseClearing";
+    case OptionExerciseType::Expired:
+        return "Expired";
+    case OptionExerciseType::Netting:
+        return "Netting";
+    case OptionExerciseType::AutoexerciseTrading:
+        return "AutoexerciseTrading";
+    }
+    return "";
 }

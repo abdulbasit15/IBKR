@@ -1,13 +1,15 @@
-' Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 
 Option Explicit On
-Imports System.Xml
 Imports System.Collections.Generic
-Imports IBApi
 Imports System.Linq
+Imports System.Net
 Imports System.Text
+Imports System.Xml
+Imports Google.Protobuf
+Imports IBApi
 
 Friend Class MainForm
     Inherits System.Windows.Forms.Form
@@ -122,6 +124,10 @@ Friend Class MainForm
     Public WithEvents Button3 As Button
     Friend WithEvents Button4 As Button
     Friend WithEvents cmdReqUserInfo As Button
+    Public WithEvents cmdReqCurrentTimeInMillis As Button
+    Friend WithEvents cmdCancelHistoricalTicks As Button
+    Public WithEvents cmdCancelContractData As Button
+    Public WithEvents cmdReqConfig As Button
     Public WithEvents cmdScanner As System.Windows.Forms.Button
     <System.Diagnostics.DebuggerStepThrough()> Private Sub InitializeComponent()
         Me.cmdReqHistoricalData = New System.Windows.Forms.Button()
@@ -202,6 +208,10 @@ Friend Class MainForm
         Me.Button3 = New System.Windows.Forms.Button()
         Me.Button4 = New System.Windows.Forms.Button()
         Me.cmdReqUserInfo = New System.Windows.Forms.Button()
+        Me.cmdReqCurrentTimeInMillis = New System.Windows.Forms.Button()
+        Me.cmdCancelHistoricalTicks = New System.Windows.Forms.Button()
+        Me.cmdCancelContractData = New System.Windows.Forms.Button()
+        Me.cmdReqConfig = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'cmdReqHistoricalData
@@ -252,7 +262,7 @@ Friend Class MainForm
         Me.cmdReqAllOpenOrders.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdReqAllOpenOrders.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdReqAllOpenOrders.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdReqAllOpenOrders.Location = New System.Drawing.Point(542, 377)
+        Me.cmdReqAllOpenOrders.Location = New System.Drawing.Point(542, 412)
         Me.cmdReqAllOpenOrders.Name = "cmdReqAllOpenOrders"
         Me.cmdReqAllOpenOrders.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdReqAllOpenOrders.Size = New System.Drawing.Size(133, 22)
@@ -266,7 +276,7 @@ Friend Class MainForm
         Me.cmdReqAutoOpenOrders.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdReqAutoOpenOrders.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdReqAutoOpenOrders.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdReqAutoOpenOrders.Location = New System.Drawing.Point(681, 377)
+        Me.cmdReqAutoOpenOrders.Location = New System.Drawing.Point(681, 412)
         Me.cmdReqAutoOpenOrders.Name = "cmdReqAutoOpenOrders"
         Me.cmdReqAutoOpenOrders.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdReqAutoOpenOrders.Size = New System.Drawing.Size(133, 22)
@@ -294,7 +304,7 @@ Friend Class MainForm
         Me.cmdReqNews.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdReqNews.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdReqNews.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdReqNews.Location = New System.Drawing.Point(681, 439)
+        Me.cmdReqNews.Location = New System.Drawing.Point(681, 474)
         Me.cmdReqNews.Name = "cmdReqNews"
         Me.cmdReqNews.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdReqNews.Size = New System.Drawing.Size(133, 22)
@@ -308,7 +318,7 @@ Friend Class MainForm
         Me.cmdReqAcctData.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdReqAcctData.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdReqAcctData.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdReqAcctData.Location = New System.Drawing.Point(542, 408)
+        Me.cmdReqAcctData.Location = New System.Drawing.Point(542, 443)
         Me.cmdReqAcctData.Name = "cmdReqAcctData"
         Me.cmdReqAcctData.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdReqAcctData.Size = New System.Drawing.Size(133, 22)
@@ -322,7 +332,7 @@ Friend Class MainForm
         Me.cmdReqExecutions.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdReqExecutions.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdReqExecutions.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdReqExecutions.Location = New System.Drawing.Point(681, 408)
+        Me.cmdReqExecutions.Location = New System.Drawing.Point(681, 443)
         Me.cmdReqExecutions.Name = "cmdReqExecutions"
         Me.cmdReqExecutions.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdReqExecutions.Size = New System.Drawing.Size(133, 22)
@@ -336,7 +346,7 @@ Friend Class MainForm
         Me.cmdReqIds.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdReqIds.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdReqIds.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdReqIds.Location = New System.Drawing.Point(542, 439)
+        Me.cmdReqIds.Location = New System.Drawing.Point(542, 474)
         Me.cmdReqIds.Name = "cmdReqIds"
         Me.cmdReqIds.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdReqIds.Size = New System.Drawing.Size(133, 22)
@@ -492,7 +502,7 @@ Friend Class MainForm
         Me.cmdReqOpenOrders.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdReqOpenOrders.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdReqOpenOrders.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdReqOpenOrders.Location = New System.Drawing.Point(681, 346)
+        Me.cmdReqOpenOrders.Location = New System.Drawing.Point(681, 381)
         Me.cmdReqOpenOrders.Name = "cmdReqOpenOrders"
         Me.cmdReqOpenOrders.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdReqOpenOrders.Size = New System.Drawing.Size(133, 22)
@@ -1019,7 +1029,7 @@ Friend Class MainForm
         '
         'cmdReqTickByTick
         '
-        Me.cmdReqTickByTick.Location = New System.Drawing.Point(870, 467)
+        Me.cmdReqTickByTick.Location = New System.Drawing.Point(870, 495)
         Me.cmdReqTickByTick.Name = "cmdReqTickByTick"
         Me.cmdReqTickByTick.Size = New System.Drawing.Size(133, 22)
         Me.cmdReqTickByTick.TabIndex = 61
@@ -1028,7 +1038,7 @@ Friend Class MainForm
         '
         'cmdCancelTickByTick
         '
-        Me.cmdCancelTickByTick.Location = New System.Drawing.Point(1009, 467)
+        Me.cmdCancelTickByTick.Location = New System.Drawing.Point(1009, 495)
         Me.cmdCancelTickByTick.Name = "cmdCancelTickByTick"
         Me.cmdCancelTickByTick.Size = New System.Drawing.Size(133, 22)
         Me.cmdCancelTickByTick.TabIndex = 62
@@ -1037,7 +1047,7 @@ Friend Class MainForm
         '
         'cmdReqCompletedOrders
         '
-        Me.cmdReqCompletedOrders.Location = New System.Drawing.Point(543, 467)
+        Me.cmdReqCompletedOrders.Location = New System.Drawing.Point(543, 502)
         Me.cmdReqCompletedOrders.Name = "cmdReqCompletedOrders"
         Me.cmdReqCompletedOrders.Size = New System.Drawing.Size(133, 22)
         Me.cmdReqCompletedOrders.TabIndex = 71
@@ -1046,7 +1056,7 @@ Friend Class MainForm
         '
         'cmdReqAllCompletedOrders
         '
-        Me.cmdReqAllCompletedOrders.Location = New System.Drawing.Point(682, 467)
+        Me.cmdReqAllCompletedOrders.Location = New System.Drawing.Point(682, 502)
         Me.cmdReqAllCompletedOrders.Name = "cmdReqAllCompletedOrders"
         Me.cmdReqAllCompletedOrders.Size = New System.Drawing.Size(133, 22)
         Me.cmdReqAllCompletedOrders.TabIndex = 72
@@ -1055,7 +1065,7 @@ Friend Class MainForm
         '
         'Button1
         '
-        Me.Button1.Location = New System.Drawing.Point(1009, 523)
+        Me.Button1.Location = New System.Drawing.Point(1009, 551)
         Me.Button1.Name = "Button1"
         Me.Button1.Size = New System.Drawing.Size(133, 22)
         Me.Button1.TabIndex = 76
@@ -1064,7 +1074,7 @@ Friend Class MainForm
         '
         'Button2
         '
-        Me.Button2.Location = New System.Drawing.Point(870, 523)
+        Me.Button2.Location = New System.Drawing.Point(870, 551)
         Me.Button2.Name = "Button2"
         Me.Button2.Size = New System.Drawing.Size(133, 22)
         Me.Button2.TabIndex = 75
@@ -1077,7 +1087,7 @@ Friend Class MainForm
         Me.Button3.Cursor = System.Windows.Forms.Cursors.Default
         Me.Button3.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Button3.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.Button3.Location = New System.Drawing.Point(1009, 495)
+        Me.Button3.Location = New System.Drawing.Point(1009, 523)
         Me.Button3.Name = "Button3"
         Me.Button3.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.Button3.Size = New System.Drawing.Size(133, 22)
@@ -1087,7 +1097,7 @@ Friend Class MainForm
         '
         'Button4
         '
-        Me.Button4.Location = New System.Drawing.Point(870, 495)
+        Me.Button4.Location = New System.Drawing.Point(870, 523)
         Me.Button4.Name = "Button4"
         Me.Button4.Size = New System.Drawing.Size(133, 22)
         Me.Button4.TabIndex = 73
@@ -1096,18 +1106,73 @@ Friend Class MainForm
         '
         'cmdReqUserInfo
         '
-        Me.cmdReqUserInfo.Location = New System.Drawing.Point(1009, 439)
+        Me.cmdReqUserInfo.Location = New System.Drawing.Point(1009, 467)
         Me.cmdReqUserInfo.Name = "cmdReqUserInfo"
         Me.cmdReqUserInfo.Size = New System.Drawing.Size(133, 22)
         Me.cmdReqUserInfo.TabIndex = 77
         Me.cmdReqUserInfo.Text = "Req User Info"
         Me.cmdReqUserInfo.UseVisualStyleBackColor = True
         '
+        'cmdReqCurrentTimeInMillis
+        '
+        Me.cmdReqCurrentTimeInMillis.BackColor = System.Drawing.SystemColors.Control
+        Me.cmdReqCurrentTimeInMillis.Cursor = System.Windows.Forms.Cursors.Default
+        Me.cmdReqCurrentTimeInMillis.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.cmdReqCurrentTimeInMillis.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.cmdReqCurrentTimeInMillis.Location = New System.Drawing.Point(543, 530)
+        Me.cmdReqCurrentTimeInMillis.Name = "cmdReqCurrentTimeInMillis"
+        Me.cmdReqCurrentTimeInMillis.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.cmdReqCurrentTimeInMillis.Size = New System.Drawing.Size(133, 22)
+        Me.cmdReqCurrentTimeInMillis.TabIndex = 78
+        Me.cmdReqCurrentTimeInMillis.Text = "Current Time In Millis"
+        Me.cmdReqCurrentTimeInMillis.UseVisualStyleBackColor = True
+        '
+        'cmdCancelHistoricalTicks
+        '
+        Me.cmdCancelHistoricalTicks.Location = New System.Drawing.Point(1009, 439)
+        Me.cmdCancelHistoricalTicks.Name = "cmdCancelHistoricalTicks"
+        Me.cmdCancelHistoricalTicks.Size = New System.Drawing.Size(133, 22)
+        Me.cmdCancelHistoricalTicks.TabIndex = 79
+        Me.cmdCancelHistoricalTicks.Text = "Cancel Historical Ticks"
+        Me.cmdCancelHistoricalTicks.UseVisualStyleBackColor = True
+        '
+        'cmdCancelContractData
+        '
+        Me.cmdCancelContractData.BackColor = System.Drawing.SystemColors.Control
+        Me.cmdCancelContractData.Cursor = System.Windows.Forms.Cursors.Default
+        Me.cmdCancelContractData.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.cmdCancelContractData.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.cmdCancelContractData.Location = New System.Drawing.Point(681, 346)
+        Me.cmdCancelContractData.Name = "cmdCancelContractData"
+        Me.cmdCancelContractData.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.cmdCancelContractData.Size = New System.Drawing.Size(133, 22)
+        Me.cmdCancelContractData.TabIndex = 80
+        Me.cmdCancelContractData.Text = "Cancel Contract Data"
+        Me.cmdCancelContractData.UseVisualStyleBackColor = True
+        '
+        'cmdReqConfig
+        '
+        Me.cmdReqConfig.BackColor = System.Drawing.SystemColors.Control
+        Me.cmdReqConfig.Cursor = System.Windows.Forms.Cursors.Default
+        Me.cmdReqConfig.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.cmdReqConfig.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.cmdReqConfig.Location = New System.Drawing.Point(542, 381)
+        Me.cmdReqConfig.Name = "cmdReqConfig"
+        Me.cmdReqConfig.RightToLeft = System.Windows.Forms.RightToLeft.No
+        Me.cmdReqConfig.Size = New System.Drawing.Size(133, 22)
+        Me.cmdReqConfig.TabIndex = 81
+        Me.cmdReqConfig.Text = "Config"
+        Me.cmdReqConfig.UseVisualStyleBackColor = True
+        '
         'MainForm
         '
         Me.AutoScaleBaseSize = New System.Drawing.Size(5, 13)
         Me.BackColor = System.Drawing.Color.Gainsboro
         Me.ClientSize = New System.Drawing.Size(1154, 638)
+        Me.Controls.Add(Me.cmdReqConfig)
+        Me.Controls.Add(Me.cmdCancelContractData)
+        Me.Controls.Add(Me.cmdCancelHistoricalTicks)
+        Me.Controls.Add(Me.cmdReqCurrentTimeInMillis)
         Me.Controls.Add(Me.cmdReqUserInfo)
         Me.Controls.Add(Me.Button1)
         Me.Controls.Add(Me.Button2)
@@ -1251,6 +1316,7 @@ Friend Class MainForm
     Private m_dlgFinancialAdvisor As New dlgFinancialAdvisor
     Private m_dlgScanner As New dlgScanner
     Private m_dlgGroups As New dlgGroups
+    Private m_dlgConfig As New dlgConfig
 
     Private m_faAccount, faError As Boolean
     Private m_faAcctsList As String
@@ -1560,7 +1626,7 @@ Friend Class MainForm
     End Sub
 
     '--------------------------------------------------------------------------------
-    ' Cancel an exisiting order
+    ' Cancel an existing order
     '--------------------------------------------------------------------------------
     Private Sub cmdCancelOrder_Click(sender As Object, e As EventArgs) Handles cmdCancelOrder.Click
         ' Set the dialog state
@@ -1618,7 +1684,7 @@ Friend Class MainForm
     '--------------------------------------------------------------------------------
     ' Request all the API open orders that were placed by this client. Note the
     ' clientID with a client id of 0 returns its, plus the TWS TWS open orders. Once
-    ' requested the TWS orders retain their API asociation.
+    ' requested the TWS orders retain their API association.
     '--------------------------------------------------------------------------------
     Private Sub cmdReqOpenOrders_Click(sender As Object, e As EventArgs) Handles cmdReqOpenOrders.Click
         m_api.reqOpenOrders()
@@ -1626,7 +1692,7 @@ Friend Class MainForm
 
     '--------------------------------------------------------------------------------
     ' Request the list of all the current open orders (from API clients and TWS). Note
-    ' that no API order assoication is made.
+    ' that no API order association is made.
     '--------------------------------------------------------------------------------
     Private Sub cmdReqAllOpenOrders_Click(sender As Object, e As EventArgs) Handles cmdReqAllOpenOrders.Click
         m_api.reqAllOpenOrders()
@@ -1672,7 +1738,7 @@ Friend Class MainForm
     End Sub
 
     '--------------------------------------------------------------------------------
-    ' Requests the next avaliable order id for placing an order
+    ' Requests the next available order id for placing an order
     '--------------------------------------------------------------------------------
     Private Sub cmdReqIds_Click(sender As Object, e As EventArgs) Handles cmdReqIds.Click
         m_api.reqIds(1)
@@ -1779,7 +1845,7 @@ Friend Class MainForm
     ' Request global cancel
     '--------------------------------------------------------------------------------
     Private Sub cmdReqGlobalCancel_Click(sender As Object, e As EventArgs) Handles cmdReqGlobalCancel.Click
-        m_api.reqGlobalCancel()
+        m_api.reqGlobalCancel(m_orderCancel)
     End Sub
 
     '--------------------------------------------------------------------------------
@@ -2141,8 +2207,8 @@ Friend Class MainForm
 #Region "API event handlers"
 
     Private Sub m_apiEvents_OrderBound(sender As Object, e As OrderBoundEventArgs) Handles m_apiEvents.OrderBound
-        m_utils.addListItem(Utils.ListType.ServerResponses, String.Format("Order bound. Order Id: {0}, Api Client Id: {1}, Api Order Id: {2}",
-                                                                          Util.LongMaxString(e.orderId), Util.IntMaxString(e.apiClientId), Util.IntMaxString(e.apiOrderId)))
+        m_utils.addListItem(Utils.ListType.ServerResponses, String.Format("Order bound. PermId: {0}, ClientId: {1}, OrderId: {2}",
+                                                                          Util.LongMaxString(e.permId), Util.IntMaxString(e.clientId), Util.IntMaxString(e.orderId)))
     End Sub
 
     Private Sub m_apiEvents_TickByTickAllLast(sender As Object, e As TickByTickAllLastEventArgs) Handles m_apiEvents.TickByTickAllLast
@@ -2215,7 +2281,8 @@ Friend Class MainForm
     ' server responses listbox
     '--------------------------------------------------------------------------------
     Private Sub Api_errMsg(sender As Object, e As ErrMsgEventArgs) Handles m_apiEvents.ErrMsg
-        Dim msg = "id: " & e.id & " | Error Code: " & e.errorCode & " | Error Msg: " & e.errorMsg
+        Dim errorTimeStr As String = If(e.errorTime > 0, Util.UnixMilliSecondsToString(e.errorTime, "yyyyMMdd-HH:mm:ss"), "")
+        Dim msg = "id: " & e.id & " | Error Time: " & errorTimeStr & " | Error Code: " & e.errorCode & " | Error Msg: " & e.errorMsg
         If e.advancedOrderRejectJson <> "" Then
             msg = msg & " | AdvancedOrderRejectJson: " & e.advancedOrderRejectJson
         End If
@@ -2404,7 +2471,7 @@ Friend Class MainForm
     '--------------------------------------------------------------------------------
     Private Sub Api_currentTime(sender As Object, e As CurrentTimeEventArgs) Handles m_apiEvents.CurrentTime
         Dim offset = lstServerResponses.Items.Count
-        Dim displayString = "current time = " & e.time
+        Dim displayString = "current time = " & e.time & " : " & Util.UnixSecondsToString(e.time, "MMM dd, yyyy HH:mm:ss.FFF")
 
         m_utils.addListItem(Utils.ListType.ServerResponses, displayString)
 
@@ -2458,7 +2525,7 @@ Friend Class MainForm
     '--------------------------------------------------------------------------------
     Private Sub Api_orderStatus(sender As Object, e As OrderStatusEventArgs) Handles m_apiEvents.OrderStatus
         Dim offset = lstServerResponses.Items.Count
-        Dim msg = "order status: orderId=" & e.orderId & " client id=" & Util.IntMaxString(e.clientId) & " permId=" & Util.IntMaxString(e.permId) &
+        Dim msg = "order status: orderId=" & e.orderId & " client id=" & Util.IntMaxString(e.clientId) & " permId=" & Util.LongMaxString(e.permId) &
               " status=" & e.status & " filled=" & Util.DecimalMaxString(e.filled) & " remaining=" & Util.DecimalMaxString(e.remaining) &
               " avgFillPrice=" & Util.DoubleMaxString(e.avgFillPrice) & " lastFillPrice=" & Util.DoubleMaxString(e.lastFillPrice) &
               " parentId=" & Util.IntMaxString(e.parentId) & " whyHeld=" & e.whyHeld & " mktCapPrice=" & Util.DoubleMaxString(e.mktCapPrice)
@@ -2524,6 +2591,12 @@ Friend Class MainForm
         m_utils.addListItem(Utils.ListType.ServerResponses, "  minSize = " & Util.DecimalMaxString(contractDetails.MinSize))
         m_utils.addListItem(Utils.ListType.ServerResponses, "  sizeIncrement = " & Util.DecimalMaxString(contractDetails.SizeIncrement))
         m_utils.addListItem(Utils.ListType.ServerResponses, "  suggestedSizeIncrement = " & Util.DecimalMaxString(contractDetails.SuggestedSizeIncrement))
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  minAlgoSize = " & Util.DecimalMaxString(contractDetails.MinAlgoSize))
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  lastPricePrecision = " & Util.DecimalMaxString(contractDetails.LastPricePrecision))
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  lastSizePrecision = " & Util.DecimalMaxString(contractDetails.LastSizePrecision))
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  eventContract1 = " & contractDetails.EventContract1)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  eventContractDescription1 = " & contractDetails.EventContractDescription1)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  eventContractDescription2 = " & contractDetails.EventContractDescription2)
 
         If (contract.SecType = "BOND") Then
             m_utils.addListItem(Utils.ListType.ServerResponses, "Bond Details:")
@@ -2665,7 +2738,7 @@ Friend Class MainForm
     End Sub
 
     '--------------------------------------------------------------------------------
-    ' Notification of an account proprty update - triggered by the reqAcctUpdates() method
+    ' Notification of an account property update - triggered by the reqAcctUpdates() method
     '--------------------------------------------------------------------------------
     Private Sub Api_updateAccountValue(sender As Object, e As UpdateAccountValueEventArgs) Handles m_apiEvents.UpdateAccountValue
         m_dlgAcctData.updateAccountValue(e.key, e.value, e.currency, e.accountName)
@@ -2711,7 +2784,7 @@ Friend Class MainForm
             m_utils.addListItem(Utils.ListType.ServerResponses, "  execId = " & .ExecId)
             m_utils.addListItem(Utils.ListType.ServerResponses, "  orderId = " & Util.IntMaxString(.OrderId))
             m_utils.addListItem(Utils.ListType.ServerResponses, "  clientId = " & Util.IntMaxString(.ClientId))
-            m_utils.addListItem(Utils.ListType.ServerResponses, "  permId = " & Util.IntMaxString(.PermId))
+            m_utils.addListItem(Utils.ListType.ServerResponses, "  permId = " & Util.LongMaxString(.PermId))
             m_utils.addListItem(Utils.ListType.ServerResponses, "  time = " & .Time)
             m_utils.addListItem(Utils.ListType.ServerResponses, "  acctNumber = " & .AcctNumber)
             m_utils.addListItem(Utils.ListType.ServerResponses, "  modelCode = " & .ModelCode)
@@ -2727,6 +2800,8 @@ Friend Class MainForm
             m_utils.addListItem(Utils.ListType.ServerResponses, "  evMultiplier = " & Util.DoubleMaxString(.EvMultiplier))
             m_utils.addListItem(Utils.ListType.ServerResponses, "  lastLiquidity = " & .LastLiquidity.ToString())
             m_utils.addListItem(Utils.ListType.ServerResponses, "  pendingPriceRevision = " & .PendingPriceRevision)
+            m_utils.addListItem(Utils.ListType.ServerResponses, "  submitter = " & .Submitter)
+            m_utils.addListItem(Utils.ListType.ServerResponses, "  optExerciseOrLapseType = " & COptionExerciseType.getOptionExerciseTypeName(.OptExerciseOrLapseType))
 
         End With
 
@@ -2796,16 +2871,16 @@ Friend Class MainForm
     End Sub
 
     '--------------------------------------------------------------------------------
-    ' Commission Report
+    ' Commission and Fees Report
     '--------------------------------------------------------------------------------
-    Private Sub Api_commissionReport(sender As Object, e As CommissionReportEventArgs) Handles m_apiEvents.CommissionReport
+    Private Sub Api_commissionAndFeesReport(sender As Object, e As CommissionAndFeesReportEventArgs) Handles m_apiEvents.CommissionAndFeesReport
         Dim offset = lstServerResponses.Items.Count
 
-        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Commission Report ----")
+        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Commission and Fees Report ----")
 
-        With e.commissionReport
+        With e.commissionAndFeesReport
             m_utils.addListItem(Utils.ListType.ServerResponses, "  execId=" & .ExecId)
-            m_utils.addListItem(Utils.ListType.ServerResponses, "  commission=" & Util.DoubleMaxString(.Commission))
+            m_utils.addListItem(Utils.ListType.ServerResponses, "  commissionAndFees=" & Util.DoubleMaxString(.CommissionAndFees))
             m_utils.addListItem(Utils.ListType.ServerResponses, "  currency=" & .Currency)
             m_utils.addListItem(Utils.ListType.ServerResponses, "  realizedPNL=" & Util.DoubleMaxString(.RealizedPNL))
             m_utils.addListItem(Utils.ListType.ServerResponses, "  yield=" & Util.DoubleMaxString(.Yield))
@@ -2813,7 +2888,7 @@ Friend Class MainForm
 
         End With
 
-        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Commission Report End ----")
+        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Commission and Fees Report End ----")
 
         ' move into view
         lstServerResponses.TopIndex = offset
@@ -2983,7 +3058,7 @@ Friend Class MainForm
     ' Security Definition Option Parameter
     '--------------------------------------------------------------------------------
     Private Sub Api_SecurityDefinitionOptionParameter(sender As Object, e As SecurityDefinitionOptionParameterEventArgs) Handles m_apiEvents.SecurityDefinitionOptionParameter
-        Dim displayString = String.Format("reqId: {0}, exchange {1}, underlyingConId: {2}, tradingClass: {3}, multiplier: {4}, expirations: {5}, strikes: {6}",
+        Dim displayString = String.Format("SecDefOptParam - reqId: {0}, exchange {1}, underlyingConId: {2}, tradingClass: {3}, multiplier: {4}, expirations: {5}, strikes: {6}",
             e.reqId,
             e.exchange,
             Util.IntMaxString(e.underlyingConId),
@@ -2991,6 +3066,15 @@ Friend Class MainForm
             e.multiplier,
             String.Join(",", e.expirations),
             String.Join(", ", e.strikes))
+
+        m_utils.addListItem(Utils.ListType.ServerResponses, displayString)
+
+        ' move into view
+        lstServerResponses.TopIndex = lstServerResponses.Items.Count - 1
+    End Sub
+
+    Private Sub Api_SecurityDefinitionOptionParameterEnd(sender As Object, e As SecurityDefinitionOptionParameterEndEventArgs) Handles m_apiEvents.SecurityDefinitionOptionParameterEnd
+        Dim displayString = String.Format("SecDefOptParamEnd - reqId: {0}", e.reqId)
 
         m_utils.addListItem(Utils.ListType.ServerResponses, displayString)
 
@@ -3077,11 +3161,13 @@ Friend Class MainForm
         m_utils.addListItem(Utils.ListType.ServerResponses, "  orderTypes = " & contractDetails.OrderTypes)
         m_utils.addListItem(Utils.ListType.ServerResponses, "  validExchanges = " & contractDetails.ValidExchanges)
         m_utils.addListItem(Utils.ListType.ServerResponses, "  longName = " & contractDetails.LongName)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  timeZoneId = " & contractDetails.TimeZoneId)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  tradingHours = " & contractDetails.TradingHours)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "  liquidHours = " & contractDetails.LiquidHours)
         m_utils.addListItem(Utils.ListType.ServerResponses, "  evRule = " & contractDetails.EvRule)
         m_utils.addListItem(Utils.ListType.ServerResponses, "  evMultiplier = " & Util.DoubleMaxString(contractDetails.EvMultiplier))
         m_utils.addListItem(Utils.ListType.ServerResponses, "  aggGroup = " & Util.IntMaxString(contractDetails.AggGroup))
         m_utils.addListItem(Utils.ListType.ServerResponses, "  marketRuleIds = " & contractDetails.MarketRuleIds)
-        m_utils.addListItem(Utils.ListType.ServerResponses, "  timeZoneId = " & contractDetails.TimeZoneId)
         m_utils.addListItem(Utils.ListType.ServerResponses, "  lastTradeTime = " & contractDetails.LastTradeTime)
         m_utils.addListItem(Utils.ListType.ServerResponses, "  minSize = " & Util.DecimalMaxString(contractDetails.MinSize))
         m_utils.addListItem(Utils.ListType.ServerResponses, "  sizeIncrement = " & Util.DecimalMaxString(contractDetails.SizeIncrement))
@@ -3166,15 +3252,6 @@ Friend Class MainForm
 
         ' move into view
         lstServerResponses.TopIndex = offset
-    End Sub
-
-    Private Sub Api_TickReqParams(sender As Object, e As TickReqParamsEventArgs) Handles m_apiEvents.TickReqParams
-        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Tick Req Params Begin ----")
-        m_utils.addListItem(Utils.ListType.ServerResponses, "tickerId=" & e.tickerId)
-        m_utils.addListItem(Utils.ListType.ServerResponses, "minTick=" & Util.DoubleMaxString(e.minTick))
-        m_utils.addListItem(Utils.ListType.ServerResponses, "bboExchange=" & e.bboExchange)
-        m_utils.addListItem(Utils.ListType.ServerResponses, "snapshotPermissions=" & Util.IntMaxString(e.snapshotPermissions))
-        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Tick Req Params End ----")
     End Sub
 
     Private Sub Api_SmartComponents(sender As ApiEventSource, e As SmartComponentsEventArgs) Handles m_apiEvents.SmartComponents
@@ -3353,6 +3430,65 @@ Friend Class MainForm
 
     Private Sub m_apiEvents_UserInfo(sender As Object, e As UserInfoEventArgs) Handles m_apiEvents.UserInfo
         m_utils.addListItem(Utils.ListType.ServerResponses, $"User Info. Request Id: {e.reqId}, WhiteBrandingId: {e.whiteBrandingId}")
+    End Sub
+
+    Private Sub Api_currentTimeInMillis(sender As Object, e As CurrentTimeInMillisEventArgs) Handles m_apiEvents.CurrentTimeInMillis
+        Dim offset = lstServerResponses.Items.Count
+        Dim displayString = "current time in millis = " & e.timeInMillis & " : " & Util.UnixMilliSecondsToString(e.timeInMillis, "MMM dd, yyyy HH:mm:ss.FFF")
+
+        m_utils.addListItem(Utils.ListType.ServerResponses, displayString)
+
+        ' move into view
+        lstServerResponses.TopIndex = offset
+    End Sub
+
+    Private Sub m_apiEvents_ConfigResponseProtoBuf(sender As Object, e As ConfigResponseProtoBufEventArgs) Handles m_apiEvents.ConfigResponseProtoBuf
+        Dim formatter As New JsonFormatter(JsonFormatter.Settings.Default.WithIndentation())
+        Dim configResponseText As String
+        configResponseText = formatter.Format(e.configResponseProto)
+
+        m_utils.addListItem(Utils.ListType.ServerResponses, "==== Config Response Begin ====")
+        m_utils.addListItem(Utils.ListType.ServerResponses, configResponseText)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "==== Config Response End ====")
+
+        m_dlgConfig.init(configResponseText)
+        m_dlgConfig.ShowDialog()
+        If m_dlgConfig.m_ok Then
+            m_api.updateConfigProtoBuf(m_dlgConfig.updateConfigRequestProto)
+        End If
+
+    End Sub
+
+    Private Sub m_apiEvents_UpdateConfigResponseProtoBuf(sender As Object, e As UpdateConfigResponseProtoBufEventArgs) Handles m_apiEvents.UpdateConfigResponseProtoBuf
+        Dim formatter As New JsonFormatter(JsonFormatter.Settings.Default.WithIndentation())
+        Dim updateConfigResponseText As String
+        updateConfigResponseText = formatter.Format(e.updateConfigResponseProto)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "==== Update Config Response Begin ====")
+        m_utils.addListItem(Utils.ListType.ServerResponses, updateConfigResponseText)
+        m_utils.addListItem(Utils.ListType.ServerResponses, "==== Update Config Response End ====")
+    End Sub
+
+    Private Sub m_apiEvents_TickReqParamsProtoBuf(sender As Object, e As TickReqParamsProtoBufEventArgs) Handles m_apiEvents.TickReqParamsProtoBuf
+        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Tick Req Params Begin ----")
+        If (e.TickReqParamsProto.HasReqId) Then
+            m_utils.addListItem(Utils.ListType.ServerResponses, "tickerId=" & e.TickReqParamsProto.ReqId)
+        End If
+        If (e.TickReqParamsProto.HasMinTick) Then
+            m_utils.addListItem(Utils.ListType.ServerResponses, "minTick=" & e.TickReqParamsProto.MinTick)
+        End If
+        If (e.TickReqParamsProto.HasBboExchange) Then
+            m_utils.addListItem(Utils.ListType.ServerResponses, "bboExchange=" & e.TickReqParamsProto.BboExchange)
+        End If
+        If (e.TickReqParamsProto.HasSnapshotPermissions) Then
+            m_utils.addListItem(Utils.ListType.ServerResponses, "snapshotPermissions=" & e.TickReqParamsProto.SnapshotPermissions)
+        End If
+        If (e.TickReqParamsProto.HasLastPricePrecision) Then
+            m_utils.addListItem(Utils.ListType.ServerResponses, "lastPricePrecision=" & e.TickReqParamsProto.LastPricePrecision)
+        End If
+        If (e.TickReqParamsProto.HasLastSizePrecision) Then
+            m_utils.addListItem(Utils.ListType.ServerResponses, "lastSizePrecision=" & e.TickReqParamsProto.LastSizePrecision)
+        End If
+        m_utils.addListItem(Utils.ListType.ServerResponses, " ---- Tick Req Params End ----")
     End Sub
 
 #End Region
@@ -3549,6 +3685,33 @@ Friend Class MainForm
         m_api.reqUserInfo(0)
     End Sub
 
+    Private Sub cmdReqCurrentTimeInMillis_Click(sender As Object, e As EventArgs) Handles cmdReqCurrentTimeInMillis.Click
+        m_api.reqCurrentTimeInMillis()
+    End Sub
+
+    Private Sub cmdCancelContractData_Click(sender As Object, e As EventArgs) Handles cmdCancelContractData.Click
+        m_dlgOrder.init(dlgOrder.DialogType.CancelContractData, m_contractInfo, m_orderInfo, Nothing, Nothing, Me)
+
+        If m_dlgOrder.ShowDialog() = Windows.Forms.DialogResult.OK Then
+            m_api.cancelContractData(m_dlgOrder.orderId)
+        End If
+
+    End Sub
+
+    Private Sub cmdCancelHistoricalTicks_Click(sender As Object, e As EventArgs) Handles cmdCancelHistoricalTicks.Click
+        m_dlgOrder.init(dlgOrder.DialogType.CancelHistoricalTicks, m_contractInfo, m_orderInfo, Nothing, Nothing, Me)
+
+        If m_dlgOrder.ShowDialog() = Windows.Forms.DialogResult.OK Then
+            m_api.cancelHistoricalTicks(m_dlgOrder.orderId)
+        End If
+    End Sub
+
+    Private Sub cmdReqConfig_Click(sender As Object, e As EventArgs) Handles cmdReqConfig.Click
+        Dim configRequestProto As New IBApi.protobuf.ConfigRequest()
+        configRequestProto.ReqId = New Random(DateTime.Now.Millisecond).Next()
+        m_api.reqConfigProtoBuf(configRequestProto)
+    End Sub
+
     Private Sub appendOrderFields(contract As Contract, order As Order, orderState As OrderState)
         appendValidIntValue(Utils.ListType.ServerResponses, "orderId", order.OrderId)
         appendNonEmptyString(Utils.ListType.ServerResponses, "action", order.Action)
@@ -3559,7 +3722,7 @@ Friend Class MainForm
         appendNonEmptyString(Utils.ListType.ServerResponses, "symbol", contract.Symbol)
         appendNonEmptyString(Utils.ListType.ServerResponses, "secType", contract.SecType)
         appendNonEmptyString(Utils.ListType.ServerResponses, "lastTradeDate", contract.LastTradeDateOrContractMonth)
-        appendPositiveDoubleValue(Utils.ListType.ServerResponses, "strike", contract.Strike)
+        appendValidDoubleValue(Utils.ListType.ServerResponses, "strike", contract.Strike)
         appendNonEmptyString(Utils.ListType.ServerResponses, "right", contract.Right, "?")
         appendNonEmptyString(Utils.ListType.ServerResponses, "multiplier", contract.Multiplier)
         appendNonEmptyString(Utils.ListType.ServerResponses, "exchange", contract.Exchange)
@@ -3577,7 +3740,7 @@ Friend Class MainForm
         appendNonEmptyString(Utils.ListType.ServerResponses, "orderRef", order.OrderRef)
         appendValidIntValue(Utils.ListType.ServerResponses, "clientId", order.ClientId)
         appendValidIntValue(Utils.ListType.ServerResponses, "parentId", order.ParentId())
-        appendValidIntValue(Utils.ListType.ServerResponses, "permId", order.PermId)
+        appendValidLongValue(Utils.ListType.ServerResponses, "permId", order.PermId)
         appendBooleanFlag(Utils.ListType.ServerResponses, "outsideRth", order.OutsideRth)
         appendBooleanFlag(Utils.ListType.ServerResponses, "hidden", order.Hidden)
         appendValidDoubleValue(Utils.ListType.ServerResponses, "discretionaryAmt", order.DiscretionaryAmt)
@@ -3644,6 +3807,7 @@ Friend Class MainForm
 
         appendNonEmptyString(Utils.ListType.ServerResponses, "hedgeType", order.HedgeType)
         appendNonEmptyString(Utils.ListType.ServerResponses, "hedgeParam", order.HedgeParam)
+        appendValidIntValue(Utils.ListType.ServerResponses, "hedgeMaxSize", order.HedgeMaxSize)
 
         appendNonEmptyString(Utils.ListType.ServerResponses, "account", order.Account)
         appendNonEmptyString(Utils.ListType.ServerResponses, "modelCode", order.ModelCode)
@@ -3749,8 +3913,17 @@ Friend Class MainForm
         appendNonEmptyString(Utils.ListType.ServerResponses, "status", orderState.Status)
         appendNonEmptyString(Utils.ListType.ServerResponses, "completedTime", orderState.CompletedTime)
         appendNonEmptyString(Utils.ListType.ServerResponses, "completedStatus", orderState.CompletedStatus)
+        appendBooleanFlag(Utils.ListType.ServerResponses, "postOnly", order.PostOnly)
+        appendBooleanFlag(Utils.ListType.ServerResponses, "allowPreOpen", order.AllowPreOpen)
+        appendBooleanFlag(Utils.ListType.ServerResponses, "ignoreOpenAuction", order.IgnoreOpenAuction)
+        appendBooleanFlag(Utils.ListType.ServerResponses, "deactivate", order.Deactivate)
+        appendNonEmptyString(Utils.ListType.ServerResponses, "activeStartTime", order.ActiveStartTime)
+        appendNonEmptyString(Utils.ListType.ServerResponses, "activeStopTime", order.ActiveStopTime)
+        appendBooleanFlag(Utils.ListType.ServerResponses, "seekPriceImprovement", order.SeekPriceImprovement)
+        appendBooleanFlag(Utils.ListType.ServerResponses, "routeMarketableToBbo", order.RouteMarketableToBbo)
 
         If order.WhatIf Then
+            appendValidIntValue(Utils.ListType.ServerResponses, "whatIfType", order.WhatIfType)
             appendValidDoubleValue(Utils.ListType.ServerResponses, "initMarginBefore", orderState.InitMarginBefore)
             appendValidDoubleValue(Utils.ListType.ServerResponses, "maintMarginBefore", orderState.MaintMarginBefore)
             appendValidDoubleValue(Utils.ListType.ServerResponses, "equityWithLoanBefore", orderState.EquityWithLoanBefore)
@@ -3760,10 +3933,39 @@ Friend Class MainForm
             appendValidDoubleValue(Utils.ListType.ServerResponses, "initMarginAfter", orderState.InitMarginAfter)
             appendValidDoubleValue(Utils.ListType.ServerResponses, "maintMarginAfter", orderState.MaintMarginAfter)
             appendValidDoubleValue(Utils.ListType.ServerResponses, "equityWithLoanAfter", orderState.EquityWithLoanAfter)
-            appendValidDoubleValue(Utils.ListType.ServerResponses, "commission", orderState.Commission)
-            appendValidDoubleValue(Utils.ListType.ServerResponses, "minCommission", orderState.MinCommission)
-            appendValidDoubleValue(Utils.ListType.ServerResponses, "maxCommission", orderState.MaxCommission)
-            appendNonEmptyString(Utils.ListType.ServerResponses, "commissionCurrency", orderState.CommissionCurrency)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "commissionAndFees", orderState.CommissionAndFees)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "minCommissionAndFees", orderState.MinCommissionAndFees)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "maxCommissionAndFees", orderState.MaxCommissionAndFees)
+            appendNonEmptyString(Utils.ListType.ServerResponses, "commissionAndFeesCurrency", orderState.CommissionAndFeesCurrency)
+
+            appendNonEmptyString(Utils.ListType.ServerResponses, "marginCurrency", orderState.MarginCurrency)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "initMarginBeforeOutsideRTH", orderState.InitMarginBeforeOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "maintMarginBeforeOutsideRTH", orderState.MaintMarginBeforeOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "equityWithLoanBeforeOutsideRTH", orderState.EquityWithLoanBeforeOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "initMarginChangeOutsideRTH", orderState.InitMarginChangeOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "maintMarginChangeOutsideRTH", orderState.MaintMarginChangeOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "equityWithLoanChangeOutsideRTH", orderState.EquityWithLoanChangeOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "initMarginAfterOutsideRTH", orderState.InitMarginAfterOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "maintMarginAfterOutsideRTH", orderState.MaintMarginAfterOutsideRTH)
+            appendValidDoubleValue(Utils.ListType.ServerResponses, "equityWithLoanAfterOutsideRTH", orderState.EquityWithLoanAfterOutsideRTH)
+            appendNonEmptyString(Utils.ListType.ServerResponses, "suggestedSize", Util.DecimalMaxString(orderState.SuggestedSize))
+            appendNonEmptyString(Utils.ListType.ServerResponses, "rejectReason", orderState.RejectReason)
+
+            Dim orderAllocations = orderState.OrderAllocations
+            If (Not orderAllocations Is Nothing And orderAllocations.Count > 0) Then
+                m_utils.addListItem(Utils.ListType.ServerResponses, "  orderAllocations={")
+                For Each orderAllocation In orderAllocations
+                    appendNonEmptyString(Utils.ListType.ServerResponses, "  account", orderAllocation.Account)
+                    appendNonEmptyString(Utils.ListType.ServerResponses, "  position", Util.DecimalMaxString(orderAllocation.Position))
+                    appendNonEmptyString(Utils.ListType.ServerResponses, "  positionDesired", Util.DecimalMaxString(orderAllocation.PositionDesired))
+                    appendNonEmptyString(Utils.ListType.ServerResponses, "  positionAfter", Util.DecimalMaxString(orderAllocation.PositionAfter))
+                    appendNonEmptyString(Utils.ListType.ServerResponses, "  desiredAllocQty", Util.DecimalMaxString(orderAllocation.DesiredAllocQty))
+                    appendNonEmptyString(Utils.ListType.ServerResponses, "  allowedAllocQty", Util.DecimalMaxString(orderAllocation.AllowedAllocQty))
+                    appendBooleanFlag(Utils.ListType.ServerResponses, "  isMonetary", orderAllocation.IsMonetary)
+                Next
+                m_utils.addListItem(Utils.ListType.ServerResponses, "  }")
+            End If
+
             appendNonEmptyString(Utils.ListType.ServerResponses, "warningText", orderState.WarningText)
         End If
 
@@ -3793,6 +3995,10 @@ Friend Class MainForm
         appendNonEmptyString(Utils.ListType.ServerResponses, "customerAccount", order.CustomerAccount)
         appendBooleanFlag(Utils.ListType.ServerResponses, "professionalCustomer", order.ProfessionalCustomer)
         appendNonEmptyString(Utils.ListType.ServerResponses, "bondAccruedInterest", order.BondAccruedInterest)
+        appendBooleanFlag(Utils.ListType.ServerResponses, "includeOvernight", order.IncludeOvernight)
+        appendNonEmptyString(Utils.ListType.ServerResponses, "extOperator", order.ExtOperator)
+        appendValidIntValue(Utils.ListType.ServerResponses, "manualOrderIndicator", order.ManualOrderIndicator)
+        appendNonEmptyString(Utils.ListType.ServerResponses, "submitter", order.Submitter)
 
         m_utils.addListItem(Utils.ListType.ServerResponses, "===============================")
     End Sub

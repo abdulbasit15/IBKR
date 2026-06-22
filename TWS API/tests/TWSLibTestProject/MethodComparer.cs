@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using IBApi;
@@ -78,7 +78,7 @@ namespace OrderConditionsParsingTestProject
            { typeof(Order), typeof(IOrder) },
            { typeof(OrderState), typeof(IOrderState) },
            { typeof(Execution), typeof(IExecution) },
-           { typeof(CommissionReport), typeof(ICommissionReport) },
+           { typeof(CommissionAndFeesReport), typeof(ICommissionAndFeesReport) },
            { typeof(HashSet<string>), typeof(string[]) },
            { typeof(HashSet<double>), typeof(double[]) },
            { typeof(Dictionary<int, KeyValuePair<string, char>>), typeof(ArrayList[]) },

@@ -1,6 +1,7 @@
-' Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
+Imports Google.Protobuf
 Imports IBApi
 Imports System.Text
 
@@ -77,11 +78,11 @@ Namespace Samples
         End Sub
         '! [bondcontractdetails]
 
-        '! [commissionreport]
-        Public Sub commissionReport(commissionReport As IBApi.CommissionReport) Implements IBApi.EWrapper.commissionReport
-            Console.WriteLine("CommissionReport - CommissionReport [" & Util.DoubleMaxString(commissionReport.Commission) & " " & commissionReport.Currency & "]")
+        '! [commissionandfeesreport]
+        Public Sub commissionAndFeesReport(commissionAndFeesReport As IBApi.CommissionAndFeesReport) Implements IBApi.EWrapper.commissionAndFeesReport
+            Console.WriteLine("CommissionAndFeesReport - CommissionAndFeesReport [" & Util.DoubleMaxString(commissionAndFeesReport.CommissionAndFees) & " " & commissionAndFeesReport.Currency & "]")
         End Sub
-        '! [commissionreport]
+        '! [commissionandfeesreport]
 
         '! [connectack]
         Public Sub connectAck() Implements IBApi.EWrapper.connectAck
@@ -147,6 +148,12 @@ Namespace Samples
             Console.WriteLine(vbTab & "MinSize: " & Util.DecimalMaxString(contractDetails.MinSize))
             Console.WriteLine(vbTab & "SizeIncrement: " & Util.DecimalMaxString(contractDetails.SizeIncrement))
             Console.WriteLine(vbTab & "SuggestedSizeIncrement: " & Util.DecimalMaxString(contractDetails.SuggestedSizeIncrement))
+            Console.WriteLine(vbTab & "MinAlgoSize: " & Util.DecimalMaxString(contractDetails.MinAlgoSize))
+            Console.WriteLine(vbTab & "LastPricePrecision: " & Util.DecimalMaxString(contractDetails.LastPricePrecision))
+            Console.WriteLine(vbTab & "LastSizePrecision: " & Util.DecimalMaxString(contractDetails.LastSizePrecision))
+            Console.WriteLine(vbTab & "EventContract1: " & contractDetails.EventContract1)
+            Console.WriteLine(vbTab & "EventContractDescription1 : " & contractDetails.EventContractDescription1)
+            Console.WriteLine(vbTab & "EventContractDescription2 : " & contractDetails.EventContractDescription2)
 
             If contractDetails.Contract.SecType = "FUND" Then
                 Console.WriteLine(vbTab & "Fund Data: ")
@@ -220,12 +227,14 @@ Namespace Samples
             Console.WriteLine(vbTab & "NextOptionPartial: " & contractDetails.NextOptionPartial)
             Console.WriteLine(vbTab & "Notes: " & contractDetails.Notes)
             Console.WriteLine(vbTab & "Long Name: " & contractDetails.LongName)
+            Console.WriteLine(vbTab & "TimeZoneId: " & contractDetails.TimeZoneId)
+            Console.WriteLine(vbTab & "TradingHours: " & contractDetails.TradingHours)
+            Console.WriteLine(vbTab & "LiquidHours: " & contractDetails.LiquidHours)
             Console.WriteLine(vbTab & "EvRule: " & contractDetails.EvRule)
             Console.WriteLine(vbTab & "EvMultiplier: " & Util.DoubleMaxString(contractDetails.EvMultiplier))
             Console.WriteLine(vbTab & "AggGroup: " & Util.IntMaxString(contractDetails.AggGroup))
             Console.WriteLine(vbTab & "MarketRuleIds: " & contractDetails.MarketRuleIds)
             Console.WriteLine(vbTab & "LastTradeTime: " & contractDetails.LastTradeTime)
-            Console.WriteLine(vbTab & "TimeZoneId: " & contractDetails.TimeZoneId)
             Console.WriteLine(vbTab & "MinSize: " & Util.DecimalMaxString(contractDetails.MinSize))
             Console.WriteLine(vbTab & "SizeIncrement: " & Util.DecimalMaxString(contractDetails.SizeIncrement))
             Console.WriteLine(vbTab & "SuggestedSizeIncrement: " & Util.DecimalMaxString(contractDetails.SuggestedSizeIncrement))
@@ -241,7 +250,7 @@ Namespace Samples
 
         '! [currenttime]
         Public Sub currentTime(time As Long) Implements IBApi.EWrapper.currentTime
-            Console.WriteLine("CurrentTime - Time [" & time & "]")
+            Console.WriteLine("CurrentTime - " & time & " : " & Util.UnixSecondsToString(time, "MMM dd, yyyy HH:mm:ss"))
         End Sub
         '! [currenttime]
 
@@ -263,11 +272,12 @@ Namespace Samples
         '! [displaygroupupdated]
 
         '! [errors]
-        Public Sub [error](id As Integer, errorCode As Integer, errorMsg As String, advancedOrderRejectJson As String) Implements IBApi.EWrapper.error
+        Public Sub [error](id As Integer, errorTime As Long, errorCode As Integer, errorMsg As String, advancedOrderRejectJson As String) Implements IBApi.EWrapper.error
+            Dim errorTimeStr As String = If(errorTime > 0, Util.UnixMilliSecondsToString(errorTime, "yyyyMMdd-HH:mm:ss"), "")
             If advancedOrderRejectJson <> "" Then
-                Console.WriteLine("Error - Id [" & id & "] ErrorCode [" & errorCode & "] ErrorMsg [" & errorMsg & "] AdvancedOrderRejectJson [" & advancedOrderRejectJson & "]")
+                Console.WriteLine("Error - Id [" & id & "] ErrorTime [" & errorTimeStr & "] ErrorCode [" & errorCode & "] ErrorMsg [" & errorMsg & "] AdvancedOrderRejectJson [" & advancedOrderRejectJson & "]")
             Else
-                Console.WriteLine("Error - Id [" & id & "] ErrorCode [" & errorCode & "] ErrorMsg [" & errorMsg & "]")
+                Console.WriteLine("Error - Id [" & id & "] ErrorTime [" & errorTimeStr & "] ErrorCode [" & errorCode & "] ErrorMsg [" & errorMsg & "]")
             End If
         End Sub
         '! [errors]
@@ -282,13 +292,23 @@ Namespace Samples
 
         '! [execdetails]
         Public Sub execDetails(reqId As Integer, contract As IBApi.Contract, execution As IBApi.Execution) Implements IBApi.EWrapper.execDetails
-            Console.WriteLine("ExecDetails - ReqId [" & reqId & "] Contract [" & contract.Symbol & ", " & contract.SecType &
-                          "] Execution [Price: " & Util.DoubleMaxString(execution.Price) & ", Exchange: " & execution.Exchange & ", Last Liquidity: " & execution.LastLiquidity.ToString() & ", Shares: " & Util.DecimalMaxString(execution.Shares) & ", Cum Qty: " & Util.DecimalMaxString(execution.CumQty) & ", Pending Price Revision: " & execution.PendingPriceRevision & "]")
+            Console.WriteLine("ExecDetails. ReqId:" & reqId &
+                ", Contract - ConId: " & Util.IntMaxString(contract.ConId) & ", Symbol: " & contract.Symbol &
+                ", LastTradeDateOrContractMonth: " & contract.LastTradeDateOrContractMonth & ", Strike: " & Util.DoubleMaxString(contract.Strike) & ", Right: " & contract.Right &
+                ", Multiplier: " & contract.Multiplier & ", Exchange: " & contract.Exchange & ", Currency: " & contract.Currency & ", LocalSymbol: " & contract.LocalSymbol &
+                ", TradingClass: " & contract.TradingClass &
+                ", Execution - OrderId: " & Util.IntMaxString(execution.OrderId) & ", ExecId: " & execution.ExecId & ", Time: " & execution.Time & ", AcctNumber: " & execution.AcctNumber &
+                ", Exchange: " & execution.Exchange & ", Side: " & execution.Side & ", Shares: " & Util.DecimalMaxString(execution.Shares) &
+                ", Price: " & Util.DoubleMaxString(execution.Price) & ", PermId: " & Util.LongMaxString(execution.PermId) & ", ClientId: " & Util.IntMaxString(execution.ClientId) &
+                ", Liquidation: " & IIf(execution.Liquidation = 1, "true", "false") & ", CumQty: " & Util.DecimalMaxString(execution.CumQty) & ", AvgPrice: " & Util.DoubleMaxString(execution.AvgPrice) &
+                ", OrderRef: " & execution.OrderRef & ", EvRule: " & execution.EvRule & ", EvMultiplier: " & Util.DoubleMaxString(execution.EvMultiplier) &
+                ", ModelCode: " & execution.ModelCode & ", LastLiquidity: " & execution.LastLiquidity.ToString() & ", PendingPriceRevision: " & IIf(execution.PendingPriceRevision, "true", "false") &
+                ", Submitter: " & execution.Submitter & ", OptExerciseOrLapseType: " & COptionExerciseType.getOptionExerciseTypeName(execution.OptExerciseOrLapseType))
         End Sub
         '! [execdetails]
         '! [execdetailsend]
         Public Sub execDetailsEnd(reqId As Integer) Implements IBApi.EWrapper.execDetailsEnd
-            Console.WriteLine("ExecDetailsEnd - ReqId [" & reqId & "]")
+            Console.WriteLine("ExecDetailsEnd. ReqId: " & reqId)
         End Sub
         '! [execdetailsend]
         '! [fundamentaldata]
@@ -338,33 +358,14 @@ Namespace Samples
         End Sub
         '! [nextvalidid]
 
-        '! [openorder]
         Public Sub openOrder(orderId As Integer, contract As IBApi.Contract, order As IBApi.Order, orderState As IBApi.OrderState) Implements IBApi.EWrapper.openOrder
-            Console.WriteLine("OpenOrder. PermID: " & Util.IntMaxString(order.PermId) & ", ClientId: " & Util.IntMaxString(order.ClientId) & ", OrderId: " & Util.IntMaxString(orderId) &
-                              ", Account: " & order.Account & ", Symbol: " & contract.Symbol & ", SecType: " & contract.SecType & " , Exchange: " & contract.Exchange & ", Action: " & order.Action &
-                              ", OrderType: " & order.OrderType & ", TotalQty: " & Util.DecimalMaxString(order.TotalQuantity) & ", CashQty: " & Util.DoubleMaxString(order.CashQty) & ", LmtPrice: " &
-                              Util.DoubleMaxString(order.LmtPrice) & ", AuxPrice: " & Util.DoubleMaxString(order.AuxPrice) & ", Status: " & orderState.Status &
-                              ", MinTradeQty: " & Util.IntMaxString(order.MinTradeQty) & ", MinCompeteSize: " & Util.IntMaxString(order.MinCompeteSize) &
-                              ", CompeteAgainstBestOffset: " & If(order.CompeteAgainstBestOffset = Order.COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID, "UpToMid", Util.DoubleMaxString(order.CompeteAgainstBestOffset)) &
-                              ", MidOffsetAtWhole: " & Util.DoubleMaxString(order.MidOffsetAtWhole) & ", MidOffsetAtHalf: " & Util.DoubleMaxString(order.MidOffsetAtHalf) &
-                              ", FAGroup: " & order.FaGroup & ", FAMethod: " & order.FaMethod & ", CustAcct: " & order.CustomerAccount & ", ProfCust: " & order.ProfessionalCustomer &
-                              ", BondAccruedInterest: " & order.BondAccruedInterest)
         End Sub
-        '! [openorder]
 
-        '! [openorderend]
         Public Sub openOrderEnd() Implements IBApi.EWrapper.openOrderEnd
-            Console.WriteLine("OpenOrderEnd")
         End Sub
-        '! [openorderend]
 
-        '! [orderstatus]
-        Public Sub orderStatus(orderId As Integer, status As String, filled As Decimal, remaining As Decimal, avgFillPrice As Double, permId As Integer, parentId As Integer, lastFillPrice As Double, clientId As Integer, whyHeld As String, mktCapPrice As Double) Implements IBApi.EWrapper.orderStatus
-            Console.WriteLine("OrderStatus. Id: " & orderId & ", Status: " & status & ", Filled: " & Util.DecimalMaxString(filled) & ", Remaining: " & Util.DecimalMaxString(remaining) &
-                ", AvgFillPrice: " & Util.DoubleMaxString(avgFillPrice) & ", PermId: " & Util.IntMaxString(permId) & ", ParentId: " & Util.IntMaxString(parentId) &
-                ", LastFillPrice: " & Util.DoubleMaxString(lastFillPrice) & ", ClientId: " & Util.IntMaxString(clientId) & ", WhyHeld: " & whyHeld & ", mktCapPrice: " & Util.DoubleMaxString(mktCapPrice))
+        Public Sub orderStatus(orderId As Integer, status As String, filled As Decimal, remaining As Decimal, avgFillPrice As Double, permId As Long, parentId As Integer, lastFillPrice As Double, clientId As Integer, whyHeld As String, mktCapPrice As Double) Implements IBApi.EWrapper.orderStatus
         End Sub
-        '! [orderstatus]
 
         '! [position]
         Public Sub position(account As String, contract As IBApi.Contract, pos As Decimal, avgCost As Double) Implements IBApi.EWrapper.position
@@ -436,13 +437,13 @@ Namespace Samples
 
         '! [tickgeneric]
         Public Sub tickGeneric(tickerId As Integer, field As Integer, value As Double) Implements IBApi.EWrapper.tickGeneric
-            Console.WriteLine("Tick Generic. Ticker Id:" & tickerId & ", Field: " & field & ", Value: " & Util.DoubleMaxString(value))
+            Console.WriteLine("Tick Generic. Ticker Id: " & tickerId & ", Field: " & field & ", Value: " & Util.DoubleMaxString(value))
         End Sub
         '! [tickgeneric]
 
         '! [tickoptioncomputation]
         Public Sub tickOptionComputation(tickerId As Integer, field As Integer, tickAttrib As Integer, impliedVolatility As Double, delta As Double, optPrice As Double, pvDividend As Double, gamma As Double, vega As Double, theta As Double, undPrice As Double) Implements IBApi.EWrapper.tickOptionComputation
-            Console.WriteLine("TickOptionComputation. TickerId: " & tickerId & ", field: " & field & ", TickAttrib: " & Util.IntMaxString(tickAttrib) & ", ImpliedVolatility: " & Util.DoubleMaxString(impliedVolatility) &
+            Console.WriteLine("TickOptionComputation. TickerId: " & tickerId & ", Field: " & field & ", TickAttrib: " & Util.IntMaxString(tickAttrib) & ", ImpliedVolatility: " & Util.DoubleMaxString(impliedVolatility) &
                         ", Delta: " & Util.DoubleMaxString(delta) & ", OptionPrice: " & Util.DoubleMaxString(optPrice) & ", pvDividend: " & Util.DoubleMaxString(pvDividend) &
                         ", Gamma: " & Util.DoubleMaxString(gamma) & ", Vega: " & Util.DoubleMaxString(vega) & ", Theta: " & Util.DoubleMaxString(theta) & ", UnderlyingPrice: " & Util.DoubleMaxString(undPrice))
         End Sub
@@ -450,13 +451,13 @@ Namespace Samples
 
         '! [tickprice]
         Public Sub tickPrice(tickerId As Integer, field As Integer, price As Double, attribs As TickAttrib) Implements IBApi.EWrapper.tickPrice
-            Console.WriteLine("TickPrice - TickerId [" & CStr(tickerId) & "] Field [" & TickType.getField(field) & "] Price [" & Util.DoubleMaxString(price) & "] PreOpen [" & attribs.PreOpen & "]")
+            Console.WriteLine("TickPrice - TickerId: " & CStr(tickerId) & ", Field: " & TickType.getField(field) & ", Price: " & Util.DoubleMaxString(price) & ", PreOpen: " & attribs.PreOpen)
         End Sub
         '! [tickprice]
 
         '! [ticksize]
         Public Sub tickSize(tickerId As Integer, field As Integer, size As Decimal) Implements IBApi.EWrapper.tickSize
-            Console.WriteLine("Tick Size. Ticker Id:" & CStr(tickerId) & ", Field: " & TickType.getField(field) & ", Size: " & Util.DecimalMaxString(size))
+            Console.WriteLine("Tick Size. Ticker Id: " & CStr(tickerId) & ", Field: " & TickType.getField(field) & ", Size: " & Util.DecimalMaxString(size))
         End Sub
         '! [ticksize]
 
@@ -521,7 +522,7 @@ Namespace Samples
         End Sub
 
         Public Sub verifyCompleted(isSuccessful As Boolean, errorText As String) Implements IBApi.EWrapper.verifyCompleted
-            Console.WriteLine("verifyCompleted. IsSuccessfule: " & isSuccessful & " - Error: " & errorText)
+            Console.WriteLine("verifyCompleted. IsSuccessful: " & isSuccessful & " - Error: " & errorText)
         End Sub
 
         Public Sub verifyMessageAPI(apiData As String) Implements IBApi.EWrapper.verifyMessageAPI
@@ -530,13 +531,15 @@ Namespace Samples
 
         '! [securityDefinitionOptionParameter]
         Public Sub securityDefinitionOptionParameter(reqId As Integer, exchange As String, underlyingConId As Integer, tradingClass As String, multiplier As String, expirations As HashSet(Of String), strikes As HashSet(Of Double)) Implements EWrapper.securityDefinitionOptionParameter
-            Console.WriteLine("securityDefinitionOptionParameter: " & reqId & " tradingClass: " & tradingClass & " multiplier: ")
+            Console.WriteLine("SecDefOptParam: ReqId=" & reqId & " Exchange=" & exchange & " UnderlyingConId=" & underlyingConId & " TradingClass=" & tradingClass & " Multiplier=" & multiplier)
+            Console.WriteLine("  Expirations (" & expirations.Count & " items): " & String.Join(", ", expirations))
+            Console.WriteLine("  Strikes (" & strikes.Count & " items): " & String.Join(", ", strikes))
         End Sub
         '! [securityDefinitionOptionParameter]
 
         '! [securityDefinitionOptionParameterEnd]
         Public Sub securityDefinitionOptionParameterEnd(reqId As Integer) Implements EWrapper.securityDefinitionOptionParameterEnd
-            Console.WriteLine("Called securityDefinitionParameterEnd")
+            Console.WriteLine("SecDefOptParamEnd")
         End Sub
         '! [securityDefinitionOptionParameterEnd]
 
@@ -545,7 +548,7 @@ Namespace Samples
             Console.WriteLine("Soft Dollar Tiers:")
 
             For Each tier In tiers
-                Console.WriteLine(tier.DisplayName)
+                Console.WriteLine("Name: " & tier.Name & ", Value: " & tier.Value & ", DisplayName: " & tier.DisplayName)
             Next
         End Sub
         '! [softDollarTiers]
@@ -618,9 +621,6 @@ Namespace Samples
 
         '! [tickReqParams]
         Public Sub tickReqParams(tickerId As Integer, minTick As Double, bboExchange As String, snapshotPermissions As Integer) Implements EWrapper.tickReqParams
-            Console.WriteLine("id={0} minTick = {1} bboExchange = {2} snapshotPermissions = {3}", tickerId, Util.DoubleMaxString(minTick), bboExchange, Util.IntMaxString(snapshotPermissions))
-
-            Me.BboExchange = bboExchange
         End Sub
         '! [tickReqParams]
 
@@ -646,17 +646,11 @@ Namespace Samples
         End Sub
         '! [newsArticle]
 
-        '! [historicalNews]
         Public Sub historicalNews(requestId As Integer, time As String, providerCode As String, articleId As String, headline As String) Implements IBApi.EWrapper.historicalNews
-            Console.WriteLine("Historical News. Request Id: " & requestId & ", Time: " & time & ", Provider Code: " & providerCode & ", Article Id: " & articleId & ", Headline: " & headline)
         End Sub
-        '! [historicalNews]
 
-        '! [historicalNewsEnd]
         Public Sub historicalNewsEnd(requestId As Integer, hasMore As Boolean) Implements IBApi.EWrapper.historicalNewsEnd
-            Console.WriteLine("Historical News End. Request Id: " & requestId & ", Has More: " & hasMore)
         End Sub
-        '! [historicalNewsEnd]
 
         '! [headTimestamp]
         Public Sub headTimestamp(requestId As Integer, timeStamp As String) Implements IBApi.EWrapper.headTimestamp
@@ -765,30 +759,15 @@ Namespace Samples
         '! [tickbytickmidpoint]
 
         '! [orderbound]
-        Public Sub orderBound(orderId As Long, apiClientId As Integer, apiOrderId As Integer) Implements EWrapper.orderBound
-            Console.WriteLine("Order bound. Order Id: {0}, Api Client Id: {1}, Api Order Id: {2}", Util.LongMaxString(orderId), Util.IntMaxString(apiClientId), Util.IntMaxString(apiOrderId))
+        Public Sub orderBound(permId As Long, clientId As Integer, orderId As Integer) Implements EWrapper.orderBound
+            Console.WriteLine("Order bound. PermId: {0}, ClientId: {1}, OrderId: {2}", Util.LongMaxString(permId), Util.IntMaxString(clientId), Util.IntMaxString(orderId))
         End Sub
         '! [orderbound]
 
-        '! [completedorder]
         Public Sub completedOrder(contract As IBApi.Contract, order As IBApi.Order, orderState As IBApi.OrderState) Implements IBApi.EWrapper.completedOrder
-            Console.WriteLine("CompletedOrder. PermID: " & Util.IntMaxString(order.PermId) & ", ParentPermID: " & Util.LongMaxString(order.ParentPermId) & ", Account: " & order.Account &
-                              ", Symbol: " & contract.Symbol & ", SecType: " & contract.SecType & " , Exchange: " & contract.Exchange & ", Action: " & order.Action &
-                              ", OrderType: " & order.OrderType & ", TotalQty: " & Util.DecimalMaxString(order.TotalQuantity) & ", CashQty: " & Util.DoubleMaxString(order.CashQty) &
-                              ", FilledQty: " & Util.DecimalMaxString(order.FilledQuantity) & ", LmtPrice: " & Util.DoubleMaxString(order.LmtPrice) & ", AuxPrice: " & Util.DoubleMaxString(order.AuxPrice) &
-                              ", Status: " & orderState.Status & ", CompletedTime: " & orderState.CompletedTime & ", CompletedStatus: " & orderState.CompletedStatus &
-                              ", MinTradeQty: " & Util.IntMaxString(order.MinTradeQty) & ", MinCompeteSize: " & Util.IntMaxString(order.MinCompeteSize) &
-                              ", CompeteAgainstBestOffset: " & If(order.CompeteAgainstBestOffset = Order.COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID, "UpToMid", Util.DoubleMaxString(order.CompeteAgainstBestOffset)) &
-                              ", MidOffsetAtWhole: " & Util.DoubleMaxString(order.MidOffsetAtWhole) & ", MidOffsetAtHalf: " & Util.DoubleMaxString(order.MidOffsetAtHalf) & ", CustAcct: " & order.CustomerAccount &
-                              ", ProfCust: " & order.ProfessionalCustomer)
         End Sub
-        '! [completedorder]
-
-        '! [completedordersend]
         Public Sub completedOrdersEnd() Implements IBApi.EWrapper.completedOrdersEnd
-            Console.WriteLine("CompletedOrdersEnd")
         End Sub
-        '! [completedordersend]
 
         '! [replacefaend]
         Public Sub replaceFAEnd(reqId As Integer, text As String) Implements IBApi.EWrapper.replaceFAEnd
@@ -822,6 +801,371 @@ Namespace Samples
             Console.WriteLine($"User Info. ReqId: {reqId}, WhiteBrandingId: {whiteBrandingId}")
         End Sub
         '! [userInfo]
+
+        '! [currenttimeinmillis]
+        Public Sub currentTimeInMillis(timeInMillis As Long) Implements IBApi.EWrapper.currentTimeInMillis
+            Console.WriteLine("CurrentTimeInMillis Time - " & timeInMillis & " : " & Util.UnixMilliSecondsToString(timeInMillis, "MMM dd, yyyy HH:mm:ss.FFF"))
+        End Sub
+        '! [currenttimeinmillis]
+
+
+        '! [protobuf]
+        Public Sub orderStatusProtoBuf(orderStatusProto As IBApi.protobuf.OrderStatus) Implements IBApi.EWrapper.orderStatusProtoBuf
+            Util.printProtoSingleLine("Order Status: ", orderStatusProto)
+        End Sub
+
+        Public Sub openOrderProtoBuf(openOrderProto As IBApi.protobuf.OpenOrder) Implements IBApi.EWrapper.openOrderProtoBuf
+            Util.printProtoSingleLine("Open Order: ", openOrderProto)
+        End Sub
+
+        Public Sub openOrdersEndProtoBuf(openOrdersEndProto As IBApi.protobuf.OpenOrdersEnd) Implements IBApi.EWrapper.openOrdersEndProtoBuf
+            Util.printProtoSingleLine("Open Orders End: ", openOrdersEndProto)
+        End Sub
+
+        Public Sub errorMessageProtoBuf(errorMessageProto As IBApi.protobuf.ErrorMessage) Implements IBApi.EWrapper.errorProtoBuf
+
+        End Sub
+
+        Public Sub executionDetailsProtoBuf(executionDetailsProto As IBApi.protobuf.ExecutionDetails) Implements IBApi.EWrapper.execDetailsProtoBuf
+
+        End Sub
+
+        Public Sub executionDetailsEndProtoBuf(executionDetailsEndProto As IBApi.protobuf.ExecutionDetailsEnd) Implements IBApi.EWrapper.execDetailsEndProtoBuf
+
+        End Sub
+
+        Public Sub completedOrderProtoBuf(completedOrderProto As IBApi.protobuf.CompletedOrder) Implements IBApi.EWrapper.completedOrderProtoBuf
+            Util.printProtoSingleLine("Completed Order: ", completedOrderProto)
+        End Sub
+
+        Public Sub completedOrdersEndProtoBuf(completedOrdersEndProto As IBApi.protobuf.CompletedOrdersEnd) Implements IBApi.EWrapper.completedOrdersEndProtoBuf
+            Util.printProtoSingleLine("Completed Orders End: ", completedOrdersEndProto)
+        End Sub
+
+        Public Sub orderBoundProtoBuf(orderBoundProto As IBApi.protobuf.OrderBound) Implements IBApi.EWrapper.orderBoundProtoBuf
+
+        End Sub
+
+        Public Sub contractDataProtoBuf(contractDataProto As IBApi.protobuf.ContractData) Implements IBApi.EWrapper.contractDataProtoBuf
+
+        End Sub
+
+        Public Sub bondContractDatarProtoBuf(contractDataProto As IBApi.protobuf.ContractData) Implements IBApi.EWrapper.bondContractDataProtoBuf
+
+        End Sub
+
+        Public Sub contractDataEndProtoBuf(contractDataEndProto As IBApi.protobuf.ContractDataEnd) Implements IBApi.EWrapper.contractDataEndProtoBuf
+
+        End Sub
+
+        Public Sub tickPriceProtoBuf(tickPriceProto As IBApi.protobuf.TickPrice) Implements IBApi.EWrapper.tickPriceProtoBuf
+
+        End Sub
+
+        Public Sub tickSizeProtoBuf(tickSizeProto As IBApi.protobuf.TickSize) Implements IBApi.EWrapper.tickSizeProtoBuf
+
+        End Sub
+
+        Public Sub tickOptionComputationProtoBuf(tickOptionComputationProto As IBApi.protobuf.TickOptionComputation) Implements IBApi.EWrapper.tickOptionComputationProtoBuf
+
+        End Sub
+
+        Public Sub tickGenericProtoBuf(tickGenericProto As IBApi.protobuf.TickGeneric) Implements IBApi.EWrapper.tickGenericProtoBuf
+
+        End Sub
+
+        Public Sub tickStringProtoBuf(tickStringProto As IBApi.protobuf.TickString) Implements IBApi.EWrapper.tickStringProtoBuf
+
+        End Sub
+
+        Public Sub tickSnapshotEndProtoBuf(tickSnapshotEndProto As IBApi.protobuf.TickSnapshotEnd) Implements IBApi.EWrapper.tickSnapshotEndProtoBuf
+
+        End Sub
+
+        Public Sub updateMarketDepthProtoBuf(marketDepthProto As IBApi.protobuf.MarketDepth) Implements IBApi.EWrapper.updateMarketDepthProtoBuf
+
+        End Sub
+
+        Public Sub updateMarketDepthL2ProtoBuf(marketDepthL2Proto As IBApi.protobuf.MarketDepthL2) Implements IBApi.EWrapper.updateMarketDepthL2ProtoBuf
+
+        End Sub
+
+        Public Sub marketDataTypeProtoBuf(marketDataTypeProto As IBApi.protobuf.MarketDataType) Implements IBApi.EWrapper.marketDataTypeProtoBuf
+
+        End Sub
+
+        Public Sub tickReqParamsProtoBuf(tickReqParamsProto As IBApi.protobuf.TickReqParams) Implements IBApi.EWrapper.tickReqParamsProtoBuf
+            Dim sb As New StringBuilder
+            sb.Append("Tick Req Params. ")
+            If (tickReqParamsProto.HasReqId) Then
+                sb.Append("Ticker Id: ").Append(tickReqParamsProto.ReqId).Append(", ")
+            End If
+            If (tickReqParamsProto.HasMinTick) Then
+                sb.Append("MinTick: ").Append(tickReqParamsProto.MinTick).Append(", ")
+            End If
+            If (tickReqParamsProto.HasBboExchange) Then
+                Me.BboExchange = tickReqParamsProto.BboExchange
+                sb.Append("BboExchange: ").Append(tickReqParamsProto.BboExchange).Append(", ")
+            End If
+            If (tickReqParamsProto.HasSnapshotPermissions) Then
+                sb.Append("SnapshotPermissions: ").Append(tickReqParamsProto.SnapshotPermissions).Append(", ")
+            End If
+            If (tickReqParamsProto.HasLastPricePrecision) Then
+                sb.Append("LastPricePrecision: ").Append(tickReqParamsProto.LastPricePrecision).Append(", ")
+            End If
+            If (tickReqParamsProto.HasLastSizePrecision) Then
+                sb.Append("LastSizePrecision: ").Append(tickReqParamsProto.LastSizePrecision)
+            End If
+            Console.WriteLine(sb.ToString())
+        End Sub
+
+        Public Sub updateAccountValueProtoBuf(accountValueProto As IBApi.protobuf.AccountValue) Implements IBApi.EWrapper.updateAccountValueProtoBuf
+
+        End Sub
+
+        Public Sub updatePortfolioProtoBuf(portfolioValueProto As IBApi.protobuf.PortfolioValue) Implements IBApi.EWrapper.updatePortfolioProtoBuf
+
+        End Sub
+
+        Public Sub updateAccountTimeProtoBuf(accountUpdateTimeProto As IBApi.protobuf.AccountUpdateTime) Implements IBApi.EWrapper.updateAccountTimeProtoBuf
+
+        End Sub
+
+        Public Sub accountDataEndProtoBuf(accountDataEndProto As IBApi.protobuf.AccountDataEnd) Implements IBApi.EWrapper.accountDataEndProtoBuf
+
+        End Sub
+
+        Public Sub managedAccountsProtoBuf(managedAccountsProto As IBApi.protobuf.ManagedAccounts) Implements IBApi.EWrapper.managedAccountsProtoBuf
+
+        End Sub
+
+        Public Sub positionProtoBuf(positionProto As IBApi.protobuf.Position) Implements IBApi.EWrapper.positionProtoBuf
+
+        End Sub
+
+        Public Sub positionEndProtoBuf(positionEndProto As IBApi.protobuf.PositionEnd) Implements IBApi.EWrapper.positionEndProtoBuf
+
+        End Sub
+
+        Public Sub accountSummaryProtoBuf(accountSummaryProto As IBApi.protobuf.AccountSummary) Implements IBApi.EWrapper.accountSummaryProtoBuf
+
+        End Sub
+
+        Public Sub accountSummaryEndProtoBuf(accountSummaryEndProto As IBApi.protobuf.AccountSummaryEnd) Implements IBApi.EWrapper.accountSummaryEndProtoBuf
+
+        End Sub
+
+        Public Sub positionMultiProtoBuf(positionMultiProto As IBApi.protobuf.PositionMulti) Implements IBApi.EWrapper.positionMultiProtoBuf
+
+        End Sub
+
+        Public Sub positionMultiEndProtoBuf(positionMultiEndProto As IBApi.protobuf.PositionMultiEnd) Implements IBApi.EWrapper.positionMultiEndProtoBuf
+
+        End Sub
+
+        Public Sub accountUpdateMultiProtoBuf(accountUpdateMultiProto As IBApi.protobuf.AccountUpdateMulti) Implements IBApi.EWrapper.accountUpdateMultiProtoBuf
+
+        End Sub
+
+        Public Sub accountUpdateMultiEndProtoBuf(accountUpdateMultiEndProto As IBApi.protobuf.AccountUpdateMultiEnd) Implements IBApi.EWrapper.accountUpdateMultiEndProtoBuf
+
+        End Sub
+
+        Public Sub historicalDataProtoBuf(historicalDataProto As IBApi.protobuf.HistoricalData) Implements IBApi.EWrapper.historicalDataProtoBuf
+
+        End Sub
+
+        Public Sub historicalDataUpdateProtoBuf(historicalDataUpdateProto As IBApi.protobuf.HistoricalDataUpdate) Implements IBApi.EWrapper.historicalDataUpdateProtoBuf
+
+        End Sub
+
+        Public Sub historicalDataEndProtoBuf(historicalDataEndProto As IBApi.protobuf.HistoricalDataEnd) Implements IBApi.EWrapper.historicalDataEndProtoBuf
+
+        End Sub
+
+        Public Sub realTimeBarTickProtoBuf(realTimeBarTickProto As IBApi.protobuf.RealTimeBarTick) Implements IBApi.EWrapper.realTimeBarTickProtoBuf
+
+        End Sub
+
+        Public Sub headTimestampProtoBuf(headTimestampProto As IBApi.protobuf.HeadTimestamp) Implements IBApi.EWrapper.headTimestampProtoBuf
+
+        End Sub
+
+        Public Sub histogramDataProtoBuf(histogramDataProto As IBApi.protobuf.HistogramData) Implements IBApi.EWrapper.histogramDataProtoBuf
+
+        End Sub
+
+        Public Sub historicalTicksProtoBuf(historicalTicksProto As IBApi.protobuf.HistoricalTicks) Implements IBApi.EWrapper.historicalTicksProtoBuf
+
+        End Sub
+
+        Public Sub historicalTicksBidAskProtoBuf(historicalTicksBidAskProto As IBApi.protobuf.HistoricalTicksBidAsk) Implements IBApi.EWrapper.historicalTicksBidAskProtoBuf
+
+        End Sub
+
+        Public Sub historicalTicksLastProtoBuf(historicalTicksLastProto As IBApi.protobuf.HistoricalTicksLast) Implements IBApi.EWrapper.historicalTicksLastProtoBuf
+
+        End Sub
+
+        Public Sub tickByTickDataProtoBuf(tickByTickDataProto As IBApi.protobuf.TickByTickData) Implements IBApi.EWrapper.tickByTickDataProtoBuf
+
+        End Sub
+
+        Public Sub updateNewsBulletinProtoBuf(newsBulletinProto As IBApi.protobuf.NewsBulletin) Implements IBApi.EWrapper.updateNewsBulletinProtoBuf
+
+        End Sub
+
+        Public Sub newsArticleProtoBuf(newsArticleProto As IBApi.protobuf.NewsArticle) Implements IBApi.EWrapper.newsArticleProtoBuf
+
+        End Sub
+
+        Public Sub newsProvidersProtoBuf(newsProvidersProto As IBApi.protobuf.NewsProviders) Implements IBApi.EWrapper.newsProvidersProtoBuf
+
+        End Sub
+
+        Public Sub historicalNewsProtoBuf(historicalNewsProto As IBApi.protobuf.HistoricalNews) Implements IBApi.EWrapper.historicalNewsProtoBuf
+            Util.printProtoSingleLine("Historical News: ", historicalNewsProto)
+        End Sub
+
+        Public Sub historicalNewsEndProtoBuf(historicalNewsEndProto As IBApi.protobuf.HistoricalNewsEnd) Implements IBApi.EWrapper.historicalNewsEndProtoBuf
+            Util.printProtoSingleLine("Historical News End: ", historicalNewsEndProto)
+        End Sub
+
+        Public Sub wshMetaDataProtoBuf(wshMetaDataProto As IBApi.protobuf.WshMetaData) Implements IBApi.EWrapper.wshMetaDataProtoBuf
+
+        End Sub
+
+        Public Sub wshEventDataProtoBuf(wshEventDataProto As IBApi.protobuf.WshEventData) Implements IBApi.EWrapper.wshEventDataProtoBuf
+
+        End Sub
+
+        Public Sub tickNewsProtoBuf(tickNewsProto As IBApi.protobuf.TickNews) Implements IBApi.EWrapper.tickNewsProtoBuf
+
+        End Sub
+
+        Public Sub scannerParametersProtoBuf(scannerParametersProto As IBApi.protobuf.ScannerParameters) Implements IBApi.EWrapper.scannerParametersProtoBuf
+
+        End Sub
+
+        Public Sub scannerDataProtoBuf(scannerDataProto As IBApi.protobuf.ScannerData) Implements IBApi.EWrapper.scannerDataProtoBuf
+
+        End Sub
+
+        Public Sub fundamentalsDataProtoBuf(fundamentalsDataProto As IBApi.protobuf.FundamentalsData) Implements IBApi.EWrapper.fundamentalsDataProtoBuf
+
+        End Sub
+
+        Public Sub pnlProtoBuf(pnlProto As IBApi.protobuf.PnL) Implements IBApi.EWrapper.pnlProtoBuf
+
+        End Sub
+
+        Public Sub pnlSingleProtoBuf(pnlSingleProto As IBApi.protobuf.PnLSingle) Implements IBApi.EWrapper.pnlSingleProtoBuf
+
+        End Sub
+
+        Public Sub receiveFAProtoBuf(receiveFAProto As IBApi.protobuf.ReceiveFA) Implements IBApi.EWrapper.receiveFAProtoBuf
+
+        End Sub
+
+        Public Sub replaceFAEndProtoBuf(replaceFAEndProto As IBApi.protobuf.ReplaceFAEnd) Implements IBApi.EWrapper.replaceFAEndProtoBuf
+
+        End Sub
+
+        Public Sub commissionAndFeesReportProtoBuf(commissionAndFeesReportProto As IBApi.protobuf.CommissionAndFeesReport) Implements IBApi.EWrapper.commissionAndFeesReportProtoBuf
+
+        End Sub
+
+        Public Sub historicalScheduleProtoBuf(historicalScheduleProto As IBApi.protobuf.HistoricalSchedule) Implements IBApi.EWrapper.historicalScheduleProtoBuf
+
+        End Sub
+
+        Public Sub rerouteMarketDataRequestProtoBuf(rerouteMarketDataRequestProto As IBApi.protobuf.RerouteMarketDataRequest) Implements IBApi.EWrapper.rerouteMarketDataRequestProtoBuf
+
+        End Sub
+
+        Public Sub rerouteMarketDepthRequestProtoBuf(rerouteMarketDepthRequestProto As IBApi.protobuf.RerouteMarketDepthRequest) Implements IBApi.EWrapper.rerouteMarketDepthRequestProtoBuf
+
+        End Sub
+
+        Public Sub secDefOptParameterProtoBuf(secDefOptParameterProto As IBApi.protobuf.SecDefOptParameter) Implements IBApi.EWrapper.secDefOptParameterProtoBuf
+
+        End Sub
+
+        Public Sub secDefOptParameterEndProtoBuf(secDefOptParameterEndProto As IBApi.protobuf.SecDefOptParameterEnd) Implements IBApi.EWrapper.secDefOptParameterEndProtoBuf
+
+        End Sub
+
+        Public Sub softDollarTiersProtoBuf(softDollarTiersProto As IBApi.protobuf.SoftDollarTiers) Implements IBApi.EWrapper.softDollarTiersProtoBuf
+
+        End Sub
+
+        Public Sub familyCodesProtoBuf(familyCodesProto As IBApi.protobuf.FamilyCodes) Implements IBApi.EWrapper.familyCodesProtoBuf
+
+        End Sub
+
+        Public Sub symbolSamplesProtoBuf(symbolSamplesProto As IBApi.protobuf.SymbolSamples) Implements IBApi.EWrapper.symbolSamplesProtoBuf
+
+        End Sub
+
+        Public Sub smartComponentsProtoBuf(smartComponentsProto As IBApi.protobuf.SmartComponents) Implements IBApi.EWrapper.smartComponentsProtoBuf
+
+        End Sub
+
+        Public Sub marketRuleProtoBuf(marketRuleProto As IBApi.protobuf.MarketRule) Implements IBApi.EWrapper.marketRuleProtoBuf
+
+        End Sub
+
+        Public Sub userInfoProtoBuf(userInfoProto As IBApi.protobuf.UserInfo) Implements IBApi.EWrapper.userInfoProtoBuf
+
+        End Sub
+
+        Public Sub nextValidIdProtoBuf(nextValidIdProto As IBApi.protobuf.NextValidId) Implements IBApi.EWrapper.nextValidIdProtoBuf
+
+        End Sub
+
+        Public Sub currentTimeProtoBuf(currentTimeProto As IBApi.protobuf.CurrentTime) Implements IBApi.EWrapper.currentTimeProtoBuf
+
+        End Sub
+
+        Public Sub currentTimeInMillisProtoBuf(currentTimeInMillisProto As IBApi.protobuf.CurrentTimeInMillis) Implements IBApi.EWrapper.currentTimeInMillisProtoBuf
+
+        End Sub
+
+        Public Sub verifyMessageApiProtoBuf(verifyMessageApiProto As IBApi.protobuf.VerifyMessageApi) Implements IBApi.EWrapper.verifyMessageApiProtoBuf
+
+        End Sub
+
+        Public Sub verifyCompletedProtoBuf(verifyCompletedProto As IBApi.protobuf.VerifyCompleted) Implements IBApi.EWrapper.verifyCompletedProtoBuf
+
+        End Sub
+
+        Public Sub displayGroupListProtoBuf(displayGroupListProto As IBApi.protobuf.DisplayGroupList) Implements IBApi.EWrapper.displayGroupListProtoBuf
+
+        End Sub
+
+        Public Sub displayGroupUpdatedProtoBuf(displayGroupUpdatedProto As IBApi.protobuf.DisplayGroupUpdated) Implements IBApi.EWrapper.displayGroupUpdatedProtoBuf
+
+        End Sub
+
+        Public Sub marketDepthExchangesProtoBuf(marketDepthExchangesProto As IBApi.protobuf.MarketDepthExchanges) Implements IBApi.EWrapper.marketDepthExchangesProtoBuf
+
+        End Sub
+
+        Public Sub configResponseProtoBuf(configResponseProto As IBApi.protobuf.ConfigResponse) Implements IBApi.EWrapper.configResponseProtoBuf
+            Console.WriteLine("==== Config Response Begin ====")
+            Dim formatter As New JsonFormatter(JsonFormatter.Settings.Default.WithIndentation())
+            Console.WriteLine(formatter.Format(configResponseProto))
+            Console.WriteLine("==== Config Response End ====")
+        End Sub
+
+        Public Sub updateConfigResponseProtoBuf(updateConfigResponseProto As IBApi.protobuf.UpdateConfigResponse) Implements IBApi.EWrapper.updateConfigResponseProtoBuf
+            Console.WriteLine("==== Update Config Response Begin ====")
+            Dim formatter As New JsonFormatter(JsonFormatter.Settings.Default.WithIndentation())
+            Console.WriteLine(formatter.Format(updateConfigResponseProto))
+            Console.WriteLine("==== Update Config Response End ====")
+        End Sub
+
+        '! [protobuf]
 
     End Class
 

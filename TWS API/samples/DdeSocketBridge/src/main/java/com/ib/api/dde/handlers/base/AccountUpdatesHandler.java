@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers.base;
@@ -77,12 +77,11 @@ public abstract class AccountUpdatesHandler extends BaseHandler {
     /** Method handles account updates array request */
     public byte[] handleAccountUpdatesArrayRequest(DdeRequest request) {
         int requestId = request.requestId();
-        
-        byte[] array = Utils.dataListToByteArray(syncCopyAccountUpdateDataValues(requestId), 
-                request.ddeRequestType() == DdeRequestType.REQ_ACCOUNT_UPDATES_MULTI, true);
-
+        byte[] array = null;
         AccountUpdateDataMap accountUpdateDataMap = m_accountUpdateDataMap.get(requestId);
         if (accountUpdateDataMap != null) {
+            array = Utils.dataListToByteArray(syncCopyAccountUpdateDataValues(requestId), 
+                    request.ddeRequestType() == DdeRequestType.REQ_ACCOUNT_UPDATES_MULTI, true);
             accountUpdateDataMap.ddeRequestStatus(DdeRequestStatus.SUBSCRIBED);
             notifyDde(request.ddeRequestType().topic(), request.ddeRequestString());
             accountUpdateDataMap.clearAccountUpdateDataMap();

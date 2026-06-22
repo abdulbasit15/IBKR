@@ -104,7 +104,7 @@ Private Sub reqTickByTickData_Click()
                 .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
                 .SecType = UCase(contractTable(id, Col_SECTYPE).value)
                 .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-                .Strike = contractTable(id, Col_STRIKE).value
+                .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
                 .Right = IIf(UCase(contractTable(id, Col_RIGHT).value) = "", 0#, UCase(contractTable(id, Col_RIGHT).value))
                 .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
                 .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -134,7 +134,7 @@ End Sub
 
 Public Sub TickByTickAllLast(ByVal reqId As Long, ByVal tickType As Long, ByVal time As String, ByVal price As Double, ByVal Size As Variant, ByVal tickAttribLast As TWSLib.ITickAttribLast, ByVal Exchange As String, ByVal specialConditions As String)
     reqId = reqId - ID_TICKBYTICKDATA
-    tickByTickTable(reqId, Col_TIME).value = Format(DateAdd("s", CLng(time), "01/01/1970"), "yyyy-mm-dd Hh:Nn:Ss")
+    tickByTickTable(reqId, Col_TIME).value = Util.ConvertLongStrToDateStr(time)
     tickByTickTable(reqId, Col_PRICE).value = price
     tickByTickTable(reqId, Col_SIZE).value = Util.DecimalToString(Size)
     tickByTickTable(reqId, Col_BIDPRICE).value = STR_EMPTY
@@ -156,7 +156,7 @@ End Sub
 
 Public Sub TickByTickBidAsk(ByVal reqId As Long, ByVal time As String, ByVal bidPrice As Double, ByVal askPrice As Double, ByVal bidSize As Variant, ByVal askSize As Variant, ByVal tickAttribBidAsk As TWSLib.ITickAttribBidAsk)
     reqId = reqId - ID_TICKBYTICKDATA
-    tickByTickTable(reqId, Col_TIME).value = Format(DateAdd("s", CLng(time), "01/01/1970"), "yyyy-mm-dd Hh:Nn:Ss")
+    tickByTickTable(reqId, Col_TIME).value = Util.ConvertLongStrToDateStr(time)
     tickByTickTable(reqId, Col_PRICE).value = STR_EMPTY
     tickByTickTable(reqId, Col_SIZE).value = STR_EMPTY
     tickByTickTable(reqId, Col_BIDPRICE).value = bidPrice
@@ -174,7 +174,7 @@ End Sub
 
 Public Sub TickByTickMidPoint(ByVal reqId As Long, ByVal time As String, ByVal midPoint As Double)
     reqId = reqId - ID_TICKBYTICKDATA
-    tickByTickTable(reqId, Col_TIME).value = Format(DateAdd("s", CLng(time), "01/01/1970"), "yyyy-mm-dd Hh:Nn:Ss")
+    tickByTickTable(reqId, Col_TIME).value = Util.ConvertLongStrToDateStr(time)
     tickByTickTable(reqId, Col_PRICE).value = STR_EMPTY
     tickByTickTable(reqId, Col_SIZE).value = STR_EMPTY
     tickByTickTable(reqId, Col_BIDPRICE).value = STR_EMPTY
@@ -190,8 +190,8 @@ Public Sub TickByTickMidPoint(ByVal reqId As Long, ByVal time As String, ByVal m
     tickByTickTable(reqId, Col_MIDPOINT).value = midPoint
 End Sub
 
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
-    querySpecificationTable(id - ID_TICKBYTICKDATA, Col_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
+    querySpecificationTable(id - ID_TICKBYTICKDATA, Col_STATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
 End Sub
 
 

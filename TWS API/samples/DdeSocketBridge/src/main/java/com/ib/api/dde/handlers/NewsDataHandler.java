@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -61,6 +61,9 @@ public class NewsDataHandler extends BaseHandler {
     /** Method sends news ticks request to TWS */
     public byte[] handleNewsTicksRequest(String requestStr, byte[] data) {
         NewsTicksRequest request = m_requestParser.parseNewsTicksRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending news ticks request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()));
         handleNewsBaseRequest(request, DdeRequestType.NEWS_TICKS_TICK.topic());
         clientSocket().reqMktData(request.requestId(), request.contract(), "mdoff,292", false, false, null);

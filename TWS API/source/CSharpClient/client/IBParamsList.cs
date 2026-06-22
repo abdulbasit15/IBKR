@@ -1,6 +1,7 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -12,7 +13,26 @@ namespace IBApi
     {
         public static void AddParameter(this BinaryWriter source, decimal value) => AddParameter(source, Util.DecimalMaxString(value));
 
-        public static void AddParameter(this BinaryWriter source, OutgoingMessages msgId) => AddParameter(source, (int)msgId);
+        public static void AddParameter(this BinaryWriter source, byte[] bytes)
+        {
+            source.Write(bytes);
+        }
+
+        public static void AddParameter(this BinaryWriter source, OutgoingMessages outgoingMessage, int serverVersion)
+        {
+            int msgId = (int)outgoingMessage;
+            if (serverVersion >= MinServerVer.MIN_SERVER_VER_PROTOBUF)
+            {
+                msgId = EClient.useProtoBuf(serverVersion, outgoingMessage) ? msgId + Constants.PROTOBUF_MSG_ID : msgId;
+                byte[] bytes = BitConverter.GetBytes(msgId);
+                Array.Reverse(bytes);
+                source.Write(bytes);
+            }
+            else
+            {
+                AddParameter(source, (int)msgId);
+            }
+        }
 
         public static void AddParameter(this BinaryWriter source, int value) => AddParameter(source, value.ToString(CultureInfo.InvariantCulture));
 
@@ -38,7 +58,7 @@ namespace IBApi
             source.AddParameter(value.Symbol);
             source.AddParameter(value.SecType);
             source.AddParameter(value.LastTradeDateOrContractMonth);
-            source.AddParameter(value.Strike);
+            source.AddParameterMax(value.Strike);
             source.AddParameter(value.Right);
             source.AddParameter(value.Multiplier);
             source.AddParameter(value.Exchange);

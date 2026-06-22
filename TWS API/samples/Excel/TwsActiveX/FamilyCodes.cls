@@ -48,7 +48,7 @@ Public Sub FamilyCodes(ByVal FamilyCodes As TWSLib.IFamilyCodeList)
     Dim i As Long
     For i = 1 To FamilyCodes.Count
         Set fc = FamilyCodes.Item(i - 1)
-        familyCodesTable(i, Col_FAMILY_CODES_ACCOUNTID).value = fc.accountID
+        familyCodesTable(i, Col_FAMILY_CODES_ACCOUNTID).value = fc.accountId
         familyCodesTable(i, Col_FAMILY_CODES_FAMILYCODE).value = fc.familyCodeStr
     Next
 End Sub

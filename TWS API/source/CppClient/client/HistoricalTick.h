@@ -12,7 +12,7 @@ struct HistoricalTick
     long long time;
     double price;
     Decimal size;
-};  
+};
 #endif // !historicaltickendtry_def
 
 

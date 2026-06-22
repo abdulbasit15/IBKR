@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 namespace IBApi
@@ -84,6 +84,11 @@ namespace IBApi
         CancelWshMetaData = 101,
         ReqWshEventData = 102,
         CancelWshEventData = 103,
-        ReqUserInfo = 104
+        ReqUserInfo = 104,
+        RequestCurrentTimeInMillis = 105,
+        CancelContractData = 106,
+        CancelHistoricalTicks = 107,
+        ReqConfig = 108,
+        UpdateConfig = 109
     }
 }

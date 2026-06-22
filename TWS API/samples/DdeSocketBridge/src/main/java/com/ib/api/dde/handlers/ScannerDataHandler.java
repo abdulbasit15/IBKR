@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -57,6 +57,9 @@ public class ScannerDataHandler extends BaseHandler {
     /** Method sends scanner subscription request to TWS */
     public byte[] handleScannerSubscriptionRequest(String requestStr, byte[] data) {
         ScannerSubscriptionRequest request = m_requestParser.parseScannerSubscriptionRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending scanner subscription request: id=" + request.requestId() + " scanCode=" + request.scannerSubscription().scanCode());
         BaseMapDataMap<Integer, ScannerData> dataMap = new BaseMapDataMap<Integer, ScannerData>(request);
         m_scannerSubscriptionRequests.put(request.requestId(), dataMap);
@@ -91,11 +94,10 @@ public class ScannerDataHandler extends BaseHandler {
         DdeRequest request = m_requestParser.parseRequest(requestStr, DdeRequestType.REQUEST_SCANNER_SUBSCRIPTION);
         System.out.println("Handling scanner data array request: id=" + request.requestId());
         int requestId = request.requestId();
-        
-        byte[] array = Utils.dataListToByteArray(syncCopyScannerDataValues(requestId));
-
         BaseMapDataMap<Integer, ScannerData> dataMap = m_scannerSubscriptionRequests.get(requestId);
+        byte[] array = null;
         if (dataMap != null) {
+            array = Utils.dataListToByteArray(syncCopyScannerDataValues(requestId));
             updateScannerSubscriptionStatus(requestId, dataMap, DdeRequestStatus.SUBSCRIBED);
             dataMap.clearDataMap();
         }

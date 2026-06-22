@@ -18,7 +18,7 @@ Public Sub Initialise()
     BasicOrders.Initialise
     BondContractDetails.Initialise
     Bulletins.Initialise
-    CommissionReports.Initialise
+    CommissionAndFeesReports.Initialise
     ConditionalOrders.Initialise
     ContractDetails.Initialise
     Executions.Initialise

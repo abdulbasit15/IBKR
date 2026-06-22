@@ -1,9 +1,9 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #include "StdAfx.h"
 #include "OrderCondition.h"
-#include "executioncondition.h"
+#include "ExecutionCondition.h"
 #include "MarginCondition.h"
 #include "TimeCondition.h"
 #include "PercentChangeCondition.h"
@@ -39,6 +39,30 @@ void OrderCondition::conjunctionConnection(bool isConjunctionConnection) {
 }
 
 OrderCondition::OrderConditionType OrderCondition::type() { return m_type; }
+
+std::string OrderCondition::typeName() {
+	switch (m_type) {
+		case Execution:
+			return "Execution";
+			break;
+		case Margin:
+			return "Margin";
+			break;
+		case PercentChange:
+			return "PercentChange";
+			break;
+		case Price:
+			return "Price";
+			break;
+		case Time:
+			return "Time";
+			break;
+		case Volume:
+			return "Volume";
+			break;
+	}
+	return "";
+}
 
 OrderCondition *OrderCondition::create(OrderConditionType type) {
 	OrderCondition *rval = 0;

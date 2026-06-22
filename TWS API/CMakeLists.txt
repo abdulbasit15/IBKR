@@ -33,23 +33,23 @@ if(${ENABLE_LINTER})
         message(STATUS "Found clang-tidy in ${TIDY}")
     endif()
     if(${ENABLE_LINTER_ERROR})
-        set(CMAKE_CXX_CLANG_TIDY 
+        set(CMAKE_CXX_CLANG_TIDY
             ${TIDY};
             --warnings-as-errors=*;
             --checks=readability-*,-readability-magic-numbers,performance-*,portability-*,modernize-*,-modernize-use-trailing-return-type,-cppcoreguidelines-*;
         )
-        set(CMAKE_C_CLANG_TIDY 
+        set(CMAKE_C_CLANG_TIDY
             ${TIDY};
             --warnings-as-errors=*;
             --checks=readability-*,-readability-magic-numbers,performance-*,portability-*,-clang-analyzer-security.insecureAPI.*;
         )
         add_compile_options(-Werror)
     else()
-        set(CMAKE_CXX_CLANG_TIDY 
+        set(CMAKE_CXX_CLANG_TIDY
             ${TIDY};
             --checks=readability-*,-readability-magic-numbers,performance-*,portability-*,modernize-*,-modernize-use-trailing-return-type,-cppcoreguidelines-*;
         )
-        set(CMAKE_C_CLANG_TIDY 
+        set(CMAKE_C_CLANG_TIDY
             ${TIDY};
             --checks=readability-*,-readability-magic-numbers,performance-*,portability-*,-clang-analyzer-security.insecureAPI.*;
         )

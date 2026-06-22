@@ -139,5 +139,17 @@ namespace TWSLib
         string fundAssetType { get; }
         [DispId(66)]
         object ineligibilityReasonList { [return: MarshalAs(UnmanagedType.IDispatch)] get; }
+        [DispId(67)]
+        string eventContract1 { get; }
+        [DispId(68)]
+        string eventContractDescription1 { get; }
+        [DispId(69)]
+        string eventContractDescription2 { get; }
+        [DispId(70)]
+        object minAlgoSize { get; }
+        [DispId(71)]
+        object lastPricePrecision { get; }
+        [DispId(72)]
+        object lastSizePrecision { get; }
     }
 }

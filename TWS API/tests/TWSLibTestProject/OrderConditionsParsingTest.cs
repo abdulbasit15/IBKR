@@ -74,7 +74,7 @@ namespace OrderConditionsParsingTestProject
         [TestMethod]
         public void ParseConditionList()
         {
-            var conditions = (new Tws().ParseConditions("default Price of 8314(SMART) is <= 0 and the margin cushion percent is <= 5 or trade occurs for ANY symbol on ANY exchange for * security type and time is <= 20151030 21:56:26 GMT+03:00 or Volume of 265598(SMART) is <= 8 and PercentCange of 43645865(ARCA) is <= 0") as ArrayList).OfType<OrderCondition>();
+            var conditions = (new Tws().ParseConditions("default Price of 8314(SMART) is <= 0 and the margin cushion percent is <= 5 or trade occurs for ANY symbol on ANY exchange for * security type and time is <= 20151030 21:56:26 GMT+03:00 or Volume of 265598(SMART) is <= 8 and PercentChange of 43645865(ARCA) is <= 0") as ArrayList).OfType<OrderCondition>();
 
             var conds = new[] { 
                 OperatorCondition.Parse("default Price of 8314(SMART) is <= 0 and"), 

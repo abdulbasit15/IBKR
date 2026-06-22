@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.dde2socket.requests.parser;
@@ -27,6 +27,7 @@ public class RequestParser  {
     public static final String CONTRACT_DETAILS_SEPARATOR = "/";
     protected static final String EMPTY_STR_REPLACEMENT = "~";
     protected static final String COMBO_DELIMITER = "CMBLGS";
+    protected static final String DATE_SEPARATOR = "D";
     protected static final String ID = "id";
     public static final String EMPTY_STR = "";
     private static final String EQUALS_SIGN = "=";

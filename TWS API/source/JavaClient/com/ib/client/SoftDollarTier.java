@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.client;
@@ -30,6 +30,14 @@ public class SoftDollarTier {
 		this.m_name = name;
 	}	
 
+	public String displayName() {
+		return m_displayName;
+	}
+
+	private void displayName(String displayName) {
+		this.m_displayName = displayName;
+	}	
+	
 	@Override public int hashCode() {
 		final int prime = 31;
 		int result = 1;

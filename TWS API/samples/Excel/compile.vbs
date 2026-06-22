@@ -1,5 +1,5 @@
 'To resolve 'Programmatic access to Visual Basic Project is not trusted' issue, please go to
-'File -> Options -> Trust Center -> Trust Center Setttings -> Macro Settings -> Trust Access to the VBA Project object model.
+'File -> Options -> Trust Center -> Trust Center Settings -> Macro Settings -> Trust Access to the VBA Project object model.
 'For more details please refer to https://stackoverflow.com/questions/25638344/programmatic-access-to-visual-basic-project-is-not-trusted
 option explicit
 
@@ -23,7 +23,7 @@ Sub Main
     If Wscript.Arguments.Count <> 1 Then
         Wscript.Echo "Usage: cscript compile.vbs <spreadsheetname>" & vbCrLf & vbCrLf & _
 "This will update vbs project of the spreadsheet from the folder" & vbCrLf & "with the name of spreadsheet (without extension) located near the script" & vbCrLf & _
-"The excel application will be opened during the compile process." & vbCrLf & "At the end of the successful script execution it trys to close the excel app."  & vbCrLf & _
+"The excel application will be opened during the compile process." & vbCrLf & "At the end of the successful script execution it tries to close the excel app."  & vbCrLf & _
 "You should reply 'Cancel' to the dialog appears to review the spreadsheet changes made. Then you can save and close it."
     Else
 

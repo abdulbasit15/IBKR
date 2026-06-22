@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.dde2socket.requests;
@@ -8,16 +8,10 @@ public enum DdeRequestType {
 
     NOTHING("nothing"),
     VALUE("value"),
-    REQ("req"), // old-style
-    REQ2("req2"), // old-style
     
     // errors
     ERROR("error"),
     REQUEST_ERRORS("reqErrors"),
-    ERR("err"), // old-style
-    ERR_ID("id"), // old-style
-    ERR_CODE("errorCode"), // old-style
-    ERR_MSG("errorMsg"), // old-style
 
     // market data
     REQUEST_MARKET_DATA("reqMktData"), 
@@ -34,10 +28,6 @@ public enum DdeRequestType {
     
     // market data tick
     TICK("tick"), 
-    TIK("tik"), // old-style 
-    GEN_TIK("gentik"), // old-style
-    CALC_IMPL_VOL("calcimplvol"), // old-style
-    CALC_OPTION_PRICE("calcoptionprice"),  // old-style
     
     // place order
     PLACE_ORDER("placeOrder"),
@@ -46,7 +36,6 @@ public enum DdeRequestType {
     GLOBAL_CANCEL("globalCancel"),
     WHAT_IF("whatIf"),
     WHAT_IF_REQUEST("whatIfRequest"),
-    ORD("ord"), // old-style
 
     // order status
     ORDER_STATUS("orderStatus"),
@@ -62,8 +51,8 @@ public enum DdeRequestType {
     PERM_ID("permId"),
 
     // what-if request
-    WHAT_IF_COMMISSION("commission"),
-    WHAT_IF_COMMISSION_CURRENCY("commissionCurrency"),
+    WHAT_IF_COMMISSION_AND_FEES("commissionAndFees"),
+    WHAT_IF_COMMISSION_AND_FEES_CURRENCY("commissionAndFeesCurrency"),
     WHAT_IF_CURRENT_EQUITY_WITH_LOAN("currentEquityWithLoan"),
     WHAT_IF_CURRENT_INIT_MARGIN("currentInitMargin"),
     WHAT_IF_CURRENT_MAINT_MARGIN("currentMaintMargin"),
@@ -74,13 +63,25 @@ public enum DdeRequestType {
     WHAT_IF_POST_INIT_MARGIN("postInitMargin"),
     WHAT_IF_POST_MAINT_MARGIN("postMaintMargin"),
     WHAT_IF_BOND_ACCRUED_INTEREST("bondAccruedInterest"),
+    WHAT_IF_MARGIN_CURRENCY("marginCurrency"),
+    WHAT_IF_INIT_MARGIN_BEFORE_OUTSIDE_RTH("initMarginBeforeOutsideRTH"),
+    WHAT_IF_MAINT_MARGIN_BEFORE_OUTSIDE_RTH("maintMarginBeforeOutsideRTH"),
+    WHAT_IF_EQUITY_WITH_LOAN_BEFORE_OUTSIDE_RTH("equityWithLoanBeforeOutsideRTH"),
+    WHAT_IF_INIT_MARGIN_CHANGE_OUTSIDE_RTH("initMarginChangeOutsideRTH"),
+    WHAT_IF_MAINT_MARGIN_CHANGE_OUTSIDE_RTH("maintMarginChangeOutsideRTH"),
+    WHAT_IF_EQUITY_WITH_LOAN_CHANGE_OUTSIDE_RTH("equityWithLoanChangeOutsideRTH"),
+    WHAT_IF_INIT_MARGIN_AFTER_OUTSIDE_RTH("initMarginAfterOutsideRTH"),
+    WHAT_IF_MAINT_MARGIN_AFTER_OUTSIDE_RTH("maintMarginAfterOutsideRTH"),
+    WHAT_IF_EQUITY_WITH_LOAN_AFTER_OUTSIDE_RTH("equityWithLoanAfterOutsideRTH"),
+    WHAT_IF_SUGGESTED_SIZE("suggestedSize"),
+    WHAT_IF_REJECT_REASON("rejectReason"),
+    WHAT_IF_ORDER_ALLOCATIONS("orderAllocations"),
 
     // open orders
     REQ_OPEN_ORDERS("reqOpenOrders"),
     REQ_ALL_OPEN_ORDERS("reqAllOpenOrders"),
     REQ_AUTO_OPEN_ORDERS("reqAutoOpenOrders"),
     CANCEL_OPEN_ORDERS("cancelOpenOrders"),
-    OPENS("opens"), // old-style
 
     // positions
     REQ_POSITIONS("reqPositions"),
@@ -93,7 +94,6 @@ public enum DdeRequestType {
     REQ_EXECUTIONS("reqExecutions"),
     REQ_EXECUTIONS_ERROR("reqExecutionsError"),
     CANCEL_EXECUTIONS("cancelExecutions"),
-    EXECS("execs"), // old-style
 
     // account updates multi
     REQ_ACCOUNT_UPDATES_MULTI("reqAccountUpdatesMulti"),
@@ -111,16 +111,11 @@ public enum DdeRequestType {
     REQ_PORTFOLIO("reqPortfolio"),
     REQ_ACCOUNT_PORTFOLIO_ERROR("reqAccountPortfolioError"),
     CANCEL_ACCOUNT_PORTFOLIO("cancelAccountPortfolio"),
-    ACCT("acct"), // old-style
-    ACCTS("accts"), // old-style
-    PORTS("ports"), // old-style
-    FAACCTS("FAaccts"), // old-style
     
     // market depth
     REQUEST_MARKET_DEPTH("reqMktDepth"),
     CANCEL_MARKET_DEPTH("cancelMktDepth"),
     MARKET_DEPTH_TICK("mktDepthTick"),
-    MKTDEPTH("mktDepth"), // old-style
     
     // market depth exchanges
     REQUEST_MARKET_DEPTH_EXCHANGES("reqMktDepthExchanges"),
@@ -131,9 +126,6 @@ public enum DdeRequestType {
     // news
     REQ_NEWS_BULLETINS("reqNewsBulletins"),
     CANCEL_NEWS_BULLETINS("cancelNewsBulletins"),
-    NEWS("news"), // old-style
-    NEWS_SUB("sub"), // old-style
-    NEWS_MSG("msg"), // old-style
     
     // news ticks
     REQ_NEWS_TICKS("reqNewsTicks"),
@@ -148,19 +140,16 @@ public enum DdeRequestType {
     CANCEL_SCANNER_SUBSCRIPTION("cancelScannerSubscription"),
     SCANNER_SUBSCRIPTION_TICK("scannerSubscriptionTick"),
     REQUEST_SCANNER_PARAMETERS("reqScannerParameters"),
-    SCAN("scan"), // old-style
     
     // contract details
     REQUEST_CONTRACT_DETAILS("reqContractDetails"),
     CANCEL_CONTRACT_DETAILS("cancelContractDetails"),
     CONTRACT_DETAILS_TICK("contractDetailsTick"),
-    CONTRACT("contract"), // old-style
 
     // historical data
     REQUEST_HISTORICAL_DATA("reqHistoricalData"),
     CANCEL_HISTORICAL_DATA("cancelHistoricalData"),
     HISTORICAL_DATA_TICK("historicalDataTick"),
-    HIST("hist"), // old-style
     
     // real time bars
     REQUEST_REAL_TIME_BARS("reqRealTimeBars"),
@@ -230,6 +219,7 @@ public enum DdeRequestType {
     
     // current time
     REQ_CURRENT_TIME("reqCurrentTime"),
+    REQ_CURRENT_TIME_IN_MILLIS("reqCurrentTimeInMillis"),
 
     // get next valid id
     GET_NEXT_VALID_ID("getNextValidId"),
@@ -266,11 +256,7 @@ public enum DdeRequestType {
     HISTORICAL_SCHEDULE("historicalSchedule"),
     
     // user info
-    REQ_USER_INFO("reqUserInfo"),
-
-    // other old-style requests (not supported anymore)
-    PROCESS_RATE("processRate"),
-    REFRESH_RATE("refreshRate");
+    REQ_USER_INFO("reqUserInfo");
     
     private final String m_topic;
 

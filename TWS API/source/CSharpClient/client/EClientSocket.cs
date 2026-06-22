@@ -33,13 +33,13 @@ namespace IBApi
             {
                 if (!CheckServerVersion(MinServerVer.MIN_VERSION, ""))
                 {
-                    ReportUpdateTWS("");
+                    ReportUpdateTWS(IncomingMessage.NotValid, Util.CurrentTimeMillis(), "");
                     return;
                 }
             }
             else if (serverVersion < Constants.MinVersion || serverVersion > Constants.MaxVersion)
             {
-                wrapper.error(clientId, EClientErrors.UNSUPPORTED_VERSION.Code, EClientErrors.UNSUPPORTED_VERSION.Message, "");
+                wrapper.error(clientId, Util.CurrentTimeMillis(), EClientErrors.UNSUPPORTED_VERSION.Code, EClientErrors.UNSUPPORTED_VERSION.Message, "");
                 return;
             }
 
@@ -76,7 +76,7 @@ namespace IBApi
             return tcpClient.GetStream();
         }
 
-        
+
 
         /**
          * @brief Establishes a connection to the designated Host.
@@ -94,13 +94,13 @@ namespace IBApi
             }
             catch (EClientException e)
             {
-                wrapper.error(IncomingMessage.NotValid, e.Err.Code, e.Err.Message + e.Text, "");
+                wrapper.error(IncomingMessage.NotValid, Util.CurrentTimeMillis(), e.Err.Code, e.Err.Message + e.Text, "");
                 return;
             }
 
             if (isConnected)
             {
-                wrapper.error(IncomingMessage.NotValid, EClientErrors.AlreadyConnected.Code, EClientErrors.AlreadyConnected.Message, "");
+                wrapper.error(IncomingMessage.NotValid, Util.CurrentTimeMillis(), EClientErrors.AlreadyConnected.Code, EClientErrors.AlreadyConnected.Message, "");
                 return;
             }
             try
@@ -137,7 +137,7 @@ namespace IBApi
             {
                 var cmp = e.Err;
 
-                wrapper.error(-1, cmp.Code, cmp.Message, "");
+                wrapper.error(-1, Util.CurrentTimeMillis(), cmp.Code, cmp.Message, "");
             }
             catch (Exception e)
             {
@@ -146,7 +146,6 @@ namespace IBApi
         }
 
         private readonly EReaderSignal eReaderSignal;
-        private int redirectCount;
 
         protected override uint prepareBuffer(BinaryWriter paramsList)
         {
@@ -169,64 +168,128 @@ namespace IBApi
             request.Seek(0, SeekOrigin.Begin);
 
             var buf = new MemoryStream();
-
-            request.BaseStream.CopyTo(buf);
-            socketTransport.Send(new EMessage(buf.ToArray()));
-        }
-
-        /**
-        * @brief Redirects connection to different host.
-        */
-        public void redirect(string host)
-        {
-            if (!allowRedirect)
+            try
             {
-                wrapper.error(clientId, EClientErrors.CONNECT_FAIL.Code, EClientErrors.CONNECT_FAIL.Message, "");
-                return;
+                request.BaseStream.CopyTo(buf);
+                socketTransport.Send(new EMessage(buf.ToArray()));
             }
-
-            var srv = host.Split(':');
-
-            if (srv.Length > 1 && !int.TryParse(srv[1], out port)) throw new EClientException(EClientErrors.BAD_MESSAGE);
-
-            ++redirectCount;
-
-            if (redirectCount > Constants.REDIRECT_COUNT_MAX)
+            finally
             {
-                eDisconnect();
-                wrapper.error(clientId, EClientErrors.CONNECT_FAIL.Code, "Redirect count exceeded", "");
-                return;
+                buf.Dispose();
             }
-
-            eDisconnect(false);
-            eConnect(srv[0], port, clientId, extraAuth);
         }
 
         public override void eDisconnect(bool resetState = true)
         {
-            if (resetState)
-            {
-                redirectCount = 0;
-            }
             tcpClient = null;
             base.eDisconnect(resetState);
         }
 
         /**
-         * @brief Sets the KeepAlive to tcpClient.Client.
-         * @param on if set to true [on].
-         * @param keepAliveTime Specifies the timeout in milliseconds, with no activity until the first keep-alive packet is sent.
-         * @param keepAliveInterval Specifies the interval in milliseconds of resending interval if no response. After 10 not successful sends the connection will be considered broken and next call to Write/Read/Poll will fail.
+         * @brief Sets TCP keep-alive options on the socket connection with cross-platform and cross-framework support.
+         * @param on Whether to enable keep-alive
+         * @param keepAliveTime Time in milliseconds before the first keep-alive packet is sent
+         * @param keepAliveInterval Time in milliseconds between keep-alive packets
          */
         private void SetKeepAlive(bool on, uint keepAliveTime, uint keepAliveInterval)
         {
-            int size = System.Runtime.InteropServices.Marshal.SizeOf(new uint());
-            var inOptionValues = new byte[size * 3];
+            // Set basic keep-alive option which works on all platforms and frameworks
+            tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, on);
 
-            BitConverter.GetBytes((on ? 1u : 0u)).CopyTo(inOptionValues, 0);
-            BitConverter.GetBytes(keepAliveTime).CopyTo(inOptionValues, size);
-            BitConverter.GetBytes(keepAliveInterval).CopyTo(inOptionValues, size * 2);
-            tcpClient.Client.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
+            if (!on)
+                return; // Keep-alive disabled, no need for further configuration
+
+            // Try multiple approaches to set advanced keep-alive options
+            bool success = TrySetKeepAliveModernApproach(keepAliveTime, keepAliveInterval) || TrySetKeepAliveIOControlApproach(keepAliveTime, keepAliveInterval);
+
+            // If all approaches failed, at least basic keep-alive is still enabled
+            if (!success)
+            {
+                // Optionally log that only basic keep-alive is active
+            }
+        }
+
+        /**
+         * @brief Attempts to set TCP keep-alive options using direct socket options (works on newer .NET versions)
+         */
+        private bool TrySetKeepAliveModernApproach(uint keepAliveTime, uint keepAliveInterval)
+        {
+            try
+            {
+                // Define the TCP level and options with hardcoded values to ensure compatibility
+                const SocketOptionLevel TcpLevel = (SocketOptionLevel)6; // SocketOptionLevel.Tcp
+                const SocketOptionName TcpKeepAliveTimeOption = (SocketOptionName)3; // SocketOptionName.TcpKeepAliveTime
+                const SocketOptionName TcpKeepAliveIntervalOption = (SocketOptionName)17; // SocketOptionName.TcpKeepAliveInterval
+                const SocketOptionName TcpKeepAliveRetryCountOption = (SocketOptionName)16; // SocketOptionName.TcpKeepAliveRetryCount
+
+                // Convert milliseconds to seconds for Linux/Unix systems and ensure minimum of 1 second
+                int keepAliveTimeSec = Math.Max((int)(keepAliveTime / 1000), 1);
+                int keepAliveIntervalSec = Math.Max((int)(keepAliveInterval / 1000), 1);
+                const int defaultRetryCount = 5;
+
+                bool anyOptionSet = false;
+
+                // Try setting each option individually to handle partial support scenarios
+                try
+                {
+                    tcpClient.Client.SetSocketOption(TcpLevel, TcpKeepAliveTimeOption, keepAliveTimeSec);
+                    anyOptionSet = true;
+                }
+                catch { /* Ignore if this specific option isn't supported */ }
+
+                try
+                {
+                    tcpClient.Client.SetSocketOption(TcpLevel, TcpKeepAliveIntervalOption, keepAliveIntervalSec);
+                    anyOptionSet = true;
+                }
+                catch { /* Ignore if this specific option isn't supported */ }
+
+                try
+                {
+                    tcpClient.Client.SetSocketOption(TcpLevel, TcpKeepAliveRetryCountOption, defaultRetryCount);
+                    anyOptionSet = true;
+                }
+                catch { /* Ignore if this specific option isn't supported */ }
+
+                return anyOptionSet;
+            }
+            catch
+            {
+                return false; // This approach not supported, try the next one
+            }
+        }
+
+        /**
+         * @brief Attempts to set TCP keep-alive options using Windows-specific IOControl (works on .NET Framework and Windows)
+         */
+        private bool TrySetKeepAliveIOControlApproach(uint keepAliveTime, uint keepAliveInterval)
+        {
+            try
+            {
+                // SIO_KEEPALIVE_VALS = IOC_IN | IOC_VENDOR | 4 = 0x98000004
+                const int SioKeepAliveValues = unchecked((int)0x98000004);
+
+                // Calculate size of uint for buffer allocation
+                int size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(uint));
+                byte[] inOptionValues = new byte[size * 3];
+
+                // Enable keep-alive (1 = true)
+                BitConverter.GetBytes(1u).CopyTo(inOptionValues, 0);
+
+                // Keep-alive time in milliseconds
+                BitConverter.GetBytes(keepAliveTime).CopyTo(inOptionValues, size);
+
+                // Keep-alive interval in milliseconds
+                BitConverter.GetBytes(keepAliveInterval).CopyTo(inOptionValues, size * 2);
+
+                // Apply the settings
+                tcpClient.Client.IOControl(SioKeepAliveValues, inOptionValues, null);
+                return true;
+            }
+            catch
+            {
+                return false; // This approach not supported
+            }
         }
 
         /**

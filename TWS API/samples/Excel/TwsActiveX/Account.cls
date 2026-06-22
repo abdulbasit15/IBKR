@@ -107,16 +107,16 @@ Private Sub RequestAccountUpdates_Click()
 End Sub
 
 ' find row in account table by key and currency
-Private Function FindRowByKeyAndCurency(key As String, curency As String)
+Private Function FindRowByKeyAndCurrency(accountKey As String, accountCurrency As String)
     Dim i As Long
     i = 1
-    Do While (Not (accountsTable(i, Col_ACCT_KEY).value Like key And _
-            accountsTable(i, Col_ACCT_CURRENCY).value Like curency) And _
+    Do While (Not (accountsTable(i, Col_ACCT_KEY).value Like accountKey And _
+            accountsTable(i, Col_ACCT_CURRENCY).value Like accountCurrency) And _
             accountsTable(i, Col_ACCT_KEY).value <> STR_EMPTY And _
             i <= accountsTable.Rows.Count)
         i = i + 1
     Loop
-    FindRowByKeyAndCurency = i
+    FindRowByKeyAndCurrency = i
 End Function
 
 '=================
@@ -128,13 +128,13 @@ Public Sub UpdateTimeStamp(timeStamp As String)
 End Sub
 
 ' update account values
-Public Sub UpdateAccountValue(key As String, value As String, curency As String, accountName As String)
+Public Sub UpdateAccountValue(accountKey As String, accountValue As String, accountCurrency As String, accountName As String)
     Dim rowId As Long
-    rowId = FindRowByKeyAndCurency(key, curency)
+    rowId = FindRowByKeyAndCurrency(accountKey, accountCurrency)
     
-    accountsTable(rowId, Col_ACCT_KEY).value = key
-    accountsTable(rowId, Col_ACCT_VALUE).value = value
-    accountsTable(rowId, Col_ACCT_CURRENCY).value = curency
+    accountsTable(rowId, Col_ACCT_KEY).value = accountKey
+    accountsTable(rowId, Col_ACCT_VALUE).value = accountValue
+    accountsTable(rowId, Col_ACCT_CURRENCY).value = accountCurrency
     accountsTable(rowId, Col_ACCT_NAME).value = accountName
 End Sub
 

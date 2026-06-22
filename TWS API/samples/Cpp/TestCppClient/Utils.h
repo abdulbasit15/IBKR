@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 #pragma once
 #ifndef TWS_API_SAMPLES_TESTCPPCLIENT_UTILS_H
@@ -18,11 +18,14 @@ public:
     static std::string doubleMaxString(double d, std::string def);
     static std::string doubleMaxString(double d);
     static std::string intMaxString(int value);
-    static std::string longMaxString(long value);
     static std::string llongMaxString(long long value);
 
     static std::string getFundDistributionPolicyIndicatorName(FundDistributionPolicyIndicator fundDistributionPolicyIndicator);
     static std::string getFundAssetTypeName(FundAssetType fundAssetType);
+    static std::string getOptionExerciseTypeName(OptionExerciseType optionExerciseType);
+
+private:
+    static std::string longMaxString(long value);
 };
 
 #endif

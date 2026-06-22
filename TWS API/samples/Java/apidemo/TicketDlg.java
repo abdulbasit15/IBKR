@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package apidemo;
@@ -36,6 +36,7 @@ import com.ib.client.Types.Method;
 import com.ib.client.Types.OcaType;
 import com.ib.client.Types.ReferencePriceType;
 import com.ib.client.Types.Rule80A;
+import com.ib.client.Types.ThreeStateBoolean;
 import com.ib.client.Types.TimeInForce;
 import com.ib.client.Types.TriggerMethod;
 import com.ib.client.Types.UsePriceMgmtAlgo;
@@ -71,12 +72,13 @@ class TicketDlg extends JDialog {
 	private final PegBestPegMidPanel m_pegBestPegMidPanel;
 	private final AdjustedPanel m_adjustedPanel;
 	private final ConditionsPanel m_conditionPanel;
+    private final AttachedOrdersPanel m_attachedOrdersPanel;
 
     TicketDlg(Contract contract, Order order) {
-        this(contract, order, null);
+        this(contract, order, null, false);
     }
 
-    TicketDlg(Contract contract, Order order, OrderCancel orderCancel) {
+    TicketDlg(Contract contract, Order order, OrderCancel orderCancel, boolean cancelAllOrders) {
 		super( ApiDemo.INSTANCE.frame());
 		
 		if (contract == null) {
@@ -108,11 +110,16 @@ class TicketDlg extends JDialog {
 		m_adjustedPanel = new AdjustedPanel(this, m_order);
 		m_conditionPanel = new ConditionsPanel(this, m_order,
 				c -> lookupContract(ApiDemo.INSTANCE.controller(), c));
+		m_attachedOrdersPanel = new AttachedOrdersPanel();
 		
-        HtmlButton transmitOrder = new HtmlButton(m_orderCancel != null ? "Cancel Order" : "Transmit Order") {
+        HtmlButton transmitOrder = new HtmlButton(m_orderCancel != null ? (cancelAllOrders ? "Cancel All Orders" : "Cancel Order") : "Transmit Order") {
 			@Override public void actionPerformed() {
                 if (m_orderCancel != null) {
-                    onCancelOrder();
+                    if (cancelAllOrders) {
+                        onCancelAllOrders();
+                    } else {
+                        onCancelOrder();
+                    }
                 } else {
                     onTransmitOrder();
                 }
@@ -148,6 +155,7 @@ class TicketDlg extends JDialog {
 		tabbedPanel.addTab( "Scale", m_scalePanel);
 		tabbedPanel.addTab( "IB Algo", m_algoPanel);
 		tabbedPanel.addTab("Conditions", m_conditionPanel);
+        tabbedPanel.addTab("Attached Orders", m_attachedOrdersPanel);
 		
 		JPanel buts = new JPanel( new FlowLayout( FlowLayout.CENTER, 15, 5));
 		buts.add( transmitOrder);		
@@ -180,7 +188,7 @@ class TicketDlg extends JDialog {
 				ApiDemo.INSTANCE.controller().removeOrderHandler( this);
 				SwingUtilities.invokeLater(() -> dispose());
 			}
-			@Override public void orderStatus(OrderStatus status, Decimal filled, Decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
+			@Override public void orderStatus(OrderStatus status, Decimal filled, Decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
 			}
 			@Override public void handle(int errorCode, final String errorMsg) {
 				m_order.orderId( 0);
@@ -191,9 +199,8 @@ class TicketDlg extends JDialog {
 
     private void onCancelOrder() {
         m_orderCancel.manualOrderCancelTime(m_orderPanel.m_manualOrderCancelTime.getText());
-        m_orderCancel.extOperator(m_attribTicketPanel.m_extOperator.getText());
-        m_orderCancel.externalUserId(m_attribTicketPanel.m_externalUserId.getText());
-        m_orderCancel.manualOrderIndicator(!m_attribTicketPanel.m_manualOrderIndicator.getText().isEmpty() ? m_attribTicketPanel.m_manualOrderIndicator.getInt() : Integer.MAX_VALUE);
+        m_orderCancel.extOperator(m_orderPanel.m_extOperator.getText());
+        m_orderCancel.manualOrderIndicator(m_orderPanel.m_manualOrderIndicator.getInt());
 
         if (m_order != null) {
             ApiDemo.INSTANCE.controller().cancelOrder(m_order.orderId(), m_orderCancel, new IOrderCancelHandler() {
@@ -208,6 +215,14 @@ class TicketDlg extends JDialog {
         }
     }
 
+    private void onCancelAllOrders() {
+        m_orderCancel.extOperator(m_orderPanel.m_extOperator.getText());
+        m_orderCancel.manualOrderIndicator(m_orderPanel.m_manualOrderIndicator.getInt());
+
+        ApiDemo.INSTANCE.controller().cancelAllOrders(m_orderCancel);
+        SwingUtilities.invokeLater(() -> dispose());
+    }
+    
 	private void onCheckMargin() {
 		scrape();
 		
@@ -219,7 +234,7 @@ class TicketDlg extends JDialog {
 			@Override public void handle(int errorCode, final String errorMsg) {
 				SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog( TicketDlg.this, errorMsg));
 			}
-			@Override public void orderStatus(OrderStatus status, Decimal filled, Decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
+			@Override public void orderStatus(OrderStatus status, Decimal filled, Decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
 			}
 		});
 		
@@ -229,6 +244,7 @@ class TicketDlg extends JDialog {
 
 	private void displayMargin(OrderState orderState, Order order) {
 		StringBuilder sb = new StringBuilder();
+		sb.append("WhatIf Type: ").append(order.whatIfType()).append("\n");
 		if (canDisplay(orderState.equityWithLoanBefore()) && canDisplay(orderState.initMarginBefore()) && canDisplay(orderState.maintMarginBefore())) {
 			sb.append("Current:\n");
 			format(sb, "Equity with loan: ", orderState.equityWithLoanBefore()); 
@@ -259,7 +275,7 @@ class TicketDlg extends JDialog {
 	}
 	
 	private boolean canDisplay(String str) {
-		return str != null && !str.equals(DOUBLE_MAX_STR);
+		return str != null && !str.isEmpty() && !str.equals(DOUBLE_MAX_STR);
 	}
 
 	private void format(StringBuilder sb, String header, String value) { 
@@ -285,6 +301,7 @@ class TicketDlg extends JDialog {
 		m_pegBestPegMidPanel.onOK();
 		m_adjustedPanel.onOK();
 		m_conditionPanel.onOK();
+        m_attachedOrdersPanel.onOK();
 	}
 	
 	enum AmntUnit {
@@ -336,7 +353,17 @@ class TicketDlg extends JDialog {
         final JTextField m_manualOrderTime = new JTextField();
         final JTextField m_manualOrderCancelTime = new JTextField();
         final JTextField m_customerAccount = new JTextField();
-		final JCheckBox m_professionalCustomer = new JCheckBox();
+        final JCheckBox m_professionalCustomer = new JCheckBox();
+        final JCheckBox m_includeOvernight = new JCheckBox();
+        final JTextField m_extOperator = new JTextField();
+        final UpperField m_manualOrderIndicator = new UpperField();
+        final JCheckBox m_imbalanceOnly = new JCheckBox();
+        final JCheckBox m_postOnly = new JCheckBox();
+        final JCheckBox m_allowPreOpen = new JCheckBox();
+        final JCheckBox m_ignoreOpenAuction = new JCheckBox();
+        final TCombo<ThreeStateBoolean> m_seekPriceImprovement = new TCombo<>(ThreeStateBoolean.values());
+        final UpperField m_whatIfType = new UpperField();
+        final TCombo<ThreeStateBoolean> m_routeMarketableToBbo = new TCombo<>(ThreeStateBoolean.values());
 
 		OrderPanel() {
 			m_orderType.removeItemAt( 0); // remove None
@@ -361,7 +388,17 @@ class TicketDlg extends JDialog {
 			m_usePriceMgmtAlgo.setSelectedIndex(m_order.usePriceMgmtAlgo() == null ? 0 : m_order.usePriceMgmtAlgo() ? 2 : 1);
 			m_customerAccount.setText(m_order.customerAccount());
 			m_professionalCustomer.setSelected(m_order.professionalCustomer());
-			
+			m_includeOvernight.setSelected(m_order.includeOvernight());
+			m_extOperator.setText(m_order.extOperator());
+			m_manualOrderIndicator.setText(m_order.manualOrderIndicator());
+			m_imbalanceOnly.setSelected(m_order.imbalanceOnly());
+			m_postOnly.setSelected(m_order.postOnly());
+			m_allowPreOpen.setSelected(m_order.allowPreOpen());
+			m_ignoreOpenAuction.setSelected(m_order.ignoreOpenAuction());
+			m_seekPriceImprovement.setSelectedIndex(m_order.seekPriceImprovement() == null ? 0 : m_order.seekPriceImprovement() ? 2 : 1);
+			m_whatIfType.setText(m_order.whatIfType());
+			m_routeMarketableToBbo.setSelectedIndex(m_order.routeMarketableToBbo() == null ? 0 : m_order.routeMarketableToBbo() ? 2 : 1);
+
 			add("Account", m_account);
 			
 			m_modelCode.setColumns(7);
@@ -392,8 +429,18 @@ class TicketDlg extends JDialog {
             add("Manual Order Cancel Time", m_manualOrderCancelTime);
             add("Customer Account", m_customerAccount);
             add("Professional Customer", m_professionalCustomer);
+            add("Include Overnight", m_includeOvernight);
+            add("Ext Operator", m_extOperator);
+            add("Manual Order Indicator", m_manualOrderIndicator);
+            add("Imbalance Only", m_imbalanceOnly);
+            add("Post Only", m_postOnly);
+            add("Allow Pre-Open", m_allowPreOpen);
+            add("Ignore Open Action", m_ignoreOpenAuction);
+            add("Seek Price Improvement", m_seekPriceImprovement);
+            add("WhatIf Type", m_whatIfType);
+            add("Route Marketable to BBO", m_routeMarketableToBbo);
 		}
-		
+
 		private void onOK() {
 			m_order.account( m_account.getText().toUpperCase() );
 			m_order.modelCode( m_modelCode.getText().trim() );
@@ -416,7 +463,17 @@ class TicketDlg extends JDialog {
             m_order.manualOrderTime(m_manualOrderTime.getText());
             m_order.customerAccount(m_customerAccount.getText());
             m_order.professionalCustomer(m_professionalCustomer.isSelected());
-			
+            m_order.includeOvernight(m_includeOvernight.isSelected());
+            m_order.extOperator(m_extOperator.getText());
+            m_order.manualOrderIndicator(m_manualOrderIndicator.getInt());
+            m_order.imbalanceOnly(m_imbalanceOnly.isSelected());
+            m_order.postOnly(m_postOnly.isSelected());
+            m_order.allowPreOpen(m_allowPreOpen.isSelected());
+            m_order.ignoreOpenAuction(m_ignoreOpenAuction.isSelected());
+            m_order.seekPriceImprovement(m_seekPriceImprovement.getSelectedItem().toBoolean());
+            m_order.whatIfType(m_whatIfType.getInt());
+            m_order.routeMarketableToBbo(m_routeMarketableToBbo.getSelectedItem().toBoolean());
+
 			if (m_contract.isCombo() ) {
 				TagValue tv = new TagValue( ComboParam.NonGuaranteed.toString(), m_nonGuaranteed.isSelected() ? "1" : "0");
 				m_order.smartComboRoutingParams().add( tv);
@@ -459,9 +516,6 @@ class TicketDlg extends JDialog {
 		final UpperField m_trailingPercent = new UpperField();
 		final UpperField m_discretionaryAmt = new UpperField();
 		final UpperField m_algoId = new UpperField();
-		final JTextField m_extOperator = new JTextField();
-        final JTextField m_externalUserId = new JTextField();
-        final UpperField m_manualOrderIndicator = new UpperField();
 		final TCombo<SoftDollarTier> m_softDollarTiers = new TCombo<>();
 
 		final TCombo<OcaType> m_ocaType = new TCombo<>( OcaType.values() );
@@ -470,6 +524,7 @@ class TicketDlg extends JDialog {
 
 		final TCombo<HedgeType> m_hedgeType = new TCombo<>( HedgeType.values() );
 		final UpperField m_hedgeParam = new UpperField();
+		final UpperField m_hedgeMaxSize = new UpperField();
 		
 		final JCheckBox m_blockOrder = new JCheckBox();
 		final JCheckBox m_sweepToFill = new JCheckBox();
@@ -485,8 +540,9 @@ class TicketDlg extends JDialog {
         final JCheckBox m_discretionaryUpToLimitPrice = new JCheckBox();
         final JCheckBox m_autoCancelParent = new JCheckBox();
         final JCheckBox m_solicited = new JCheckBox();
-		
-		
+		final JCheckBox m_deactivate = new JCheckBox();
+		final UpperField m_activeStartTime = new UpperField();
+		final UpperField m_activeStopTime = new UpperField();
 
 		MiscTicketPanel() {
 			VerticalPanel top = new VerticalPanel();
@@ -505,9 +561,9 @@ class TicketDlg extends JDialog {
 			top.add("Algo Id", m_algoId);
 			top.add("OCA group and type", m_ocaGroup, m_ocaType);
 			top.add("Hedge type and param" , m_hedgeType, m_hedgeParam);
-			top.add("Ext operator", m_extOperator);
-			top.add("External User Id", m_externalUserId);
-			top.add("Manual Order Indicator", m_manualOrderIndicator);
+			top.add("Hedge max size" , m_hedgeMaxSize);
+			top.add("Active Start Time" , m_activeStartTime);
+			top.add("Active Stop Time" , m_activeStopTime);
 			
 			top.add("Soft dollar tier", m_softDollarTiers);
 			
@@ -528,6 +584,7 @@ class TicketDlg extends JDialog {
             right.add("OMS Container", m_omsContainer);
 			right.add("Auto Cancel Parent", m_autoCancelParent);
 			right.add("Solicited", m_solicited);
+			right.add("Deactivate", m_deactivate);
 			
 			HorzPanel checks = new HorzPanel();
 			checks.add( left);
@@ -557,6 +614,7 @@ class TicketDlg extends JDialog {
 			m_overrideConstraints.setSelected( m_order.overridePercentageConstraints() );
 			m_hedgeType.setSelectedItem( m_order.hedgeType() );
 			m_hedgeParam.setText( m_order.hedgeParam() );
+			m_hedgeMaxSize.setText(m_order.hedgeMaxSize());
 			m_notHeld.setSelected( m_order.notHeld() );
 			m_percentOffset.setText( m_order.percentOffset() );
 			m_trailingStopPrice.setText( m_order.trailStopPrice() );
@@ -565,15 +623,15 @@ class TicketDlg extends JDialog {
 			m_optOutSmartRouting.setSelected( m_order.optOutSmartRouting() );
 			m_algoId.setText( m_order.algoId() );
 			m_transmit.setSelected( true);
-			m_extOperator.setText(m_order.extOperator());
-			m_externalUserId.setText(m_order.externalUserId());
-			m_manualOrderIndicator.setText(m_order.manualOrderIndicator());
 			m_softDollarTiers.removeAllItems();
 			m_dontUseAutoPriceForHedge.setSelected( m_order.dontUseAutoPriceForHedge());
 			m_omsContainer.setSelected(m_order.isOmsContainer());
 			m_discretionaryUpToLimitPrice.setSelected(m_order.discretionaryUpToLimitPrice());
 			m_autoCancelParent.setSelected(m_order.autoCancelParent());
 			m_solicited.setSelected(m_order.solicited());
+			m_deactivate.setSelected(m_order.deactivate());
+			m_activeStartTime.setText(m_order.activeStartTime());
+			m_activeStopTime.setText(m_order.activeStopTime());
 			
 			ApiDemo.INSTANCE.controller().reqSoftDollarTiers(tiers -> {
                 m_softDollarTiers.invalidate();
@@ -605,6 +663,7 @@ class TicketDlg extends JDialog {
 			m_order.overridePercentageConstraints( m_overrideConstraints.isSelected() );
 			m_order.hedgeType( m_hedgeType.getSelectedItem() );
 			m_order.hedgeParam( m_hedgeParam.getText() );
+			m_order.hedgeMaxSize(m_hedgeMaxSize.getInt());
 			m_order.notHeld( m_notHeld.isSelected() );
 			m_order.percentOffset( m_percentOffset.getDouble() );
 			m_order.trailStopPrice( m_trailingStopPrice.getDouble() );
@@ -613,15 +672,15 @@ class TicketDlg extends JDialog {
 			m_order.optOutSmartRouting( m_optOutSmartRouting.isSelected() );
 			m_order.algoId( m_algoId.getText() );
 			m_order.transmit( m_transmit.isSelected() );
-			m_order.extOperator(m_extOperator.getText());
-			m_order.externalUserId(m_externalUserId.getText());
-			m_order.manualOrderIndicator(m_manualOrderIndicator.getInt());
 			m_order.softDollarTier(m_softDollarTiers.getSelectedItem());
 			m_order.dontUseAutoPriceForHedge( m_dontUseAutoPriceForHedge.isSelected() );
 			m_order.isOmsContainer(m_omsContainer.isSelected());
 			m_order.discretionaryUpToLimitPrice(m_discretionaryUpToLimitPrice.isSelected());
 			m_order.autoCancelParent(m_autoCancelParent.isSelected());
 			m_order.solicited(m_solicited.isSelected());
+			m_order.deactivate(m_deactivate.isSelected());
+			m_order.activeStartTime(m_activeStartTime.getText());
+			m_order.activeStopTime(m_activeStopTime.getText());
 		}
 	}
 	
@@ -822,4 +881,27 @@ class TicketDlg extends JDialog {
 		}
 		return "";
 	}
+	
+    class AttachedOrdersPanel extends VerticalPanel {
+        final JTextField m_slOrderId = new JTextField();
+        final UpperField m_slOrderType = new UpperField();
+        final JTextField m_ptOrderId = new JTextField();
+        final UpperField m_ptOrderType = new UpperField();
+
+        AttachedOrdersPanel() {
+            m_slOrderId.setEnabled(false);
+            m_slOrderId.setText("<set automatically>");
+            m_ptOrderId.setEnabled(false);
+            m_ptOrderId.setText("<set automatically>");
+            add("Stop-Loss Order Id", m_slOrderId);
+            add("Stop-Loss Order Type", m_slOrderType);
+            add("Profit-Taker Order Id", m_ptOrderId);
+            add("Profit-Taker Order Type", m_ptOrderType);
+        }
+
+        void onOK() {
+            m_order.slOrderType(m_slOrderType.getText()); 
+            m_order.ptOrderType(m_ptOrderType.getText()); 
+        }
+    }
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package TestJavaClient;
@@ -22,7 +22,92 @@ import java.util.concurrent.ExecutionException;
 
 import javax.swing.*;
 
+import com.google.protobuf.TextFormat;
+import com.google.protobuf.TextFormat.ParseException;
 import com.ib.client.*;
+import com.ib.client.protobuf.AccountDataEndProto;
+import com.ib.client.protobuf.AccountSummaryEndProto;
+import com.ib.client.protobuf.AccountSummaryProto;
+import com.ib.client.protobuf.AccountUpdateMultiEndProto;
+import com.ib.client.protobuf.AccountUpdateMultiProto;
+import com.ib.client.protobuf.AccountUpdateTimeProto;
+import com.ib.client.protobuf.AccountValueProto;
+import com.ib.client.protobuf.CommissionAndFeesReportProto;
+import com.ib.client.protobuf.CompletedOrderProto;
+import com.ib.client.protobuf.CompletedOrdersEndProto;
+import com.ib.client.protobuf.ConfigRequestProto;
+import com.ib.client.protobuf.ConfigResponseProto;
+import com.ib.client.protobuf.ContractDataEndProto;
+import com.ib.client.protobuf.ContractDataProto;
+import com.ib.client.protobuf.CurrentTimeInMillisProto;
+import com.ib.client.protobuf.CurrentTimeProto;
+import com.ib.client.protobuf.DisplayGroupListProto;
+import com.ib.client.protobuf.DisplayGroupUpdatedProto;
+import com.ib.client.protobuf.ErrorMessageProto;
+import com.ib.client.protobuf.ExecutionDetailsEndProto;
+import com.ib.client.protobuf.ExecutionDetailsProto;
+import com.ib.client.protobuf.FamilyCodesProto;
+import com.ib.client.protobuf.FundamentalsDataProto;
+import com.ib.client.protobuf.HeadTimestampProto;
+import com.ib.client.protobuf.HistogramDataProto;
+import com.ib.client.protobuf.HistoricalDataEndProto;
+import com.ib.client.protobuf.HistoricalDataProto;
+import com.ib.client.protobuf.HistoricalDataUpdateProto;
+import com.ib.client.protobuf.HistoricalNewsEndProto;
+import com.ib.client.protobuf.HistoricalNewsProto;
+import com.ib.client.protobuf.HistoricalScheduleProto;
+import com.ib.client.protobuf.HistoricalTicksBidAskProto;
+import com.ib.client.protobuf.HistoricalTicksLastProto;
+import com.ib.client.protobuf.HistoricalTicksProto;
+import com.ib.client.protobuf.ManagedAccountsProto;
+import com.ib.client.protobuf.MarketDataTypeProto;
+import com.ib.client.protobuf.MarketDepthExchangesProto;
+import com.ib.client.protobuf.MarketDepthL2Proto;
+import com.ib.client.protobuf.MarketDepthProto;
+import com.ib.client.protobuf.MarketRuleProto;
+import com.ib.client.protobuf.NewsArticleProto;
+import com.ib.client.protobuf.NewsBulletinProto;
+import com.ib.client.protobuf.NewsProvidersProto;
+import com.ib.client.protobuf.NextValidIdProto;
+import com.ib.client.protobuf.OpenOrderProto;
+import com.ib.client.protobuf.OpenOrdersEndProto;
+import com.ib.client.protobuf.OrderBoundProto;
+import com.ib.client.protobuf.OrderStatusProto;
+import com.ib.client.protobuf.PnLProto;
+import com.ib.client.protobuf.PnLSingleProto;
+import com.ib.client.protobuf.PortfolioValueProto;
+import com.ib.client.protobuf.PositionEndProto;
+import com.ib.client.protobuf.PositionMultiEndProto;
+import com.ib.client.protobuf.PositionMultiProto;
+import com.ib.client.protobuf.PositionProto;
+import com.ib.client.protobuf.RealTimeBarTickProto;
+import com.ib.client.protobuf.ReceiveFAProto;
+import com.ib.client.protobuf.ReplaceFAEndProto;
+import com.ib.client.protobuf.RerouteMarketDataRequestProto;
+import com.ib.client.protobuf.RerouteMarketDepthRequestProto;
+import com.ib.client.protobuf.ScannerDataProto;
+import com.ib.client.protobuf.ScannerParametersProto;
+import com.ib.client.protobuf.SecDefOptParameterEndProto;
+import com.ib.client.protobuf.SecDefOptParameterProto;
+import com.ib.client.protobuf.SmartComponentsProto;
+import com.ib.client.protobuf.SoftDollarTiersProto;
+import com.ib.client.protobuf.SymbolSamplesProto;
+import com.ib.client.protobuf.TickByTickDataProto;
+import com.ib.client.protobuf.TickGenericProto;
+import com.ib.client.protobuf.TickNewsProto;
+import com.ib.client.protobuf.TickOptionComputationProto;
+import com.ib.client.protobuf.TickPriceProto;
+import com.ib.client.protobuf.TickReqParamsProto;
+import com.ib.client.protobuf.TickSizeProto;
+import com.ib.client.protobuf.TickSnapshotEndProto;
+import com.ib.client.protobuf.TickStringProto;
+import com.ib.client.protobuf.UpdateConfigRequestProto;
+import com.ib.client.protobuf.UpdateConfigResponseProto;
+import com.ib.client.protobuf.UserInfoProto;
+import com.ib.client.protobuf.VerifyCompletedProto;
+import com.ib.client.protobuf.VerifyMessageApiProto;
+import com.ib.client.protobuf.WshEventDataProto;
+import com.ib.client.protobuf.WshMetaDataProto;
 
 class SampleFrame extends JFrame implements EWrapper {
     private static final int NOT_AN_FA_ACCOUNT_ERROR = 321 ;
@@ -156,6 +241,8 @@ class SampleFrame extends JFrame implements EWrapper {
         butCancelRealTimeBars.addActionListener(e -> onCancelRealTimeBars());
         JButton butCurrentTime = new JButton( "Req Current Time");
         butCurrentTime.addActionListener(e -> onReqCurrentTime());
+        JButton butCurrentTimeInMillis = new JButton( "Req Current Time In Millis");
+        butCurrentTimeInMillis.addActionListener(e -> onReqCurrentTimeInMillis());
         JButton butScanner = new JButton( "Market Scanner");
         butScanner.addActionListener(e -> onScanner());
         JButton butOpenOrders = new JButton( "Req Open Orders");
@@ -178,10 +265,14 @@ class SampleFrame extends JFrame implements EWrapper {
         butExerciseOptions.addActionListener(e -> onExerciseOptions());
         JButton butExtendedOrder = new JButton( "Extended");
         butExtendedOrder.addActionListener(e -> onExtendedOrder());
+        JButton butConfig = new JButton( "Config");
+        butConfig.addActionListener(e -> onConfig());
         JButton butAcctData = new JButton( "Req Acct Data");
         butAcctData.addActionListener(e -> onReqAcctData());
         JButton butContractData = new JButton( "Req Contract Data");
         butContractData.addActionListener(e -> onReqContractData());
+        JButton butCancelContractData = new JButton("Cancel Contract Data");
+        butCancelContractData.addActionListener(e -> onCancelContractData());
         JButton butExecutions = new JButton( "Req Executions");
         butExecutions.addActionListener(e -> onReqExecutions());
         JButton butNewsBulletins = new JButton( "Req News Bulletins");
@@ -237,6 +328,8 @@ class SampleFrame extends JFrame implements EWrapper {
         butReqHistoricalNews.addActionListener(e -> onReqHistoricalNews());
         JButton butHeadTimestamp = new JButton( "Req Head Time Stamp");
         butHeadTimestamp.addActionListener(e -> onHeadTimestamp());
+        JButton butHeadTimestampCancel = new JButton( "Cancel Head Time Stamp");
+        butHeadTimestampCancel.addActionListener(e -> onHeadTimestampCancel());
         JButton butHistogram = new JButton("Req Histogram");
         butHistogram.addActionListener(e -> onHistogram());
         JButton butHistogramCancel = new JButton("Cancel Histogram");
@@ -253,6 +346,8 @@ class SampleFrame extends JFrame implements EWrapper {
         butCancelPnLSingle.addActionListener(e -> onCancelPnLSingle());
         JButton butReqHistoricalTicks = new JButton("Req Historical Ticks");
         butReqHistoricalTicks.addActionListener(e -> onReqHistoricalTicks());
+        JButton butCancelHistoricalTicks = new JButton("Cancel Historical Ticks");
+        butCancelHistoricalTicks.addActionListener(e -> onCancelHistoricalTicks());
         JButton butReqTickByTickData = new JButton("Req Tick-By-Tick");
         butReqTickByTickData.addActionListener(e -> onReqTickByTickData());
         JButton butCancelTickByTickData = new JButton("Cancel Tick-By-Tick");
@@ -288,7 +383,8 @@ class SampleFrame extends JFrame implements EWrapper {
         pairSlot.add(butFundamentalData, butCancelFundamentalData);
         pairSlot.add(butRealTimeBars, butCancelRealTimeBars);
         pairSlot.add(butRealTimeBars, butCancelRealTimeBars);
-        pairSlot.add(butScanner, butCurrentTime);
+        pairSlot.add(butCurrentTime, butCurrentTimeInMillis);
+        pairSlot.add(butScanner, butGlobalCancel);
         pairSlot.add(butCalculateImpliedVolatility, butCancelCalculateImpliedVolatility);
         pairSlot.add(butCalculateOptionPrice, butCancelCalculateOptionPrice);
 
@@ -296,10 +392,10 @@ class SampleFrame extends JFrame implements EWrapper {
         buttonPanel.add( butWhatIfOrder);
         pairSlot.add(butPlaceOrder, butCancelOrder);
         buttonPanel.add( butExerciseOptions);
-        buttonPanel.add( butExtendedOrder);
+        pairSlot.add(butExtendedOrder, butConfig);
 
         buttonPanel.add( new JPanel() );
-        buttonPanel.add( butContractData );
+        pairSlot.add( butContractData, butCancelContractData);
         buttonPanel.add( butOpenOrders);
         buttonPanel.add( butAllOpenOrders);
         buttonPanel.add( butAutoOpenOrders);
@@ -309,7 +405,6 @@ class SampleFrame extends JFrame implements EWrapper {
         buttonPanel.add( butServerLogging );
         buttonPanel.add( butManagedAccts );
         buttonPanel.add( butFinancialAdvisor ) ;
-        buttonPanel.add( butGlobalCancel ) ;
         buttonPanel.add( butReqMarketDataType ) ;
 
         pairSlot.add(butRequestPositions, butCancelPositions);
@@ -319,20 +414,18 @@ class SampleFrame extends JFrame implements EWrapper {
 
         buttonPanel.add(butRequestSecurityDefinitionOptionParameters);
         buttonPanel.add(butGroups);
-        buttonPanel.add(butRequestFamilyCodes);
-        buttonPanel.add(butRequestMatchingSymbols);
-        buttonPanel.add(butReqMktDepthExchanges);
-        buttonPanel.add(butReqSmartComponents);
+        pairSlot.add(butRequestFamilyCodes, butRequestMatchingSymbols);
+        pairSlot.add(butReqMktDepthExchanges, butReqSmartComponents);
         buttonPanel.add(butRequestNewsProviders);
         buttonPanel.add(butReqNewsArticle);
         buttonPanel.add(butReqHistoricalNews);
-        buttonPanel.add(butHeadTimestamp);
+        pairSlot.add(butHeadTimestamp, butHeadTimestampCancel);
 
         pairSlot.add(butHistogram, butHistogramCancel);
-        buttonPanel.add(butReqMarketRule);
+        pairSlot.add(butReqMarketRule, butReqUserInfo);
         pairSlot.add(butReqPnL, butCancelPnL);
         pairSlot.add(butReqPnLSingle, butCancelPnLSingle);
-        pairSlot.add(butReqHistoricalTicks, butReqUserInfo);
+        pairSlot.add(butReqHistoricalTicks, butCancelHistoricalTicks);
         pairSlot.add(butReqTickByTickData, butCancelTickByTickData);
         pairSlot.add(butReqCompletedOrders, butReqAllCompletedOrders);
         pairSlot.add(butReqWshMetaData, butCancelWshMetaData);
@@ -430,6 +523,15 @@ class SampleFrame extends JFrame implements EWrapper {
                     m_orderDlg.backfillEndTime(), m_orderDlg.numberOfTicks(), m_orderDlg.whatToShow(), 
                     m_orderDlg.useRTH(), m_orderDlg.ignoreSize(),
                     m_orderDlg.options());
+        }
+    }
+
+    private void onCancelHistoricalTicks() {
+        m_orderDlg.init("Cancel Historical Ticks", true);
+        m_orderDlg.setVisible(true);
+        
+        if (m_orderDlg.m_rc) {
+            m_client.cancelHistoricalTicks(m_orderDlg.id());
         }
     }
 
@@ -634,6 +736,10 @@ class SampleFrame extends JFrame implements EWrapper {
     	m_client.reqCurrentTime();
 	}
 
+    private void onReqCurrentTimeInMillis() {
+        m_client.reqCurrentTimeInMillis();
+    }
+
     private void onHeadTimestamp() {
 
         // run m_orderDlg
@@ -647,6 +753,20 @@ class SampleFrame extends JFrame implements EWrapper {
         // req head timestamp
         m_client.reqHeadTimestamp(m_orderDlg.id(), m_orderDlg.contract(), m_orderDlg.whatToShow(),
                                     m_orderDlg.useRTH(), m_orderDlg.formatDate());
+    }
+
+    private void onHeadTimestampCancel() {
+
+        // run m_orderDlg
+        m_orderDlg.init("Chart Options", false);
+
+        m_orderDlg.setVisible(true);
+        if( !m_orderDlg.m_rc ) {
+            return;
+        }
+
+        // cancel head timestamp
+        m_client.cancelHeadTimestamp(m_orderDlg.id());
     }
 
     private void onHistoricalData() {
@@ -712,6 +832,15 @@ class SampleFrame extends JFrame implements EWrapper {
 
         // req mkt data
         m_client.reqContractDetails( m_orderDlg.id(), m_orderDlg.contract() );
+    }
+
+    private void onCancelContractData() {
+        m_orderDlg.init("Cancel Contract Data", true);
+        m_orderDlg.setVisible(true);
+        
+        if (m_orderDlg.m_rc) {
+            m_client.cancelContractData(m_orderDlg.id());
+        }
     }
 
     private void onReqMktDepth() {
@@ -992,7 +1121,7 @@ class SampleFrame extends JFrame implements EWrapper {
     }
 
     private void onGlobalCancel() {
-        m_client.reqGlobalCancel();
+        m_client.reqGlobalCancel(m_orderDlg.m_orderCancel);
     }
 
     private void onReqMarketDataType() {
@@ -1156,6 +1285,13 @@ class SampleFrame extends JFrame implements EWrapper {
                 m_historicalNewsDlg.m_retEndDateTime, m_historicalNewsDlg.m_retTotalResults, m_historicalNewsOptions);
     }
 
+    private void onConfig() {
+        // request config
+       ConfigRequestProto.ConfigRequest.Builder configRequestBuilder = ConfigRequestProto.ConfigRequest.newBuilder();
+       configRequestBuilder.setReqId(0);
+       m_client.reqConfigProtoBuf(configRequestBuilder.build());
+    }
+
     public void tickPrice( int tickerId, int field, double price, TickAttrib attribs) {
         // received price tick
     	String msg = EWrapperMsgGenerator.tickPrice( tickerId, field, price, attribs);
@@ -1203,7 +1339,7 @@ class SampleFrame extends JFrame implements EWrapper {
     }
 
     public void orderStatus( int orderId, String status, Decimal filled, Decimal remaining,
-    						 double avgFillPrice, int permId, int parentId,
+    						 double avgFillPrice, long permId, int parentId,
     						 double lastFillPrice, int clientId, String whyHeld, double mktCapPrice) {
         // received order status
     	String msg = EWrapperMsgGenerator.orderStatus( orderId, status, filled, remaining,
@@ -1331,7 +1467,7 @@ class SampleFrame extends JFrame implements EWrapper {
         m_errors.add( msg);
     }
 
-    public void error( int id, int errorCode, String errorMsg, String advancedOrderRejectJson) {
+    public void error( int id, long errorTime, int errorCode, String errorMsg, String advancedOrderRejectJson) {
         // received error
         final ContractDetailsCallback callback;
         synchronized (m_callbackMap) {
@@ -1350,7 +1486,7 @@ class SampleFrame extends JFrame implements EWrapper {
             }
     	}
     	
-    	String msg = EWrapperMsgGenerator.error(id, errorCode, errorMsg, advancedOrderRejectJson);
+    	String msg = EWrapperMsgGenerator.error(id, errorTime, errorCode, errorMsg, advancedOrderRejectJson);
         m_errors.add( msg);
         for (int faErrorCode : faErrorCodes) {
             faError |= (errorCode == faErrorCode);
@@ -1428,6 +1564,12 @@ class SampleFrame extends JFrame implements EWrapper {
 		String msg = EWrapperMsgGenerator.currentTime(time);
     	m_TWS.add(msg);
 	}
+
+    public void currentTimeInMillis(long timeInMillis) {
+        String msg = EWrapperMsgGenerator.currentTimeInMillis(timeInMillis);
+        m_TWS.add(msg);
+    }
+
 	public void fundamentalData(int reqId, String data) {
 		String msg = EWrapperMsgGenerator.fundamentalData(reqId, data);
 		m_tickers.add(msg);
@@ -1477,8 +1619,8 @@ class SampleFrame extends JFrame implements EWrapper {
         m_tickers.add(msg);
     }
 
-    public void commissionReport(CommissionReport commissionReport) {
-        String msg = EWrapperMsgGenerator.commissionReport(commissionReport);
+    public void commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport) {
+        String msg = EWrapperMsgGenerator.commissionAndFeesReport(commissionAndFeesReport);
         m_TWS.add(msg);
     }
 
@@ -1548,6 +1690,7 @@ class SampleFrame extends JFrame implements EWrapper {
         destOrder.scaleTable(srcOrder.scaleTable());
         destOrder.hedgeType(srcOrder.getHedgeType());
         destOrder.hedgeParam(srcOrder.hedgeParam());
+        destOrder.hedgeMaxSize(srcOrder.hedgeMaxSize());
         destOrder.account(srcOrder.account());
         destOrder.modelCode(srcOrder.modelCode());
         destOrder.settlingFirm(srcOrder.settlingFirm());
@@ -1574,17 +1717,22 @@ class SampleFrame extends JFrame implements EWrapper {
         destOrder.midOffsetAtHalf(srcOrder.midOffsetAtHalf());
         destOrder.customerAccount(srcOrder.customerAccount());
         destOrder.professionalCustomer(srcOrder.professionalCustomer());
-        
-        destOrder.professionalCustomer(srcOrder.professionalCustomer());
         destOrder.extOperator(srcOrder.extOperator());
-        destOrder.externalUserId(srcOrder.externalUserId());
+        destOrder.includeOvernight(srcOrder.includeOvernight());
         destOrder.manualOrderIndicator(srcOrder.manualOrderIndicator());
+        destOrder.imbalanceOnly(srcOrder.imbalanceOnly());
+        destOrder.postOnly(srcOrder.postOnly());
+        destOrder.allowPreOpen(srcOrder.allowPreOpen());
+        destOrder.ignoreOpenAuction(srcOrder.ignoreOpenAuction());
+        destOrder.deactivate(srcOrder.deactivate());
+        destOrder.seekPriceImprovement(srcOrder.seekPriceImprovement());
+        destOrder.whatIfType(srcOrder.whatIfType());
+        destOrder.routeMarketableToBbo(srcOrder.routeMarketableToBbo());
     }
 
     private static void copyExtendedOrderCancelDetails(OrderCancel destOrderCancel, OrderCancel srcOrderCancel) {
         destOrderCancel.manualOrderCancelTime(srcOrderCancel.manualOrderCancelTime());
         destOrderCancel.extOperator(srcOrderCancel.extOperator());
-        destOrderCancel.externalUserId(srcOrderCancel.externalUserId());
         destOrderCancel.manualOrderIndicator(srcOrderCancel.manualOrderIndicator());
     }
 
@@ -1697,12 +1845,7 @@ class SampleFrame extends JFrame implements EWrapper {
 		m_TWS.add(msg);
 	}
 
-	@Override
-	public void tickReqParams(int tickerId, double minTick, String bboExchange, int snapshotPermissions) {
-		String msg = EWrapperMsgGenerator.tickReqParams(tickerId, minTick, bboExchange, snapshotPermissions);
-		
-		m_tickers.add(msg);
-	}
+	@Override public void tickReqParams(int tickerId, double minTick, String bboExchange, int snapshotPermissions) { }
 
 	@Override
 	public void newsProviders(NewsProvider[] newsProviders) {
@@ -1857,8 +2000,8 @@ class SampleFrame extends JFrame implements EWrapper {
     }
 
 	@Override
-	public void orderBound(long orderId, int apiClientId, int apiOrderId) {
-        String msg = EWrapperMsgGenerator.orderBound(orderId, apiClientId, apiOrderId);
+	public void orderBound(long permId, int clientId, int orderId) {
+        String msg = EWrapperMsgGenerator.orderBound(permId, clientId, orderId);
 
         m_TWS.add(msg);
 	}
@@ -1902,6 +2045,115 @@ class SampleFrame extends JFrame implements EWrapper {
     @Override
     public void userInfo(int reqId, String whiteBrandingId) {
         String msg = EWrapperMsgGenerator.userInfo(reqId, whiteBrandingId);
+        m_TWS.add(msg);
+    }
+    
+    // ---------------------------------------------- Protobuf ---------------------------------------------
+    @Override public void orderStatusProtoBuf(OrderStatusProto.OrderStatus orderStatusProto) { }
+    @Override public void openOrderProtoBuf(OpenOrderProto.OpenOrder openOrderProto) { }
+    @Override public void openOrdersEndProtoBuf(OpenOrdersEndProto.OpenOrdersEnd openOrdersEnd) { }
+    @Override public void errorProtoBuf(ErrorMessageProto.ErrorMessage errorMessageProto) { }
+    @Override public void execDetailsProtoBuf(ExecutionDetailsProto.ExecutionDetails executionDetailsProto) { }
+    @Override public void execDetailsEndProtoBuf(ExecutionDetailsEndProto.ExecutionDetailsEnd executionDetailsEndProto) { }
+    @Override public void completedOrderProtoBuf(CompletedOrderProto.CompletedOrder completedOrderProto) { }
+    @Override public void completedOrdersEndProtoBuf(CompletedOrdersEndProto.CompletedOrdersEnd completedOrdersEndProto) { }
+    @Override public void orderBoundProtoBuf(OrderBoundProto.OrderBound orderBoundProto) { }
+    @Override public void contractDataProtoBuf(ContractDataProto.ContractData contractDataProto) { }
+    @Override public void bondContractDataProtoBuf(ContractDataProto.ContractData contractDataProto) { }
+    @Override public void contractDataEndProtoBuf(ContractDataEndProto.ContractDataEnd contractDataEndProto) { }
+    @Override public void tickPriceProtoBuf(TickPriceProto.TickPrice tickPriceProto) { }
+    @Override public void tickSizeProtoBuf(TickSizeProto.TickSize tickSizeProto) { }
+    @Override public void tickOptionComputationProtoBuf(TickOptionComputationProto.TickOptionComputation tickOptionComputationProto) { }
+    @Override public void tickGenericProtoBuf(TickGenericProto.TickGeneric tickGenericProto) { }
+    @Override public void tickStringProtoBuf(TickStringProto.TickString tickStringProto) { }
+    @Override public void tickSnapshotEndProtoBuf(TickSnapshotEndProto.TickSnapshotEnd tickSnapshotEndProto) { }
+    @Override public void updateMarketDepthProtoBuf(MarketDepthProto.MarketDepth marketDepthProto) { }
+    @Override public void updateMarketDepthL2ProtoBuf(MarketDepthL2Proto.MarketDepthL2 marketDepthL2Proto) { }
+    @Override public void marketDataTypeProtoBuf(MarketDataTypeProto.MarketDataType marketDataTypeProto) { }
+    @Override public void tickReqParamsProtoBuf(TickReqParamsProto.TickReqParams tickReqParamsProto) {
+        String msg = EWrapperMsgGenerator.tickReqParamsProtoBuf(tickReqParamsProto);
+        m_tickers.add(msg);
+    }
+    @Override public void updateAccountValueProtoBuf(AccountValueProto.AccountValue accounValueProto) { }
+    @Override public void updatePortfolioProtoBuf(PortfolioValueProto.PortfolioValue portfolioValueProto) { }
+    @Override public void updateAccountTimeProtoBuf(AccountUpdateTimeProto.AccountUpdateTime accountUpdateTimeProto) { }
+    @Override public void accountDataEndProtoBuf(AccountDataEndProto.AccountDataEnd accountDataEndProto) { }
+    @Override public void managedAccountsProtoBuf(ManagedAccountsProto.ManagedAccounts managedAccountsProto) { }
+    @Override public void positionProtoBuf(PositionProto.Position positionProto) { }
+    @Override public void positionEndProtoBuf(PositionEndProto.PositionEnd positionEndProto) { }
+    @Override public void accountSummaryProtoBuf(AccountSummaryProto.AccountSummary accountSummaryProto) { }
+    @Override public void accountSummaryEndProtoBuf(AccountSummaryEndProto.AccountSummaryEnd accountSummaryEndProto) { }
+    @Override public void positionMultiProtoBuf(PositionMultiProto.PositionMulti positionMultiProto) { }
+    @Override public void positionMultiEndProtoBuf(PositionMultiEndProto.PositionMultiEnd positionMultiEndProto) { }
+    @Override public void accountUpdateMultiProtoBuf(AccountUpdateMultiProto.AccountUpdateMulti accountUpdateMultiProto) { }
+    @Override public void accountUpdateMultiEndProtoBuf(AccountUpdateMultiEndProto.AccountUpdateMultiEnd accountUpdateMultiEndProto) { }
+    @Override public void historicalDataProtoBuf(HistoricalDataProto.HistoricalData historicalDataProto) { }
+    @Override public void historicalDataUpdateProtoBuf(HistoricalDataUpdateProto.HistoricalDataUpdate historicalDataUpdateProto) { }
+    @Override public void historicalDataEndProtoBuf(HistoricalDataEndProto.HistoricalDataEnd historicalDataEndProto) { }
+    @Override public void realTimeBarTickProtoBuf(RealTimeBarTickProto.RealTimeBarTick realTimeBarTickProto) { }
+    @Override public void headTimestampProtoBuf(HeadTimestampProto.HeadTimestamp headTimestampProto) { }
+    @Override public void histogramDataProtoBuf(HistogramDataProto.HistogramData histogramDataProto) { }
+    @Override public void historicalTicksProtoBuf(HistoricalTicksProto.HistoricalTicks historicalTicksProto) { }
+    @Override public void historicalTicksBidAskProtoBuf(HistoricalTicksBidAskProto.HistoricalTicksBidAsk historicalTicksBidAskProto) { }
+    @Override public void historicalTicksLastProtoBuf(HistoricalTicksLastProto.HistoricalTicksLast historicalTicksLastProto) { }
+    @Override public void tickByTickDataProtoBuf(TickByTickDataProto.TickByTickData tickByTickDataProto) { }
+    @Override public void updateNewsBulletinProtoBuf(NewsBulletinProto.NewsBulletin newsBulletinProto) { }
+    @Override public void newsArticleProtoBuf(NewsArticleProto.NewsArticle newsArticleProto) { }
+    @Override public void newsProvidersProtoBuf(NewsProvidersProto.NewsProviders newsProvidersProto) { }
+    @Override public void historicalNewsProtoBuf(HistoricalNewsProto.HistoricalNews historicalNewsProto) { }
+    @Override public void historicalNewsEndProtoBuf(HistoricalNewsEndProto.HistoricalNewsEnd historicalNewsEndProto) { }
+    @Override public void wshMetaDataProtoBuf(WshMetaDataProto.WshMetaData wshMetaDataProto) { }
+    @Override public void wshEventDataProtoBuf(WshEventDataProto.WshEventData wshEventDataProto) { }
+    @Override public void tickNewsProtoBuf(TickNewsProto.TickNews tickNewsProto) { }
+    @Override public void scannerParametersProtoBuf(ScannerParametersProto.ScannerParameters scannerParametersProto) { }
+    @Override public void scannerDataProtoBuf(ScannerDataProto.ScannerData scannerDataProto) { }
+    @Override public void fundamentalsDataProtoBuf(FundamentalsDataProto.FundamentalsData fundamentalsDataProto) { }
+    @Override public void pnlProtoBuf(PnLProto.PnL pnlProto) { }
+    @Override public void pnlSingleProtoBuf(PnLSingleProto.PnLSingle pnlSingleProto) { }
+    @Override public void receiveFAProtoBuf(ReceiveFAProto.ReceiveFA receiveFAProto) { }
+    @Override public void replaceFAEndProtoBuf(ReplaceFAEndProto.ReplaceFAEnd replaceFAEndProto) { }
+    @Override public void commissionAndFeesReportProtoBuf(CommissionAndFeesReportProto.CommissionAndFeesReport commissionAndFeesReportProto) { }
+    @Override public void historicalScheduleProtoBuf(HistoricalScheduleProto.HistoricalSchedule historicalScheduleProto) { }
+    @Override public void rerouteMarketDataRequestProtoBuf(RerouteMarketDataRequestProto.RerouteMarketDataRequest rerouteMarketDataRequestProto) { }
+    @Override public void rerouteMarketDepthRequestProtoBuf(RerouteMarketDepthRequestProto.RerouteMarketDepthRequest rerouteMarketDepthRequestProto) { }
+    @Override public void secDefOptParameterProtoBuf(SecDefOptParameterProto.SecDefOptParameter secDefOptParameterProto) { }
+    @Override public void secDefOptParameterEndProtoBuf(SecDefOptParameterEndProto.SecDefOptParameterEnd secDefOptParameterEndProto) { }
+    @Override public void softDollarTiersProtoBuf(SoftDollarTiersProto.SoftDollarTiers softDollarTiersProto) { }
+    @Override public void familyCodesProtoBuf(FamilyCodesProto.FamilyCodes familyCodesProto) { }
+    @Override public void symbolSamplesProtoBuf(SymbolSamplesProto.SymbolSamples symbolSamplesProto) { }
+    @Override public void smartComponentsProtoBuf(SmartComponentsProto.SmartComponents smartComponentsProto) { }
+    @Override public void marketRuleProtoBuf(MarketRuleProto.MarketRule marketRuleProto) { }
+    @Override public void userInfoProtoBuf(UserInfoProto.UserInfo userInfoProto) { }
+    @Override public void nextValidIdProtoBuf(NextValidIdProto.NextValidId nextValidIdProto) { }
+    @Override public void currentTimeProtoBuf(CurrentTimeProto.CurrentTime currentTimeProto) { }
+    @Override public void currentTimeInMillisProtoBuf(CurrentTimeInMillisProto.CurrentTimeInMillis currentTimeInMillisProto) { }
+    @Override public void verifyMessageApiProtoBuf(VerifyMessageApiProto.VerifyMessageApi verifyMessageApiProto) { }
+    @Override public void verifyCompletedProtoBuf(VerifyCompletedProto.VerifyCompleted verifyCompletedProto) { }
+    @Override public void displayGroupListProtoBuf(DisplayGroupListProto.DisplayGroupList displayGroupListProto) { }
+    @Override public void displayGroupUpdatedProtoBuf(DisplayGroupUpdatedProto.DisplayGroupUpdated displayGroupUpdatedProto) { }
+    @Override public void marketDepthExchangesProtoBuf(MarketDepthExchangesProto.MarketDepthExchanges marketDepthExchangesProto) { }
+    @Override public void configResponseProtoBuf(ConfigResponseProto.ConfigResponse configResponseProto) { 
+        String msg = EWrapperMsgGenerator.configResponse(configResponseProto);
+        m_TWS.add(msg);
+        
+        String configResponseText = configResponseProto.toString();
+        
+        if (configResponseText != null && !configResponseText.isEmpty()) {
+            ConfigDlg dlg = new ConfigDlg(this);
+            dlg.setConfigResponse(configResponseText);
+            dlg.setVisible(true);
+
+            if (!dlg.m_rc) {
+                return;
+            }
+
+            UpdateConfigRequestProto.UpdateConfigRequest updateConfigRequestProto = dlg.updateConfigRequestProto;
+            m_client.updateConfigProtoBuf(updateConfigRequestProto);
+        }
+    }
+
+    @Override public void updateConfigResponseProtoBuf(UpdateConfigResponseProto.UpdateConfigResponse updateConfigResponseProto) {
+        String msg = EWrapperMsgGenerator.updateConfigResponse(updateConfigResponseProto);
         m_TWS.add(msg);
     }
 }

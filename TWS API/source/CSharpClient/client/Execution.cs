@@ -1,6 +1,7 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
+using System;
 using System.Collections.Generic;
 
 namespace IBApi
@@ -41,7 +42,7 @@ namespace IBApi
     /**
      * @class Execution
      * @brief Class describing an order's execution.
-     * @sa ExecutionFilter, CommissionReport
+     * @sa ExecutionFilter, CommissionAndFeesReport
      */
     public class Execution
     {
@@ -89,14 +90,14 @@ namespace IBApi
         public decimal Shares { get; set; }
 
         /**
-         * @brief The order's execution price excluding commissions.
+         * @brief The order's execution price excluding commission and fees.
          */
         public double Price { get; set; }
 
         /**
          * @brief The TWS order identifier. The PermId can be 0 for trades originating outside IB. 
          */
-        public int PermId { get; set; }
+        public long PermId { get; set; }
 
         /**
          * @brief Identifies whether an execution occurred because of an IB-initiated liquidation. 
@@ -111,7 +112,7 @@ namespace IBApi
 
         /**
          * @brief Average price. 
-         * Used in regular trades, combo trades and legs of the combo. Does not include commissions.
+         * Used in regular trades, combo trades and legs of the combo. Does not include commission and fees.
          */
         public double AvgPrice { get; set; }
 
@@ -147,6 +148,17 @@ namespace IBApi
          */
         public bool PendingPriceRevision { get; set; }
 
+        /**
+         * @brief Submitter
+         */
+        public string Submitter { get; set; }
+
+        /**
+         * @brief Option exercise or lapse type
+         */
+        public OptionExerciseType OptExerciseOrLapseType { get; set; }
+
+
         public Execution()
         {
             OrderId = 0;
@@ -160,13 +172,14 @@ namespace IBApi
             EvMultiplier = 0;
             LastLiquidity = new Liquidity(0);
             PendingPriceRevision = false;
+            OptExerciseOrLapseType = OptionExerciseType.None;
         }
 
         public Execution(int orderId, int clientId, string execId, string time,
                           string acctNumber, string exchange, string side, decimal shares,
-                          double price, int permId, int liquidation, decimal cumQty,
+                          double price, long permId, int liquidation, decimal cumQty,
                           double avgPrice, string orderRef, string evRule, double evMultiplier,
-                          string modelCode, Liquidity lastLiquidity, bool pendingPriceRevision)
+                          string modelCode, Liquidity lastLiquidity, bool pendingPriceRevision, string submitter, OptionExerciseType optExerciseOrLapseType)
         {
             OrderId = orderId;
             ClientId = clientId;
@@ -187,6 +200,8 @@ namespace IBApi
             ModelCode = modelCode;
             LastLiquidity = lastLiquidity;
             PendingPriceRevision = pendingPriceRevision;
+            Submitter = submitter;
+            OptExerciseOrLapseType = optExerciseOrLapseType;
         }
 
         public override bool Equals(object p_other)
@@ -229,7 +244,31 @@ namespace IBApi
             hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(ModelCode);
             hashCode *= -1521134295 + EqualityComparer<Liquidity>.Default.GetHashCode(LastLiquidity);
             hashCode *= -1521134295 + PendingPriceRevision.GetHashCode();
+            hashCode *= -1521134295 + EqualityComparer<string>.Default.GetHashCode(Submitter);
+            hashCode *= -1521134295 + OptExerciseOrLapseType.GetHashCode();
             return hashCode;
         }
+    }
+    public enum OptionExerciseType
+    {
+        None,
+        Exercise,
+        Lapse,
+        DoNothing,
+        Assigned,
+        AutoexerciseClearing,
+        Expired,
+        Netting,
+        AutoexerciseTrading
+    }
+
+    public static class COptionExerciseType
+    {
+        public static readonly int[] values = { -1, 1, 2, 3, 100, 101, 102, 203, 200 };
+        public static readonly string[] names = { "None", "Exercise", "Lapse", "DoNothing", "Assigned", "AutoexerciseClearing", "Expired", "Netting", "AutoexerciseTrading" };
+
+        public static string getOptionExerciseTypeName(this OptionExerciseType e) => names[(int)e];
+
+        public static OptionExerciseType getOptionExerciseType(int value) => (OptionExerciseType)Array.IndexOf(values, value);
     }
 }

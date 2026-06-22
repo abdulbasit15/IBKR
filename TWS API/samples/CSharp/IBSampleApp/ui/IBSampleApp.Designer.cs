@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using IBSampleApp.types;
@@ -36,13 +36,13 @@ namespace IBSampleApp
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(IBSampleAppDialog));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend5 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend6 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.connectButton = new System.Windows.Forms.Button();
             this.clientid_CT = new System.Windows.Forms.TextBox();
             this.clientId_label_CT = new System.Windows.Forms.Label();
@@ -277,6 +277,38 @@ namespace IBSampleApp
             this.contractInfoTab = new System.Windows.Forms.TabControl();
             this.contractDetailsPage = new System.Windows.Forms.TabPage();
             this.contractDetailsGrid = new System.Windows.Forms.DataGridView();
+            this.contractDeatilsSymbol = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsLocalSymbol = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsSecType = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsCurrency = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsExchange = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsPrimaryExch = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsLastTradeDateOrContractMonth = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsLastTradeDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsMultiplier = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsStrike = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsRight = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDeatilsConId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsAggGroup = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsUnderSymbol = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsUnderSecType = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsMarketRuleIds = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsRealExpirationDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsContractMonth = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsLastTradeTime = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsTimeZoneId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsTradingHours = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsLiquidHours = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsStockType = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsMinSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsSizeIncrement = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsSuggestedSizeIncrement = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsEventContract1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsEventContractDescription1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractDetailsEventContractDescription2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractMinAlgoSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractLastPricePrecision = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.contractLastSizePrecision = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.fundamentalsPage = new System.Windows.Forms.TabPage();
             this.fundamentalsOutput = new System.Windows.Forms.TextBox();
             this.optionChainPage = new System.Windows.Forms.TabPage();
@@ -347,7 +379,9 @@ namespace IBSampleApp
             this.bondContractDetailsNextOptionPartial = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.bondContractDetailsNotes = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.bondContractDetailsLastTradeTime = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.bondContractDetsilsTimeZoneId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.bondContractDetailsTimeZoneId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.bondContractDetailsTradingHours = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.bondContractDetailsLiqudHours = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.bondContractDetailsMinSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.bondContractDetailsSizeIncrement = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.bondContractDetailsSuggestedSizeIncrement = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -413,23 +447,29 @@ namespace IBSampleApp
             this.completedOrdersButton = new System.Windows.Forms.Button();
             this.completedOrdersGroup = new System.Windows.Forms.GroupBox();
             this.completedOrdersGrid = new System.Windows.Forms.DataGridView();
-            this.completedOrdersBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn3 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn4 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn5 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn6 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn7 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn8 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn9 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn10 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn11 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn9 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn12 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn13 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.completedOrdersBoxColumn14 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersPermId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersParentPermId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersAccount = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersAction = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersQuantity = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersCashQuantity = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersFilledQuantity = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersLmtPrice = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersAuxPrice = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersContract = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersCustomerAccount = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersProfessionalCustomer = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersSubmitter = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersImbalanceOnly = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersCompTime = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.completedOrdersCompStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.buttonAttachOrder = new System.Windows.Forms.Button();
             this.execFilterGroup = new System.Windows.Forms.GroupBox();
+            this.execFilterSpecificDates = new System.Windows.Forms.TextBox();
+            this.execFilterSpecificDatesLabel = new System.Windows.Forms.Label();
+            this.execFilterLastNDays = new System.Windows.Forms.TextBox();
+            this.execFilterLastNDaysLabel = new System.Windows.Forms.Label();
             this.execFilterExchange = new System.Windows.Forms.TextBox();
             this.execFilterSide = new System.Windows.Forms.TextBox();
             this.execFilterSideLabel = new System.Windows.Forms.Label();
@@ -453,18 +493,21 @@ namespace IBSampleApp
             this.newOrderLink = new System.Windows.Forms.LinkLabel();
             this.executionsGroup = new System.Windows.Forms.GroupBox();
             this.tradeLogGrid = new System.Windows.Forms.DataGridView();
-            this.ExecutionId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.executionIdExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dateTimeExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.accountExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dataGridViewTextBoxColumn8 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.modelCodeExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.actionExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.quantityExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.descriptionExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.priceExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.commissionExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.RealizedPnL = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.LastLiquidity = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.PendingPriceRevision = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.commissionAndFeesExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.realizedPnLExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lastLiquidityExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.pendingPriceRevisionExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.permIdExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.submitterExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.optExerciseOrLapseTypeExecColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.liveOrdersGroup = new System.Windows.Forms.GroupBox();
             this.liveOrdersGrid = new System.Windows.Forms.DataGridView();
             this.permIdColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -477,8 +520,19 @@ namespace IBSampleApp
             this.contractColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.customerAccountColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.professionalCustomerColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.includeOvernightColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.statusColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.cashQtyColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.extOperatorColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.manualOrderIndicatorColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.submitterColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.imbalanceOnlyColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.postOnlyColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.allowPreOpenColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ignoreOpenAuctionColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.deactivateColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.seekPriceImprovementColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.routeMarketableToBboColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.marketDataTab = new System.Windows.Forms.TabPage();
             this.marketData_MDT = new System.Windows.Forms.TabControl();
             this.topMarketDataTab_MDT = new System.Windows.Forms.TabPage();
@@ -733,31 +787,11 @@ namespace IBSampleApp
             this.labelWshConId = new System.Windows.Forms.Label();
             this.button6 = new System.Windows.Forms.Button();
             this.dataGridViewWsh = new System.Windows.Forms.DataGridView();
+            this.configTab = new System.Windows.Forms.TabPage();
+            this.buttonUpdateConfig = new System.Windows.Forms.Button();
+            this.buttonRequestConfig = new System.Windows.Forms.Button();
+            this.configOutput = new System.Windows.Forms.TextBox();
             this.connectOptions_label_CT = new System.Windows.Forms.Label();
-            this.contractDeatilsSymbol = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsLocalSymbol = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsSecType = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsCurrency = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsExchange = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsPrimaryExch = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsLastTradeDateOrContractMonth = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsLastTradeDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsMultiplier = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsStrike = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsRight = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDeatilsConId = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsAggGroup = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsUnderSymbol = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsUnderSecType = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsMarketRuleIds = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsRealExpirationDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsContractMonth = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsLastTradeTime = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsTimeZoneId = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsStockType = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsMinSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsSizeIncrement = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.contractDetailsSuggestedSizeIncrement = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.comboTab.SuspendLayout();
             this.comboDeltaNeutralBox.SuspendLayout();
             this.comboLegsBox.SuspendLayout();
@@ -889,6 +923,7 @@ namespace IBSampleApp
             this.TabControl.SuspendLayout();
             this.wshTab.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewWsh)).BeginInit();
+            this.configTab.SuspendLayout();
             this.SuspendLayout();
             // 
             // connectButton
@@ -909,7 +944,7 @@ namespace IBSampleApp
             this.clientid_CT.Size = new System.Drawing.Size(83, 20);
             this.clientid_CT.TabIndex = 5;
             this.clientid_CT.Text = "1";
-            this.informationTooltip.SetToolTip(this.clientid_CT, "Each TWS can handle up to 8 simultaneous clients identifed by a unique Id.");
+            this.informationTooltip.SetToolTip(this.clientid_CT, "Each TWS can handle up to 8 simultaneous clients identified by a unique Id.");
             // 
             // clientId_label_CT
             // 
@@ -1667,7 +1702,7 @@ namespace IBSampleApp
             this.connectOptions_CT.Size = new System.Drawing.Size(83, 20);
             this.connectOptions_CT.TabIndex = 11;
             this.connectOptions_CT.Text = "+PACEAPI";
-            this.informationTooltip.SetToolTip(this.connectOptions_CT, "Each TWS can handle up to 8 simultaneous clients identifed by a unique Id.");
+            this.informationTooltip.SetToolTip(this.connectOptions_CT, "Each TWS can handle up to 8 simultaneous clients identified by a unique Id.");
             // 
             // ib_banner
             // 
@@ -2222,22 +2257,22 @@ namespace IBSampleApp
             this.groupBoxHistoricalNews.Controls.Add(this.labelHistoricalNewsTotalResults);
             this.groupBoxHistoricalNews.Location = new System.Drawing.Point(6, 6);
             this.groupBoxHistoricalNews.Name = "groupBoxHistoricalNews";
-            this.groupBoxHistoricalNews.Size = new System.Drawing.Size(268, 168);
+            this.groupBoxHistoricalNews.Size = new System.Drawing.Size(426, 168);
             this.groupBoxHistoricalNews.TabIndex = 0;
             this.groupBoxHistoricalNews.TabStop = false;
             this.groupBoxHistoricalNews.Text = "Historical News";
             // 
             // textBoxHistoricalNewsProviderCodes
             // 
-            this.textBoxHistoricalNewsProviderCodes.Location = new System.Drawing.Point(110, 36);
+            this.textBoxHistoricalNewsProviderCodes.Location = new System.Drawing.Point(283, 40);
             this.textBoxHistoricalNewsProviderCodes.Name = "textBoxHistoricalNewsProviderCodes";
             this.textBoxHistoricalNewsProviderCodes.Size = new System.Drawing.Size(123, 20);
             this.textBoxHistoricalNewsProviderCodes.TabIndex = 3;
-            this.textBoxHistoricalNewsProviderCodes.Text = "BZ+FLY";
+            this.textBoxHistoricalNewsProviderCodes.Text = "BRFUPDN+BRFG";
             // 
             // buttonRequestHistoricalNews
             // 
-            this.buttonRequestHistoricalNews.Location = new System.Drawing.Point(71, 137);
+            this.buttonRequestHistoricalNews.Location = new System.Drawing.Point(127, 139);
             this.buttonRequestHistoricalNews.Name = "buttonRequestHistoricalNews";
             this.buttonRequestHistoricalNews.Size = new System.Drawing.Size(139, 23);
             this.buttonRequestHistoricalNews.TabIndex = 62;
@@ -2268,13 +2303,13 @@ namespace IBSampleApp
             this.labelHistoricalNewsEndDateTime.AutoSize = true;
             this.labelHistoricalNewsEndDateTime.Location = new System.Drawing.Point(13, 93);
             this.labelHistoricalNewsEndDateTime.Name = "labelHistoricalNewsEndDateTime";
-            this.labelHistoricalNewsEndDateTime.Size = new System.Drawing.Size(80, 13);
+            this.labelHistoricalNewsEndDateTime.Size = new System.Drawing.Size(253, 13);
             this.labelHistoricalNewsEndDateTime.TabIndex = 6;
-            this.labelHistoricalNewsEndDateTime.Text = "End Date/Time";
+            this.labelHistoricalNewsEndDateTime.Text = "End Date/Time - News: from that moment up to now";
             // 
             // textBoxHistoricalNewsTotalResults
             // 
-            this.textBoxHistoricalNewsTotalResults.Location = new System.Drawing.Point(110, 111);
+            this.textBoxHistoricalNewsTotalResults.Location = new System.Drawing.Point(283, 115);
             this.textBoxHistoricalNewsTotalResults.Name = "textBoxHistoricalNewsTotalResults";
             this.textBoxHistoricalNewsTotalResults.Size = new System.Drawing.Size(123, 20);
             this.textBoxHistoricalNewsTotalResults.TabIndex = 9;
@@ -2285,13 +2320,13 @@ namespace IBSampleApp
             this.labelHistoricalNewsStartDateTime.AutoSize = true;
             this.labelHistoricalNewsStartDateTime.Location = new System.Drawing.Point(13, 68);
             this.labelHistoricalNewsStartDateTime.Name = "labelHistoricalNewsStartDateTime";
-            this.labelHistoricalNewsStartDateTime.Size = new System.Drawing.Size(83, 13);
+            this.labelHistoricalNewsStartDateTime.Size = new System.Drawing.Size(267, 13);
             this.labelHistoricalNewsStartDateTime.TabIndex = 4;
-            this.labelHistoricalNewsStartDateTime.Text = "Start Date/Time";
+            this.labelHistoricalNewsStartDateTime.Text = "Start Date/Time - News: all historical up to that moment";
             // 
             // textBoxHistoricalNewsContractId
             // 
-            this.textBoxHistoricalNewsContractId.Location = new System.Drawing.Point(110, 11);
+            this.textBoxHistoricalNewsContractId.Location = new System.Drawing.Point(283, 15);
             this.textBoxHistoricalNewsContractId.Name = "textBoxHistoricalNewsContractId";
             this.textBoxHistoricalNewsContractId.Size = new System.Drawing.Size(123, 20);
             this.textBoxHistoricalNewsContractId.TabIndex = 1;
@@ -2299,14 +2334,14 @@ namespace IBSampleApp
             // 
             // textBoxHistoricalNewsStartDateTime
             // 
-            this.textBoxHistoricalNewsStartDateTime.Location = new System.Drawing.Point(110, 61);
+            this.textBoxHistoricalNewsStartDateTime.Location = new System.Drawing.Point(283, 65);
             this.textBoxHistoricalNewsStartDateTime.Name = "textBoxHistoricalNewsStartDateTime";
             this.textBoxHistoricalNewsStartDateTime.Size = new System.Drawing.Size(123, 20);
             this.textBoxHistoricalNewsStartDateTime.TabIndex = 5;
             // 
             // textBoxHistoricalNewsEndDateTime
             // 
-            this.textBoxHistoricalNewsEndDateTime.Location = new System.Drawing.Point(110, 86);
+            this.textBoxHistoricalNewsEndDateTime.Location = new System.Drawing.Point(283, 90);
             this.textBoxHistoricalNewsEndDateTime.Name = "textBoxHistoricalNewsEndDateTime";
             this.textBoxHistoricalNewsEndDateTime.Size = new System.Drawing.Size(123, 20);
             this.textBoxHistoricalNewsEndDateTime.TabIndex = 7;
@@ -3297,15 +3332,183 @@ namespace IBSampleApp
             this.contractDetailsContractMonth,
             this.contractDetailsLastTradeTime,
             this.contractDetailsTimeZoneId,
+            this.contractDetailsTradingHours,
+            this.contractDetailsLiquidHours,
             this.contractDetailsStockType,
             this.contractDetailsMinSize,
             this.contractDetailsSizeIncrement,
-            this.contractDetailsSuggestedSizeIncrement});
+            this.contractDetailsSuggestedSizeIncrement,
+            this.contractDetailsEventContract1,
+            this.contractDetailsEventContractDescription1,
+            this.contractDetailsEventContractDescription2,
+            this.contractMinAlgoSize,
+            this.contractLastPricePrecision,
+            this.contractLastSizePrecision});
             this.contractDetailsGrid.Location = new System.Drawing.Point(6, 6);
             this.contractDetailsGrid.Name = "contractDetailsGrid";
             this.contractDetailsGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.contractDetailsGrid.Size = new System.Drawing.Size(1216, 231);
             this.contractDetailsGrid.TabIndex = 0;
+            // 
+            // contractDeatilsSymbol
+            // 
+            this.contractDeatilsSymbol.HeaderText = "Symbol";
+            this.contractDeatilsSymbol.Name = "contractDeatilsSymbol";
+            // 
+            // contractDetailsLocalSymbol
+            // 
+            this.contractDetailsLocalSymbol.HeaderText = "LocalSymbol";
+            this.contractDetailsLocalSymbol.Name = "contractDetailsLocalSymbol";
+            // 
+            // contractDetailsSecType
+            // 
+            this.contractDetailsSecType.HeaderText = "SecType";
+            this.contractDetailsSecType.Name = "contractDetailsSecType";
+            // 
+            // contractDetailsCurrency
+            // 
+            this.contractDetailsCurrency.HeaderText = "Currency";
+            this.contractDetailsCurrency.Name = "contractDetailsCurrency";
+            // 
+            // contractDetailsExchange
+            // 
+            this.contractDetailsExchange.HeaderText = "Exchange";
+            this.contractDetailsExchange.Name = "contractDetailsExchange";
+            // 
+            // contractDetailsPrimaryExch
+            // 
+            this.contractDetailsPrimaryExch.HeaderText = "PrimaryExch";
+            this.contractDetailsPrimaryExch.Name = "contractDetailsPrimaryExch";
+            // 
+            // contractDetailsLastTradeDateOrContractMonth
+            // 
+            this.contractDetailsLastTradeDateOrContractMonth.HeaderText = "LastTradeDateOrContractMonth";
+            this.contractDetailsLastTradeDateOrContractMonth.Name = "contractDetailsLastTradeDateOrContractMonth";
+            // 
+            // contractDetailsLastTradeDate
+            // 
+            this.contractDetailsLastTradeDate.HeaderText = "LastTradeDate";
+            this.contractDetailsLastTradeDate.Name = "contractDetailsLastTradeDate";
+            // 
+            // contractDetailsMultiplier
+            // 
+            this.contractDetailsMultiplier.HeaderText = "Multiplier";
+            this.contractDetailsMultiplier.Name = "contractDetailsMultiplier";
+            // 
+            // contractDetailsStrike
+            // 
+            this.contractDetailsStrike.HeaderText = "Strike";
+            this.contractDetailsStrike.Name = "contractDetailsStrike";
+            // 
+            // contractDetailsRight
+            // 
+            this.contractDetailsRight.HeaderText = "Right";
+            this.contractDetailsRight.Name = "contractDetailsRight";
+            // 
+            // contractDeatilsConId
+            // 
+            this.contractDeatilsConId.HeaderText = "ConId";
+            this.contractDeatilsConId.Name = "contractDeatilsConId";
+            // 
+            // contractDetailsAggGroup
+            // 
+            this.contractDetailsAggGroup.HeaderText = "AggGroup";
+            this.contractDetailsAggGroup.Name = "contractDetailsAggGroup";
+            // 
+            // contractDetailsUnderSymbol
+            // 
+            this.contractDetailsUnderSymbol.HeaderText = "UnderSymbol";
+            this.contractDetailsUnderSymbol.Name = "contractDetailsUnderSymbol";
+            // 
+            // contractDetailsUnderSecType
+            // 
+            this.contractDetailsUnderSecType.HeaderText = "UnderSecType";
+            this.contractDetailsUnderSecType.Name = "contractDetailsUnderSecType";
+            // 
+            // contractDetailsMarketRuleIds
+            // 
+            this.contractDetailsMarketRuleIds.HeaderText = "MarketRuleIds";
+            this.contractDetailsMarketRuleIds.Name = "contractDetailsMarketRuleIds";
+            // 
+            // contractDetailsRealExpirationDate
+            // 
+            this.contractDetailsRealExpirationDate.HeaderText = "RealExpirationDate";
+            this.contractDetailsRealExpirationDate.Name = "contractDetailsRealExpirationDate";
+            // 
+            // contractDetailsContractMonth
+            // 
+            this.contractDetailsContractMonth.HeaderText = "ContractMonth";
+            this.contractDetailsContractMonth.Name = "contractDetailsContractMonth";
+            // 
+            // contractDetailsLastTradeTime
+            // 
+            this.contractDetailsLastTradeTime.HeaderText = "LastTradeTime";
+            this.contractDetailsLastTradeTime.Name = "contractDetailsLastTradeTime";
+            // 
+            // contractDetailsTimeZoneId
+            // 
+            this.contractDetailsTimeZoneId.HeaderText = "TimeZoneId";
+            this.contractDetailsTimeZoneId.Name = "contractDetailsTimeZoneId";
+            // 
+            // contractDetailsTradingHours
+            // 
+            this.contractDetailsTradingHours.HeaderText = "Trading Hours";
+            this.contractDetailsTradingHours.Name = "contractDetailsTradingHours";
+            // 
+            // contractDetailsLiquidHours
+            // 
+            this.contractDetailsLiquidHours.HeaderText = "Liquid Hours";
+            this.contractDetailsLiquidHours.Name = "contractDetailsLiquidHours";
+            // 
+            // contractDetailsStockType
+            // 
+            this.contractDetailsStockType.HeaderText = "StockType";
+            this.contractDetailsStockType.Name = "contractDetailsStockType";
+            // 
+            // contractDetailsMinSize
+            // 
+            this.contractDetailsMinSize.HeaderText = "MinSize";
+            this.contractDetailsMinSize.Name = "contractDetailsMinSize";
+            // 
+            // contractDetailsSizeIncrement
+            // 
+            this.contractDetailsSizeIncrement.HeaderText = "SizeIncrement";
+            this.contractDetailsSizeIncrement.Name = "contractDetailsSizeIncrement";
+            // 
+            // contractDetailsSuggestedSizeIncrement
+            // 
+            this.contractDetailsSuggestedSizeIncrement.HeaderText = "SuggestedSizeIncrement";
+            this.contractDetailsSuggestedSizeIncrement.Name = "contractDetailsSuggestedSizeIncrement";
+            // 
+            // contractDetailsEventContract1
+            // 
+            this.contractDetailsEventContract1.HeaderText = "Event Contract 1";
+            this.contractDetailsEventContract1.Name = "contractDetailsEventContract1";
+            // 
+            // contractDetailsEventContractDescription1
+            // 
+            this.contractDetailsEventContractDescription1.HeaderText = "Event Descr 1";
+            this.contractDetailsEventContractDescription1.Name = "contractDetailsEventContractDescription1";
+            // 
+            // contractDetailsEventContractDescription2
+            // 
+            this.contractDetailsEventContractDescription2.HeaderText = "Event Descr 2";
+            this.contractDetailsEventContractDescription2.Name = "contractDetailsEventContractDescription2";
+            // 
+            // contractMinAlgoSize
+            // 
+            this.contractMinAlgoSize.HeaderText = "MinAlgoSize";
+            this.contractMinAlgoSize.Name = "contractMinAlgoSize";
+            // 
+            // contractLastPricePrecision
+            // 
+            this.contractLastPricePrecision.HeaderText = "Last Price Precision";
+            this.contractLastPricePrecision.Name = "contractLastPricePrecision";
+            // 
+            // contractLastSizePrecision
+            // 
+            this.contractLastSizePrecision.HeaderText = "Last Size Precision";
+            this.contractLastSizePrecision.Name = "contractLastSizePrecision";
             // 
             // fundamentalsPage
             // 
@@ -3705,7 +3908,9 @@ namespace IBSampleApp
             this.bondContractDetailsNextOptionPartial,
             this.bondContractDetailsNotes,
             this.bondContractDetailsLastTradeTime,
-            this.bondContractDetsilsTimeZoneId,
+            this.bondContractDetailsTimeZoneId,
+            this.bondContractDetailsTradingHours,
+            this.bondContractDetailsLiqudHours,
             this.bondContractDetailsMinSize,
             this.bondContractDetailsSizeIncrement,
             this.bondContractDetailsSuggestedSizeIncrement});
@@ -3856,10 +4061,20 @@ namespace IBSampleApp
             this.bondContractDetailsLastTradeTime.HeaderText = "Last Trade Time";
             this.bondContractDetailsLastTradeTime.Name = "bondContractDetailsLastTradeTime";
             // 
-            // bondContractDetsilsTimeZoneId
+            // bondContractDetailsTimeZoneId
             // 
-            this.bondContractDetsilsTimeZoneId.HeaderText = "Time Zone";
-            this.bondContractDetsilsTimeZoneId.Name = "bondContractDetsilsTimeZoneId";
+            this.bondContractDetailsTimeZoneId.HeaderText = "Time Zone";
+            this.bondContractDetailsTimeZoneId.Name = "bondContractDetailsTimeZoneId";
+            // 
+            // bondContractDetailsTradingHours
+            // 
+            this.bondContractDetailsTradingHours.HeaderText = "Trading Hours";
+            this.bondContractDetailsTradingHours.Name = "bondContractDetailsTradingHours";
+            // 
+            // bondContractDetailsLiqudHours
+            // 
+            this.bondContractDetailsLiqudHours.HeaderText = "Liquid Hours";
+            this.bondContractDetailsLiqudHours.Name = "bondContractDetailsLiqudHours";
             // 
             // bondContractDetailsMinSize
             // 
@@ -4486,21 +4701,23 @@ namespace IBSampleApp
             this.completedOrdersGrid.AllowUserToAddRows = false;
             this.completedOrdersGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.completedOrdersGrid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.completedOrdersBoxColumn1,
-            this.completedOrdersBoxColumn2,
-            this.completedOrdersBoxColumn3,
-            this.completedOrdersBoxColumn4,
-            this.completedOrdersBoxColumn5,
-            this.completedOrdersBoxColumn6,
-            this.completedOrdersBoxColumn7,
-            this.completedOrdersBoxColumn8,
-            this.completedOrdersBoxColumn9,
-            this.completedOrdersBoxColumn10,
-            this.completedOrdersBoxColumn11,
-            this.dataGridViewTextBoxColumn9,
-            this.completedOrdersBoxColumn12,
-            this.completedOrdersBoxColumn13,
-            this.completedOrdersBoxColumn14});
+            this.completedOrdersPermId,
+            this.completedOrdersParentPermId,
+            this.completedOrdersAccount,
+            this.completedOrdersAction,
+            this.completedOrdersQuantity,
+            this.completedOrdersCashQuantity,
+            this.completedOrdersFilledQuantity,
+            this.completedOrdersLmtPrice,
+            this.completedOrdersAuxPrice,
+            this.completedOrdersContract,
+            this.completedOrdersCustomerAccount,
+            this.completedOrdersProfessionalCustomer,
+            this.completedOrdersSubmitter,
+            this.completedOrdersImbalanceOnly,
+            this.completedOrdersStatus,
+            this.completedOrdersCompTime,
+            this.completedOrdersCompStatus});
             this.completedOrdersGrid.Location = new System.Drawing.Point(8, 19);
             this.completedOrdersGrid.Name = "completedOrdersGrid";
             this.completedOrdersGrid.ReadOnly = true;
@@ -4508,96 +4725,108 @@ namespace IBSampleApp
             this.completedOrdersGrid.Size = new System.Drawing.Size(946, 118);
             this.completedOrdersGrid.TabIndex = 1;
             // 
-            // completedOrdersBoxColumn1
+            // completedOrdersPermId
             // 
-            this.completedOrdersBoxColumn1.HeaderText = "Perm ID";
-            this.completedOrdersBoxColumn1.Name = "completedOrdersBoxColumn1";
-            this.completedOrdersBoxColumn1.ReadOnly = true;
+            this.completedOrdersPermId.HeaderText = "Perm ID";
+            this.completedOrdersPermId.Name = "completedOrdersPermId";
+            this.completedOrdersPermId.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn2
+            // completedOrdersParentPermId
             // 
-            this.completedOrdersBoxColumn2.HeaderText = "Parent Perm ID";
-            this.completedOrdersBoxColumn2.Name = "completedOrdersBoxColumn2";
-            this.completedOrdersBoxColumn2.ReadOnly = true;
+            this.completedOrdersParentPermId.HeaderText = "Parent Perm ID";
+            this.completedOrdersParentPermId.Name = "completedOrdersParentPermId";
+            this.completedOrdersParentPermId.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn3
+            // completedOrdersAccount
             // 
-            this.completedOrdersBoxColumn3.HeaderText = "Account";
-            this.completedOrdersBoxColumn3.Name = "completedOrdersBoxColumn3";
-            this.completedOrdersBoxColumn3.ReadOnly = true;
+            this.completedOrdersAccount.HeaderText = "Account";
+            this.completedOrdersAccount.Name = "completedOrdersAccount";
+            this.completedOrdersAccount.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn4
+            // completedOrdersAction
             // 
-            this.completedOrdersBoxColumn4.HeaderText = "Action";
-            this.completedOrdersBoxColumn4.Name = "completedOrdersBoxColumn4";
-            this.completedOrdersBoxColumn4.ReadOnly = true;
+            this.completedOrdersAction.HeaderText = "Action";
+            this.completedOrdersAction.Name = "completedOrdersAction";
+            this.completedOrdersAction.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn5
+            // completedOrdersQuantity
             // 
-            this.completedOrdersBoxColumn5.HeaderText = "Qty";
-            this.completedOrdersBoxColumn5.Name = "completedOrdersBoxColumn5";
-            this.completedOrdersBoxColumn5.ReadOnly = true;
+            this.completedOrdersQuantity.HeaderText = "Qty";
+            this.completedOrdersQuantity.Name = "completedOrdersQuantity";
+            this.completedOrdersQuantity.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn6
+            // completedOrdersCashQuantity
             // 
-            this.completedOrdersBoxColumn6.HeaderText = "Cash Qty";
-            this.completedOrdersBoxColumn6.Name = "completedOrdersBoxColumn6";
-            this.completedOrdersBoxColumn6.ReadOnly = true;
+            this.completedOrdersCashQuantity.HeaderText = "Cash Qty";
+            this.completedOrdersCashQuantity.Name = "completedOrdersCashQuantity";
+            this.completedOrdersCashQuantity.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn7
+            // completedOrdersFilledQuantity
             // 
-            this.completedOrdersBoxColumn7.HeaderText = "Filled Qty";
-            this.completedOrdersBoxColumn7.Name = "completedOrdersBoxColumn7";
-            this.completedOrdersBoxColumn7.ReadOnly = true;
+            this.completedOrdersFilledQuantity.HeaderText = "Filled Qty";
+            this.completedOrdersFilledQuantity.Name = "completedOrdersFilledQuantity";
+            this.completedOrdersFilledQuantity.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn8
+            // completedOrdersLmtPrice
             // 
-            this.completedOrdersBoxColumn8.HeaderText = "Lmt Price";
-            this.completedOrdersBoxColumn8.Name = "completedOrdersBoxColumn8";
-            this.completedOrdersBoxColumn8.ReadOnly = true;
+            this.completedOrdersLmtPrice.HeaderText = "Lmt Price";
+            this.completedOrdersLmtPrice.Name = "completedOrdersLmtPrice";
+            this.completedOrdersLmtPrice.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn9
+            // completedOrdersAuxPrice
             // 
-            this.completedOrdersBoxColumn9.HeaderText = "Aux Price";
-            this.completedOrdersBoxColumn9.Name = "completedOrdersBoxColumn9";
-            this.completedOrdersBoxColumn9.ReadOnly = true;
-            this.completedOrdersBoxColumn9.Width = 120;
+            this.completedOrdersAuxPrice.HeaderText = "Aux Price";
+            this.completedOrdersAuxPrice.Name = "completedOrdersAuxPrice";
+            this.completedOrdersAuxPrice.ReadOnly = true;
+            this.completedOrdersAuxPrice.Width = 120;
             // 
-            // completedOrdersBoxColumn10
+            // completedOrdersContract
             // 
-            this.completedOrdersBoxColumn10.HeaderText = "Contract";
-            this.completedOrdersBoxColumn10.Name = "completedOrdersBoxColumn10";
-            this.completedOrdersBoxColumn10.ReadOnly = true;
+            this.completedOrdersContract.HeaderText = "Contract";
+            this.completedOrdersContract.Name = "completedOrdersContract";
+            this.completedOrdersContract.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn11
+            // completedOrdersCustomerAccount
             // 
-            this.completedOrdersBoxColumn11.HeaderText = "Cust Acct";
-            this.completedOrdersBoxColumn11.Name = "completedOrdersBoxColumn11";
-            this.completedOrdersBoxColumn11.ReadOnly = true;
+            this.completedOrdersCustomerAccount.HeaderText = "Cust Acct";
+            this.completedOrdersCustomerAccount.Name = "completedOrdersCustomerAccount";
+            this.completedOrdersCustomerAccount.ReadOnly = true;
             // 
-            // dataGridViewTextBoxColumn9
+            // completedOrdersProfessionalCustomer
             // 
-            this.dataGridViewTextBoxColumn9.HeaderText = "Prof Cust";
-            this.dataGridViewTextBoxColumn9.Name = "dataGridViewTextBoxColumn9";
-            this.dataGridViewTextBoxColumn9.ReadOnly = true;
+            this.completedOrdersProfessionalCustomer.HeaderText = "Prof Cust";
+            this.completedOrdersProfessionalCustomer.Name = "completedOrdersProfessionalCustomer";
+            this.completedOrdersProfessionalCustomer.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn12
+            // completedOrdersSubmitter
             // 
-            this.completedOrdersBoxColumn12.HeaderText = "Status";
-            this.completedOrdersBoxColumn12.Name = "completedOrdersBoxColumn12";
-            this.completedOrdersBoxColumn12.ReadOnly = true;
+            this.completedOrdersSubmitter.HeaderText = "Submitter";
+            this.completedOrdersSubmitter.Name = "completedOrdersSubmitter";
+            this.completedOrdersSubmitter.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn13
+            // completedOrdersImbalanceOnly
             // 
-            this.completedOrdersBoxColumn13.HeaderText = "Comp Time";
-            this.completedOrdersBoxColumn13.Name = "completedOrdersBoxColumn13";
-            this.completedOrdersBoxColumn13.ReadOnly = true;
+            this.completedOrdersImbalanceOnly.HeaderText = "Imb Only";
+            this.completedOrdersImbalanceOnly.Name = "completedOrdersImbalanceOnly";
+            this.completedOrdersImbalanceOnly.ReadOnly = true;
             // 
-            // completedOrdersBoxColumn14
+            // completedOrdersStatus
             // 
-            this.completedOrdersBoxColumn14.HeaderText = "Comp Status";
-            this.completedOrdersBoxColumn14.Name = "completedOrdersBoxColumn14";
-            this.completedOrdersBoxColumn14.ReadOnly = true;
+            this.completedOrdersStatus.HeaderText = "Status";
+            this.completedOrdersStatus.Name = "completedOrdersStatus";
+            this.completedOrdersStatus.ReadOnly = true;
+            // 
+            // completedOrdersCompTime
+            // 
+            this.completedOrdersCompTime.HeaderText = "Comp Time";
+            this.completedOrdersCompTime.Name = "completedOrdersCompTime";
+            this.completedOrdersCompTime.ReadOnly = true;
+            // 
+            // completedOrdersCompStatus
+            // 
+            this.completedOrdersCompStatus.HeaderText = "Comp Status";
+            this.completedOrdersCompStatus.Name = "completedOrdersCompStatus";
+            this.completedOrdersCompStatus.ReadOnly = true;
             // 
             // buttonAttachOrder
             // 
@@ -4611,6 +4840,10 @@ namespace IBSampleApp
             // 
             // execFilterGroup
             // 
+            this.execFilterGroup.Controls.Add(this.execFilterSpecificDates);
+            this.execFilterGroup.Controls.Add(this.execFilterSpecificDatesLabel);
+            this.execFilterGroup.Controls.Add(this.execFilterLastNDays);
+            this.execFilterGroup.Controls.Add(this.execFilterLastNDaysLabel);
             this.execFilterGroup.Controls.Add(this.execFilterExchange);
             this.execFilterGroup.Controls.Add(this.execFilterSide);
             this.execFilterGroup.Controls.Add(this.execFilterSideLabel);
@@ -4626,23 +4859,55 @@ namespace IBSampleApp
             this.execFilterGroup.Controls.Add(this.execFilterAccount);
             this.execFilterGroup.Controls.Add(this.execFilterClientId);
             this.execFilterGroup.Controls.Add(this.refreshExecutionsButton);
-            this.execFilterGroup.Location = new System.Drawing.Point(975, 247);
+            this.execFilterGroup.Location = new System.Drawing.Point(975, 195);
             this.execFilterGroup.Name = "execFilterGroup";
-            this.execFilterGroup.Size = new System.Drawing.Size(230, 195);
+            this.execFilterGroup.Size = new System.Drawing.Size(267, 247);
             this.execFilterGroup.TabIndex = 10;
             this.execFilterGroup.TabStop = false;
             this.execFilterGroup.Text = "Execution Filter";
             // 
+            // execFilterSpecificDates
+            // 
+            this.execFilterSpecificDates.Location = new System.Drawing.Point(101, 219);
+            this.execFilterSpecificDates.Name = "execFilterSpecificDates";
+            this.execFilterSpecificDates.Size = new System.Drawing.Size(101, 20);
+            this.execFilterSpecificDates.TabIndex = 19;
+            // 
+            // execFilterSpecificDatesLabel
+            // 
+            this.execFilterSpecificDatesLabel.AutoSize = true;
+            this.execFilterSpecificDatesLabel.Location = new System.Drawing.Point(6, 226);
+            this.execFilterSpecificDatesLabel.Name = "execFilterSpecificDatesLabel";
+            this.execFilterSpecificDatesLabel.Size = new System.Drawing.Size(76, 13);
+            this.execFilterSpecificDatesLabel.TabIndex = 18;
+            this.execFilterSpecificDatesLabel.Text = "Specific Dates";
+            // 
+            // execFilterLastNDays
+            // 
+            this.execFilterLastNDays.Location = new System.Drawing.Point(101, 193);
+            this.execFilterLastNDays.Name = "execFilterLastNDays";
+            this.execFilterLastNDays.Size = new System.Drawing.Size(101, 20);
+            this.execFilterLastNDays.TabIndex = 17;
+            // 
+            // execFilterLastNDaysLabel
+            // 
+            this.execFilterLastNDaysLabel.AutoSize = true;
+            this.execFilterLastNDaysLabel.Location = new System.Drawing.Point(6, 200);
+            this.execFilterLastNDaysLabel.Name = "execFilterLastNDaysLabel";
+            this.execFilterLastNDaysLabel.Size = new System.Drawing.Size(65, 13);
+            this.execFilterLastNDaysLabel.TabIndex = 16;
+            this.execFilterLastNDaysLabel.Text = "Last N Days";
+            // 
             // execFilterExchange
             // 
-            this.execFilterExchange.Location = new System.Drawing.Point(65, 68);
+            this.execFilterExchange.Location = new System.Drawing.Point(101, 68);
             this.execFilterExchange.Name = "execFilterExchange";
             this.execFilterExchange.Size = new System.Drawing.Size(77, 20);
             this.execFilterExchange.TabIndex = 15;
             // 
             // execFilterSide
             // 
-            this.execFilterSide.Location = new System.Drawing.Point(65, 94);
+            this.execFilterSide.Location = new System.Drawing.Point(101, 94);
             this.execFilterSide.Name = "execFilterSide";
             this.execFilterSide.Size = new System.Drawing.Size(77, 20);
             this.execFilterSide.TabIndex = 14;
@@ -4713,42 +4978,42 @@ namespace IBSampleApp
             // 
             // execFilterSecType
             // 
-            this.execFilterSecType.Location = new System.Drawing.Point(65, 144);
+            this.execFilterSecType.Location = new System.Drawing.Point(101, 144);
             this.execFilterSecType.Name = "execFilterSecType";
             this.execFilterSecType.Size = new System.Drawing.Size(77, 20);
             this.execFilterSecType.TabIndex = 6;
             // 
             // execFilterSymbol
             // 
-            this.execFilterSymbol.Location = new System.Drawing.Point(65, 119);
+            this.execFilterSymbol.Location = new System.Drawing.Point(101, 119);
             this.execFilterSymbol.Name = "execFilterSymbol";
             this.execFilterSymbol.Size = new System.Drawing.Size(77, 20);
             this.execFilterSymbol.TabIndex = 5;
             // 
             // execFilterTime
             // 
-            this.execFilterTime.Location = new System.Drawing.Point(65, 169);
+            this.execFilterTime.Location = new System.Drawing.Point(101, 169);
             this.execFilterTime.Name = "execFilterTime";
             this.execFilterTime.Size = new System.Drawing.Size(101, 20);
             this.execFilterTime.TabIndex = 4;
             // 
             // execFilterAccount
             // 
-            this.execFilterAccount.Location = new System.Drawing.Point(65, 43);
+            this.execFilterAccount.Location = new System.Drawing.Point(101, 43);
             this.execFilterAccount.Name = "execFilterAccount";
             this.execFilterAccount.Size = new System.Drawing.Size(77, 20);
             this.execFilterAccount.TabIndex = 3;
             // 
             // execFilterClientId
             // 
-            this.execFilterClientId.Location = new System.Drawing.Point(65, 17);
+            this.execFilterClientId.Location = new System.Drawing.Point(101, 17);
             this.execFilterClientId.Name = "execFilterClientId";
             this.execFilterClientId.Size = new System.Drawing.Size(77, 20);
             this.execFilterClientId.TabIndex = 2;
             // 
             // refreshExecutionsButton
             // 
-            this.refreshExecutionsButton.Location = new System.Drawing.Point(149, 17);
+            this.refreshExecutionsButton.Location = new System.Drawing.Point(186, 15);
             this.refreshExecutionsButton.Name = "refreshExecutionsButton";
             this.refreshExecutionsButton.Size = new System.Drawing.Size(75, 23);
             this.refreshExecutionsButton.TabIndex = 1;
@@ -4832,29 +5097,32 @@ namespace IBSampleApp
             this.tradeLogGrid.AllowUserToAddRows = false;
             this.tradeLogGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.tradeLogGrid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.ExecutionId,
+            this.executionIdExecColumn,
             this.dateTimeExecColumn,
             this.accountExecColumn,
-            this.dataGridViewTextBoxColumn8,
+            this.modelCodeExecColumn,
             this.actionExecColumn,
             this.quantityExecColumn,
             this.descriptionExecColumn,
             this.priceExecColumn,
-            this.commissionExecColumn,
-            this.RealizedPnL,
-            this.LastLiquidity,
-            this.PendingPriceRevision});
+            this.commissionAndFeesExecColumn,
+            this.realizedPnLExecColumn,
+            this.lastLiquidityExecColumn,
+            this.pendingPriceRevisionExecColumn,
+            this.permIdExecColumn,
+            this.submitterExecColumn,
+            this.optExerciseOrLapseTypeExecColumn});
             this.tradeLogGrid.Location = new System.Drawing.Point(6, 19);
             this.tradeLogGrid.Name = "tradeLogGrid";
             this.tradeLogGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.tradeLogGrid.Size = new System.Drawing.Size(946, 118);
             this.tradeLogGrid.TabIndex = 0;
             // 
-            // ExecutionId
+            // executionIdExecColumn
             // 
-            this.ExecutionId.HeaderText = "Execution ID";
-            this.ExecutionId.Name = "ExecutionId";
-            this.ExecutionId.ReadOnly = true;
+            this.executionIdExecColumn.HeaderText = "Execution ID";
+            this.executionIdExecColumn.Name = "executionIdExecColumn";
+            this.executionIdExecColumn.ReadOnly = true;
             // 
             // dateTimeExecColumn
             // 
@@ -4868,10 +5136,10 @@ namespace IBSampleApp
             this.accountExecColumn.Name = "accountExecColumn";
             this.accountExecColumn.ReadOnly = true;
             // 
-            // dataGridViewTextBoxColumn8
+            // modelCodeExecColumn
             // 
-            this.dataGridViewTextBoxColumn8.HeaderText = "Model Code";
-            this.dataGridViewTextBoxColumn8.Name = "dataGridViewTextBoxColumn8";
+            this.modelCodeExecColumn.HeaderText = "Model Code";
+            this.modelCodeExecColumn.Name = "modelCodeExecColumn";
             // 
             // actionExecColumn
             // 
@@ -4897,28 +5165,43 @@ namespace IBSampleApp
             this.priceExecColumn.Name = "priceExecColumn";
             this.priceExecColumn.ReadOnly = true;
             // 
-            // commissionExecColumn
+            // commissionAndFeesExecColumn
             // 
-            this.commissionExecColumn.HeaderText = "Commissions";
-            this.commissionExecColumn.Name = "commissionExecColumn";
-            this.commissionExecColumn.ReadOnly = true;
+            this.commissionAndFeesExecColumn.HeaderText = "CommissionAndFees";
+            this.commissionAndFeesExecColumn.Name = "commissionAndFeesExecColumn";
+            this.commissionAndFeesExecColumn.ReadOnly = true;
             // 
-            // RealizedPnL
+            // realizedPnLExecColumn
             // 
-            this.RealizedPnL.HeaderText = "RealizedPnL";
-            this.RealizedPnL.Name = "RealizedPnL";
-            this.RealizedPnL.ReadOnly = true;
+            this.realizedPnLExecColumn.HeaderText = "RealizedPnL";
+            this.realizedPnLExecColumn.Name = "realizedPnLExecColumn";
+            this.realizedPnLExecColumn.ReadOnly = true;
             // 
-            // LastLiquidity
+            // lastLiquidityExecColumn
             // 
-            this.LastLiquidity.HeaderText = "Last Liquidity";
-            this.LastLiquidity.Name = "LastLiquidity";
-            this.LastLiquidity.ReadOnly = true;
+            this.lastLiquidityExecColumn.HeaderText = "Last Liquidity";
+            this.lastLiquidityExecColumn.Name = "lastLiquidityExecColumn";
+            this.lastLiquidityExecColumn.ReadOnly = true;
             // 
-            // PendingPriceRevision
+            // pendingPriceRevisionExecColumn
             // 
-            this.PendingPriceRevision.HeaderText = "Pending Price Revision";
-            this.PendingPriceRevision.Name = "PendingPriceRevision";
+            this.pendingPriceRevisionExecColumn.HeaderText = "Pending Price Revision";
+            this.pendingPriceRevisionExecColumn.Name = "pendingPriceRevisionExecColumn";
+            // 
+            // permIdExecColumn
+            // 
+            this.permIdExecColumn.HeaderText = "Perm ID";
+            this.permIdExecColumn.Name = "permIdExecColumn";
+            // 
+            // submitterExecColumn
+            // 
+            this.submitterExecColumn.HeaderText = "Submitter";
+            this.submitterExecColumn.Name = "submitterExecColumn";
+            // 
+            // optExerciseOrLapseTypeExecColumn
+            // 
+            this.optExerciseOrLapseTypeExecColumn.HeaderText = "OptExerciseOrLapseType";
+            this.optExerciseOrLapseTypeExecColumn.Name = "optExerciseOrLapseTypeExecColumn";
             // 
             // liveOrdersGroup
             // 
@@ -4945,8 +5228,19 @@ namespace IBSampleApp
             this.contractColumn,
             this.customerAccountColumn,
             this.professionalCustomerColumn,
+            this.includeOvernightColumn,
             this.statusColumn,
-            this.cashQtyColumn});
+            this.cashQtyColumn,
+            this.extOperatorColumn,
+            this.manualOrderIndicatorColumn,
+            this.submitterColumn,
+            this.imbalanceOnlyColumn,
+            this.postOnlyColumn,
+            this.allowPreOpenColumn,
+            this.ignoreOpenAuctionColumn,
+            this.deactivateColumn,
+            this.seekPriceImprovementColumn,
+            this.routeMarketableToBboColumn});
             this.liveOrdersGrid.Location = new System.Drawing.Point(6, 19);
             this.liveOrdersGrid.Name = "liveOrdersGrid";
             this.liveOrdersGrid.ReadOnly = true;
@@ -5016,6 +5310,12 @@ namespace IBSampleApp
             this.professionalCustomerColumn.Name = "professionalCustomerColumn";
             this.professionalCustomerColumn.ReadOnly = true;
             // 
+            // includeOvernightColumn
+            // 
+            this.includeOvernightColumn.HeaderText = "Incl Overnight";
+            this.includeOvernightColumn.Name = "includeOvernightColumn";
+            this.includeOvernightColumn.ReadOnly = true;
+            // 
             // statusColumn
             // 
             this.statusColumn.HeaderText = "Status";
@@ -5027,6 +5327,66 @@ namespace IBSampleApp
             this.cashQtyColumn.HeaderText = "Cash Qty";
             this.cashQtyColumn.Name = "cashQtyColumn";
             this.cashQtyColumn.ReadOnly = true;
+            // 
+            // extOperatorColumn
+            // 
+            this.extOperatorColumn.HeaderText = "Ext Oper";
+            this.extOperatorColumn.Name = "extOperatorColumn";
+            this.extOperatorColumn.ReadOnly = true;
+            // 
+            // manualOrderIndicatorColumn
+            // 
+            this.manualOrderIndicatorColumn.HeaderText = "Manual Ind";
+            this.manualOrderIndicatorColumn.Name = "manualOrderIndicatorColumn";
+            this.manualOrderIndicatorColumn.ReadOnly = true;
+            // 
+            // submitterColumn
+            // 
+            this.submitterColumn.HeaderText = "Submitter";
+            this.submitterColumn.Name = "submitterColumn";
+            this.submitterColumn.ReadOnly = true;
+            // 
+            // imbalanceOnlyColumn
+            // 
+            this.imbalanceOnlyColumn.HeaderText = "Imb Only";
+            this.imbalanceOnlyColumn.Name = "imbalanceOnlyColumn";
+            this.imbalanceOnlyColumn.ReadOnly = true;
+            // 
+            // postOnlyColumn
+            // 
+            this.postOnlyColumn.HeaderText = "Post Only";
+            this.postOnlyColumn.Name = "postOnlyColumn";
+            this.postOnlyColumn.ReadOnly = true;
+            // 
+            // allowPreOpenColumn
+            // 
+            this.allowPreOpenColumn.HeaderText = "Allow Pre-Open";
+            this.allowPreOpenColumn.Name = "allowPreOpenColumn";
+            this.allowPreOpenColumn.ReadOnly = true;
+            // 
+            // ignoreOpenAuctionColumn
+            // 
+            this.ignoreOpenAuctionColumn.HeaderText = "Ign Open Auc";
+            this.ignoreOpenAuctionColumn.Name = "ignoreOpenAuctionColumn";
+            this.ignoreOpenAuctionColumn.ReadOnly = true;
+            // 
+            // deactivateColumn
+            // 
+            this.deactivateColumn.HeaderText = "Deactivate";
+            this.deactivateColumn.Name = "deactivateColumn";
+            this.deactivateColumn.ReadOnly = true;
+            // 
+            // seekPriceImprovementColumn
+            // 
+            this.seekPriceImprovementColumn.HeaderText = "Seek Price Impr";
+            this.seekPriceImprovementColumn.Name = "seekPriceImprovementColumn";
+            this.seekPriceImprovementColumn.ReadOnly = true;
+            // 
+            // routeMarketableToBboColumn
+            // 
+            this.routeMarketableToBboColumn.HeaderText = "Route Mark to Bbo";
+            this.routeMarketableToBboColumn.Name = "routeMarketableToBboColumn";
+            this.routeMarketableToBboColumn.ReadOnly = true;
             // 
             // marketDataTab
             // 
@@ -5303,14 +5663,14 @@ namespace IBSampleApp
             this.askBookPrice,
             this.askBookSize,
             this.askBookMaker});
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.ButtonHighlight;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.deepBookGrid.DefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.ButtonHighlight;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.deepBookGrid.DefaultCellStyle = dataGridViewCellStyle1;
             this.deepBookGrid.Location = new System.Drawing.Point(4, 19);
             this.deepBookGrid.Name = "deepBookGrid";
             this.deepBookGrid.ReadOnly = true;
@@ -5456,27 +5816,27 @@ namespace IBSampleApp
             this.historicalChart.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.historicalChart.BackImageTransparentColor = System.Drawing.Color.Silver;
             this.historicalChart.BackSecondaryColor = System.Drawing.Color.Silver;
-            chartArea5.AxisX.MajorGrid.Enabled = false;
-            chartArea5.AxisX.MajorTickMark.Enabled = false;
-            chartArea5.AxisY.IsStartedFromZero = false;
-            chartArea5.Name = "ChartArea1";
-            chartArea5.Position.Auto = false;
-            chartArea5.Position.Height = 100F;
-            chartArea5.Position.Width = 100F;
-            this.historicalChart.ChartAreas.Add(chartArea5);
-            legend5.Name = "Legend1";
-            this.historicalChart.Legends.Add(legend5);
+            chartArea1.AxisX.MajorGrid.Enabled = false;
+            chartArea1.AxisX.MajorTickMark.Enabled = false;
+            chartArea1.AxisY.IsStartedFromZero = false;
+            chartArea1.Name = "ChartArea1";
+            chartArea1.Position.Auto = false;
+            chartArea1.Position.Height = 100F;
+            chartArea1.Position.Width = 100F;
+            this.historicalChart.ChartAreas.Add(chartArea1);
+            legend1.Name = "Legend1";
+            this.historicalChart.Legends.Add(legend1);
             this.historicalChart.Location = new System.Drawing.Point(529, 3);
             this.historicalChart.Name = "historicalChart";
-            series5.ChartArea = "ChartArea1";
-            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Candlestick;
-            series5.IsVisibleInLegend = false;
-            series5.IsXValueIndexed = true;
-            series5.Legend = "Legend1";
-            series5.Name = "Series1";
-            series5.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
-            series5.YValuesPerPoint = 4;
-            this.historicalChart.Series.Add(series5);
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Candlestick;
+            series1.IsVisibleInLegend = false;
+            series1.IsXValueIndexed = true;
+            series1.Legend = "Legend1";
+            series1.Name = "Series1";
+            series1.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
+            series1.YValuesPerPoint = 4;
+            this.historicalChart.Series.Add(series1);
             this.historicalChart.Size = new System.Drawing.Size(699, 199);
             this.historicalChart.TabIndex = 0;
             this.historicalChart.Text = "Historical Data";
@@ -5583,26 +5943,26 @@ namespace IBSampleApp
             this.rtBarsChart.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.rtBarsChart.BackImageTransparentColor = System.Drawing.Color.Silver;
             this.rtBarsChart.BackSecondaryColor = System.Drawing.Color.Silver;
-            chartArea6.AxisX.MajorGrid.Enabled = false;
-            chartArea6.AxisX.MajorTickMark.Enabled = false;
-            chartArea6.AxisY.IsStartedFromZero = false;
-            chartArea6.Name = "ChartArea1";
-            chartArea6.Position.Auto = false;
-            chartArea6.Position.Height = 100F;
-            chartArea6.Position.Width = 100F;
-            this.rtBarsChart.ChartAreas.Add(chartArea6);
-            legend6.Name = "Legend1";
-            this.rtBarsChart.Legends.Add(legend6);
+            chartArea2.AxisX.MajorGrid.Enabled = false;
+            chartArea2.AxisX.MajorTickMark.Enabled = false;
+            chartArea2.AxisY.IsStartedFromZero = false;
+            chartArea2.Name = "ChartArea1";
+            chartArea2.Position.Auto = false;
+            chartArea2.Position.Height = 100F;
+            chartArea2.Position.Width = 100F;
+            this.rtBarsChart.ChartAreas.Add(chartArea2);
+            legend2.Name = "Legend1";
+            this.rtBarsChart.Legends.Add(legend2);
             this.rtBarsChart.Location = new System.Drawing.Point(531, 4);
             this.rtBarsChart.Name = "rtBarsChart";
-            series6.ChartArea = "ChartArea1";
-            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Candlestick;
-            series6.IsVisibleInLegend = false;
-            series6.Legend = "Legend1";
-            series6.Name = "Series1";
-            series6.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
-            series6.YValuesPerPoint = 4;
-            this.rtBarsChart.Series.Add(series6);
+            series2.ChartArea = "ChartArea1";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Candlestick;
+            series2.IsVisibleInLegend = false;
+            series2.Legend = "Legend1";
+            series2.Name = "Series1";
+            series2.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
+            series2.YValuesPerPoint = 4;
+            this.rtBarsChart.Series.Add(series2);
             this.rtBarsChart.Size = new System.Drawing.Size(699, 199);
             this.rtBarsChart.TabIndex = 2;
             this.rtBarsChart.Text = "Historical Data";
@@ -5937,7 +6297,7 @@ namespace IBSampleApp
             // 
             // dataGridViewTextBoxColumn27
             // 
-            this.dataGridViewTextBoxColumn27.HeaderText = "Exchange single-letter abbrevation";
+            this.dataGridViewTextBoxColumn27.HeaderText = "Exchange single-letter abbreviation";
             this.dataGridViewTextBoxColumn27.Name = "dataGridViewTextBoxColumn27";
             this.dataGridViewTextBoxColumn27.ReadOnly = true;
             this.dataGridViewTextBoxColumn27.Width = 200;
@@ -6932,6 +7292,7 @@ namespace IBSampleApp
             "1 min",
             "2 mins",
             "3 mins",
+            "4 mins",
             "5 mins",
             "15 mins",
             "30 mins",
@@ -7489,6 +7850,7 @@ namespace IBSampleApp
             this.TabControl.Controls.Add(this.acctPosTab);
             this.TabControl.Controls.Add(this.newsTab);
             this.TabControl.Controls.Add(this.wshTab);
+            this.TabControl.Controls.Add(this.configTab);
             this.TabControl.Location = new System.Drawing.Point(0, 68);
             this.TabControl.Name = "TabControl";
             this.TabControl.SelectedIndex = 0;
@@ -7684,6 +8046,51 @@ namespace IBSampleApp
             this.dataGridViewWsh.Size = new System.Drawing.Size(593, 442);
             this.dataGridViewWsh.TabIndex = 9;
             // 
+            // configTab
+            // 
+            this.configTab.Controls.Add(this.buttonUpdateConfig);
+            this.configTab.Controls.Add(this.buttonRequestConfig);
+            this.configTab.Controls.Add(this.configOutput);
+            this.configTab.Location = new System.Drawing.Point(4, 22);
+            this.configTab.Name = "configTab";
+            this.configTab.Size = new System.Drawing.Size(1248, 448);
+            this.configTab.TabIndex = 11;
+            this.configTab.Text = "Config";
+            this.configTab.UseVisualStyleBackColor = true;
+            // 
+            // buttonUpdateConfig
+            // 
+            this.buttonUpdateConfig.Location = new System.Drawing.Point(686, 42);
+            this.buttonUpdateConfig.Name = "buttonUpdateConfig";
+            this.buttonUpdateConfig.Size = new System.Drawing.Size(151, 23);
+            this.buttonUpdateConfig.TabIndex = 12;
+            this.buttonUpdateConfig.Text = "Update Config";
+            this.buttonUpdateConfig.UseVisualStyleBackColor = true;
+            this.buttonUpdateConfig.Click += new System.EventHandler(this.buttonUpdateConfig_Click);
+            // 
+            // buttonRequestConfig
+            // 
+            this.buttonRequestConfig.Location = new System.Drawing.Point(686, 13);
+            this.buttonRequestConfig.Name = "buttonRequestConfig";
+            this.buttonRequestConfig.Size = new System.Drawing.Size(151, 23);
+            this.buttonRequestConfig.TabIndex = 11;
+            this.buttonRequestConfig.Text = "Request Config";
+            this.buttonRequestConfig.UseVisualStyleBackColor = true;
+            this.buttonRequestConfig.Click += new System.EventHandler(this.buttonRequestConfig_Click);
+            // 
+            // configOutput
+            // 
+            this.configOutput.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.configOutput.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.configOutput.Location = new System.Drawing.Point(6, 3);
+            this.configOutput.Multiline = true;
+            this.configOutput.Name = "configOutput";
+            this.configOutput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.configOutput.Size = new System.Drawing.Size(674, 442);
+            this.configOutput.TabIndex = 1;
+            // 
             // connectOptions_label_CT
             // 
             this.connectOptions_label_CT.AutoSize = true;
@@ -7692,126 +8099,6 @@ namespace IBSampleApp
             this.connectOptions_label_CT.Size = new System.Drawing.Size(84, 13);
             this.connectOptions_label_CT.TabIndex = 12;
             this.connectOptions_label_CT.Text = "Connect options";
-            // 
-            // contractDeatilsSymbol
-            // 
-            this.contractDeatilsSymbol.HeaderText = "Symbol";
-            this.contractDeatilsSymbol.Name = "contractDeatilsSymbol";
-            // 
-            // contractDetailsLocalSymbol
-            // 
-            this.contractDetailsLocalSymbol.HeaderText = "LocalSymbol";
-            this.contractDetailsLocalSymbol.Name = "contractDetailsLocalSymbol";
-            // 
-            // contractDetailsSecType
-            // 
-            this.contractDetailsSecType.HeaderText = "SecType";
-            this.contractDetailsSecType.Name = "contractDetailsSecType";
-            // 
-            // contractDetailsCurrency
-            // 
-            this.contractDetailsCurrency.HeaderText = "Currency";
-            this.contractDetailsCurrency.Name = "contractDetailsCurrency";
-            // 
-            // contractDetailsExchange
-            // 
-            this.contractDetailsExchange.HeaderText = "Exchange";
-            this.contractDetailsExchange.Name = "contractDetailsExchange";
-            // 
-            // contractDetailsPrimaryExch
-            // 
-            this.contractDetailsPrimaryExch.HeaderText = "PrimaryExch";
-            this.contractDetailsPrimaryExch.Name = "contractDetailsPrimaryExch";
-            // 
-            // contractDetailsLastTradeDateOrContractMonth
-            // 
-            this.contractDetailsLastTradeDateOrContractMonth.HeaderText = "LastTradeDateOrContractMonth";
-            this.contractDetailsLastTradeDateOrContractMonth.Name = "contractDetailsLastTradeDateOrContractMonth";
-            // 
-            // contractDetailsLastTradeDate
-            // 
-            this.contractDetailsLastTradeDate.HeaderText = "LastTradeDate";
-            this.contractDetailsLastTradeDate.Name = "contractDetailsLastTradeDate";
-            // 
-            // contractDetailsMultiplier
-            // 
-            this.contractDetailsMultiplier.HeaderText = "Multiplier";
-            this.contractDetailsMultiplier.Name = "contractDetailsMultiplier";
-            // 
-            // contractDetailsStrike
-            // 
-            this.contractDetailsStrike.HeaderText = "Strike";
-            this.contractDetailsStrike.Name = "contractDetailsStrike";
-            // 
-            // contractDetailsRight
-            // 
-            this.contractDetailsRight.HeaderText = "Right";
-            this.contractDetailsRight.Name = "contractDetailsRight";
-            // 
-            // contractDeatilsConId
-            // 
-            this.contractDeatilsConId.HeaderText = "ConId";
-            this.contractDeatilsConId.Name = "contractDeatilsConId";
-            // 
-            // contractDetailsAggGroup
-            // 
-            this.contractDetailsAggGroup.HeaderText = "AggGroup";
-            this.contractDetailsAggGroup.Name = "contractDetailsAggGroup";
-            // 
-            // contractDetailsUnderSymbol
-            // 
-            this.contractDetailsUnderSymbol.HeaderText = "UnderSymbol";
-            this.contractDetailsUnderSymbol.Name = "contractDetailsUnderSymbol";
-            // 
-            // contractDetailsUnderSecType
-            // 
-            this.contractDetailsUnderSecType.HeaderText = "UnderSecType";
-            this.contractDetailsUnderSecType.Name = "contractDetailsUnderSecType";
-            // 
-            // contractDetailsMarketRuleIds
-            // 
-            this.contractDetailsMarketRuleIds.HeaderText = "MarketRuleIds";
-            this.contractDetailsMarketRuleIds.Name = "contractDetailsMarketRuleIds";
-            // 
-            // contractDetailsRealExpirationDate
-            // 
-            this.contractDetailsRealExpirationDate.HeaderText = "RealExpirationDate";
-            this.contractDetailsRealExpirationDate.Name = "contractDetailsRealExpirationDate";
-            // 
-            // contractDetailsContractMonth
-            // 
-            this.contractDetailsContractMonth.HeaderText = "ContractMonth";
-            this.contractDetailsContractMonth.Name = "contractDetailsContractMonth";
-            // 
-            // contractDetailsLastTradeTime
-            // 
-            this.contractDetailsLastTradeTime.HeaderText = "LastTradeTime";
-            this.contractDetailsLastTradeTime.Name = "contractDetailsLastTradeTime";
-            // 
-            // contractDetailsTimeZoneId
-            // 
-            this.contractDetailsTimeZoneId.HeaderText = "TimeZoneId";
-            this.contractDetailsTimeZoneId.Name = "contractDetailsTimeZoneId";
-            // 
-            // contractDetailsStockType
-            // 
-            this.contractDetailsStockType.HeaderText = "StockType";
-            this.contractDetailsStockType.Name = "contractDetailsStockType";
-            // 
-            // contractDetailsMinSize
-            // 
-            this.contractDetailsMinSize.HeaderText = "MinSize";
-            this.contractDetailsMinSize.Name = "contractDetailsMinSize";
-            // 
-            // contractDetailsSizeIncrement
-            // 
-            this.contractDetailsSizeIncrement.HeaderText = "SizeIncrement";
-            this.contractDetailsSizeIncrement.Name = "contractDetailsSizeIncrement";
-            // 
-            // contractDetailsSuggestedSizeIncrement
-            // 
-            this.contractDetailsSuggestedSizeIncrement.HeaderText = "SuggestedSizeIncrement";
-            this.contractDetailsSuggestedSizeIncrement.Name = "contractDetailsSuggestedSizeIncrement";
             // 
             // IBSampleAppDialog
             // 
@@ -8016,6 +8303,8 @@ namespace IBSampleApp
             this.wshTab.ResumeLayout(false);
             this.wshTab.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewWsh)).EndInit();
+            this.configTab.ResumeLayout(false);
+            this.configTab.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -8575,38 +8864,6 @@ namespace IBSampleApp
         private System.Windows.Forms.Label labelWshConId;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.DataGridView dataGridViewWsh;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsConId;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsSymbol;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsExchange;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCurrency;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsTradingClass;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMarketName;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMinTick;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsOrderTypes;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsValidExchanges;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsLongName;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsAggGroup;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMarketRuleIds;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCusip;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsRatings;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsDescAppend;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsBondType;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCouponType;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCallable;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsPutable;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCoupon;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsConvertible;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMaturity;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsIssueDate;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNextOptionDate;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNextOptionType;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNextOptionPartial;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNotes;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsLastTradeTime;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetsilsTimeZoneId;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMinSize;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsSizeIncrement;
-        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsSuggestedSizeIncrement;
         private System.Windows.Forms.Button histScheduleButton;
         private System.Windows.Forms.TabPage tabHistoricalSchedule;
         private System.Windows.Forms.DataGridView historicalScheduleGrid;
@@ -8668,62 +8925,83 @@ namespace IBSampleApp
         private System.Windows.Forms.DataGridViewTextBoxColumn finalIPOLastTickerColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn yieldBidTickerColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn yieldAskTickerColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn ExecutionId;
+        private System.Windows.Forms.TextBox optionManualOrderTime;
+        private System.Windows.Forms.Label optionManualOrderTimeLabel;
+        private System.Windows.Forms.TextBox optionCustomerAccount;
+        private System.Windows.Forms.Label optionCustomerAccountLabel;
+        private System.Windows.Forms.CheckBox optionProfessionalCustomer;
+        private System.Windows.Forms.TextBox connectOptions_CT;
+        private System.Windows.Forms.Label connectOptions_label_CT;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsConId;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsSymbol;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsExchange;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCurrency;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsTradingClass;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMarketName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMinTick;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsOrderTypes;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsValidExchanges;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsLongName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsAggGroup;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMarketRuleIds;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCusip;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsRatings;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsDescAppend;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsBondType;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCouponType;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCallable;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsPutable;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsCoupon;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsConvertible;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMaturity;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsIssueDate;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNextOptionDate;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNextOptionType;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNextOptionPartial;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsNotes;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsLastTradeTime;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsTimeZoneId;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsTradingHours;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsLiqudHours;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsMinSize;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsSizeIncrement;
+        private System.Windows.Forms.DataGridViewTextBoxColumn bondContractDetailsSuggestedSizeIncrement;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersPermId;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersParentPermId;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersAccount;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersAction;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersQuantity;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersCashQuantity;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersFilledQuantity;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersLmtPrice;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersAuxPrice;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersContract;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersCustomerAccount;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersProfessionalCustomer;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersSubmitter;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersImbalanceOnly;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersStatus;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersCompTime;
+        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersCompStatus;
+        private System.Windows.Forms.TextBox execFilterSpecificDates;
+        private System.Windows.Forms.Label execFilterSpecificDatesLabel;
+        private System.Windows.Forms.TextBox execFilterLastNDays;
+        private System.Windows.Forms.Label execFilterLastNDaysLabel;
+        private System.Windows.Forms.DataGridViewTextBoxColumn executionIdExecColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dateTimeExecColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn accountExecColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn8;
+        private System.Windows.Forms.DataGridViewTextBoxColumn modelCodeExecColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn actionExecColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn quantityExecColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn descriptionExecColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn priceExecColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn commissionExecColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn RealizedPnL;
-        private System.Windows.Forms.DataGridViewTextBoxColumn LastLiquidity;
-        private System.Windows.Forms.DataGridViewTextBoxColumn PendingPriceRevision;
-        private System.Windows.Forms.TextBox optionManualOrderTime;
-        private System.Windows.Forms.Label optionManualOrderTimeLabel;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResSymbol;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResLocalSymbol;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResSecType;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResCurrency;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResExchange;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResPrimaryExch;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResLastTradeDateOrContractMonth;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResLastTradeDate;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResMultiplier;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResStrike;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResRight;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResConId;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResAggGroup;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResUnderSymbol;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResUnderSecType;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResMarketRuleIds;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResRealExpirationDate;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResContractMonth;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResLastTradeTime;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResTimeZoneId;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResStockType;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResMinSize;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResSizeIncrement;
-        private System.Windows.Forms.DataGridViewTextBoxColumn conResSuggestedSizeIncrement;
-        private System.Windows.Forms.TextBox optionCustomerAccount;
-        private System.Windows.Forms.Label optionCustomerAccountLabel;
-        private System.Windows.Forms.CheckBox optionProfessionalCustomer;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn1;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn2;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn3;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn4;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn5;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn6;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn7;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn8;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn9;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn10;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn11;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dataGridViewTextBoxColumn9;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn12;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn13;
-        private System.Windows.Forms.DataGridViewTextBoxColumn completedOrdersBoxColumn14;
+        private System.Windows.Forms.DataGridViewTextBoxColumn commissionAndFeesExecColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn realizedPnLExecColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn lastLiquidityExecColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn pendingPriceRevisionExecColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn permIdExecColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn submitterExecColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn optExerciseOrLapseTypeExecColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn permIdColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn clientIdColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn orderIdColumn;
@@ -8734,10 +9012,23 @@ namespace IBSampleApp
         private System.Windows.Forms.DataGridViewTextBoxColumn contractColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn customerAccountColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn professionalCustomerColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn includeOvernightColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn statusColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn cashQtyColumn;
-        private System.Windows.Forms.TextBox connectOptions_CT;
-        private System.Windows.Forms.Label connectOptions_label_CT;
+        private System.Windows.Forms.DataGridViewTextBoxColumn extOperatorColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn manualOrderIndicatorColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn submitterColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn imbalanceOnlyColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn postOnlyColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn allowPreOpenColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn ignoreOpenAuctionColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn deactivateColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn seekPriceImprovementColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn routeMarketableToBboColumn;
+        private System.Windows.Forms.TabPage configTab;
+        private System.Windows.Forms.Button buttonRequestConfig;
+        private System.Windows.Forms.TextBox configOutput;
+        private System.Windows.Forms.Button buttonUpdateConfig;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDeatilsSymbol;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsLocalSymbol;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsSecType;
@@ -8758,10 +9049,18 @@ namespace IBSampleApp
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsContractMonth;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsLastTradeTime;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsTimeZoneId;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsTradingHours;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsLiquidHours;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsStockType;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsMinSize;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsSizeIncrement;
         private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsSuggestedSizeIncrement;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsEventContract1;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsEventContractDescription1;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractDetailsEventContractDescription2;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractMinAlgoSize;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractLastPricePrecision;
+        private System.Windows.Forms.DataGridViewTextBoxColumn contractLastSizePrecision;
     }
 }
 

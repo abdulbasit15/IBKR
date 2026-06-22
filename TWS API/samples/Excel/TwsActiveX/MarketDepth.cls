@@ -282,7 +282,7 @@ Private Sub RequestMarketDepth_Click()
             .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
             .SecType = UCase(contractTable(id, Col_SECTYPE).value)
             .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-            .Strike = contractTable(id, Col_STRIKE).value
+            .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
             .Right = UCase(contractTable(id, Col_RIGHT).value)
             .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
             .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -435,13 +435,13 @@ Sub UpdateMarketDepth(id As Long, position As Long, marketMaker As String, opera
 End Sub
 
 ' process error
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
 
     ' handle errors
     If errorCode = ERROR_DUPLICATE_TICKER_ID Then
         MsgBox STR_ALREADY_SUBSCRIBED
     Else
-        dataTable(id - ID_MKTDEPTH, Col_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+        dataTable(id - ID_MKTDEPTH, Col_STATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
     End If
 
 End Sub

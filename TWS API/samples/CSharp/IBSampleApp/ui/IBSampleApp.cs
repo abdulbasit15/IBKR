@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -34,6 +34,7 @@ namespace IBSampleApp
         private SymbolSamplesManager symbolSamplesManagerData;
         private SymbolSamplesManager symbolSamplesManagerContractInfo;
         private NewsManager newsManager;
+        private ConfigManager configManager;
 
         protected IBClient ibClient;
 
@@ -79,6 +80,7 @@ namespace IBSampleApp
             newsManager = new NewsManager(ibClient, dataGridViewNewsTicks, dataGridViewNewsProviders, textBoxNewsArticle, dataGridViewHistoricalNews);
             pnlMgr = new PnLManager(ibClient);
             wshMgr = new WshManager(ibClient);
+            configManager = new ConfigManager(ibClient, configOutput);
 
             wshMetaDataTable.Columns.Add("Req Id");
             wshMetaDataTable.Columns.Add("Data JSON");
@@ -134,18 +136,19 @@ namespace IBSampleApp
 
             DateTime execFilterDefault = DateTime.Now.ToUniversalTime().AddHours(-1);
             execFilterTime.Text = execFilterDefault.ToString("yyyyMMdd-HH:mm:ss");
+            execFilterLastNDays.Text = "7";
 
-            DateTime endDateTime = DateTime.Now.AddDays(-3);
+            DateTime endDateTime = DateTime.Now.AddDays(-10);
             textBoxHistoricalNewsEndDateTime.Text = endDateTime.ToString("yyyy-MM-dd HH:mm:ss.0");
 
-            DateTime startDateTime = DateTime.Now.AddDays(-4);
+            DateTime startDateTime = DateTime.Now.AddDays(-10);
             textBoxHistoricalNewsStartDateTime.Text = startDateTime.ToString("yyyy-MM-dd HH:mm:ss.0");
 
             textBoxNewsArticlePath.Text = Directory.GetCurrentDirectory();
 
             ibClient.Error += ibClient_Error;
             ibClient.ConnectionClosed += ibClient_ConnectionClosed;
-            ibClient.CurrentTime += time => addTextToBox("Current Time: " + time + Environment.NewLine);
+            ibClient.CurrentTime += time => addTextToBox("Current Time: " + time + " - " + Util.UnixSecondsToString(time, "MMM dd, yyyy HH:mm:ss") + Environment.NewLine);
             ibClient.TickPrice += ibClient_Tick;
             ibClient.TickSize += ibClient_Tick;
             ibClient.TickString += (tickerId, tickType, value) => addTextToBox("Tick string. Ticker Id:" + tickerId + ", Type: " + TickType.getField(tickType) + ", Value: " + value + Environment.NewLine);
@@ -174,7 +177,7 @@ namespace IBSampleApp
             ibClient.ContractDetailsEnd += reqId => UpdateUI(new ContractDetailsEndMessage());
             ibClient.ExecDetails += orderManager.HandleExecutionMessage;
             ibClient.ExecDetailsEnd += reqId => addTextToBox("ExecDetailsEnd. " + reqId + Environment.NewLine);
-            ibClient.CommissionReport += commissionReport => orderManager.HandleCommissionMessage(new CommissionMessage(commissionReport));
+            ibClient.CommissionAndFeesReport += commissionAndFeesReport => orderManager.HandleCommissionAndFeesMessage(new CommissionAndFeesMessage(commissionAndFeesReport));
             ibClient.FundamentalData += UpdateUI;
 
             ibClient.HistoricalData += historicalDataManager.UpdateUI;
@@ -216,7 +219,6 @@ namespace IBSampleApp
             ibClient.SymbolSamples += UpdateUI;
             ibClient.MktDepthExchanges += depthMktDataDescriptions => deepBookManager.HandleMktDepthExchangesMessage(new MktDepthExchangesMessage(depthMktDataDescriptions));
             ibClient.TickNews += newsManager.UpdateUI;
-            ibClient.TickReqParams += UpdateUI;
             ibClient.SmartComponents += (reqId, theMap) => theMap.ToList().ForEach(i => dataGridViewSmartComponents.Rows.Add(new object[] { i.Key, i.Value.Key, i.Value.Value }));
             ibClient.NewsProviders += newsProviders => newsManager.HandleNewsProviders(new NewsProvidersMessage(newsProviders));
             ibClient.NewsArticle += newsManager.UpdateUI;
@@ -235,13 +237,17 @@ namespace IBSampleApp
             ibClient.tickByTickAllLast += UpdateUI;
             ibClient.tickByTickBidAsk += UpdateUI;
             ibClient.tickByTickMidPoint += UpdateUI;
-            ibClient.OrderBound += msg => addTextToBox("Order bound. OrderId: " + Util.LongMaxString(msg.OrderId) + ", ApiClientId: " + Util.IntMaxString(msg.ApiClientId) + ", ApiOrderId: " + Util.IntMaxString(msg.ApiOrderId));
+            ibClient.OrderBound += msg => addTextToBox("Order bound. PermId: " + Util.LongMaxString(msg.PermId) + ", ClientId: " + Util.IntMaxString(msg.ClientId) + ", OrderId: " + Util.IntMaxString(msg.OrderId));
             ibClient.CompletedOrder += orderManager.handleCompletedOrder;
             ibClient.WshMetaData += (reqId, dataJson) => wshMetaDataTable.Rows.Add(reqId, dataJson);
             ibClient.WshEventData += (reqId, dataJson) => wshEventDataTable.Rows.Add(reqId, dataJson);
             ibClient.HistoricalSchedule += UpdateUI;
             //ibClient.CompletedOrderEnd += (do nothing)
             ibClient.UserInfo += whiteBrandingId => ShowMessageOnPanel("User Info. White Branding Id: " + whiteBrandingId);
+            ibClient.CurrentTimeInMillis += timeInMillis => addTextToBox("Current Time In Millis: " + timeInMillis + " - " + Util.UnixMilliSecondsToString(timeInMillis, "MMM dd, yyyy HH:mm:ss.FFF") + Environment.NewLine);
+            ibClient.ConfigResponseProtoBuf += configResponseMessageProto => configManager.HandleConfigResponseMessage(new ConfigResponseMessage(configResponseMessageProto));
+            ibClient.UpdateConfigResponseProtoBuf += updateConfigResponseMessageProto => configManager.HandleUpdateConfigResponseMessage(new UpdateConfigResponseMessage(updateConfigResponseMessageProto));
+            ibClient.TickReqParamsProtoBuf += UpdateUI;
         }
 
         private void UpdateUi(string xml)
@@ -358,7 +364,7 @@ namespace IBSampleApp
             UpdateUI(new ConnectionStatusMessage(false));
         }
 
-        void ibClient_Error(int id, int errorCode, string str, string advancedOrderRejectjson, Exception ex)
+        void ibClient_Error(int id, long errorTime, int errorCode, string str, string advancedOrderRejectjson, Exception ex)
         {
             if (ex != null)
             {
@@ -374,7 +380,7 @@ namespace IBSampleApp
                 return;
             }
 
-            ErrorMessage error = new ErrorMessage(id, errorCode, str, advancedOrderRejectjson);
+            ErrorMessage error = new ErrorMessage(id, errorTime, errorCode, str, advancedOrderRejectjson);
 
             HandleErrorMessage(error);
         }
@@ -382,7 +388,7 @@ namespace IBSampleApp
 
         private void addTextToBox(string text)
         {
-            HandleErrorMessage(new ErrorMessage(-1, -1, text, ""));
+            HandleErrorMessage(new ErrorMessage(-1, Util.CurrentTimeMillis(), -1, text, ""));
         }
 
 
@@ -448,12 +454,14 @@ namespace IBSampleApp
             }
         }
 
-        private void UpdateUI(TickReqParamsMessage message)
+        private void UpdateUI(IBApi.protobuf.TickReqParams tickReqParamsProto)
         {
-            bboExchange_comboBox.BindingContext[bboExchangeList].SuspendBinding();
-            bboExchangeList.Add(message.BboExchange);
-            bboExchange_comboBox.BindingContext[bboExchangeList].ResumeBinding();
-
+            if (tickReqParamsProto.HasBboExchange)
+            {
+                bboExchange_comboBox.BindingContext[bboExchangeList].SuspendBinding();
+                bboExchangeList.Add(tickReqParamsProto.BboExchange);
+                bboExchange_comboBox.BindingContext[bboExchangeList].ResumeBinding();
+            }
             ReqSmartComponents_Button.Enabled = bboExchange_comboBox.Items.Count > 0;
         }
 
@@ -493,13 +501,14 @@ namespace IBSampleApp
 
         private void HandleErrorMessage(ErrorMessage message)
         {
+            string errorTimeStr = message.ErrorTime > 0 ? Util.UnixMilliSecondsToString(message.ErrorTime, "yyyyMMdd-HH:mm:ss") : "";
             if (!Util.StringIsEmpty(message.AdvancedOrderRejectJson))
             {
-                ShowMessageOnPanel("Request " + message.RequestId + ", Code: " + message.ErrorCode + " - " + message.Message + ", AdvancedOrderRejectJson: " + message.AdvancedOrderRejectJson + Environment.NewLine);
+                ShowMessageOnPanel("Request " + message.RequestId + ", Time: " + errorTimeStr + ", Code: " + message.ErrorCode + " - " + message.Message + ", AdvancedOrderRejectJson: " + message.AdvancedOrderRejectJson + Environment.NewLine);
             }
             else
             {
-                ShowMessageOnPanel("Request " + message.RequestId + ", Code: " + message.ErrorCode + " - " + message.Message);
+                ShowMessageOnPanel("Request " + message.RequestId + ", Time: " + errorTimeStr + ", Code: " + message.ErrorCode + " - " + message.Message);
             }
 
             if (message.RequestId > MarketDataManager.TICK_ID_BASE && message.RequestId < DeepBookManager.TICK_ID_BASE)
@@ -560,8 +569,9 @@ namespace IBSampleApp
                 }
                 catch (Exception)
                 {
-                    HandleErrorMessage(new ErrorMessage(-1, -1, "Please check your connection attributes.", ""));
+                    HandleErrorMessage(new ErrorMessage(-1, Util.CurrentTimeMillis(), - 1, "Please check your connection attributes.", ""));
                 }
+                ibClient.ClientSocket.reqCurrentTimeInMillis();
             }
             else
             {
@@ -673,14 +683,6 @@ namespace IBSampleApp
             marketData_MDT.TabPages.Remove(scannerTab);
         }
 
-        private double stringToDouble(string number)
-        {
-            if (number != null && !number.Equals(""))
-                return double.Parse(number);
-            else
-                return 0;
-        }
-
         private Contract GetMDContract()
         {
             Contract contract = new Contract();
@@ -695,7 +697,7 @@ namespace IBSampleApp
             if (!mdContractRight.Text.Equals("") && !mdContractRight.Text.Equals("None"))
                 contract.Right = (string)((IBType)mdContractRight.SelectedItem).Value;
 
-            contract.Strike = stringToDouble(strike_TMD_MDT.Text);
+            contract.Strike = Util.StringToDoubleMax(strike_TMD_MDT.Text);
             contract.Multiplier = multiplier_TMD_MDT.Text;
             contract.LocalSymbol = localSymbol_TMD_MDT.Text;
 
@@ -742,6 +744,10 @@ namespace IBSampleApp
             execFilter.SecType = execFilterSecType.Text;
             execFilter.Exchange = execFilterExchange.Text;
             execFilter.Side = execFilterSide.Text;
+            if (!execFilterLastNDays.Text.Equals(string.Empty))
+                execFilter.LastNDays = int.Parse(execFilterLastNDays.Text);
+            if (!execFilterSpecificDates.Text.Equals(string.Empty))
+                execFilter.SpecificDates = new List<int>(execFilterSpecificDates.Text.Split(',').Select(Int32.Parse).ToList());
 
             ibClient.ClientSocket.reqExecutions(1, execFilter);
         }
@@ -771,7 +777,7 @@ namespace IBSampleApp
 
         private void globalCancelButton_Click(object sender, EventArgs e)
         {
-            ibClient.ClientSocket.reqGlobalCancel();
+            orderManager.OpenNewOrderDialog();
         }
 
         private void accSummaryRequest_Click(object sender, EventArgs e)
@@ -822,7 +828,7 @@ namespace IBSampleApp
             contract.Exchange = conDetExchange.Text;
             contract.Currency = conDetCurrency.Text;
             contract.LastTradeDateOrContractMonth = conDetLastTradeDateOrContractMonth.Text;
-            contract.Strike = stringToDouble(conDetStrike.Text);
+            contract.Strike = Util.StringToDoubleMax(conDetStrike.Text);
             contract.Multiplier = conDetMultiplier.Text;
             contract.LocalSymbol = conDetLocalSymbol.Text;
             contract.IssuerId = conDetIssuerId.Text;
@@ -872,7 +878,7 @@ namespace IBSampleApp
             contract.Exchange = comboExchange.Text;
             contract.Currency = comboCurrency.Text;
             contract.LastTradeDateOrContractMonth = comboLastTradeDate.Text;
-            contract.Strike = stringToDouble(comboStrike.Text);
+            contract.Strike = Util.StringToDoubleMax(comboStrike.Text);
             contract.Multiplier = comboMultiplier.Text;
             contract.LocalSymbol = comboLocalSymbol.Text;
 
@@ -1440,6 +1446,23 @@ namespace IBSampleApp
             {
                 ibClient.ClientSocket.reqUserInfo(0);
             }
+        }
+
+        private void buttonRequestConfig_Click(object sender, EventArgs e)
+        {
+            if (!IsConnected)
+                return;
+
+            configManager.RequestConfig();
+        }
+
+        private void buttonUpdateConfig_Click(object sender, EventArgs e)
+        {
+            if (!IsConnected)
+                return;
+
+            configManager.UpdateConfig();
+
         }
 
         WshManager wshMgr;

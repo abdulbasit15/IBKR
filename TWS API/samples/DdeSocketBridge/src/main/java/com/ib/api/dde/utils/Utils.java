@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.utils;
@@ -106,6 +106,8 @@ public class Utils {
     public static final String MIN_TICK = "minTick";
     public static final String BBO_EXCHANGE = "bboExchange";
     public static final String SNAPSHOT_PERMISSIONS = "snapshotPermissions";
+    public static final String LAST_PRICE_PRECISION = "lastPricePrecision";
+    public static final String LAST_SIZE_PRECISION = "lastSizePrecision";
     
     public static final String LONGVALUE = "LONGVALUE";
     
@@ -361,7 +363,7 @@ public class Utils {
         if (numOfChar <= 0 || Utils.isNull(inputString)) {
             return 0;
         }
-        int numOfChunks = (int)(inputString.length() / numOfChar) + 1;
+        int numOfChunks = (inputString.length() + numOfChar - 1) / numOfChar;
         return numOfChunks;
     }
     
@@ -372,18 +374,11 @@ public class Utils {
         }
 
         ArrayList<String> chunks = new ArrayList<String>();
-        
-        if (inputString.length() == numOfChar) {
-            chunks.add(inputString);
-        };
-
-        int chunkCount = (int)Math.ceil(inputString.length() / numOfChar);
-        for (int i = 0; i <= chunkCount; i++) {
-            int endLen = numOfChar;
-            if (i == chunkCount) {
-                endLen = inputString.length() % numOfChar;
-            }
-            chunks.add(new String(inputString.getBytes(), i * numOfChar, endLen));
+       
+        int length = inputString.length();
+        for (int i = 0; i < length; i += numOfChar) {
+            int endIndex = Math.min(i + numOfChar,  length);
+            chunks.add(inputString.substring(i, endIndex));
         }
 
         return chunks;
@@ -426,7 +421,8 @@ public class Utils {
                 for (int i = 0; i < maxIndexX; i++) {
                     int itemLength = 0;
                     if (i < table.get(j).size()) {
-                        itemLength = table.get(j).get(i).length();
+                        byte[] item = table.get(j).get(i).getBytes();
+                        itemLength = (byte)(item.length);
                     }
                     totalLength ++; // length of item (1 byte)
                     totalLength += itemLength; // item
@@ -439,8 +435,8 @@ public class Utils {
                     byte itemLength = (byte)"".length();
                     byte[] item = "".getBytes();
                     if (i < table.get(j).size()) {
-                        itemLength = (byte)(table.get(j).get(i).length());
                         item = table.get(j).get(i).getBytes();
+                        itemLength = (byte)(item.length);
                     }
                     if (itemLength == 0) {
                         out.write((byte)0); // empty item
@@ -633,6 +629,16 @@ public class Utils {
         return b ? "1" : "0";
     }
     
+    /** Method converts double to non-null string */
+    public static String toStringMax(Double d) {
+        return (d == Double.MAX_VALUE) ? "" : String.valueOf(d);
+    }
+
+    /** Method converts integer to non-null string */
+    public static String toStringMax(Integer i) {
+        return (i == Integer.MAX_VALUE) ? "" : String.valueOf(i);
+    }
+
     /** Method converts SoftDollarTier to non-null string */
     public static String toString(SoftDollarTier softDollarTier) {
         StringBuilder sb = new StringBuilder();

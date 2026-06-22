@@ -15,14 +15,14 @@ Const STR_REQ_EXECUTIONS_ERROR = "reqExecutionsError"
 
 ' cells
 Const CELL_SERVER_NAME = "B5" ' cell with server name
-Const CELL_SUBSCRIPTION_CONTROL = "I9" ' cell with subscription control
-Const CELL_ID = "K9" ' cell with id
-Const CELL_ERROR = "L9" ' cell with error
+Const CELL_SUBSCRIPTION_CONTROL = "L9" ' cell with subscription control
+Const CELL_ID = "N9" ' cell with id
+Const CELL_ERROR = "O9" ' cell with error
 
 ' columns
 Const COLUMN_CLIENTID = 1
 Const COLUMN_TIME = 3
-Const COLUMN_SIDE = 8
+Const COLUMN_SPECIFICDATES = 9
 Const COLUMN_CONID = 11
 
 ' rows
@@ -31,7 +31,7 @@ Const EXECUTIONS_START_ROW = 14
 Const EXECUTIONS_END_ROW = 500
 
 ' range
-Const EXECUTIONS_TABLE_RANGE = "A" & EXECUTIONS_START_ROW & ":AI" & EXECUTIONS_END_ROW
+Const EXECUTIONS_TABLE_RANGE = "A" & EXECUTIONS_START_ROW & ":AK" & EXECUTIONS_END_ROW
 
 ' vars
 Dim genId As Long
@@ -89,15 +89,18 @@ Function getParams() As String
     params = util.STR_EMPTY
     Dim i As Integer
     With Worksheets(STR_SHEET_NAME)
-        For i = COLUMN_CLIENTID To COLUMN_SIDE - 1
+        For i = COLUMN_CLIENTID To COLUMN_SPECIFICDATES
             param = .Cells(PARAMS_ROW, i).value
             If i = COLUMN_TIME Then
                 param = util.trimSymbol(param, util.MINUS_CHAR)
                 param = util.trimSymbol(param, util.COLON_CHAR)
                 
             End If
+            If i = COLUMN_SPECIFICDATES Then
+                param = Replace(param, ",", "D")
+            End If
             params = params & param
-            If i < COLUMN_SIDE - 1 Then
+            If i < COLUMN_SPECIFICDATES Then
                 params = params & util.UNDERSCORE
             End If
         Next i

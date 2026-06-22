@@ -19,7 +19,10 @@ Const CELL_CLIENT_ID = "E5"
 Const CELL_CONNECT_OPTIONS = "G5"
 Const CELL_SERVER_LOG_LEVEL = "A8"
 Const CELL_CURRENT_TIME = "D8"
+Const CELL_CURRENT_TIME_IN_MILLIS = "F8"
 Const CELL_CONNECTION_STATUS = "Q7"
+Const CELL_GLOBAL_CANCEL_EXT_OPERATOR = "J8"
+Const CELL_GLOBAL_CANCEL_MANUAL_ORDER_INDICATOR = "L8"
 
 'other constants
 Const INCORRECT_HOST_PORT_STR = "You should enter valid Connection Host, Connection Port and Client ID"
@@ -42,7 +45,13 @@ End Sub
 Private Sub RequestGlobalCancel_Click()
     If Not CheckConnected Then Exit Sub
     
-    Api.Tws.ReqGlobalCancel
+    Dim orderCancel As TWSLib.IOrderCancel
+    Set orderCancel = Api.Tws.createOrderCancel()
+    
+    orderCancel.extOperator = Util.SetNonEmptyValue(Range(CELL_GLOBAL_CANCEL_EXT_OPERATOR).value, orderCancel.extOperator)
+    orderCancel.manualOrderIndicator = Util.SetNonEmptyValue(Range(CELL_GLOBAL_CANCEL_MANUAL_ORDER_INDICATOR).value, orderCancel.manualOrderIndicator)
+    
+    Api.Tws.ReqGlobalCancel orderCancel
 End Sub
 
 ' request current time
@@ -52,6 +61,12 @@ Private Sub RequestCurrentTime_Click()
     Api.Tws.reqCurrentTime
 End Sub
 
+' request current time in millis
+Private Sub RequestCurrentTimeInMillis_Click()
+    If Not CheckConnected Then Exit Sub
+    
+    Api.Tws.ReqCurrentTimeInMillis
+End Sub
 
 ' set server log level
 Private Sub SetServerLogLevel_Click()
@@ -96,7 +111,15 @@ End Sub
 '=================
 ' current time
 Public Sub UpdateCurrentTime(ByVal time As Long)
-    Range(CELL_CURRENT_TIME).value = Util.ConvertLongToDateStr(time)
+    Range(CELL_CURRENT_TIME).value = Util.ConvertLongStrToDateStr(CStr(time))
+End Sub
+
+' current time in millis
+Public Sub UpdateCurrentTimeInMillis(ByVal time As String)
+    Dim timeStr, millisStr
+    timeStr = Left(time, Len(time) - 3)
+    millisStr = Right(time, 3)
+    Range(CELL_CURRENT_TIME_IN_MILLIS).value = Util.ConvertLongStrToDateStr(CStr(timeStr)) & "." & millisStr
 End Sub
 
 Public Sub SetDisconnected()

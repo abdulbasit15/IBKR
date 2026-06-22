@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using IBApi;
@@ -13,7 +13,7 @@ namespace TWSLib
     /**
      * @class Execution
      * @brief Class describing an order's execution.
-     * @sa ExecutionFilter, CommissionReport
+     * @sa ExecutionFilter, CommissionAndFeesReport
      */
     [ComVisible(true), ClassInterface(ClassInterfaceType.None)]
     public class ComExecution : ComWrapper<Execution>, IExecution
@@ -92,7 +92,7 @@ namespace TWSLib
         }
 
         /**
-         * @brief The order's execution price excluding commissions.
+         * @brief The order's execution price excluding commission and fees.
          */
         double Price
         {
@@ -105,7 +105,7 @@ namespace TWSLib
          */
         int PermId
         {
-            get { return data != null ? data.PermId : default(int); }
+            get { return data != null ? (int)data.PermId : default(int); }
             set { if (data != null) data.PermId = value; }
         }
 
@@ -130,7 +130,7 @@ namespace TWSLib
 
         /**
          * @brief Average price. 
-         * Used in regular trades, combo trades and legs of the combo. Includes commissions.
+         * Used in regular trades, combo trades and legs of the combo. Includes commission and fees.
          */
         double AvgPrice
         {
@@ -184,6 +184,16 @@ namespace TWSLib
         public bool PendingPriceRevision
         {
             get { return data != null ? data.PendingPriceRevision : default(bool); }
+        }
+
+        public string Submitter
+        {
+            get { return data != null ? data.Submitter : default(string); }
+        }
+
+        public String OptExerciseOrLapseType
+        {
+            get { return data != null ? COptionExerciseType.getOptionExerciseTypeName(data.OptExerciseOrLapseType) : default(string); }
         }
 
         public override bool Equals(Object p_other)
@@ -309,6 +319,21 @@ namespace TWSLib
         bool IExecution.pendingPriceRevision
         {
             get { return PendingPriceRevision; }
+        }
+
+        string TWSLib.IExecution.permIdStr
+        {
+            get { return PermId.ToString("G"); }
+        }
+
+        string IExecution.optExerciseOrLapseType
+        {
+            get { return OptExerciseOrLapseType; }
+        }
+
+        string IExecution.submitter
+        {
+            get { return Submitter; }
         }
     }
 }

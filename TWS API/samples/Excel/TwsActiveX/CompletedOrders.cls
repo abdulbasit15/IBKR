@@ -93,6 +93,7 @@ Private Enum ExtendedCompletedOrderAttributesColumns
     Col_CLEARINT
     Col_HEDGETYPE
     Col_HEDGEPARAM
+    Col_HEDGEMAXSIZE
     Col_DONTUSEAUTOPRICEFORHEDGE
     Col_ALGOSTRATEGY
     Col_ALGOPARAMS
@@ -117,7 +118,7 @@ Private Enum ExtendedCompletedOrderAttributesColumns
     Col_REF_FUTURES_CONID
     Col_AUTO_CANCEL_PARENT
     Col_SHAREHOLDER
-    Col_IMBALANCEE_ONLY
+    Col_IMBALANCE_ONLY
     Col_ROUTE_MARKETABLE_TO_BBO
     Col_MIN_TRADE_QTY
     Col_MIN_COMPETE_SIZE
@@ -126,6 +127,7 @@ Private Enum ExtendedCompletedOrderAttributesColumns
     Col_MID_OFFSET_AT_HALF
     Col_CUSTOMER_ACCOUNT
     Col_PROFESSIONAL_CUSTOMER
+    Col_SUBMITTER
 End Enum
 
 '=================
@@ -168,7 +170,7 @@ Sub UpdateCompletedOrder(contract As TWSLib.IContract, order As TWSLib.IOrder, o
         contractTable(rowId, Col_SYMBOL).value = .Symbol
         contractTable(rowId, Col_SECTYPE).value = .SecType
         contractTable(rowId, Col_LASTTRADEDATE).value = .lastTradeDateOrContractMonth
-        contractTable(rowId, Col_STRIKE).value = .Strike
+        contractTable(rowId, Col_STRIKE).value = Util.DblMaxStr(.Strike)
         contractTable(rowId, Col_RIGHT).value = .Right
         contractTable(rowId, Col_MULTIPLIER).value = .multiplier
         contractTable(rowId, Col_EXCH).value = .Exchange
@@ -198,7 +200,7 @@ Sub UpdateCompletedOrder(contract As TWSLib.IContract, order As TWSLib.IOrder, o
     
     With order
         completedOrderStatusTable(rowId, Col_PERMID).value = .permId
-        completedOrderStatusTable(rowId, Col_PARENTPERMID).value = Util.IntMaxStr(.parentPermId)
+        completedOrderStatusTable(rowId, Col_PARENTPERMID).value = Util.LongMaxStr(.parentPermId)
     End With
 
     With order
@@ -264,6 +266,7 @@ Sub UpdateCompletedOrder(contract As TWSLib.IContract, order As TWSLib.IOrder, o
         ExtendedCompletedOrderAttributesTable(rowId, Col_CLEARINT).value = .clearingIntent
         ExtendedCompletedOrderAttributesTable(rowId, Col_HEDGETYPE).value = .hedgeType
         ExtendedCompletedOrderAttributesTable(rowId, Col_HEDGEPARAM).value = .hedgeParam
+        ExtendedCompletedOrderAttributesTable(rowId, Col_HEDGEMAXSIZE).value = .hedgeMaxSize
         ExtendedCompletedOrderAttributesTable(rowId, Col_DONTUSEAUTOPRICEFORHEDGE).value = .dontUseAutoPriceForHedge
         ExtendedCompletedOrderAttributesTable(rowId, Col_ALGOSTRATEGY).value = .algoStrategy
         ExtendedCompletedOrderAttributesTable(rowId, Col_NOTHELD).value = .notHeld
@@ -285,7 +288,7 @@ Sub UpdateCompletedOrder(contract As TWSLib.IContract, order As TWSLib.IOrder, o
         ExtendedCompletedOrderAttributesTable(rowId, Col_REF_FUTURES_CONID).value = Util.IntMaxStr(.refFuturesConId)
         ExtendedCompletedOrderAttributesTable(rowId, Col_AUTO_CANCEL_PARENT).value = .autoCancelParent
         ExtendedCompletedOrderAttributesTable(rowId, Col_SHAREHOLDER).value = .shareholder
-        ExtendedCompletedOrderAttributesTable(rowId, Col_IMBALANCEE_ONLY).value = .imbalanceOnly
+        ExtendedCompletedOrderAttributesTable(rowId, Col_IMBALANCE_ONLY).value = .imbalanceOnly
         ExtendedCompletedOrderAttributesTable(rowId, Col_ROUTE_MARKETABLE_TO_BBO).value = .routeMarketableToBbo
         ExtendedCompletedOrderAttributesTable(rowId, Col_MIN_TRADE_QTY).value = Util.IntMaxStr(.minTradeQty)
         ExtendedCompletedOrderAttributesTable(rowId, Col_MIN_COMPETE_SIZE).value = Util.IntMaxStr(.minCompeteSize)
@@ -298,6 +301,7 @@ Sub UpdateCompletedOrder(contract As TWSLib.IContract, order As TWSLib.IOrder, o
         ExtendedCompletedOrderAttributesTable(rowId, Col_MID_OFFSET_AT_HALF).value = Util.DblMaxStr(.midOffsetAtHalf)
         ExtendedCompletedOrderAttributesTable(rowId, Col_CUSTOMER_ACCOUNT).value = .customerAccount
         ExtendedCompletedOrderAttributesTable(rowId, Col_PROFESSIONAL_CUSTOMER).value = .professionalCustomer
+        ExtendedCompletedOrderAttributesTable(rowId, Col_SUBMITTER).value = .submitter
     End With
 
     Dim tempStr As String
@@ -340,7 +344,7 @@ Public Sub Initialise()
     Set contractTable = Range("$A$7:$M$100")
     Set completedOrderDescriptionTable = Range("$N$7:$T$100")
     Set completedOrderStatusTable = Range("$U$7:$Y$100")
-    Set ExtendedCompletedOrderAttributesTable = Range("$Z$7:$DK$100")
+    Set ExtendedCompletedOrderAttributesTable = Range("$Z$7:$DL$100")
 End Sub
 
 Private Sub Worksheet_Activate()

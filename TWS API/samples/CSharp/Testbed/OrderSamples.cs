@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using System.Collections.Generic;
@@ -369,6 +369,7 @@ namespace Samples
             order.OrderType = "LMT";
             order.TotalQuantity = quantity;
             order.LmtPrice = limitPrice;
+            order.Tif = "DAY";
             // ! [limitorder]
             return order;
         }
@@ -942,7 +943,7 @@ namespace Samples
             order.AdjustedOrderType = "TRAIL";
             //With a stop price of...
             order.AdjustedStopPrice = adjustedStopPrice;
-            //traling by and amount (0) or a percent (100)...
+            //trailing by and amount (0) or a percent (100)...
             order.AdjustableTrailingUnit = trailUnit;
             //of...
             order.AdjustedTrailingAmount = adjustedTrailAmount;
@@ -955,11 +956,12 @@ namespace Samples
             // ! [whatiflimitorder]
             Order order = LimitOrder(action, quantity, limitPrice);
             order.WhatIf = true;
+            order.Tif = "DAY";
             // ! [whatiflimitorder]
             return order;
         }
 
-        public static PriceCondition PriceCondition(int conId, string exchange, double price, bool isMore, bool isConjunction)
+        public static PriceCondition PriceCondition(int conId, string exchange, double price, TriggerMethod triggermethod, bool isMore, bool isConjunction)
         {
             //! [price_condition]
             //Conditions have to be created via the OrderCondition.Create 
@@ -974,6 +976,7 @@ namespace Samples
             priceCondition.Price = price;
             //AND | OR next condition (will be ignored if no more conditions are added)
             priceCondition.IsConjunctionConnection = isConjunction;
+            priceCondition.TriggerMethod = triggermethod;
             //! [price_condition]
             return priceCondition;
         }
@@ -1011,7 +1014,7 @@ namespace Samples
         public static PercentChangeCondition PercentageChangeCondition(double pctChange, int conId, string exchange, bool isMore, bool isConjunction)
         {
             //! [percentage_condition]
-            PercentChangeCondition pctChangeCondition = (PercentChangeCondition)OrderCondition.Create(OrderConditionType.PercentCange);
+            PercentChangeCondition pctChangeCondition = (PercentChangeCondition)OrderCondition.Create(OrderConditionType.PercentChange);
             //If there is a price percent change measured against last close price above or below...
             pctChangeCondition.IsMore = isMore;
             //this amount...
@@ -1140,6 +1143,15 @@ namespace Samples
             return order;
         }
 
+        public static Order LimitOrderWithIncludeOvernight(string action, decimal quantity, double limitPrice)
+        {
+            // ! [limit_order_with_include_overnight]
+            Order order = OrderSamples.LimitOrder(action, quantity, limitPrice);
+            order.IncludeOvernight = true;
+            // ! [limit_order_with_include_overnight]
+            return order;
+        }
+
         public static OrderCancel OrderCancelEmpty()
         {
             // ! [order_cancel_empty]
@@ -1157,36 +1169,49 @@ namespace Samples
             return orderCancel;
         }
 
-        public static Order Rfq()
+        public static Order LimitOrderWithCmeTaggingFields(string action, Decimal quantity, double limitPrice, string extOperator, int manualOrderIndicator)
         {
-            // ! [rfq]
-            Order order = OrderSamples.RfqEmpty();
-            order.ExtOperator = "Ext Operator 1";
-            order.ExternalUserId = "External User Id 1";
-            order.ManualOrderIndicator = 1;
-            // ! [rfq]
+            // ! [limit_order_with_cme_tagging_fields]
+            Order order = OrderSamples.LimitOrder(action, quantity, limitPrice);
+            order.ExtOperator = extOperator;
+            order.ManualOrderIndicator = manualOrderIndicator;
+            // ! [limit_order_with_cme_tagging_fields]
             return order;
         }
 
-        public static Order RfqEmpty()
+        public static OrderCancel OrderCancelWithCmeTaggingFields(string extOperator, int manualOrderIndicator)
         {
-            // ! [rfq_empty]
-            Order order = new Order();
-            order.OrderType = "QUOTE";
-            order.TotalQuantity = 1;
-            // ! [rfq_empty]
-            return order;
-        }
-
-        public static OrderCancel RfqCancel()
-        {
-            // ! [rfq_cancel]
+            // ! [order_cancel_with_cme_tagging_fields]
             OrderCancel orderCancel = new OrderCancel();
-            orderCancel.ExtOperator = "Ext Operator 2";
-            orderCancel.ExternalUserId = "External User Id 2";
-            orderCancel.ManualOrderIndicator = 1;
-            // ! [rfq_cancel]
+            orderCancel.ExtOperator = extOperator;
+            orderCancel.ManualOrderIndicator = manualOrderIndicator;
+            // ! [order_cancel_with_cme_tagging_fields]
             return orderCancel;
+        }
+
+        public static Order LimitOnCloseOrderWithImbalanceOnly(string action, Decimal quantity, double limitPrice)
+        {
+            // ! [limit_on_close_order_with_imbalance_only]
+            Order order = new Order();
+            order.Action = action;
+            order.OrderType = "LOC";
+            order.TotalQuantity = quantity;
+            order.LmtPrice = limitPrice;
+            order.ImbalanceOnly = true;
+            // ! [limit_on_close_order_with_imbalance_only]
+            return order;
+        }
+
+        public static Order LimitOrderWithStopLossAndProfitTaker(string action, decimal quantity, double limitPrice, int slOrderId, int ptOrderId)
+        {
+            // ! [limit_order_with_stop_loss_and_profit_taker]
+            Order order = OrderSamples.LimitOrder(action, quantity, limitPrice);
+            order.SlOrderId = slOrderId;
+            order.SlOrderType = "PRESET";
+            order.PtOrderId = ptOrderId;
+            order.PtOrderType = "PRESET";
+            // ! [limit_order_with_stop_loss_and_profit_taker]
+            return order;
         }
     }
 }

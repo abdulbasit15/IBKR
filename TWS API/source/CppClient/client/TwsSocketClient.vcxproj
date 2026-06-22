@@ -129,8 +129,8 @@
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>..\lib\TwsSocketClient.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>biddll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -180,8 +180,8 @@
       <SubSystem>Windows</SubSystem>
       <ImportLibrary>.\Debug/TwsSocketClient.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>biddll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -194,10 +194,10 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
-      <AdditionalLibraryDirectories>.\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <ModuleDefinitionFile>.\TwsSocketClient.def</ModuleDefinitionFile>
-      <AdditionalDependencies>biddll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -207,35 +207,39 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;TWSAPIDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4355;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>../Shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PrecompiledHeader>Create</PrecompiledHeader>
+      <AdditionalIncludeDirectories>../Shared;%(AdditionalIncludeDirectories);$(ProjectDir);$(ProjectDir)/protobuf;</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
-      <AdditionalLibraryDirectories>.\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <ModuleDefinitionFile>.\TwsSocketClient.def</ModuleDefinitionFile>
       <ImageHasSafeExceptionHandlers>
       </ImageHasSafeExceptionHandlers>
-      <AdditionalDependencies>biddll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4355;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <AdditionalIncludeDirectories>../Shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../Shared;%(AdditionalIncludeDirectories);$(ProjectDir);$(ProjectDir)/protobuf;</AdditionalIncludeDirectories>
       <BrowseInformation>true</BrowseInformation>
       <StringPooling>true</StringPooling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>_WINDLL;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;TWSAPIDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_WIN_DLL;_WINDLL;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;TWSAPIDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ContractCondition.cpp" />
     <ClCompile Include="Decimal.cpp" />
     <ClCompile Include="DefaultEWrapper.cpp" />
+    <ClCompile Include="EClientUtils.cpp" />
+    <ClCompile Include="EDecoderUtils.cpp" />
     <ClCompile Include="EMutex.cpp" />
     <ClCompile Include="EDecoder.cpp" />
     <ClCompile Include="EMessage.cpp" />
@@ -250,6 +254,308 @@
     <ClCompile Include="OrderCondition.cpp" />
     <ClCompile Include="PercentChangeCondition.cpp" />
     <ClCompile Include="PriceCondition.cpp" />
+    <ClCompile Include="protobuf\AccountDataEnd.pb.cc" />
+    <ClCompile Include="protobuf\AccountDataRequest.pb.cc" />
+    <ClCompile Include="protobuf\AccountSummary.pb.cc" />
+    <ClCompile Include="protobuf\AccountSummaryEnd.pb.cc" />
+    <ClCompile Include="protobuf\AccountSummaryRequest.pb.cc" />
+    <ClCompile Include="protobuf\AccountUpdateMulti.pb.cc" />
+    <ClCompile Include="protobuf\AccountUpdateMultiEnd.pb.cc" />
+    <ClCompile Include="protobuf\AccountUpdatesMultiRequest.pb.cc" />
+    <ClCompile Include="protobuf\AccountUpdateTime.pb.cc" />
+    <ClCompile Include="protobuf\AccountValue.pb.cc" />
+    <ClCompile Include="protobuf\AllOpenOrdersRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ApiConfig.pb.cc" />
+    <ClCompile Include="protobuf\ApiPrecautionsConfig.pb.cc" />
+    <ClCompile Include="protobuf\ApiSettingsConfig.pb.cc" />
+    <ClCompile Include="protobuf\AttachedOrders.pb.cc" />
+    <ClCompile Include="protobuf\AutoOpenOrdersRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\CalculateImpliedVolatilityRequest.pb.cc" />
+    <ClCompile Include="protobuf\CalculateOptionPriceRequest.pb.cc" />
+    <ClCompile Include="protobuf\CancelAccountSummary.pb.cc" />
+    <ClCompile Include="protobuf\CancelAccountUpdatesMulti.pb.cc" />
+    <ClCompile Include="protobuf\CancelCalculateImpliedVolatility.pb.cc" />
+    <ClCompile Include="protobuf\CancelCalculateOptionPrice.pb.cc" />
+    <ClCompile Include="protobuf\CancelContractData.pb.cc" />
+    <ClCompile Include="protobuf\CancelFundamentalsData.pb.cc" />
+    <ClCompile Include="protobuf\CancelHeadTimestamp.pb.cc" />
+    <ClCompile Include="protobuf\CancelHistogramData.pb.cc" />
+    <ClCompile Include="protobuf\CancelHistoricalData.pb.cc" />
+    <ClCompile Include="protobuf\CancelHistoricalTicks.pb.cc" />
+    <ClCompile Include="protobuf\CancelMarketData.pb.cc" />
+    <ClCompile Include="protobuf\CancelMarketDepth.pb.cc" />
+    <ClCompile Include="protobuf\CancelNewsBulletins.pb.cc" />
+    <ClCompile Include="protobuf\CancelOrderRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelPnL.pb.cc" />
+    <ClCompile Include="protobuf\CancelPnLSingle.pb.cc" />
+    <ClCompile Include="protobuf\CancelPositions.pb.cc" />
+    <ClCompile Include="protobuf\CancelPositionsMulti.pb.cc" />
+    <ClCompile Include="protobuf\CancelRealTimeBars.pb.cc" />
+    <ClCompile Include="protobuf\CancelScannerSubscription.pb.cc" />
+    <ClCompile Include="protobuf\CancelTickByTick.pb.cc" />
+    <ClCompile Include="protobuf\CancelWshEventData.pb.cc" />
+    <ClCompile Include="protobuf\CancelWshMetaData.pb.cc" />
+    <ClCompile Include="protobuf\ComboLeg.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\CommissionAndFeesReport.pb.cc" />
+    <ClCompile Include="protobuf\CompletedOrder.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\CompletedOrdersEnd.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\CompletedOrdersRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ConfigRequest.pb.cc" />
+    <ClCompile Include="protobuf\ConfigResponse.pb.cc" />
+    <ClCompile Include="protobuf\Contract.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractData.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractDataEnd.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractDataRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractDescription.pb.cc" />
+    <ClCompile Include="protobuf\ContractDetails.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\CurrentTime.pb.cc" />
+    <ClCompile Include="protobuf\CurrentTimeInMillis.pb.cc" />
+    <ClCompile Include="protobuf\CurrentTimeInMillisRequest.pb.cc" />
+    <ClCompile Include="protobuf\CurrentTimeRequest.pb.cc" />
+    <ClCompile Include="protobuf\DeltaNeutralContract.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\DepthMarketDataDescription.pb.cc" />
+    <ClCompile Include="protobuf\DisplayGroupList.pb.cc" />
+    <ClCompile Include="protobuf\DisplayGroupUpdated.pb.cc" />
+    <ClCompile Include="protobuf\ErrorMessage.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\Execution.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionDetails.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionDetailsEnd.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionFilter.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExerciseOptionsRequest.pb.cc" />
+    <ClCompile Include="protobuf\FamilyCode.pb.cc" />
+    <ClCompile Include="protobuf\FamilyCodes.pb.cc" />
+    <ClCompile Include="protobuf\FamilyCodesRequest.pb.cc" />
+    <ClCompile Include="protobuf\FAReplace.pb.cc" />
+    <ClCompile Include="protobuf\FARequest.pb.cc" />
+    <ClCompile Include="protobuf\FundamentalsData.pb.cc" />
+    <ClCompile Include="protobuf\FundamentalsDataRequest.pb.cc" />
+    <ClCompile Include="protobuf\GlobalCancelRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\HeadTimestamp.pb.cc" />
+    <ClCompile Include="protobuf\HeadTimestampRequest.pb.cc" />
+    <ClCompile Include="protobuf\HistogramData.pb.cc" />
+    <ClCompile Include="protobuf\HistogramDataEntry.pb.cc" />
+    <ClCompile Include="protobuf\HistogramDataRequest.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalData.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalDataBar.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalDataEnd.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalDataRequest.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalDataUpdate.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalNews.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalNewsEnd.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalNewsRequest.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalSchedule.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalSession.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalTick.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalTickBidAsk.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalTickLast.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalTicks.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalTicksBidAsk.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalTicksLast.pb.cc" />
+    <ClCompile Include="protobuf\HistoricalTicksRequest.pb.cc" />
+    <ClCompile Include="protobuf\IdsRequest.pb.cc" />
+    <ClCompile Include="protobuf\IneligibilityReason.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\LockAndExitConfig.pb.cc" />
+    <ClCompile Include="protobuf\ManagedAccounts.pb.cc" />
+    <ClCompile Include="protobuf\ManagedAccountsRequest.pb.cc" />
+    <ClCompile Include="protobuf\MarketDataRequest.pb.cc" />
+    <ClCompile Include="protobuf\MarketDataType.pb.cc" />
+    <ClCompile Include="protobuf\MarketDataTypeRequest.pb.cc" />
+    <ClCompile Include="protobuf\MarketDepth.pb.cc" />
+    <ClCompile Include="protobuf\MarketDepthData.pb.cc" />
+    <ClCompile Include="protobuf\MarketDepthExchanges.pb.cc" />
+    <ClCompile Include="protobuf\MarketDepthExchangesRequest.pb.cc" />
+    <ClCompile Include="protobuf\MarketDepthL2.pb.cc" />
+    <ClCompile Include="protobuf\MarketDepthRequest.pb.cc" />
+    <ClCompile Include="protobuf\MarketRule.pb.cc" />
+    <ClCompile Include="protobuf\MarketRuleRequest.pb.cc" />
+    <ClCompile Include="protobuf\MatchingSymbolsRequest.pb.cc" />
+    <ClCompile Include="protobuf\MessageConfig.pb.cc" />
+    <ClCompile Include="protobuf\NewsArticle.pb.cc" />
+    <ClCompile Include="protobuf\NewsArticleRequest.pb.cc" />
+    <ClCompile Include="protobuf\NewsBulletin.pb.cc" />
+    <ClCompile Include="protobuf\NewsBulletinsRequest.pb.cc" />
+    <ClCompile Include="protobuf\NewsProvider.pb.cc" />
+    <ClCompile Include="protobuf\NewsProviders.pb.cc" />
+    <ClCompile Include="protobuf\NewsProvidersRequest.pb.cc" />
+    <ClCompile Include="protobuf\NextValidId.pb.cc" />
+    <ClCompile Include="protobuf\OpenOrder.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OpenOrdersEnd.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OpenOrdersRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\Order.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderAllocation.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderBound.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderCancel.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderCondition.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrdersConfig.pb.cc" />
+    <ClCompile Include="protobuf\OrdersSmartRoutingConfig.pb.cc" />
+    <ClCompile Include="protobuf\OrderState.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderStatus.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\PlaceOrderRequest.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\PnL.pb.cc" />
+    <ClCompile Include="protobuf\PnLRequest.pb.cc" />
+    <ClCompile Include="protobuf\PnLSingle.pb.cc" />
+    <ClCompile Include="protobuf\PnLSingleRequest.pb.cc" />
+    <ClCompile Include="protobuf\PortfolioValue.pb.cc" />
+    <ClCompile Include="protobuf\Position.pb.cc" />
+    <ClCompile Include="protobuf\PositionEnd.pb.cc" />
+    <ClCompile Include="protobuf\PositionMulti.pb.cc" />
+    <ClCompile Include="protobuf\PositionMultiEnd.pb.cc" />
+    <ClCompile Include="protobuf\PositionsMultiRequest.pb.cc" />
+    <ClCompile Include="protobuf\PositionsRequest.pb.cc" />
+    <ClCompile Include="protobuf\PriceIncrement.pb.cc" />
+    <ClCompile Include="protobuf\QueryDisplayGroupsRequest.pb.cc" />
+    <ClCompile Include="protobuf\RealTimeBarsRequest.pb.cc" />
+    <ClCompile Include="protobuf\RealTimeBarTick.pb.cc" />
+    <ClCompile Include="protobuf\ReceiveFA.pb.cc" />
+    <ClCompile Include="protobuf\ReplaceFAEnd.pb.cc" />
+    <ClCompile Include="protobuf\RerouteMarketDataRequest.pb.cc" />
+    <ClCompile Include="protobuf\RerouteMarketDepthRequest.pb.cc" />
+    <ClCompile Include="protobuf\ScannerData.pb.cc" />
+    <ClCompile Include="protobuf\ScannerDataElement.pb.cc" />
+    <ClCompile Include="protobuf\ScannerParameters.pb.cc" />
+    <ClCompile Include="protobuf\ScannerParametersRequest.pb.cc" />
+    <ClCompile Include="protobuf\ScannerSubscription.pb.cc" />
+    <ClCompile Include="protobuf\ScannerSubscriptionRequest.pb.cc" />
+    <ClCompile Include="protobuf\SecDefOptParameter.pb.cc" />
+    <ClCompile Include="protobuf\SecDefOptParameterEnd.pb.cc" />
+    <ClCompile Include="protobuf\SecDefOptParamsRequest.pb.cc" />
+    <ClCompile Include="protobuf\SetServerLogLevelRequest.pb.cc" />
+    <ClCompile Include="protobuf\SmartComponent.pb.cc" />
+    <ClCompile Include="protobuf\SmartComponents.pb.cc" />
+    <ClCompile Include="protobuf\SmartComponentsRequest.pb.cc" />
+    <ClCompile Include="protobuf\SoftDollarTier.pb.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="protobuf\SoftDollarTiers.pb.cc" />
+    <ClCompile Include="protobuf\SoftDollarTiersRequest.pb.cc" />
+    <ClCompile Include="protobuf\StartApiRequest.pb.cc" />
+    <ClCompile Include="protobuf\SubscribeToGroupEventsRequest.pb.cc" />
+    <ClCompile Include="protobuf\SymbolSamples.pb.cc" />
+    <ClCompile Include="protobuf\TickAttribBidAsk.pb.cc" />
+    <ClCompile Include="protobuf\TickAttribLast.pb.cc" />
+    <ClCompile Include="protobuf\TickByTickData.pb.cc" />
+    <ClCompile Include="protobuf\TickByTickRequest.pb.cc" />
+    <ClCompile Include="protobuf\TickGeneric.pb.cc" />
+    <ClCompile Include="protobuf\TickNews.pb.cc" />
+    <ClCompile Include="protobuf\TickOptionComputation.pb.cc" />
+    <ClCompile Include="protobuf\TickPrice.pb.cc" />
+    <ClCompile Include="protobuf\TickReqParams.pb.cc" />
+    <ClCompile Include="protobuf\TickSize.pb.cc" />
+    <ClCompile Include="protobuf\TickSnapshotEnd.pb.cc" />
+    <ClCompile Include="protobuf\TickString.pb.cc" />
+    <ClCompile Include="protobuf\UnsubscribeFromGroupEventsRequest.pb.cc" />
+    <ClCompile Include="protobuf\UpdateConfigRequest.pb.cc" />
+    <ClCompile Include="protobuf\UpdateConfigResponse.pb.cc" />
+    <ClCompile Include="protobuf\UpdateConfigWarning.pb.cc" />
+    <ClCompile Include="protobuf\UpdateDisplayGroupRequest.pb.cc" />
+    <ClCompile Include="protobuf\UserInfo.pb.cc" />
+    <ClCompile Include="protobuf\UserInfoRequest.pb.cc" />
+    <ClCompile Include="protobuf\VerifyCompleted.pb.cc" />
+    <ClCompile Include="protobuf\VerifyMessageApi.pb.cc" />
+    <ClCompile Include="protobuf\VerifyMessageRequest.pb.cc" />
+    <ClCompile Include="protobuf\VerifyRequest.pb.cc" />
+    <ClCompile Include="protobuf\WshEventData.pb.cc" />
+    <ClCompile Include="protobuf\WshEventDataRequest.pb.cc" />
+    <ClCompile Include="protobuf\WshMetaData.pb.cc" />
+    <ClCompile Include="protobuf\WshMetaDataRequest.pb.cc" />
     <ClCompile Include="SoftDollarTier.cpp" />
     <ClCompile Include="StdAfx.cpp" />
     <ClCompile Include="TimeCondition.cpp" />
@@ -269,6 +575,8 @@
     <ClInclude Include="Decimal.h" />
     <ClInclude Include="DepthMktDataDescription.h" />
     <ClInclude Include="EClientMsgSink.h" />
+    <ClInclude Include="EClientUtils.h" />
+    <ClInclude Include="EDecoderUtils.h" />
     <ClInclude Include="EMutex.h" />
     <ClInclude Include="DefaultEWrapper.h" />
     <ClInclude Include="EDecoder.h" />
@@ -301,9 +609,212 @@
     <ClInclude Include="platformspecific.h" />
     <ClInclude Include="PriceCondition.h" />
     <ClInclude Include="PriceIncrement.h" />
+    <ClInclude Include="protobuf\AccountDataEnd.pb.h" />
+    <ClInclude Include="protobuf\AccountDataRequest.pb.h" />
+    <ClInclude Include="protobuf\AccountSummary.pb.h" />
+    <ClInclude Include="protobuf\AccountSummaryEnd.pb.h" />
+    <ClInclude Include="protobuf\AccountSummaryRequest.pb.h" />
+    <ClInclude Include="protobuf\AccountUpdateMulti.pb.h" />
+    <ClInclude Include="protobuf\AccountUpdateMultiEnd.pb.h" />
+    <ClInclude Include="protobuf\AccountUpdatesMultiRequest.pb.h" />
+    <ClInclude Include="protobuf\AccountUpdateTime.pb.h" />
+    <ClInclude Include="protobuf\AccountValue.pb.h" />
+    <ClInclude Include="protobuf\AllOpenOrdersRequest.pb.h" />
+    <ClInclude Include="protobuf\ApiConfig.pb.h" />
+    <ClInclude Include="protobuf\ApiPrecautionsConfig.pb.h" />
+    <ClInclude Include="protobuf\ApiSettingsConfig.pb.h" />
+    <ClInclude Include="protobuf\AttachedOrders.pb.h" />
+    <ClInclude Include="protobuf\AutoOpenOrdersRequest.pb.h" />
+    <ClInclude Include="protobuf\CalculateImpliedVolatilityRequest.pb.h" />
+    <ClInclude Include="protobuf\CalculateOptionPriceRequest.pb.h" />
+    <ClInclude Include="protobuf\CancelAccountSummary.pb.h" />
+    <ClInclude Include="protobuf\CancelAccountUpdatesMulti.pb.h" />
+    <ClInclude Include="protobuf\CancelCalculateImpliedVolatility.pb.h" />
+    <ClInclude Include="protobuf\CancelCalculateOptionPrice.pb.h" />
+    <ClInclude Include="protobuf\CancelContractData.pb.h" />
+    <ClInclude Include="protobuf\CancelFundamentalsData.pb.h" />
+    <ClInclude Include="protobuf\CancelHeadTimestamp.pb.h" />
+    <ClInclude Include="protobuf\CancelHistogramData.pb.h" />
+    <ClInclude Include="protobuf\CancelHistoricalData.pb.h" />
+    <ClInclude Include="protobuf\CancelHistoricalTicks.pb.h" />
+    <ClInclude Include="protobuf\CancelMarketData.pb.h" />
+    <ClInclude Include="protobuf\CancelMarketDepth.pb.h" />
+    <ClInclude Include="protobuf\CancelNewsBulletins.pb.h" />
+    <ClInclude Include="protobuf\CancelOrderRequest.pb.h" />
+    <ClInclude Include="protobuf\CancelPnL.pb.h" />
+    <ClInclude Include="protobuf\CancelPnLSingle.pb.h" />
+    <ClInclude Include="protobuf\CancelPositions.pb.h" />
+    <ClInclude Include="protobuf\CancelPositionsMulti.pb.h" />
+    <ClInclude Include="protobuf\CancelRealTimeBars.pb.h" />
+    <ClInclude Include="protobuf\CancelScannerSubscription.pb.h" />
+    <ClInclude Include="protobuf\CancelTickByTick.pb.h" />
+    <ClInclude Include="protobuf\CancelWshEventData.pb.h" />
+    <ClInclude Include="protobuf\CancelWshMetaData.pb.h" />
+    <ClInclude Include="protobuf\ComboLeg.pb.h" />
+    <ClInclude Include="protobuf\CommissionAndFeesReport.pb.h" />
+    <ClInclude Include="protobuf\CompletedOrder.pb.h" />
+    <ClInclude Include="protobuf\CompletedOrdersEnd.pb.h" />
+    <ClInclude Include="protobuf\CompletedOrdersRequest.pb.h" />
+    <ClInclude Include="protobuf\ConfigRequest.pb.h" />
+    <ClInclude Include="protobuf\ConfigResponse.pb.h" />
+    <ClInclude Include="protobuf\Contract.pb.h" />
+    <ClInclude Include="protobuf\ContractData.pb.h" />
+    <ClInclude Include="protobuf\ContractDataEnd.pb.h" />
+    <ClInclude Include="protobuf\ContractDataRequest.pb.h" />
+    <ClInclude Include="protobuf\ContractDescription.pb.h" />
+    <ClInclude Include="protobuf\ContractDetails.pb.h" />
+    <ClInclude Include="protobuf\CurrentTime.pb.h" />
+    <ClInclude Include="protobuf\CurrentTimeInMillis.pb.h" />
+    <ClInclude Include="protobuf\CurrentTimeInMillisRequest.pb.h" />
+    <ClInclude Include="protobuf\CurrentTimeRequest.pb.h" />
+    <ClInclude Include="protobuf\DeltaNeutralContract.pb.h" />
+    <ClInclude Include="protobuf\DepthMarketDataDescription.pb.h" />
+    <ClInclude Include="protobuf\DisplayGroupList.pb.h" />
+    <ClInclude Include="protobuf\DisplayGroupUpdated.pb.h" />
+    <ClInclude Include="protobuf\ErrorMessage.pb.h" />
+    <ClInclude Include="protobuf\Execution.pb.h" />
+    <ClInclude Include="protobuf\ExecutionDetails.pb.h" />
+    <ClInclude Include="protobuf\ExecutionDetailsEnd.pb.h" />
+    <ClInclude Include="protobuf\ExecutionFilter.pb.h" />
+    <ClInclude Include="protobuf\ExecutionRequest.pb.h" />
+    <ClInclude Include="protobuf\ExerciseOptionsRequest.pb.h" />
+    <ClInclude Include="protobuf\FamilyCode.pb.h" />
+    <ClInclude Include="protobuf\FamilyCodes.pb.h" />
+    <ClInclude Include="protobuf\FamilyCodesRequest.pb.h" />
+    <ClInclude Include="protobuf\FAReplace.pb.h" />
+    <ClInclude Include="protobuf\FARequest.pb.h" />
+    <ClInclude Include="protobuf\FundamentalsData.pb.h" />
+    <ClInclude Include="protobuf\FundamentalsDataRequest.pb.h" />
+    <ClInclude Include="protobuf\GlobalCancelRequest.pb.h" />
+    <ClInclude Include="protobuf\HeadTimestamp.pb.h" />
+    <ClInclude Include="protobuf\HeadTimestampRequest.pb.h" />
+    <ClInclude Include="protobuf\HistogramData.pb.h" />
+    <ClInclude Include="protobuf\HistogramDataEntry.pb.h" />
+    <ClInclude Include="protobuf\HistogramDataRequest.pb.h" />
+    <ClInclude Include="protobuf\HistoricalData.pb.h" />
+    <ClInclude Include="protobuf\HistoricalDataBar.pb.h" />
+    <ClInclude Include="protobuf\HistoricalDataEnd.pb.h" />
+    <ClInclude Include="protobuf\HistoricalDataRequest.pb.h" />
+    <ClInclude Include="protobuf\HistoricalDataUpdate.pb.h" />
+    <ClInclude Include="protobuf\HistoricalNews.pb.h" />
+    <ClInclude Include="protobuf\HistoricalNewsEnd.pb.h" />
+    <ClInclude Include="protobuf\HistoricalNewsRequest.pb.h" />
+    <ClInclude Include="protobuf\HistoricalSchedule.pb.h" />
+    <ClInclude Include="protobuf\HistoricalSession.pb.h" />
+    <ClInclude Include="protobuf\HistoricalTick.pb.h" />
+    <ClInclude Include="protobuf\HistoricalTickBidAsk.pb.h" />
+    <ClInclude Include="protobuf\HistoricalTickLast.pb.h" />
+    <ClInclude Include="protobuf\HistoricalTicks.pb.h" />
+    <ClInclude Include="protobuf\HistoricalTicksBidAsk.pb.h" />
+    <ClInclude Include="protobuf\HistoricalTicksLast.pb.h" />
+    <ClInclude Include="protobuf\HistoricalTicksRequest.pb.h" />
+    <ClInclude Include="protobuf\IdsRequest.pb.h" />
+    <ClInclude Include="protobuf\IneligibilityReason.pb.h" />
+    <ClInclude Include="protobuf\LockAndExitConfig.pb.h" />
+    <ClInclude Include="protobuf\ManagedAccounts.pb.h" />
+    <ClInclude Include="protobuf\ManagedAccountsRequest.pb.h" />
+    <ClInclude Include="protobuf\MarketDataRequest.pb.h" />
+    <ClInclude Include="protobuf\MarketDataType.pb.h" />
+    <ClInclude Include="protobuf\MarketDataTypeRequest.pb.h" />
+    <ClInclude Include="protobuf\MarketDepth.pb.h" />
+    <ClInclude Include="protobuf\MarketDepthData.pb.h" />
+    <ClInclude Include="protobuf\MarketDepthExchanges.pb.h" />
+    <ClInclude Include="protobuf\MarketDepthExchangesRequest.pb.h" />
+    <ClInclude Include="protobuf\MarketDepthL2.pb.h" />
+    <ClInclude Include="protobuf\MarketDepthRequest.pb.h" />
+    <ClInclude Include="protobuf\MarketRule.pb.h" />
+    <ClInclude Include="protobuf\MarketRuleRequest.pb.h" />
+    <ClInclude Include="protobuf\MatchingSymbolsRequest.pb.h" />
+    <ClInclude Include="protobuf\MessageConfig.pb.h" />
+    <ClInclude Include="protobuf\NewsArticle.pb.h" />
+    <ClInclude Include="protobuf\NewsArticleRequest.pb.h" />
+    <ClInclude Include="protobuf\NewsBulletin.pb.h" />
+    <ClInclude Include="protobuf\NewsBulletinsRequest.pb.h" />
+    <ClInclude Include="protobuf\NewsProvider.pb.h" />
+    <ClInclude Include="protobuf\NewsProviders.pb.h" />
+    <ClInclude Include="protobuf\NewsProvidersRequest.pb.h" />
+    <ClInclude Include="protobuf\NextValidId.pb.h" />
+    <ClInclude Include="protobuf\OpenOrder.pb.h" />
+    <ClInclude Include="protobuf\OpenOrdersEnd.pb.h" />
+    <ClInclude Include="protobuf\OpenOrdersRequest.pb.h" />
+    <ClInclude Include="protobuf\Order.pb.h" />
+    <ClInclude Include="protobuf\OrderAllocation.pb.h" />
+    <ClInclude Include="protobuf\OrderBound.pb.h" />
+    <ClInclude Include="protobuf\OrderCancel.pb.h" />
+    <ClInclude Include="protobuf\OrderCondition.pb.h" />
+    <ClInclude Include="protobuf\OrdersConfig.pb.h" />
+    <ClInclude Include="protobuf\OrdersSmartRoutingConfig.pb.h" />
+    <ClInclude Include="protobuf\OrderState.pb.h" />
+    <ClInclude Include="protobuf\OrderStatus.pb.h" />
+    <ClInclude Include="protobuf\PlaceOrderRequest.pb.h" />
+    <ClInclude Include="protobuf\PnL.pb.h" />
+    <ClInclude Include="protobuf\PnLRequest.pb.h" />
+    <ClInclude Include="protobuf\PnLSingle.pb.h" />
+    <ClInclude Include="protobuf\PnLSingleRequest.pb.h" />
+    <ClInclude Include="protobuf\PortfolioValue.pb.h" />
+    <ClInclude Include="protobuf\Position.pb.h" />
+    <ClInclude Include="protobuf\PositionEnd.pb.h" />
+    <ClInclude Include="protobuf\PositionMulti.pb.h" />
+    <ClInclude Include="protobuf\PositionMultiEnd.pb.h" />
+    <ClInclude Include="protobuf\PositionsMultiRequest.pb.h" />
+    <ClInclude Include="protobuf\PositionsRequest.pb.h" />
+    <ClInclude Include="protobuf\PriceIncrement.pb.h" />
+    <ClInclude Include="protobuf\QueryDisplayGroupsRequest.pb.h" />
+    <ClInclude Include="protobuf\RealTimeBarsRequest.pb.h" />
+    <ClInclude Include="protobuf\RealTimeBarTick.pb.h" />
+    <ClInclude Include="protobuf\ReceiveFA.pb.h" />
+    <ClInclude Include="protobuf\ReplaceFAEnd.pb.h" />
+    <ClInclude Include="protobuf\RerouteMarketDataRequest.pb.h" />
+    <ClInclude Include="protobuf\RerouteMarketDepthRequest.pb.h" />
+    <ClInclude Include="protobuf\ScannerData.pb.h" />
+    <ClInclude Include="protobuf\ScannerDataElement.pb.h" />
+    <ClInclude Include="protobuf\ScannerParameters.pb.h" />
+    <ClInclude Include="protobuf\ScannerParametersRequest.pb.h" />
+    <ClInclude Include="protobuf\ScannerSubscription.pb.h" />
+    <ClInclude Include="protobuf\ScannerSubscriptionRequest.pb.h" />
+    <ClInclude Include="protobuf\SecDefOptParameter.pb.h" />
+    <ClInclude Include="protobuf\SecDefOptParameterEnd.pb.h" />
+    <ClInclude Include="protobuf\SecDefOptParamsRequest.pb.h" />
+    <ClInclude Include="protobuf\SetServerLogLevelRequest.pb.h" />
+    <ClInclude Include="protobuf\SmartComponent.pb.h" />
+    <ClInclude Include="protobuf\SmartComponents.pb.h" />
+    <ClInclude Include="protobuf\SmartComponentsRequest.pb.h" />
+    <ClInclude Include="protobuf\SoftDollarTier.pb.h" />
+    <ClInclude Include="protobuf\SoftDollarTiers.pb.h" />
+    <ClInclude Include="protobuf\SoftDollarTiersRequest.pb.h" />
+    <ClInclude Include="protobuf\StartApiRequest.pb.h" />
+    <ClInclude Include="protobuf\SubscribeToGroupEventsRequest.pb.h" />
+    <ClInclude Include="protobuf\SymbolSamples.pb.h" />
+    <ClInclude Include="protobuf\TickAttribBidAsk.pb.h" />
+    <ClInclude Include="protobuf\TickAttribLast.pb.h" />
+    <ClInclude Include="protobuf\TickByTickData.pb.h" />
+    <ClInclude Include="protobuf\TickByTickRequest.pb.h" />
+    <ClInclude Include="protobuf\TickGeneric.pb.h" />
+    <ClInclude Include="protobuf\TickNews.pb.h" />
+    <ClInclude Include="protobuf\TickOptionComputation.pb.h" />
+    <ClInclude Include="protobuf\TickPrice.pb.h" />
+    <ClInclude Include="protobuf\TickReqParams.pb.h" />
+    <ClInclude Include="protobuf\TickSize.pb.h" />
+    <ClInclude Include="protobuf\TickSnapshotEnd.pb.h" />
+    <ClInclude Include="protobuf\TickString.pb.h" />
+    <ClInclude Include="protobuf\UnsubscribeFromGroupEventsRequest.pb.h" />
+    <ClInclude Include="protobuf\UpdateConfigRequest.pb.h" />
+    <ClInclude Include="protobuf\UpdateConfigResponse.pb.h" />
+    <ClInclude Include="protobuf\UpdateConfigWarning.pb.h" />
+    <ClInclude Include="protobuf\UpdateDisplayGroupRequest.pb.h" />
+    <ClInclude Include="protobuf\UserInfo.pb.h" />
+    <ClInclude Include="protobuf\UserInfoRequest.pb.h" />
+    <ClInclude Include="protobuf\VerifyCompleted.pb.h" />
+    <ClInclude Include="protobuf\VerifyMessageApi.pb.h" />
+    <ClInclude Include="protobuf\VerifyMessageRequest.pb.h" />
+    <ClInclude Include="protobuf\VerifyRequest.pb.h" />
+    <ClInclude Include="protobuf\WshEventData.pb.h" />
+    <ClInclude Include="protobuf\WshEventDataRequest.pb.h" />
+    <ClInclude Include="protobuf\WshMetaData.pb.h" />
+    <ClInclude Include="protobuf\WshMetaDataRequest.pb.h" />
     <ClInclude Include="SoftDollarTier.h" />
     <ClInclude Include="StdAfx.h" />
-    <ClInclude Include="CommissionReport.h" />
+    <ClInclude Include="CommissionAndFeesReport.h" />
     <ClInclude Include="CommonDefs.h" />
     <ClInclude Include="Contract.h" />
     <ClInclude Include="EClient.h" />

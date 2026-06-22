@@ -41,7 +41,7 @@ Private exerciseOptionsTable As Range
 ' methods
 '=================
 
-' exersice options
+' exercise options
 Private Sub ExerciseOptions_Click()
     If Not CheckConnected Then Exit Sub
     
@@ -59,7 +59,7 @@ Private Sub ExerciseOptions_Click()
             .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
             .SecType = UCase(contractTable(id, Col_SECTYPE).value)
             .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-            .Strike = contractTable(id, Col_STRIKE).value
+            .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
             .Right = UCase(contractTable(id, Col_RIGHT).value)
             .Exchange = UCase(contractTable(id, Col_EXCH).value)
             .primaryExchange = UCase(contractTable(id, Col_PRIMEXCH).value)
@@ -129,7 +129,7 @@ Public Sub UpdatePortfolio(contract As TWSLib.IContract, position As Variant, ma
         contractTable(id, Col_SECTYPE).value = .SecType
         contractTable(id, Col_LASTTRADEDATE).value = .lastTradeDateOrContractMonth
         If .Strike > 0 Then
-            contractTable(id, Col_STRIKE).value = .Strike
+            contractTable(id, Col_STRIKE).value = Util.DblMaxStr(.Strike)
         End If
         If .Right <> STR_ZERO Then
             contractTable(id, Col_RIGHT).value = .Right
@@ -151,9 +151,9 @@ Public Sub UpdatePortfolio(contract As TWSLib.IContract, position As Variant, ma
     
 End Sub
 
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
     
-    portfolioTable(id - ID_PORTFOLIO, Col_PORTF_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+    portfolioTable(id - ID_PORTFOLIO, Col_PORTF_STATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
         
 End Sub
 

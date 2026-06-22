@@ -67,7 +67,7 @@ namespace TwsRtdServer
                     
                     if (topicStr == null && !s.ToLower().Contains(TwsRtdServerData.LOCALSYMBOL_STR) && s.ToLower().Contains(TwsRtdServerData.CHAR_SPACE.ToString()))
                     {
-                        // pasre string like "IBM Bid" or "BRK B Bid"
+                        // parse string like "IBM Bid" or "BRK B Bid"
                         topicStr = s.Substring(s.LastIndexOf(TwsRtdServerData.CHAR_SPACE) + 1, s.Length - 1 - s.LastIndexOf(TwsRtdServerData.CHAR_SPACE)).ToUpper();
 
                         if (Array.IndexOf(TwsRtdServerData.AllowedTopics(), topicStr) >= 0)
@@ -83,7 +83,7 @@ namespace TwsRtdServer
 
                     if (topicStr == null)
                     {
-                        // pasre string like "Bid"
+                        // parse string like "Bid"
                         topicStr = s.ToUpper();
 
                         if (Array.IndexOf(TwsRtdServerData.AllowedTopics(), topicStr) >= 0)

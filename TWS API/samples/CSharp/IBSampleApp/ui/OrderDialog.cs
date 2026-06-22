@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -169,9 +169,8 @@ namespace IBSampleApp
             contract.Currency = contractCurrency.Text;
             contract.Exchange = contractExchange.Text;
             contract.LastTradeDateOrContractMonth = contractLastTradeDateOrContractMonth.Text;
-            if (!contractStrike.Text.Equals(""))
-                contract.Strike = double.Parse(contractStrike.Text);
-            if (!contractRight.Text.Equals("") || !contractRight.Text.Equals("None"))
+            contract.Strike = Util.StringToDoubleMax(contractStrike.Text);
+            if ((!contractRight.Text.Equals("") || !contractRight.Text.Equals("None")) && contractRight.SelectedItem != null)
                 contract.Right = (string)((IBType)contractRight.SelectedItem).Value;
             contract.LocalSymbol = contractLocalSymbol.Text;
             contract.PrimaryExch = contractPrimaryExch.Text;
@@ -185,7 +184,7 @@ namespace IBSampleApp
             contractCurrency.Text = contract.Currency;
             contractExchange.Text = contract.Exchange;
             contractLastTradeDateOrContractMonth.Text = contract.LastTradeDateOrContractMonth;
-            contractStrike.Text = contract.Strike.ToString();
+            contractStrike.Text = contract.Strike != double.MaxValue ? contract.Strike.ToString() : "";
             contractRight.Text = contract.Right;
             contractLocalSymbol.Text = contract.LocalSymbol;
         }
@@ -224,6 +223,7 @@ namespace IBSampleApp
             FillAdjustedStops(order);
             FillConditions(order);
             FillPegBestPegMid(order);
+            FillAttachedOrders(order);
 
             return order;
         }
@@ -319,6 +319,8 @@ namespace IBSampleApp
             order.OcaType = (int)((IBType)ocaType.SelectedItem).Value;
             order.HedgeType = (string)((IBType)hedgeType.SelectedItem).Value;
             order.HedgeParam = hedgeParam.Text;
+            if (!hedgeMaxSize.Text.Equals(""))
+                order.HedgeMaxSize = int.Parse(hedgeMaxSize.Text);
 
             order.NotHeld = notHeld.Checked;
             order.BlockOrder = block.Checked;
@@ -343,18 +345,29 @@ namespace IBSampleApp
             order.Solicited = solicited.Checked;
             order.CustomerAccount = customerAccount.Text;
             order.ProfessionalCustomer = professionalCustomer.Checked;
-
+            order.IncludeOvernight = includeOvernight.Checked;
             order.ExtOperator = extOperator.Text;
-            order.ExternalUserId = externalUserId.Text;
-            if (!manualOrderIndicator.Text.Equals(""))
+            if (!manualOrderIndicator.Text.Equals("")) 
                 order.ManualOrderIndicator = int.Parse(manualOrderIndicator.Text);
+            order.ImbalanceOnly = imbalanceOnly.Checked;
+            order.PostOnly = postOnly.Checked;
+            order.AllowPreOpen = allowPreOpen.Checked;
+            order.IgnoreOpenAuction = ignoreOpenAuction.Checked;
+            order.Deactivate = deactivate.Checked;
+            if (!activeStartTime.Text.Equals(""))
+                order.ActiveStartTime = activeStartTime.Text;
+            if (!activeStopTime.Text.Equals(""))
+                order.ActiveStopTime = activeStopTime.Text;
+            order.SeekPriceImprovement = seekPriceImprovement.CheckState == CheckState.Indeterminate ? null : (bool?)seekPriceImprovement.Checked;
+            if (!whatIfType.Text.Equals(""))
+                order.WhatIfType = int.Parse(whatIfType.Text);
+            order.RouteMarketableToBbo = routeMarketableToBbo.CheckState == CheckState.Indeterminate ? null : (bool?)routeMarketableToBbo.Checked;
         }
 
         private void FillExtendedOrderCancelAttributes(OrderCancel orderCancel)
         {
             orderCancel.ManualOrderCancelTime = manualOrderCancelTime.Text;
             orderCancel.ExtOperator = extOperator.Text;
-            orderCancel.ExternalUserId = externalUserId.Text;
             if (!manualOrderIndicator.Text.Equals(""))
                 orderCancel.ManualOrderIndicator = int.Parse(manualOrderIndicator.Text);
         }
@@ -478,6 +491,14 @@ namespace IBSampleApp
                 order.MidOffsetAtHalf = double.Parse(tbMidOffsetAtHalf.Text);
         }
 
+        private void FillAttachedOrders(Order order)
+        {
+            if (!string.IsNullOrWhiteSpace(textBoxStopLossOrderType.Text))
+                order.SlOrderType = textBoxStopLossOrderType.Text;
+            if (!string.IsNullOrWhiteSpace(textBoxProfitTakerOrderType.Text))
+                order.PtOrderType = textBoxProfitTakerOrderType.Text;
+        }
+
         public async void SetOrder(Order order)
         {
             orderId = order.OrderId;
@@ -540,6 +561,10 @@ namespace IBSampleApp
             solicited.Checked = order.Solicited;
             faGroup.Text = order.FaGroup;
             faMethod.Text = order.FaMethod;
+            activeStartTime.Text = order.ActiveStartTime;
+            activeStopTime.Text = order.ActiveStopTime;
+            seekPriceImprovement.CheckState = order.SeekPriceImprovement.HasValue ? order.SeekPriceImprovement.Value ? CheckState.Checked : CheckState.Unchecked : CheckState.Indeterminate;
+            routeMarketableToBbo.CheckState = order.RouteMarketableToBbo.HasValue ? order.RouteMarketableToBbo.Value ? CheckState.Checked : CheckState.Unchecked : CheckState.Indeterminate;
         }
 
         public void SetParentOrderId(int id)
@@ -736,6 +761,13 @@ namespace IBSampleApp
         private void cbCompeteAgainstBestOffsetUpToMid_CheckedChanged(object sender, EventArgs e)
         {
             tbCompeteAgainstBestOffset.Enabled = !cbCompeteAgainstBestOffsetUpToMid.Checked;
+        }
+
+        private void globalCancelButton_Click(object sender, EventArgs e)
+        {
+            OrderCancel orderCancel = GetOrderCancel();
+            orderManager.GlobalCancel(orderCancel);
+            Visible = false;
         }
     }
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.utils;
@@ -19,7 +19,7 @@ public class PositionsUtils {
             item.add(Utils.toString(positionData.contract().symbol()));
             item.add(Utils.toString(positionData.contract().getSecType()));
             item.add(Utils.toString(positionData.contract().lastTradeDateOrContractMonth()));
-            item.add(Utils.toString(positionData.contract().strike()));
+            item.add(Utils.toStringMax(positionData.contract().strike()));
             String right = positionData.contract().getRight();
             item.add(Utils.toString((Utils.isNotNull(right) && !right.equals("0")) ? right : ""));
             if (isNew) {
@@ -27,7 +27,7 @@ public class PositionsUtils {
             }
             item.add(Utils.toString(positionData.contract().tradingClass()));
             if (isNew) {
-                item.add(Utils.toString(isPortfolio ? positionData.contract().primaryExch() : positionData.contract().exchange()));
+                item.add(Utils.toString(isPortfolio ? (positionData.contract().exchange() != null ? positionData.contract().exchange() : positionData.contract().primaryExch()) : positionData.contract().exchange()));
             }
             item.add(Utils.toString(positionData.contract().currency()));
             item.add(Utils.toString(positionData.contract().localSymbol()));

@@ -1,5 +1,5 @@
 """
-Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 This is the interface that will need to be overloaded by the customer so
@@ -46,9 +46,91 @@ from ibapi.order import Order
 from ibapi.order_state import OrderState
 from ibapi.execution import Execution
 
-from ibapi.commission_report import CommissionReport
+from ibapi.commission_and_fees_report import CommissionAndFeesReport
 from ibapi.ticktype import TickType
 from ibapi.utils import current_fn_name, log_
+
+from ibapi.protobuf.OrderStatus_pb2 import OrderStatus as OrderStatusProto
+from ibapi.protobuf.OpenOrder_pb2 import OpenOrder as OpenOrderProto
+from ibapi.protobuf.OpenOrdersEnd_pb2 import OpenOrdersEnd as OpenOrdersEndProto
+from ibapi.protobuf.ErrorMessage_pb2 import ErrorMessage as ErrorMessageProto
+from ibapi.protobuf.ExecutionDetails_pb2 import ExecutionDetails as ExecutionDetailsProto
+from ibapi.protobuf.ExecutionDetailsEnd_pb2 import ExecutionDetailsEnd as ExecutionDetailsEndProto
+from ibapi.protobuf.CompletedOrder_pb2 import CompletedOrder as CompletedOrderProto
+from ibapi.protobuf.CompletedOrdersEnd_pb2 import CompletedOrdersEnd as CompletedOrdersEndProto
+from ibapi.protobuf.OrderBound_pb2 import OrderBound as OrderBoundProto
+from ibapi.protobuf.ContractData_pb2 import ContractData as ContractDataProto
+from ibapi.protobuf.ContractDataEnd_pb2 import ContractDataEnd as ContractDataEndProto
+from ibapi.protobuf.TickPrice_pb2 import TickPrice as TickPriceProto
+from ibapi.protobuf.TickSize_pb2 import TickSize as TickSizeProto
+from ibapi.protobuf.TickOptionComputation_pb2 import TickOptionComputation as TickOptionComputationProto
+from ibapi.protobuf.TickGeneric_pb2 import TickGeneric as TickGenericProto
+from ibapi.protobuf.TickString_pb2 import TickString as TickStringProto
+from ibapi.protobuf.TickSnapshotEnd_pb2 import TickSnapshotEnd as TickSnapshotEndProto
+from ibapi.protobuf.MarketDepth_pb2 import MarketDepth as MarketDepthProto
+from ibapi.protobuf.MarketDepthL2_pb2 import MarketDepthL2 as MarketDepthL2Proto
+from ibapi.protobuf.MarketDataType_pb2 import MarketDataType as MarketDataTypeProto
+from ibapi.protobuf.TickReqParams_pb2 import TickReqParams as TickReqParamsProto
+from ibapi.protobuf.AccountValue_pb2 import AccountValue as AccountValueProto
+from ibapi.protobuf.PortfolioValue_pb2 import PortfolioValue as PortfolioValueProto
+from ibapi.protobuf.AccountUpdateTime_pb2 import AccountUpdateTime as AccountUpdateTimeProto
+from ibapi.protobuf.AccountDataEnd_pb2 import AccountDataEnd as AccountDataEndProto
+from ibapi.protobuf.ManagedAccounts_pb2 import ManagedAccounts as ManagedAccountsProto
+from ibapi.protobuf.Position_pb2 import Position as PositionProto
+from ibapi.protobuf.PositionEnd_pb2 import PositionEnd as PositionEndProto
+from ibapi.protobuf.AccountSummary_pb2 import AccountSummary as AccountSummaryProto
+from ibapi.protobuf.AccountSummaryEnd_pb2 import AccountSummaryEnd as AccountSummaryEndProto
+from ibapi.protobuf.PositionMulti_pb2 import PositionMulti as PositionMultiProto
+from ibapi.protobuf.PositionMultiEnd_pb2 import PositionMultiEnd as PositionMultiEndProto
+from ibapi.protobuf.AccountUpdateMulti_pb2 import AccountUpdateMulti as AccountUpdateMultiProto
+from ibapi.protobuf.AccountUpdateMultiEnd_pb2 import AccountUpdateMultiEnd as AccountUpdateMultiEndProto
+from ibapi.protobuf.HistoricalData_pb2 import HistoricalData as HistoricalDataProto
+from ibapi.protobuf.HistoricalDataUpdate_pb2 import HistoricalDataUpdate as HistoricalDataUpdateProto
+from ibapi.protobuf.HistoricalDataEnd_pb2 import HistoricalDataEnd as HistoricalDataEndProto
+from ibapi.protobuf.RealTimeBarTick_pb2 import RealTimeBarTick as RealTimeBarTickProto
+from ibapi.protobuf.HeadTimestamp_pb2 import HeadTimestamp as HeadTimestampProto
+from ibapi.protobuf.HistogramData_pb2 import HistogramData as HistogramDataProto
+from ibapi.protobuf.HistoricalTicks_pb2 import HistoricalTicks as HistoricalTicksProto
+from ibapi.protobuf.HistoricalTicksBidAsk_pb2 import HistoricalTicksBidAsk as HistoricalTicksBidAskProto
+from ibapi.protobuf.HistoricalTicksLast_pb2 import HistoricalTicksLast as HistoricalTicksLastProto
+from ibapi.protobuf.TickByTickData_pb2 import TickByTickData as TickByTickDataProto
+from ibapi.protobuf.NewsBulletin_pb2 import NewsBulletin as NewsBulletinProto
+from ibapi.protobuf.NewsArticle_pb2 import NewsArticle as NewsArticleProto
+from ibapi.protobuf.NewsProviders_pb2 import NewsProviders as NewsProvidersProto
+from ibapi.protobuf.HistoricalNews_pb2 import HistoricalNews as HistoricalNewsProto
+from ibapi.protobuf.HistoricalNewsEnd_pb2 import HistoricalNewsEnd as HistoricalNewsEndProto
+from ibapi.protobuf.WshMetaData_pb2 import WshMetaData as WshMetaDataProto
+from ibapi.protobuf.WshEventData_pb2 import WshEventData as WshEventDataProto
+from ibapi.protobuf.TickNews_pb2 import TickNews as TickNewsProto
+from ibapi.protobuf.ScannerParameters_pb2 import ScannerParameters as ScannerParametersProto
+from ibapi.protobuf.ScannerData_pb2 import ScannerData as ScannerDataProto
+from ibapi.protobuf.FundamentalsData_pb2 import FundamentalsData as FundamentalsDataProto
+from ibapi.protobuf.PnL_pb2 import PnL as PnLProto
+from ibapi.protobuf.PnLSingle_pb2 import PnLSingle as PnLSingleProto
+from ibapi.protobuf.ReceiveFA_pb2 import ReceiveFA as ReceiveFAProto
+from ibapi.protobuf.ReplaceFAEnd_pb2 import ReplaceFAEnd as ReplaceFAEndProto
+from ibapi.protobuf.CommissionAndFeesReport_pb2 import CommissionAndFeesReport as CommissionAndFeesReportProto
+from ibapi.protobuf.HistoricalSchedule_pb2 import HistoricalSchedule as HistoricalScheduleProto
+from ibapi.protobuf.RerouteMarketDataRequest_pb2 import RerouteMarketDataRequest as RerouteMarketDataRequestProto
+from ibapi.protobuf.RerouteMarketDepthRequest_pb2 import RerouteMarketDepthRequest as RerouteMarketDepthRequestProto
+from ibapi.protobuf.SecDefOptParameter_pb2 import SecDefOptParameter as SecDefOptParameterProto
+from ibapi.protobuf.SecDefOptParameterEnd_pb2 import SecDefOptParameterEnd as SecDefOptParameterEndProto
+from ibapi.protobuf.SoftDollarTiers_pb2 import SoftDollarTiers as SoftDollarTiersProto
+from ibapi.protobuf.FamilyCodes_pb2 import FamilyCodes as FamilyCodesProto
+from ibapi.protobuf.SymbolSamples_pb2 import SymbolSamples as SymbolSamplesProto
+from ibapi.protobuf.SmartComponents_pb2 import SmartComponents as SmartComponentsProto
+from ibapi.protobuf.MarketRule_pb2 import MarketRule as MarketRuleProto
+from ibapi.protobuf.UserInfo_pb2 import UserInfo as UserInfoProto
+from ibapi.protobuf.NextValidId_pb2 import NextValidId as NextValidIdProto
+from ibapi.protobuf.CurrentTime_pb2 import CurrentTime as CurrentTimeProto
+from ibapi.protobuf.CurrentTimeInMillis_pb2 import CurrentTimeInMillis as CurrentTimeInMillisProto
+from ibapi.protobuf.VerifyMessageApi_pb2 import VerifyMessageApi as VerifyMessageApiProto
+from ibapi.protobuf.VerifyCompleted_pb2 import VerifyCompleted as VerifyCompletedProto
+from ibapi.protobuf.DisplayGroupList_pb2 import DisplayGroupList as DisplayGroupListProto
+from ibapi.protobuf.DisplayGroupUpdated_pb2 import DisplayGroupUpdated as DisplayGroupUpdatedProto
+from ibapi.protobuf.MarketDepthExchanges_pb2 import MarketDepthExchanges as MarketDepthExchangesProto
+from ibapi.protobuf.ConfigResponse_pb2 import ConfigResponse as ConfigResponseProto
+from ibapi.protobuf.UpdateConfigResponse_pb2 import UpdateConfigResponse as UpdateConfigResponseProto
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +146,7 @@ class EWrapper:
     def error(
         self,
         reqId: TickerId,
+        errorTime: int,
         errorCode: int,
         errorString: str,
         advancedOrderRejectJson="",
@@ -74,14 +157,15 @@ class EWrapper:
         logAnswer(current_fn_name(), vars())
         if advancedOrderRejectJson:
             logger.error(
-                "ERROR %s %s %s %s",
+                "ERROR %s %s %s %s %s",
                 reqId,
+                errorTime,
                 errorCode,
                 errorString,
                 advancedOrderRejectJson,
             )
         else:
-            logger.error("ERROR %s %s %s", reqId, errorCode, errorString)
+            logger.error("ERROR %s %s %s %s", reqId, errorTime, errorCode, errorString)
 
     def winError(self, text: str, lastError: int):
         logAnswer(current_fn_name(), vars())
@@ -206,7 +290,7 @@ class EWrapper:
         contract: Contract - The Contract class attributes describe the contract.
         order: Order - The Order class gives the details of the open order.
         orderState: OrderState - The orderState class includes attributes Used
-            for both pre and post trade margin and commission data."""
+            for both pre and post trade margin and commission and fees data."""
 
         logAnswer(current_fn_name(), vars())
 
@@ -455,7 +539,7 @@ class EWrapper:
 
     def currentTime(self, time: int):
         """Server's current time. This method will receive IB server's system
-        time resulting after the invokation of reqCurrentTime."""
+        time resulting after the invocation of reqCurrentTime."""
 
         logAnswer(current_fn_name(), vars())
 
@@ -478,8 +562,8 @@ class EWrapper:
 
         logAnswer(current_fn_name(), vars())
 
-    def commissionReport(self, commissionReport: CommissionReport):
-        """The commissionReport() callback is triggered as follows:
+    def commissionAndFeesReport(self, commissionAndFeesReport: CommissionAndFeesReport):
+        """The commissionAndFeesReport() callback is triggered as follows:
         - immediately after a trade execution
         - by calling reqExecutions()."""
 
@@ -805,7 +889,7 @@ class EWrapper:
         """returns tick-by-tick data for tickType = "MidPoint" """
         logAnswer(current_fn_name(), vars())
 
-    def orderBound(self, reqId: int, apiClientId: int, apiOrderId: int):
+    def orderBound(self, permId: int, clientId: int, orderId: int):
         """returns orderBound notification"""
         logAnswer(current_fn_name(), vars())
 
@@ -848,4 +932,256 @@ class EWrapper:
 
     def userInfo(self, reqId: int, whiteBrandingId: str):
         """returns user info"""
+        logAnswer(current_fn_name(), vars())
+
+    def currentTimeInMillis(self, timeInMillis: int):
+        """Server's current time in milliseconds. This method will receive IB server's system
+        time in milliseconds resulting after the invocation of reqCurrentTimeInMillis."""
+        logAnswer(current_fn_name(), vars())
+
+    # Protobuf
+    def orderStatusProtoBuf(self, orderStatusProto: OrderStatusProto):
+        logAnswer(current_fn_name(), vars())
+
+    def openOrderProtoBuf(self, openOrderProto: OpenOrderProto):
+        logAnswer(current_fn_name(), vars())
+
+    def openOrdersEndProtoBuf(self, openOrdersEndProto: OpenOrdersEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def errorProtoBuf(self, errorMessageProto: ErrorMessageProto):
+        logAnswer(current_fn_name(), vars())
+
+    def executionDetailsProtoBuf(self, executionDetailsProto: ExecutionDetailsProto):
+        logAnswer(current_fn_name(), vars())
+
+    def executionDetailsEndProtoBuf(self, executionDetailsProto: ExecutionDetailsProto):
+        logAnswer(current_fn_name(), vars())
+
+    def completedOrderProtoBuf(self, completedOrderProto: CompletedOrderProto):
+        logAnswer(current_fn_name(), vars())
+
+    def completedOrdersEndProtoBuf(self, completedOrdersEndProto: CompletedOrdersEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def orderBoundProtoBuf(self, orderBoundProto: OrderBoundProto):
+        logAnswer(current_fn_name(), vars())
+
+    def contractDataProtoBuf(self, contractDataProto: ContractDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def bondContractDataProtoBuf(self, contractDataProto: ContractDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def contractDataEndProtoBuf(self, contractDataEndProto: ContractDataEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickPriceProtoBuf(self, tickPriceProto: TickPriceProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickSizeProtoBuf(self, tickSizeProto: TickSizeProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickOptionComputationProtoBuf(self, tickOptionComputationProto: TickOptionComputationProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickGenericProtoBuf(self, tickGenericProto: TickGenericProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickStringProtoBuf(self, tickStringProto: TickStringProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickSnapshotEndProtoBuf(self, tickSnapshotEndProto: TickSnapshotEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def updateMarketDepthProtoBuf(self, marketDepthProto: MarketDepthProto):
+        logAnswer(current_fn_name(), vars())
+
+    def updateMarketDepthL2ProtoBuf(self, marketDepthL2Proto: MarketDepthL2Proto):
+        logAnswer(current_fn_name(), vars())
+
+    def updateMarketDataTypeProtoBuf(self, marketDataTypeProto: MarketDataTypeProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickReqParamsProtoBuf(self, tickReqParamsProto: TickReqParamsProto):
+        logAnswer(current_fn_name(), vars())
+
+    def updateAccountValueProtoBuf(self, accountValueProto: AccountValueProto):
+        logAnswer(current_fn_name(), vars())
+
+    def updatePortfolioProtoBuf(self, portfolioValueProto: PortfolioValueProto):
+        logAnswer(current_fn_name(), vars())
+
+    def updateAccountTimeProtoBuf(self, accountUpdateTimeProto: AccountUpdateTimeProto):
+        logAnswer(current_fn_name(), vars())
+
+    def accountDataEndProtoBuf(self, accountDataEndProto: AccountDataEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def managedAccountsProtoBuf(self, managedAccountsProto: ManagedAccountsProto):
+        logAnswer(current_fn_name(), vars())
+
+    def positionProtoBuf(self, positionProto: PositionProto):
+        logAnswer(current_fn_name(), vars())
+
+    def positionEndProtoBuf(self, positionEndProto: PositionEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def accountSummaryProtoBuf(self, accountSummaryProto: AccountSummaryProto):
+        logAnswer(current_fn_name(), vars())
+
+    def accountSummaryEndProtoBuf(self, accountSummaryEndProto: AccountSummaryEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def positionMultiProtoBuf(self, positionMultiProto: PositionMultiProto):
+        logAnswer(current_fn_name(), vars())
+
+    def positionMultiEndProtoBuf(self, positionMultiEndProto: PositionMultiEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def accountUpdateMultiProtoBuf(self, accountUpdateMultiProto: AccountUpdateMultiProto):
+        logAnswer(current_fn_name(), vars())
+
+    def accountUpdateMultiEndProtoBuf(self, accountUpdateMultiEndProto: AccountUpdateMultiEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalDataProtoBuf(self, historicalDataProto: HistoricalDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalDataUpdateProtoBuf(self, historicalDataUpdateProto: HistoricalDataUpdateProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalDataEndProtoBuf(self, historicalDataEndProto: HistoricalDataEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def realTimeBarTickProtoBuf(self, realTimeBarTickProto: RealTimeBarTickProto):
+        logAnswer(current_fn_name(), vars())
+
+    def headTimestampProtoBuf(self, headTimestampProto: HeadTimestampProto):
+        logAnswer(current_fn_name(), vars())
+
+    def histogramDataProtoBuf(self, histogramDataProto: HistogramDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalTicksProtoBuf(self, historicalTicksProto: HistoricalTicksProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalTicksBidAskProtoBuf(self, historicalTicksBidAskProto: HistoricalTicksBidAskProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalTicksLastProtoBuf(self, historicalTicksLastProto: HistoricalTicksLastProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickByTickDataProtoBuf(self, tickByTickDataProto: TickByTickDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def updateNewsBulletinProtoBuf(self, newsBulletinProto: NewsBulletinProto):
+        logAnswer(current_fn_name(), vars())
+
+    def newsArticleProtoBuf(self, newsArticleProto: NewsArticleProto):
+        logAnswer(current_fn_name(), vars())
+
+    def newsProvidersProtoBuf(self, newsProvidersProto: NewsProvidersProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalNewsProtoBuf(self, historicalNewsProto: HistoricalNewsProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalNewsEndProtoBuf(self, historicalNewsEndProto: HistoricalNewsEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def wshMetaDataProtoBuf(self, wshMetaDataProto: WshMetaDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def wshEventDataProtoBuf(self, wshEventDataProto: WshEventDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def tickNewsProtoBuf(self, tickNewsProto: TickNewsProto):
+        logAnswer(current_fn_name(), vars())
+
+    def scannerParametersProtoBuf(self, scannerParametersProto: ScannerParametersProto):
+        logAnswer(current_fn_name(), vars())
+
+    def scannerDataProtoBuf(self, scannerDataProto: ScannerDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def fundamentalsDataProtoBuf(self, fundamentalsDataProto: FundamentalsDataProto):
+        logAnswer(current_fn_name(), vars())
+
+    def pnlProtoBuf(self, pnlProto: PnLProto):
+        logAnswer(current_fn_name(), vars())
+
+    def pnlSingleProtoBuf(self, pnlSingleProto: PnLSingleProto):
+        logAnswer(current_fn_name(), vars())
+
+    def receiveFAProtoBuf(self, receiveFAProto: ReceiveFAProto):
+        logAnswer(current_fn_name(), vars())
+
+    def replaceFAEndProtoBuf(self, replaceFAEndProto: ReplaceFAEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def commissionAndFeesReportProtoBuf(self, commissionAndFeesReportProto: CommissionAndFeesReportProto):
+        logAnswer(current_fn_name(), vars())
+
+    def historicalScheduleProtoBuf(self, historicalScheduleProto: HistoricalScheduleProto):
+        logAnswer(current_fn_name(), vars())
+
+    def rerouteMarketDataRequestProtoBuf(self, rerouteMarketDataRequestProto: RerouteMarketDataRequestProto):
+        logAnswer(current_fn_name(), vars())
+
+    def rerouteMarketDepthRequestProtoBuf(self, rerouteMarketDepthRequestProto: RerouteMarketDepthRequestProto):
+        logAnswer(current_fn_name(), vars())
+
+    def secDefOptParameterProtoBuf(self, secDefOptParameterProto: SecDefOptParameterProto):
+        logAnswer(current_fn_name(), vars())
+
+    def secDefOptParameterEndProtoBuf(self, secDefOptParameterEndProto: SecDefOptParameterEndProto):
+        logAnswer(current_fn_name(), vars())
+
+    def softDollarTiersProtoBuf(self, softDollarTiersProto: SoftDollarTiersProto):
+        logAnswer(current_fn_name(), vars())
+
+    def familyCodesProtoBuf(self, familyCodesProto: FamilyCodesProto):
+        logAnswer(current_fn_name(), vars())
+
+    def symbolSamplesProtoBuf(self, symbolSamplesProto: SymbolSamplesProto):
+        logAnswer(current_fn_name(), vars())
+
+    def smartComponentsProtoBuf(self, smartComponentsProto: SmartComponentsProto):
+        logAnswer(current_fn_name(), vars())
+
+    def marketRuleProtoBuf(self, marketRuleProto: MarketRuleProto):
+        logAnswer(current_fn_name(), vars())
+
+    def userInfoProtoBuf(self, userInfoProto: UserInfoProto):
+        logAnswer(current_fn_name(), vars())
+
+    def nextValidIdProtoBuf(self, nextValidIdProto: NextValidIdProto):
+        logAnswer(current_fn_name(), vars())
+
+    def currentTimeProtoBuf(self, currentTimeProto: CurrentTimeProto):
+        logAnswer(current_fn_name(), vars())
+
+    def currentTimeInMillisProtoBuf(self, currentTimeInMillisProto: CurrentTimeInMillisProto):
+        logAnswer(current_fn_name(), vars())
+
+    def verifyMessageApiProtoBuf(self, verifyMessageApiProto: VerifyMessageApiProto):
+        logAnswer(current_fn_name(), vars())
+
+    def verifyCompletedProtoBuf(self, verifyCompletedProto: VerifyCompletedProto):
+        logAnswer(current_fn_name(), vars())
+
+    def displayGroupListProtoBuf(self, displayGroupListProto: DisplayGroupListProto):
+        logAnswer(current_fn_name(), vars())
+
+    def displayGroupUpdatedProtoBuf(self, displayGroupUpdatedProto: DisplayGroupUpdatedProto):
+        logAnswer(current_fn_name(), vars())
+
+    def marketDepthExchangesProtoBuf(self, marketDepthExchangesProto: MarketDepthExchangesProto):
+        logAnswer(current_fn_name(), vars())
+
+    def configResponseProtoBuf(self, configResponseProto: ConfigResponseProto):
+        logAnswer(current_fn_name(), vars())
+
+    def updateConfigResponseProtoBuf(self, updateConfigResponseProto: UpdateConfigResponseProto):
         logAnswer(current_fn_name(), vars())

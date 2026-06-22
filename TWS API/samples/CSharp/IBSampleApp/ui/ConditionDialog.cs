@@ -25,7 +25,7 @@ namespace IBSampleApp.ui
             radioMap[tradeRb] = Tuple.Create(tradePanel, OrderConditionType.Execution);
             radioMap[timeRb] = Tuple.Create(timePanel, OrderConditionType.Time);
             radioMap[volumeRb] = Tuple.Create(volumePanel, OrderConditionType.Volume);
-            radioMap[percentRb] = Tuple.Create(percentPanel, OrderConditionType.PercentCange);
+            radioMap[percentRb] = Tuple.Create(percentPanel, OrderConditionType.PercentChange);
 
             radioButtons = conditionTypePage.Controls.OfType<RadioButton>().ToArray();
             Condition = condition != null ? condition : OrderCondition.Create(OrderConditionType.Price);
@@ -55,7 +55,7 @@ namespace IBSampleApp.ui
                     fillFromCondition(Condition as MarginCondition);
                     break;
 
-                case OrderConditionType.PercentCange:
+                case OrderConditionType.PercentChange:
                     fillFromCondition(Condition as PercentChangeCondition);
                     break;
 
@@ -185,7 +185,7 @@ namespace IBSampleApp.ui
                     fillCondition(Condition as MarginCondition);
                     break;
 
-                case OrderConditionType.PercentCange:
+                case OrderConditionType.PercentChange:
                     fillCondition(Condition as PercentChangeCondition);
                     break;
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -34,6 +34,9 @@ public class HistoricalTicksHandler extends BaseListDataHandler<TickByTickData> 
     /** Method sends historical ticks request to TWS */
     public byte[] handleHistoricalTicksRequest(String requestStr, byte[] data) {
         HistoricalTicksRequest request = m_requestParser.parseHistoricalTicksRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending historical ticks request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()));
         byte[] ret = handleBaseRequest(request); 
         clientSocket().reqHistoricalTicks(request.requestId(), request.contract(), request.startDateTime(), request.endDateTime(), 
@@ -45,6 +48,7 @@ public class HistoricalTicksHandler extends BaseListDataHandler<TickByTickData> 
     public byte[] handleHistoricalTicksCancel(String requestStr) {
         DdeRequest request =  m_requestParser.parseRequest(requestStr, DdeRequestType.CANCEL_HISTORICAL_TICKS);
         System.out.println("Cancelling historical ticks: id=" + request.requestId());
+        clientSocket().cancelHistoricalTicks(request.requestId());
         return handleBaseCancel(request);
     }
 

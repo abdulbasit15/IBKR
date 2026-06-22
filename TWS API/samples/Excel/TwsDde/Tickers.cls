@@ -34,13 +34,14 @@ Const STR_TICK = "tick"
 Const STR_REQMKTDATA = "reqMktData"
 Const STR_CANCELMKTDATA = "cancelMktData"
 Const STR_ID = "id"
-Const STR_REQMKTDATA_LONG_VALUE = "reqMktDataLongValue"
 Const STR_REQ_CURRENT_TIME = "reqCurrentTime"
+Const STR_REQ_CURRENT_TIME_IN_MILLIS = "reqCurrentTimeInMillis"
 
 
 ' cells
 Const CELL_SERVER_NAME = "B5" ' cell with server name
 Const CELL_CURRENT_TIME = "P5" ' cell with current time
+Const CELL_CURRENT_TIME_IN_MILLIS = "S5" ' cell with current time in millis
 
 ' columns
 Const startOfContractColumns = 1 ' contract first column index (symbol)
@@ -51,10 +52,9 @@ Const statusColumnIndex = 18 ' index of "status" column
 Const idColumnIndex = 19 ' index of "id" column
 Const startOfMarketDataColumns = 20 ' market data first column index
 Const startOfTickReqParamsColumns = 41 ' tick req params first column index
-Const startOfGenericTicksColumns = 44 ' generic ticks first column index
-Const startOfOptCompColumns = 87 ' option computations first column index
-Const startOfEFPCompColumns = 123 ' efp first column index
-Const fundamentalsColumnIndex = 63
+Const startOfGenericTicksColumns = 46 ' generic ticks first column index
+Const startOfOptCompColumns = 88 ' option computations first column index
+Const startOfEFPCompColumns = 124 ' efp first column index
 
 ' rows
 Const dataStartRowIndex = 10 ' starting row of data
@@ -90,7 +90,7 @@ Private Function getGenTicksColumns() As GenTickCol()
         GoTo getGenTicksColumnsEnd
     End If
     
-    ReDim genTicksColumnsArray(27)
+    ReDim genTicksColumnsArray(26)
     
     ' genTick=105 (avgOptVolume), response=87
     genTicksColumnsArray(0).genTick = 105
@@ -144,65 +144,61 @@ Private Function getGenTicksColumns() As GenTickCol()
     genTicksColumnsArray(12).genTick = 586
     genTicksColumnsArray(12).names = Array("estimatedIPOMidpoint", "finalIPOLast")
 
-    ' genTick=258 (fundamentals), response=47
-    genTicksColumnsArray(13).genTick = 258
-    genTicksColumnsArray(13).names = Array("fundamentals")
-
     ' genTick=293 (tradeCount), response=54
-    genTicksColumnsArray(14).genTick = 293
-    genTicksColumnsArray(14).names = Array("tradeCount")
+    genTicksColumnsArray(13).genTick = 293
+    genTicksColumnsArray(13).names = Array("tradeCount")
 
     ' genTick=294 (tradeRate), response=55
-    genTicksColumnsArray(15).genTick = 294
-    genTicksColumnsArray(15).names = Array("tradeRate")
+    genTicksColumnsArray(14).genTick = 294
+    genTicksColumnsArray(14).names = Array("tradeRate")
 
     ' genTick=295 (volumeRate), response=56
-    genTicksColumnsArray(16).genTick = 295
-    genTicksColumnsArray(16).names = Array("volumeRate")
+    genTicksColumnsArray(15).genTick = 295
+    genTicksColumnsArray(15).names = Array("volumeRate")
 
     ' genTick=318 (lastRTHTrade), response=57
-    genTicksColumnsArray(17).genTick = 318
-    genTicksColumnsArray(17).names = Array("lastRTHTrade")
+    genTicksColumnsArray(16).genTick = 318
+    genTicksColumnsArray(16).names = Array("lastRTHTrade")
 
     ' genTick=456 (IBDividends), response=59
-    genTicksColumnsArray(18).genTick = 456
-    genTicksColumnsArray(18).names = Array("IBDividends")
+    genTicksColumnsArray(17).genTick = 456
+    genTicksColumnsArray(17).names = Array("IBDividends")
 
     ' genTick=460 (bondMultiplier), response=60
-    genTicksColumnsArray(19).genTick = 460
-    genTicksColumnsArray(19).names = Array("bondFactorMultiplier")
+    genTicksColumnsArray(18).genTick = 460
+    genTicksColumnsArray(18).names = Array("bondFactorMultiplier")
 
     ' genTick=165 (miscStats), response=21,15,16,17,18,19,20
-    genTicksColumnsArray(20).genTick = 165
-    genTicksColumnsArray(20).names = Array("AvgVolume", "13WeekLow", "13WeekHigh", "26WeekLow", "26WeekHigh", "52WeekLow", "52WeekHigh")
+    genTicksColumnsArray(19).genTick = 165
+    genTicksColumnsArray(19).names = Array("AvgVolume", "13WeekLow", "13WeekHigh", "26WeekLow", "26WeekHigh", "52WeekLow", "52WeekHigh")
 
     ' genTick=595 (shortTermVolume), response=63,64,65
-    genTicksColumnsArray(21).genTick = 595
-    genTicksColumnsArray(21).names = Array("shortTermVolume3Min", "shortTermVolume5Min", "shortTermVolume10Min")
+    genTicksColumnsArray(20).genTick = 595
+    genTicksColumnsArray(20).names = Array("shortTermVolume3Min", "shortTermVolume5Min", "shortTermVolume10Min")
 
     ' genTick=588 (futuresOpenInterest), response=86
-    genTicksColumnsArray(22).genTick = 588
-    genTicksColumnsArray(22).names = Array("futuresOpenInterest")
+    genTicksColumnsArray(21).genTick = 588
+    genTicksColumnsArray(21).names = Array("futuresOpenInterest")
 
     ' genTick=233 (rtVolume), response=48
-    genTicksColumnsArray(23).genTick = 233
-    genTicksColumnsArray(23).names = Array("RTVolume")
+    genTicksColumnsArray(22).genTick = 233
+    genTicksColumnsArray(22).names = Array("RTVolume")
 
     ' genTick=375 (rtTrdVolume), response=77
-    genTicksColumnsArray(24).genTick = 375
-    genTicksColumnsArray(24).names = Array("rtTrdVolume")
+    genTicksColumnsArray(23).genTick = 375
+    genTicksColumnsArray(23).names = Array("rtTrdVolume")
 
     ' genTick=577 (etfNavLast), response=96
-    genTicksColumnsArray(25).genTick = 577
-    genTicksColumnsArray(25).names = Array("etfNavLast")
+    genTicksColumnsArray(24).genTick = 577
+    genTicksColumnsArray(24).names = Array("etfNavLast")
 
     ' genTick=623 (etfFrozenNavLast), response=97
-    genTicksColumnsArray(26).genTick = 623
-    genTicksColumnsArray(26).names = Array("etfFrozenNavLast")
+    genTicksColumnsArray(25).genTick = 623
+    genTicksColumnsArray(25).names = Array("etfFrozenNavLast")
 
     ' genTick=614 (etfNavMisc), response=98,99
-    genTicksColumnsArray(27).genTick = 614
-    genTicksColumnsArray(27).names = Array("etfNavHigh", "etfNavLow")
+    genTicksColumnsArray(26).genTick = 614
+    genTicksColumnsArray(26).names = Array("etfNavHigh", "etfNavLow")
 
     ' TODO: add generic ticks here
     
@@ -289,7 +285,7 @@ Private Function getTickReqParamsColumns() As Variant()
         GoTo getTickReqParamsColumnsEnd
     End If
     
-    tickReqParamsColumnsArray = Array("minTick", "bboExchange", "snapshotPermissions")
+    tickReqParamsColumnsArray = Array("minTick", "bboExchange", "snapshotPermissions", "lastPricePrecision", "lastSizePrecision")
     
 getTickReqParamsColumnsEnd:
     getTickReqParamsColumns = tickReqParamsColumnsArray
@@ -375,12 +371,11 @@ End Sub
 ' ========================================================
 Sub cancelMarketData()
     Dim server As String, id As String, i As Integer, j As Integer, row As Range, lastRowIndex As Integer
-    
     server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
     If server = util.STR_EMPTY Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
     
             If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -426,6 +421,27 @@ Sub requestCurrentTime()
 End Sub
 
 ' ========================================================
+' request current time in millis when button is pressed
+' ========================================================
+Sub requestCurrentTimeInMillis()
+    Dim server As String
+    
+    server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
+    If server = STR_EMPTY Then Exit Sub
+    
+    With Worksheets(STR_SHEET_NAME)
+        util.sendRequest server, STR_REQ_CURRENT_TIME_IN_MILLIS, util.IDENTIFIER_ZERO
+
+        .Range(CELL_CURRENT_TIME_IN_MILLIS).Formula = util.composeLink(server, STR_REQ_CURRENT_TIME_IN_MILLIS, util.IDENTIFIER_ZERO, util.STR_EMPTY) ' subscription control
+        If util.cleanOnError(.Range(CELL_CURRENT_TIME_IN_MILLIS)) Then
+            .Range(CELL_CURRENT_TIME_IN_MILLIS).value = util.STR_EMPTY
+            Exit Sub
+        End If
+    End With
+
+End Sub
+
+' ========================================================
 ' request market data for active row(s) when button is pressed
 ' ========================================================
 Sub requestMarketData()
@@ -435,7 +451,7 @@ Sub requestMarketData()
     If server = STR_EMPTY Then Exit Sub
     
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
             If .Cells(row.row, idColumnIndex).value <> STR_EMPTY Then GoTo Continue
             If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -469,7 +485,7 @@ Sub sendMarketDataRequest(server As String, cell As Range)
         End If
         
         ' send request
-        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQMKTDATA, id, cell, startOfContractColumns, getContractColumns(), genericTicksColumnIndex, idColumnIndex, 0, 0, 0, 0
+        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQMKTDATA, id, cell, startOfContractColumns, getContractColumns(), genericTicksColumnIndex, idColumnIndex
         
         ' fill market data columns with formulas
         Dim i As Integer, j As Integer
@@ -536,7 +552,7 @@ Sub cancelAllMktData()
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
     
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 util.sendRequest server, STR_CANCELMKTDATA, cell.value
@@ -560,7 +576,7 @@ Sub requestAllMktData()
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
     
         Dim row As Range, cell As Range
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 sendMarketDataRequest server, cell
@@ -570,31 +586,3 @@ Sub requestAllMktData()
     End With
 End Sub
 
-' ========================================================
-' Called when some value changes
-' ========================================================
-Private Sub Worksheet_Calculate()
-    If Not util.sheetExists(STR_SHEET_NAME) Then Exit Sub
-
-    Dim i As Integer
-    
-    With Worksheets(STR_SHEET_NAME)
-        For i = dataStartRowIndex To dataEndRowIndex
-            If CStr(.Cells(i, fundamentalsColumnIndex).value) = util.STR_LONGVALUE Then
-                ' request long values (currently only "fundamentals")
-                ' some values lengths are longer than 255 symbols, DDE cannot send/receive such values, so we have to split long values into chunks and then merge them
-                ' here we request array with splitted long value and then merge and display in cell
-                Dim server As String, id As String
-                server = util.getServerVal(STR_SHEET_NAME, CELL_SERVER_NAME)
-                If server = util.STR_EMPTY Then Exit Sub
-                
-                id = .Cells(i, idColumnIndex).value
-                
-                Dim fundamentalsArray() As Variant
-                ' send request and receive fundamentals table/array
-                fundamentalsArray = util.sendRequest(server, STR_REQMKTDATA_LONG_VALUE, id & util.QMARK & "fundamentals") ' returned array can be 1-Dimension or 2-Dimension
-                .Cells(i, fundamentalsColumnIndex).value = util.createLongValue(fundamentalsArray)
-            End If
-        Next i
-    End With
-End Sub

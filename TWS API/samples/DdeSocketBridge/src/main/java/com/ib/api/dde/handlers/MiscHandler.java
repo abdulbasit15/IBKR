@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -32,6 +32,7 @@ public class MiscHandler extends BaseHandler {
     protected String m_accountsList = "";
     protected String m_accountUpdateTime = "";
     protected String m_currentTime = "";
+    protected String m_currentTimeInMillis = "";
     protected String m_whiteBrandingId = "";
     
     // parser
@@ -70,8 +71,6 @@ public class MiscHandler extends BaseHandler {
     /** Method updates managed accounts */
     public void updateManagedAccounts(String accountsList) {
         m_accountsList = accountsList;
-        DdeNotificationEvent oldEvent = RequestParser.createDdeNotificationEvent(DdeRequestType.FAACCTS.topic(), "id1?value");
-        twsService().notifyDde(oldEvent);
     }
     
     /* *****************************************************************************************************
@@ -111,6 +110,17 @@ public class MiscHandler extends BaseHandler {
         m_currentTime = "";
         return ret;
     }
+
+    /** Method handles current time in millis request */
+    public String handleCurrentTimeInMillisRequest() {
+        System.out.println("Handling current time in millis request.");
+        if (Utils.isNull(m_currentTimeInMillis)) {
+            clientSocket().reqCurrentTimeInMillis();
+        }
+        String ret = m_currentTimeInMillis;
+        m_currentTimeInMillis = "";
+        return ret;
+    }
     
     /** Method updates current time */
     public void updateCurrentTime(long currentTime) {
@@ -119,6 +129,12 @@ public class MiscHandler extends BaseHandler {
         twsService().notifyDde(event);
     }
     
+    /** Method updates current time in millis */
+    public void updateCurrentTimeInMillis(long timeInMillis) {
+        m_currentTimeInMillis = new SimpleDateFormat("yyyyMMdd HH:mm:ss.SSS").format(new Date(timeInMillis));
+        DdeNotificationEvent event = RequestParser.createDdeNotificationEvent(DdeRequestType.REQ_CURRENT_TIME_IN_MILLIS.topic(), RequestParser.ID_ZERO);
+        twsService().notifyDde(event);
+    }
     
     /* *****************************************************************************************************
      *                                          Smart Components

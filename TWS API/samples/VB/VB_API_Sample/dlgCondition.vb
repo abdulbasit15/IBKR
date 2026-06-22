@@ -1,4 +1,4 @@
-﻿' Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 Imports IBApi
@@ -76,7 +76,7 @@ Public Class dlgCondition
         m_radioMap(tradeRb) = Tuple.Create(tradePanel, OrderConditionType.Execution)
         m_radioMap(timeRb) = Tuple.Create(timePanel, OrderConditionType.Time)
         m_radioMap(volumeRb) = Tuple.Create(volumePanel, OrderConditionType.Volume)
-        m_radioMap(percentRb) = Tuple.Create(percentPanel, OrderConditionType.PercentCange)
+        m_radioMap(percentRb) = Tuple.Create(percentPanel, OrderConditionType.PercentChange)
 
         m_radioButtons = conditionTypePage.Controls.OfType(Of RadioButton).ToArray()
         Me.Condition = If(Not condition Is Nothing, condition, OrderCondition.Create(OrderConditionType.Price))
@@ -95,7 +95,7 @@ Public Class dlgCondition
                 fillFromMarginCondition(Me.Condition)
 
 
-            Case OrderConditionType.PercentCange
+            Case OrderConditionType.PercentChange
                 fillFromPercentChangeCondition(Me.Condition)
 
 
@@ -156,7 +156,7 @@ Public Class dlgCondition
             Case OrderConditionType.Margin
                 fillCondition(DirectCast(Condition, MarginCondition))
 
-            Case OrderConditionType.PercentCange
+            Case OrderConditionType.PercentChange
                 fillCondition(DirectCast(Condition, PercentChangeCondition))
 
             Case OrderConditionType.Price
@@ -194,7 +194,7 @@ Public Class dlgCondition
         priceCondition.ConId = CInt(priceConId.Text)
         priceCondition.Exchange = priceConExch.Text
         priceCondition.TriggerMethod = CTriggerMethod.FromFriendlyString(priceMethod.Text)
-        priceCondition.Price = CDbl(price.Text)
+        priceCondition.Price = Utils.StringToDouble(price.Text)
     End Sub
 
     Private Sub fillCondition(percentChangeCondition As PercentChangeCondition)

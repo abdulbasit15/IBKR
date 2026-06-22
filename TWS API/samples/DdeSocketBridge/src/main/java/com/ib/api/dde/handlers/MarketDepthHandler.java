@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -48,6 +48,9 @@ public class MarketDepthHandler extends BaseHandler {
     /** Method sends market depth request to TWS */
     public byte[] handleMarketDepthRequest(String requestStr, byte[] data) {
         MarketDepthRequest request = m_requestParser.parseMarketDepthRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending market depth request: id=" + request.requestId() + " for contract=" + Utils.shortContractString(request.contract()) + " isSmartDepth=" + request.isSmartDepth());
         MarketDepthDataMap dataMap = new MarketDepthDataMap(request);
         m_marketDepthRequests.put(request.requestId(), dataMap);

@@ -1,10 +1,11 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
 #ifndef TWS_API_CLIENT_ORDER_H
 #define TWS_API_CLIENT_ORDER_H
 
+#include "CommonDefs.h"
 #include "TagValue.h"
 #include "OrderCondition.h"
 #include "SoftDollarTier.h"
@@ -14,9 +15,6 @@
 
 #include <cmath>
 
-#define UNSET_DOUBLE DBL_MAX
-#define UNSET_INTEGER INT_MAX
-#define UNSET_LONG LLONG_MAX
 #define COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID INFINITY
 
 enum Origin { CUSTOMER,
@@ -31,6 +29,12 @@ enum AuctionStrategy { AUCTION_UNSET = 0,
 enum UsePriceMmgtAlgo { DONT_USE = 0,
                         USE,
                         DEFAULT = UNSET_INTEGER };
+
+enum ThreeStateBoolean {
+    STATE_NO = 0,
+    STATE_YES,
+    STATE_DEFAULT = UNSET_INTEGER
+};
 
 struct OrderComboLeg
 {
@@ -52,9 +56,9 @@ typedef std::shared_ptr<OrderComboLeg> OrderComboLegSPtr;
 struct Order
 {
 	// order identifier
-	long     orderId = 0;
-	long     clientId = 0;
-	int      permId = 0;
+	int      orderId = 0;
+	int      clientId = 0;
+	long long permId = 0;
 
 	// main order fields
 	std::string action;
@@ -70,8 +74,8 @@ struct Order
 	std::string ocaGroup;      // one cancels all group name
 	int      ocaType = 0;       // 1 = CANCEL_WITH_BLOCK, 2 = REDUCE_WITH_BLOCK, 3 = REDUCE_NON_BLOCK
 	std::string orderRef;      // order reference
-	bool     transmit = true;      // if false, order will be created but not transmited
-	long     parentId = 0;      // Parent order Id, to associate Auto STP or TRAIL orders with the original order.
+	bool     transmit = true;      // if false, order will be created but not transmitted
+	int      parentId = 0;      // Parent order Id, to associate Auto STP or TRAIL orders with the original order.
 	bool     blockOrder = false;
 	bool     sweepToFill = false;
 	int      displaySize = 0;
@@ -122,7 +126,7 @@ struct Order
 	int      volatilityType = UNSET_INTEGER;     // 1=daily, 2=annual
 	std::string deltaNeutralOrderType = "";
 	double   deltaNeutralAuxPrice = UNSET_DOUBLE;
-	long     deltaNeutralConId = 0;
+	int      deltaNeutralConId = 0;
 	std::string deltaNeutralSettlingFirm = "";
 	std::string deltaNeutralClearingAccount = "";
 	std::string deltaNeutralClearingIntent = "";
@@ -153,6 +157,7 @@ struct Order
 	// HEDGE ORDERS
 	std::string hedgeType;  // 'D' - delta, 'B' - beta, 'F' - FX, 'P' - pair
 	std::string hedgeParam; // 'beta=X' value for beta hedge, 'ratio=Y' for pair hedge
+	int         hedgeMaxSize = UNSET_INTEGER;
 
 	// Clearing info
 	std::string account; // IB account
@@ -230,8 +235,8 @@ struct Order
 	bool autoCancelParent = false;
 	std::string shareholder = "";
 	bool imbalanceOnly = false;
-	bool routeMarketableToBbo = false;
-	long long parentPermId = UNSET_LONG;
+	ThreeStateBoolean routeMarketableToBbo = ThreeStateBoolean::STATE_DEFAULT;
+	long long parentPermId = UNSET_LLONG;
 
 	UsePriceMmgtAlgo usePriceMgmtAlgo = UsePriceMmgtAlgo::DEFAULT;
 	int duration = UNSET_INTEGER;
@@ -246,9 +251,21 @@ struct Order
 	std::string customerAccount = "";
 	bool professionalCustomer = false;
 	std::string bondAccruedInterest = "";
-
-	std::string externalUserId = "";
+	bool includeOvernight = false;
 	int manualOrderIndicator = UNSET_INTEGER;
+	std::string submitter = "";
+	bool postOnly = false;
+	bool allowPreOpen = false;
+	bool ignoreOpenAuction = false;
+	bool deactivate = false;
+	ThreeStateBoolean seekPriceImprovement = ThreeStateBoolean::STATE_DEFAULT;
+	int whatIfType = UNSET_INTEGER;
+
+	// attached orders
+	int slOrderId = UNSET_INTEGER;
+	std::string slOrderType = "";
+	int ptOrderId = UNSET_INTEGER;
+	std::string ptOrderType = "";
 
 public:
 

@@ -115,6 +115,22 @@ Private Enum ExtendedOpenOrderAttributesColumns
     Col_MID_OFFSET_AT_HALF
     Col_CUSTOMER_ACCOUNT
     Col_PROFESSIONAL_CUSTOMER
+    Col_BOND_ACCRUED_INTEREST
+    Col_INCLUDE_OVERNIGHT
+    Col_MANUAL_ORDER_INDICATOR
+    Col_SUBMITTER
+    Col_IMBALANCE_ONLY
+    Col_POST_ONLY
+    Col_ALLOW_PRE_OPEN
+    Col_IGNORE_OPEN_AUCTION
+    Col_DEACTIVATE
+    Col_ACTIVE_START_TIME
+    Col_ACTIVE_STOP_TIME
+    Col_SEEK_PRICE_IMPROVEMENT
+    Col_ROUTE_MARKETABLE_TO_BBO
+    Col_HEDGETYPE
+    Col_HEDGEPARAM
+    Col_HEDGEMAXSIZE
 End Enum
 
 Private contractTable As Range
@@ -182,7 +198,7 @@ Sub UpdateOpenOrder(orderId As Long, contract As TWSLib.IContract, order As TWSL
         contractTable(rowId, Col_SYMBOL).value = .Symbol
         contractTable(rowId, Col_SECTYPE).value = .SecType
         contractTable(rowId, Col_LASTTRADEDATE).value = .lastTradeDateOrContractMonth
-        contractTable(rowId, Col_STRIKE).value = .Strike
+        contractTable(rowId, Col_STRIKE).value = Util.DblMaxStr(.Strike)
         contractTable(rowId, Col_RIGHT).value = .Right
         contractTable(rowId, Col_MULTIPLIER).value = .multiplier
         contractTable(rowId, Col_EXCH).value = .Exchange
@@ -202,7 +218,7 @@ Sub UpdateOpenOrder(orderId As Long, contract As TWSLib.IContract, order As TWSL
         orderDescriptionTable(rowId, Col_ORDERTYPE).value = .orderType
         orderDescriptionTable(rowId, Col_LMTPRICE).value = Util.DblMaxStr(.lmtPrice)
         orderDescriptionTable(rowId, Col_AUXPRICE).value = Util.DblMaxStr(.auxPrice)
-        orderStatusTable(rowId, Col_PERMID).value = .permId
+        orderStatusTable(rowId, Col_PERMID).value = .permIdStr
 
 
         ' extended order attributes
@@ -315,6 +331,30 @@ Sub UpdateOpenOrder(orderId As Long, contract As TWSLib.IContract, order As TWSL
         ExtendedAttributesTable(rowId, Col_MID_OFFSET_AT_HALF).value = Util.DblMaxStr(.midOffsetAtHalf)
         ExtendedAttributesTable(rowId, Col_CUSTOMER_ACCOUNT).value = .customerAccount
         ExtendedAttributesTable(rowId, Col_PROFESSIONAL_CUSTOMER).value = .professionalCustomer
+        ExtendedAttributesTable(rowId, Col_BOND_ACCRUED_INTEREST).value = .bondAccruedInterest
+        ExtendedAttributesTable(rowId, Col_INCLUDE_OVERNIGHT).value = .includeOvernight
+        ExtendedAttributesTable(rowId, Col_MANUAL_ORDER_INDICATOR).value = Util.IntMaxStr(.manualOrderIndicator)
+        ExtendedAttributesTable(rowId, Col_SUBMITTER).value = .submitter
+        ExtendedAttributesTable(rowId, Col_IMBALANCE_ONLY).value = .imbalanceOnly
+        ExtendedAttributesTable(rowId, Col_POST_ONLY).value = .postOnly
+        ExtendedAttributesTable(rowId, Col_ALLOW_PRE_OPEN).value = .allowPreOpen
+        ExtendedAttributesTable(rowId, Col_IGNORE_OPEN_AUCTION).value = .ignoreOpenAuction
+        ExtendedAttributesTable(rowId, Col_DEACTIVATE).value = .Deactivate
+        ExtendedAttributesTable(rowId, Col_ACTIVE_START_TIME).value = .activeStartTime
+        ExtendedAttributesTable(rowId, Col_ACTIVE_STOP_TIME).value = .activeStopTime
+        If .seekPriceImprovement = 1 Then
+            ExtendedAttributesTable(rowId, Col_SEEK_PRICE_IMPROVEMENT).value = "TRUE"
+        Else
+            ExtendedAttributesTable(rowId, Col_SEEK_PRICE_IMPROVEMENT).value = "FALSE"
+        End If
+        If .routeMarketableToBbo = 1 Then
+            ExtendedAttributesTable(rowId, Col_ROUTE_MARKETABLE_TO_BBO).value = "TRUE"
+        Else
+            ExtendedAttributesTable(rowId, Col_ROUTE_MARKETABLE_TO_BBO).value = "FALSE"
+        End If
+        ExtendedAttributesTable(rowId, Col_HEDGETYPE).value = .hedgeType
+        ExtendedAttributesTable(rowId, Col_HEDGEPARAM).value = .hedgeParam
+        ExtendedAttributesTable(rowId, Col_HEDGEMAXSIZE).value = Util.IntMaxStr(.hedgeMaxSize)
     End With
 
     If Not order.SmartComboRoutingParams Is Nothing Then
@@ -332,7 +372,7 @@ Sub UpdateOpenOrder(orderId As Long, contract As TWSLib.IContract, order As TWSL
 End Sub
 
 ' update order status
-Public Sub UpdateOrderStatus(orderId As Long, status As String, filled As Variant, remaining As Variant, avgFillPrice As Double, parentId As Long, permId As Long, lastFillPrice As Double)
+Public Sub UpdateOrderStatus(orderId As Long, status As String, filled As Variant, remaining As Variant, avgFillPrice As Double, parentId As Long, permId As String, lastFillPrice As Double)
     ' find row to update by using orderId
     Dim id As Long
     id = OrderUtils.FindOrderRowIndexByPermId(permId, orderStatusTable)
@@ -358,7 +398,7 @@ Public Sub Initialise()
     Set contractTable = Range("$A$7:$M$100")
     Set orderDescriptionTable = Range("$N$7:$S$100")
     Set orderStatusTable = Range("$T$7:$AA$100")
-    Set ExtendedAttributesTable = Range("$AB$7:$DY$100")
+    Set ExtendedAttributesTable = Range("$AB$7:$EO$100")
 End Sub
 
 Private Sub Worksheet_Activate()

@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.client;
@@ -36,7 +36,7 @@ public class Order {
     // order id's
     private int  m_clientId;
     private int  m_orderId;
-    private int  m_permId;
+    private long  m_permId;
     private int  m_parentId; // Parent order Id, to associate Auto STP or TRAIL orders with the original order.
 
     // primary attributes
@@ -110,6 +110,7 @@ public class Order {
     // hedge orders
     private String  m_hedgeType = "";
     private String  m_hedgeParam; // beta value for beta hedge (in range 0-1), ratio for pair hedge
+    private int     m_hedgeMaxSize;
 
     // algo orders
     private String              m_algoStrategy = "";
@@ -211,7 +212,7 @@ public class Order {
     private boolean m_autoCancelParent;
     private String  m_shareholder;
     private boolean m_imbalanceOnly;
-    private boolean m_routeMarketableToBbo;
+    private Boolean m_routeMarketableToBbo;
     private long    m_parentPermId;
 
     private Boolean m_usePriceMgmtAlgo;
@@ -227,9 +228,21 @@ public class Order {
     private String  m_customerAccount;
     private boolean m_professionalCustomer;
     private String  m_bondAccruedInterest;
-
-    private String  m_externalUserId;
+    private boolean m_includeOvernight;
     private int     m_manualOrderIndicator;
+    private String  m_submitter;
+    private boolean m_postOnly;
+    private boolean m_allowPreOpen;
+    private boolean m_ignoreOpenAuction;
+    private boolean m_deactivate;
+    private Boolean m_seekPriceImprovement;
+    private int m_whatIfType;
+ 
+    // attached orders
+    private int m_slOrderId;
+    private String m_slOrderType;
+    private int m_ptOrderId;
+    private String m_ptOrderType;
 
 	// getters
     public Action  action()                         { return Action.get(m_action); }
@@ -281,7 +294,7 @@ public class Order {
     public int scalePriceAdjustInterval()           { return m_scalePriceAdjustInterval; }
     public int scaleSubsLevelSize()                 { return m_scaleSubsLevelSize; }
     public Decimal totalQuantity()                  { return m_totalQuantity; }
-    public int permId()                             { return m_permId; }
+    public long permId()                            { return m_permId; }
     public Method faMethod()                        { return Method.get(m_faMethod); }
     public String getFaMethod()                     { return m_faMethod; }
     public OcaType ocaType()                        { return OcaType.get(m_ocaType); }
@@ -302,6 +315,7 @@ public class Order {
     public String goodAfterTime()                   { return m_goodAfterTime; }
     public String goodTillDate()                    { return m_goodTillDate; }
     public String hedgeParam()                      { return m_hedgeParam; }
+    public int hedgeMaxSize()                       { return m_hedgeMaxSize; }
     public HedgeType hedgeType()                    { return HedgeType.get(m_hedgeType); }
     public String getHedgeType()                    { return m_hedgeType; }
     public String ocaGroup()                        { return m_ocaGroup; }
@@ -366,7 +380,7 @@ public class Order {
     public boolean autoCancelParent()               { return m_autoCancelParent; }
     public String shareholder()                     { return m_shareholder; }
     public boolean imbalanceOnly()                  { return m_imbalanceOnly; }
-    public boolean routeMarketableToBbo()           { return m_routeMarketableToBbo; }
+    public Boolean routeMarketableToBbo()           { return m_routeMarketableToBbo; }
     public long parentPermId()                      { return m_parentPermId; }
     public Boolean usePriceMgmtAlgo()               { return m_usePriceMgmtAlgo; }
     public int duration()                           { return m_duration; }
@@ -382,9 +396,20 @@ public class Order {
     public String customerAccount()                 { return m_customerAccount; }
     public boolean professionalCustomer()           { return m_professionalCustomer; }
     public String bondAccruedInterest()             { return m_bondAccruedInterest; }
-    public String externalUserId()                  { return m_externalUserId; }
+    public boolean includeOvernight()               { return m_includeOvernight; }
     public int manualOrderIndicator()               { return m_manualOrderIndicator; }
-  
+    public String submitter()                       { return m_submitter; }
+    public boolean postOnly()                       { return m_postOnly; }
+    public boolean allowPreOpen()                   { return m_allowPreOpen; }
+    public boolean ignoreOpenAuction()              { return m_ignoreOpenAuction; }
+    public boolean deactivate()                     { return m_deactivate; }
+    public Boolean seekPriceImprovement()           { return m_seekPriceImprovement; }
+    public int whatIfType()                         { return m_whatIfType; }
+    public int slOrderId()                          { return m_slOrderId; }
+    public String slOrderType()                     { return m_slOrderType; }
+    public int ptOrderId()                          { return m_ptOrderId; }
+    public String ptOrderType()                     { return m_ptOrderType; }
+
 	// setters
 	public void referenceContractId(int m_referenceContractId)          { this.m_referenceContractId = m_referenceContractId; }
     public void account(String v)                                       { m_account = v; }
@@ -421,6 +446,7 @@ public class Order {
     public void hedgeParam(String v)                                    { m_hedgeParam = v; }
     public void hedgeType(HedgeType v)                                  { m_hedgeType = ( v == null ) ? null : v.getApiString(); }
     public void hedgeType(String v)                                     { m_hedgeType = v; }
+    public void hedgeMaxSize(int v)                                     { m_hedgeMaxSize = v; }
     public void hidden(boolean v)                                       { m_hidden = v; }
     public void lmtPrice(double v)                                      { m_lmtPrice = v; }
     public void minQty(int v)                                           { m_minQty = v; }
@@ -443,7 +469,7 @@ public class Order {
     public void exemptCode(int v)                                       { m_exemptCode = v; }
     public void parentId(int v)                                         { m_parentId = v; }
     public void percentOffset(double v)                                 { m_percentOffset = v; }
-    public void permId(int v)                                           { m_permId = v; }
+    public void permId(long v)                                          { m_permId = v; }
     public void referencePriceType(ReferencePriceType v)                { m_referencePriceType = ( v == null ) ? 0 : v.ordinal(); }
     public void referencePriceType(int v)                               { m_referencePriceType = v; }
     public void rule80A(Rule80A v)                                      { m_rule80A = ( v == null ) ? null : v.getApiString(); }
@@ -521,7 +547,7 @@ public class Order {
     public void autoCancelParent(boolean v)                             { m_autoCancelParent = v; }
     public void shareholder(String v)                                   { m_shareholder = v; }
     public void imbalanceOnly(boolean v)                                { m_imbalanceOnly = v; }
-    public void routeMarketableToBbo(boolean v)                         { m_routeMarketableToBbo = v; }
+    public void routeMarketableToBbo(Boolean v)                         { m_routeMarketableToBbo = v; }
     public void parentPermId(long v)                                    { m_parentPermId = v; }
     public void usePriceMgmtAlgo(Boolean v)                             { m_usePriceMgmtAlgo = v; }
     public void duration(int v)                                         { m_duration = v; }
@@ -537,8 +563,19 @@ public class Order {
     public void customerAccount(String v)                               { m_customerAccount = v; }
     public void professionalCustomer(boolean v)                         { m_professionalCustomer = v; }
     public void bondAccruedInterest(String v)                           { m_bondAccruedInterest = v; }
-    public void externalUserId(String v)                                { m_externalUserId = v; }
+    public void includeOvernight(boolean v)                             { m_includeOvernight = v; }
     public void manualOrderIndicator(int v)                             { m_manualOrderIndicator = v; }
+    public void submitter(String v)                                     { m_submitter = v; }
+    public void postOnly(boolean v)                                     { m_postOnly = v; }
+    public void allowPreOpen(boolean v)                                 { m_allowPreOpen = v; }
+    public void ignoreOpenAuction(boolean v)                            { m_ignoreOpenAuction = v; }
+    public void deactivate(boolean v)                                   { m_deactivate = v; }
+    public void seekPriceImprovement(Boolean v)                         { m_seekPriceImprovement = v; }
+    public void whatIfType(int v)                                       { m_whatIfType = v; }
+    public void slOrderId(int v)                                        { m_slOrderId = v; }
+    public void slOrderType(String v)                                   { m_slOrderType = v; }
+    public void ptOrderId(int v)                                        { m_ptOrderId = v; }
+    public void ptOrderType(String v)                                   { m_ptOrderType = v; }
 
 
     public Order() {
@@ -583,7 +620,7 @@ public class Order {
         m_autoCancelParent = false;
         m_shareholder = EMPTY_STR;
         m_imbalanceOnly = false;
-        m_routeMarketableToBbo = false;
+        m_routeMarketableToBbo = null;
         m_parentPermId = 0;
         m_usePriceMgmtAlgo = null;
         m_duration = Integer.MAX_VALUE;
@@ -598,8 +635,20 @@ public class Order {
         m_customerAccount = EMPTY_STR;
         m_professionalCustomer = false;
         m_bondAccruedInterest = EMPTY_STR;
-        m_externalUserId = EMPTY_STR;
+        m_includeOvernight = false;
         m_manualOrderIndicator = Integer.MAX_VALUE;
+        m_submitter = EMPTY_STR;
+        m_postOnly = false;
+        m_allowPreOpen = false;
+        m_ignoreOpenAuction = false;
+        m_deactivate = false;
+        m_seekPriceImprovement = null;
+        m_whatIfType = Integer.MAX_VALUE;
+        m_slOrderId =  Integer.MAX_VALUE;
+        m_slOrderType = EMPTY_STR;
+        m_ptOrderId =  Integer.MAX_VALUE;
+        m_ptOrderType = EMPTY_STR;
+        m_hedgeMaxSize = Integer.MAX_VALUE;
     }
 
     public List<TagValue> algoParams() {
@@ -709,7 +758,17 @@ public class Order {
             || m_midOffsetAtWhole != l_theOther.m_midOffsetAtWhole
             || m_midOffsetAtHalf != l_theOther.m_midOffsetAtHalf
             || m_professionalCustomer != l_theOther.m_professionalCustomer
+            || m_includeOvernight != l_theOther.m_includeOvernight
             || m_manualOrderIndicator != l_theOther.m_manualOrderIndicator
+            || m_postOnly != l_theOther.m_postOnly
+            || m_allowPreOpen != l_theOther.m_allowPreOpen
+            || m_ignoreOpenAuction != l_theOther.m_ignoreOpenAuction
+            || m_deactivate != l_theOther.m_deactivate
+            || m_seekPriceImprovement != l_theOther.m_seekPriceImprovement
+            || m_whatIfType != l_theOther.m_whatIfType
+            || m_slOrderId != l_theOther.m_slOrderId
+            || m_ptOrderId != l_theOther.m_ptOrderId
+            || m_hedgeMaxSize != l_theOther.m_hedgeMaxSize
             ) {
         	return false;
         }
@@ -757,7 +816,9 @@ public class Order {
             || Util.StringCompare(m_manualOrderTime, l_theOther.m_manualOrderTime) != 0 
             || Util.StringCompare(m_customerAccount, l_theOther.m_customerAccount) != 0 
             || Util.StringCompare(m_bondAccruedInterest, l_theOther.m_bondAccruedInterest) != 0 
-            || Util.StringCompare(m_externalUserId, l_theOther.m_externalUserId) != 0 
+            || Util.StringCompare(m_submitter, l_theOther.m_submitter) != 0 
+            || Util.StringCompare(m_slOrderType, l_theOther.m_slOrderType) != 0
+            || Util.StringCompare(m_ptOrderType, l_theOther.m_ptOrderType) != 0
             ) {
         	return false;
         }

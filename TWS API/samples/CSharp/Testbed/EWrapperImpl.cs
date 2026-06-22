@@ -1,10 +1,13 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Xml;
+using Google.Protobuf;
+using Google.Protobuf.Compiler;
 using IBApi;
 
 namespace Samples
@@ -60,15 +63,16 @@ namespace Samples
         }
         
         //! [error]
-        public virtual void error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson)
+        public virtual void error(int id, long errorTime, int errorCode, string errorMsg, string advancedOrderRejectJson)
         {
+            string errorTimeStr = errorTime > 0 ? Util.UnixMilliSecondsToString(errorTime, "yyyyMMdd-HH:mm:ss") : "";
             if (!Util.StringIsEmpty(advancedOrderRejectJson)) 
             {
-                Console.WriteLine("Error. Id: " + id + ", Code: " + errorCode + ", Msg: " + errorMsg + ", AdvancedOrderRejectJson: " + advancedOrderRejectJson + "\n");
+                Console.WriteLine("Error. Id: " + id + ", Time: " + errorTimeStr + ", Code: " + errorCode + ", Msg: " + errorMsg + ", AdvancedOrderRejectJson: " + advancedOrderRejectJson + "\n");
             }
             else
             {
-                Console.WriteLine("Error. Id: " + id + ", Code: " + errorCode + ", Msg: " + errorMsg + "\n");
+                Console.WriteLine("Error. Id: " + id + ", Time: " + errorTimeStr + ", Code: " + errorCode + ", Msg: " + errorMsg + "\n");
             }
         }
         //! [error]
@@ -80,7 +84,8 @@ namespace Samples
         
         public virtual void currentTime(long time) 
         {
-            Console.WriteLine("Current Time: "+time+"\n");
+            string timeStr = Util.UnixSecondsToString(time, "MMM dd, yyyy HH:mm:ss");
+            Console.WriteLine("Current Time " + time + " : " + timeStr + "\n");
         }
 
         //! [tickprice]
@@ -202,36 +207,14 @@ namespace Samples
         }
         //! [accountdownloadend]
 
-        //! [orderstatus]
-        public virtual void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
-        {
-            Console.WriteLine("OrderStatus. Id: " + orderId + ", Status: " + status + ", Filled: " + Util.DecimalMaxString(filled) + ", Remaining: " + Util.DecimalMaxString(remaining)
-                + ", AvgFillPrice: " + Util.DoubleMaxString(avgFillPrice) + ", PermId: " + Util.IntMaxString(permId) + ", ParentId: " + Util.IntMaxString(parentId) + 
-                ", LastFillPrice: " + Util.DoubleMaxString(lastFillPrice) + ", ClientId: " + Util.IntMaxString(clientId) + ", WhyHeld: " + whyHeld + ", MktCapPrice: " + Util.DoubleMaxString(mktCapPrice));
-        }
-        //! [orderstatus]
+        public virtual void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice) {}
+        public virtual void openOrder(int orderId, Contract contract, Order order, OrderState orderState) {}
+        public virtual void openOrderEnd() {}
 
-        //! [openorder]
-        public virtual void openOrder(int orderId, Contract contract, Order order, OrderState orderState)
+        public void printSoftDollarTier(SoftDollarTier softDollarTier) 
         {
-            Console.WriteLine("OpenOrder. PermID: " + Util.IntMaxString(order.PermId) + ", ClientId: " + Util.IntMaxString(order.ClientId) + ", OrderId: " + Util.IntMaxString(orderId) + 
-                ", Account: " + order.Account + ", Symbol: " + contract.Symbol + ", SecType: " + contract.SecType + " , Exchange: " + contract.Exchange + ", Action: " + order.Action + 
-                ", OrderType: " + order.OrderType + ", TotalQty: " + Util.DecimalMaxString(order.TotalQuantity) + ", CashQty: " + Util.DoubleMaxString(order.CashQty) + 
-                ", LmtPrice: " + Util.DoubleMaxString(order.LmtPrice) + ", AuxPrice: " + Util.DoubleMaxString(order.AuxPrice) + ", Status: " + orderState.Status +
-                ", MinTradeQty: " + Util.IntMaxString(order.MinTradeQty) + ", MinCompeteSize: " + Util.IntMaxString(order.MinCompeteSize) +
-                ", CompeteAgainstBestOffset: " + (order.CompeteAgainstBestOffset == Order.COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID ? "UpToMid" : Util.DoubleMaxString(order.CompeteAgainstBestOffset)) +
-                ", MidOffsetAtWhole: " + Util.DoubleMaxString(order.MidOffsetAtWhole) + ", MidOffsetAtHalf: " + Util.DoubleMaxString(order.MidOffsetAtHalf) +
-                ", FAGroup: " + order.FaGroup + ", FAMethod: " + order.FaMethod + ", CustAcct: " + order.CustomerAccount + ", ProfCust: " + order.ProfessionalCustomer +
-                ", BondAccruedInterest: " + order.BondAccruedInterest);
+            Console.WriteLine("\tSoftDollarTier:{name=" + softDollarTier.Name + ", val=" + softDollarTier.Value + ", displayName=" + softDollarTier.DisplayName + "}");
         }
-        //! [openorder]
-
-        //! [openorderend]
-        public virtual void openOrderEnd()
-        {
-            Console.WriteLine("OpenOrderEnd");
-        }
-        //! [openorderend]
 
         //! [contractdetails]
         public virtual void contractDetails(int reqId, ContractDetails contractDetails)
@@ -288,6 +271,12 @@ namespace Samples
             Console.WriteLine("\tMinSize: " + Util.DecimalMaxString(contractDetails.MinSize));
             Console.WriteLine("\tSizeIncrement: " + Util.DecimalMaxString(contractDetails.SizeIncrement));
             Console.WriteLine("\tSuggestedSizeIncrement: " + Util.DecimalMaxString(contractDetails.SuggestedSizeIncrement));
+            Console.WriteLine("\tMinAlgoSize: " + Util.DecimalMaxString(contractDetails.MinAlgoSize));
+            Console.WriteLine("\tLastPricePrecision: " + Util.DecimalMaxString(contractDetails.LastPricePrecision));
+            Console.WriteLine("\tLastSizePrecision: " + Util.DecimalMaxString(contractDetails.LastSizePrecision));
+            Console.WriteLine("\tEventContract1: " + contractDetails.EventContract1);
+            Console.WriteLine("\tEventContractDescription1: " + contractDetails.EventContractDescription1);
+            Console.WriteLine("\tEventContractDescription2: " + contractDetails.EventContractDescription2);
 
             if (contractDetails.Contract.SecType == "FUND")
             {
@@ -368,12 +357,14 @@ namespace Samples
             Console.WriteLine("\tNextOptionPartial: " + contractDetails.NextOptionPartial);
             Console.WriteLine("\tNotes: " + contractDetails.Notes);
             Console.WriteLine("\tLong Name: " + contractDetails.LongName);
+            Console.WriteLine("\tTimeZoneId: " + contractDetails.TimeZoneId);
+            Console.WriteLine("\tTradingHours: " + contractDetails.TradingHours);
+            Console.WriteLine("\tLiquidHours: " + contractDetails.LiquidHours);
             Console.WriteLine("\tEvRule: " + contractDetails.EvRule);
             Console.WriteLine("\tEvMultiplier: " + Util.DoubleMaxString(contractDetails.EvMultiplier));
             Console.WriteLine("\tAggGroup: " + Util.IntMaxString(contractDetails.AggGroup));
             Console.WriteLine("\tMarketRuleIds: " + contractDetails.MarketRuleIds);
             Console.WriteLine("\tLastTradeTime: " + contractDetails.LastTradeTime);
-            Console.WriteLine("\tTimeZoneId: " + contractDetails.TimeZoneId);
             Console.WriteLine("\tMinSize: " + Util.DecimalMaxString(contractDetails.MinSize));
             Console.WriteLine("\tSizeIncrement: " + Util.DecimalMaxString(contractDetails.SizeIncrement));
             Console.WriteLine("\tSuggestedSizeIncrement: " + Util.DecimalMaxString(contractDetails.SuggestedSizeIncrement));
@@ -391,24 +382,34 @@ namespace Samples
         //! [execdetails]
         public virtual void execDetails(int reqId, Contract contract, Execution execution)
         {
-            Console.WriteLine("ExecDetails. " + reqId + " - " + contract.Symbol + ", " + contract.SecType+", " + contract.Currency+" - " + execution.ExecId + ", " + Util.IntMaxString(execution.OrderId) + 
-                ", " + Util.DecimalMaxString(execution.Shares) + ", " + Util.DecimalMaxString(execution.CumQty) + ", " + execution.LastLiquidity + ", " + execution.PendingPriceRevision);
+            Console.WriteLine("ExecDetails. ReqId:" + reqId + 
+                ", Contract - ConId: " + Util.IntMaxString(contract.ConId) + ", Symbol: " + contract.Symbol + 
+                ", LastTradeDateOrContractMonth: " + contract.LastTradeDateOrContractMonth + ", Strike: " + Util.DoubleMaxString(contract.Strike) + ", Right: " + contract.Right + 
+                ", Multiplier: " + contract.Multiplier + ", Exchange: " + contract.Exchange + ", Currency: " + contract.Currency + ", LocalSymbol: " + contract.LocalSymbol + 
+                ", TradingClass: " + contract.TradingClass + 
+                ", Execution - OrderId: " + Util.IntMaxString(execution.OrderId) + ", ExecId: " + execution.ExecId + ", Time: " + execution.Time + ", AcctNumber: " + execution.AcctNumber + 
+                ", Exchange: " + execution.Exchange + ", Side: " + execution.Side + ", Shares: " + Util.DecimalMaxString(execution.Shares) + 
+                ", Price: " + Util.DoubleMaxString(execution.Price) + ", PermId: " + Util.LongMaxString(execution.PermId) + ", ClientId: " + Util.IntMaxString(execution.ClientId) +
+                ", Liquidation: " + (execution.Liquidation == 1 ? "true" : "false") + ", CumQty: " + Util.DecimalMaxString(execution.CumQty) + ", AvgPrice: " + Util.DoubleMaxString(execution.AvgPrice) + 
+                ", OrderRef: " + execution.OrderRef + ", EvRule: " + execution.EvRule + ", EvMultiplier: " + Util.DoubleMaxString(execution.EvMultiplier) +
+                ", ModelCode: " + execution.ModelCode + ", LastLiquidity: " + execution.LastLiquidity + ", PendingPriceRevision: " + (execution.PendingPriceRevision ? "true" : "false") + 
+                ", Submitter: " + execution.Submitter + ", OptExerciseOrLapseType: " + COptionExerciseType.getOptionExerciseTypeName(execution.OptExerciseOrLapseType));
         }
         //! [execdetails]
 
         //! [execdetailsend]
         public virtual void execDetailsEnd(int reqId)
         {
-            Console.WriteLine("ExecDetailsEnd. "+reqId+"\n");
+            Console.WriteLine("ExecDetailsEnd. ReqId:" + reqId);
         }
         //! [execdetailsend]
 
-        //! [commissionreport]
-        public virtual void commissionReport(CommissionReport commissionReport)
+        //! [commissionandfeesreport]
+        public virtual void commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport)
         {
-            Console.WriteLine("CommissionReport. " + commissionReport.ExecId + " - " + Util.DoubleMaxString(commissionReport.Commission) + " " + commissionReport.Currency + " RPNL " + Util.DoubleMaxString(commissionReport.RealizedPNL));
+            Console.WriteLine("CommissionAndFeesReport. " + commissionAndFeesReport.ExecId + " - " + Util.DoubleMaxString(commissionAndFeesReport.CommissionAndFees) + " " + commissionAndFeesReport.Currency + " RPNL " + Util.DoubleMaxString(commissionAndFeesReport.RealizedPNL));
         }
-        //! [commissionreport]
+        //! [commissionandfeesreport]
 
         //! [fundamentaldata]
         public virtual void fundamentalData(int reqId, string data)
@@ -488,8 +489,8 @@ namespace Samples
         //! [scannerdata]
         public virtual void scannerData(int reqId, int rank, ContractDetails contractDetails, string distance, string benchmark, string projection, string legsStr)
         {
-            Console.WriteLine("ScannerData. "+reqId+" - Rank: "+rank+", Symbol: "+contractDetails.Contract.Symbol+", SecType: "+contractDetails.Contract.SecType+", Currency: "+contractDetails.Contract.Currency
-                +", Distance: "+distance+", Benchmark: "+benchmark+", Projection: "+projection+", Legs String: "+legsStr);
+            Console.WriteLine("ScannerData. " + reqId + " - Rank: " + rank + ", Symbol: " + contractDetails.Contract.Symbol + ", SecType: " + contractDetails.Contract.SecType + ", Currency: "+contractDetails.Contract.Currency
+                + ", MarketName: " + contractDetails.MarketName + ", Distance: " + distance + ", Benchmark: " + benchmark + ", Projection: " + projection + ", Legs String: " + legsStr);
         }
         //! [scannerdata]
 
@@ -527,7 +528,7 @@ namespace Samples
         }
         public virtual void verifyCompleted(bool isSuccessful, string errorText)
         {
-            Console.WriteLine("verifyCompleted. IsSuccessfule: " + isSuccessful + " - Error: " + errorText);
+            Console.WriteLine("verifyCompleted. IsSuccessful: " + isSuccessful + " - Error: " + errorText);
         }
         public virtual void verifyAndAuthMessageAPI(string apiData, string xyzChallenge)
         {
@@ -583,7 +584,7 @@ namespace Samples
         //! [securityDefinitionOptionParameter]
         public void securityDefinitionOptionParameter(int reqId, string exchange, int underlyingConId, string tradingClass, string multiplier, HashSet<string> expirations, HashSet<double> strikes)
         {
-            Console.WriteLine("Security Definition Option Parameter. Reqest: {0}, Exchange: {1}, Undrelying contract id: {2}, Trading class: {3}, Multiplier: {4}, Expirations: {5}, Strikes: {6}",
+            Console.WriteLine("Security Definition Option Parameter. Request: {0}, Exchange: {1}, Undrelying contract id: {2}, Trading class: {3}, Multiplier: {4}, Expirations: {5}, Strikes: {6}",
                               reqId, exchange, Util.IntMaxString(underlyingConId), tradingClass, multiplier, string.Join(", ", expirations), string.Join(", ", strikes));
         }
         //! [securityDefinitionOptionParameter]
@@ -610,7 +611,7 @@ namespace Samples
 
             foreach (var tier in tiers)
             {
-                Console.WriteLine(tier.DisplayName);
+                printSoftDollarTier(tier);
             }
         }
         //! [softDollarTiers]
@@ -689,12 +690,7 @@ namespace Samples
         //! [smartcomponents]
 
         //! [tickReqParams]
-        public void tickReqParams(int tickerId, double minTick, string bboExchange, int snapshotPermissions)
-        {
-            Console.WriteLine("id={0} minTick = {1} bboExchange = {2} snapshotPermissions = {3}", tickerId, Util.DoubleMaxString(minTick), bboExchange, Util.IntMaxString(snapshotPermissions));
-
-            BboExchange = bboExchange;
-        }
+        public void tickReqParams(int tickerId, double minTick, string bboExchange, int snapshotPermissions) { }
         //! [tickReqParams]
 
         //! [newsProviders]
@@ -723,19 +719,8 @@ namespace Samples
         }
         //! [newsArticle]
         
-        //! [historicalNews]
-        public void historicalNews(int requestId, string time, string providerCode, string articleId, string headline)
-        {
-            Console.WriteLine("Historical News. Request Id: {0}, Time: {1}, Provider Code: {2}, Article Id: {3}, headline: {4}", requestId, time, providerCode, articleId, headline);
-        }
-        //! [historicalNews]
-
-        //! [historicalNewsEnd]
-        public void historicalNewsEnd(int requestId, bool hasMore)
-        {
-            Console.WriteLine("Historical News End. Request Id: {0}, Has More: {1}", requestId, hasMore);
-        }
-        //! [historicalNewsEnd]
+        public void historicalNews(int requestId, string time, string providerCode, string articleId, string headline) {}
+        public void historicalNewsEnd(int requestId, bool hasMore) {}
 
         //! [headTimestamp]
         public void headTimestamp(int reqId, string headTimestamp)
@@ -859,32 +844,14 @@ namespace Samples
         //! [tickbytickmidpoint]
 
         //! [orderbound]
-        public void orderBound(long orderId, int apiClientId, int apiOrderId)
+        public void orderBound(long permId, int clientId, int orderId)
         {
-            Console.WriteLine("Order bound. Order Id: {0}, Api Client Id: {1}, Api Order Id: {2}", Util.LongMaxString(orderId), Util.IntMaxString(apiClientId), Util.IntMaxString(apiOrderId));
+            Console.WriteLine("Order bound. PermId: {0}, ClientId: {1}, OrderId: {2}", Util.LongMaxString(permId), Util.IntMaxString(clientId), Util.IntMaxString(orderId));
         }
         //! [orderbound]
 
-        //! [completedorder]
-        public virtual void completedOrder(Contract contract, Order order, OrderState orderState)
-        {
-            Console.WriteLine("CompletedOrder. PermID: " + Util.IntMaxString(order.PermId) + ", ParentPermId: " + Util.LongMaxString(order.ParentPermId) + ", Account: " + order.Account + ", Symbol: " + contract.Symbol + ", SecType: " + contract.SecType + 
-                " , Exchange: " + contract.Exchange + ", Action: " + order.Action + ", OrderType: " + order.OrderType + ", TotalQty: " + Util.DecimalMaxString(order.TotalQuantity) + 
-                ", CashQty: " + Util.DoubleMaxString(order.CashQty) + ", FilledQty: " + Util.DecimalMaxString(order.FilledQuantity) + ", LmtPrice: " + Util.DoubleMaxString(order.LmtPrice) + 
-                ", AuxPrice: " + Util.DoubleMaxString(order.AuxPrice) + ", Status: " + orderState.Status + ", CompletedTime: " + orderState.CompletedTime + ", CompletedStatus: " + orderState.CompletedStatus +
-                ", MinTradeQty: " + Util.IntMaxString(order.MinTradeQty) + ", MinCompeteSize: " + Util.IntMaxString(order.MinCompeteSize) +
-                ", CompeteAgainstBestOffset: " + (order.CompeteAgainstBestOffset == Order.COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID ? "UpToMid" : Util.DoubleMaxString(order.CompeteAgainstBestOffset)) +
-                ", MidOffsetAtWhole: " + Util.DoubleMaxString(order.MidOffsetAtWhole) + ", MidOffsetAtHalf: " + Util.DoubleMaxString(order.MidOffsetAtHalf) + ", CustAcct: " + order.CustomerAccount + 
-                ", ProfCust: " + order.ProfessionalCustomer);
-        }
-        //! [completedorder]
-
-        //! [completedordersend]
-        public virtual void completedOrdersEnd()
-        {
-            Console.WriteLine("CompletedOrdersEnd");
-        }
-        //! [completedordersend]
+        public virtual void completedOrder(Contract contract, Order order, OrderState orderState) {}
+        public virtual void completedOrdersEnd() {}
 
         //! [replacefaend]
         public virtual void replaceFAEnd(int reqId, string text)
@@ -925,5 +892,140 @@ namespace Samples
             Console.WriteLine($"User Info. ReqId: {reqId}, WhiteBrandingId: {whiteBrandingId}");
         }
         //! [userInfo]
+
+        //! [currentTimeInMillis]
+        public virtual void currentTimeInMillis(long timeInMillis)
+        {
+            string timeInMillisStr = Util.UnixMilliSecondsToString(timeInMillis, "MMM dd, yyyy HH:mm:ss.FFF");
+            Console.WriteLine("Current Time In Millis " + timeInMillis + " : " + timeInMillisStr + "\n");
+        }
+        //! [currentTimeInMillis]
+
+        /**
+         * Protobuf
+         */
+        public virtual void orderStatusProtoBuf(IBApi.protobuf.OrderStatus orderStatusProto) {
+            Util.printProtoSingleLine("Order Status: ", orderStatusProto);
+        }
+        public virtual void openOrderProtoBuf(IBApi.protobuf.OpenOrder openOrderProto) {
+            Util.printProtoSingleLine("Open Order: ", openOrderProto);
+        }
+        public virtual void openOrdersEndProtoBuf(IBApi.protobuf.OpenOrdersEnd openOrdersEndProto) {
+            Util.printProtoSingleLine("Open Orders End: ", openOrdersEndProto);
+        }
+        public virtual void errorProtoBuf(IBApi.protobuf.ErrorMessage errorMessageProto) { }
+        public virtual void execDetailsProtoBuf(IBApi.protobuf.ExecutionDetails executionDetailsProto) { }
+        public virtual void execDetailsEndProtoBuf(IBApi.protobuf.ExecutionDetailsEnd executionDetailsEndProto) { }
+        public virtual void completedOrderProtoBuf(IBApi.protobuf.CompletedOrder completedOrderProto) {
+            Util.printProtoSingleLine("Completed Order: ", completedOrderProto);
+        }
+        public virtual void completedOrdersEndProtoBuf(IBApi.protobuf.CompletedOrdersEnd completedOrdersEndProto) {
+            Util.printProtoSingleLine("Completed Orders End: ", completedOrdersEndProto);
+        }
+        public virtual void orderBoundProtoBuf(IBApi.protobuf.OrderBound orderBoundProto) { }
+        public virtual void contractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto) { }
+        public virtual void bondContractDataProtoBuf(IBApi.protobuf.ContractData contractDataProto) { }
+        public virtual void contractDataEndProtoBuf(IBApi.protobuf.ContractDataEnd contractDataEndProto) { }
+        public virtual void tickPriceProtoBuf(IBApi.protobuf.TickPrice tickPriceProto) { }
+        public virtual void tickSizeProtoBuf(IBApi.protobuf.TickSize tickSizeProto) { }
+        public virtual void tickOptionComputationProtoBuf(IBApi.protobuf.TickOptionComputation tickOptionComputationProto) { }
+        public virtual void tickGenericProtoBuf(IBApi.protobuf.TickGeneric tickGenericProto) { }
+        public virtual void tickStringProtoBuf(IBApi.protobuf.TickString tickStringProto) { }
+        public virtual void tickSnapshotEndProtoBuf(IBApi.protobuf.TickSnapshotEnd tickSnapshotEndProto) { }
+        public virtual void updateMarketDepthProtoBuf(IBApi.protobuf.MarketDepth marketDepthProto) { }
+        public virtual void updateMarketDepthL2ProtoBuf(IBApi.protobuf.MarketDepthL2 marketDepthL2Proto) { }
+        public virtual void marketDataTypeProtoBuf(IBApi.protobuf.MarketDataType marketDataTypeProto) { }
+        public virtual void tickReqParamsProtoBuf(IBApi.protobuf.TickReqParams tickReqParamsProto) {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("Tick Req Params. ");
+            if (tickReqParamsProto.HasReqId) sb.Append("Ticker Id: ").Append(tickReqParamsProto.ReqId).Append(", ");
+            if (tickReqParamsProto.HasMinTick) sb.Append("MinTick: ").Append(tickReqParamsProto.MinTick).Append(", ");
+            if (tickReqParamsProto.HasBboExchange)
+            {
+                sb.Append("BboExchange: ").Append(tickReqParamsProto.BboExchange).Append(", ");
+                BboExchange = tickReqParamsProto.BboExchange;
+            }
+            if (tickReqParamsProto.HasSnapshotPermissions) sb.Append("SnapshotPermissions: ").Append(tickReqParamsProto.SnapshotPermissions).Append(", ");
+            if (tickReqParamsProto.HasLastPricePrecision) sb.Append("LastPricePrecision: ").Append(tickReqParamsProto.LastPricePrecision).Append(", ");
+            if (tickReqParamsProto.HasLastSizePrecision) sb.Append("LastSizePrecision: ").Append(tickReqParamsProto.LastSizePrecision);
+            Console.WriteLine(sb.ToString());
+        }
+        public virtual void updateAccountValueProtoBuf(IBApi.protobuf.AccountValue accountValueProto) { }
+        public virtual void updatePortfolioProtoBuf(IBApi.protobuf.PortfolioValue portfolioValueProto) { }
+        public virtual void updateAccountTimeProtoBuf(IBApi.protobuf.AccountUpdateTime accountUpdateTimeProto) { }
+        public virtual void accountDataEndProtoBuf(IBApi.protobuf.AccountDataEnd accountDataEndProto) { }
+        public virtual void managedAccountsProtoBuf(IBApi.protobuf.ManagedAccounts managedAccountsProto) { }
+        public virtual void positionProtoBuf(IBApi.protobuf.Position positionProto) { }
+        public virtual void positionEndProtoBuf(IBApi.protobuf.PositionEnd positionEndProto) { }
+        public virtual void accountSummaryProtoBuf(IBApi.protobuf.AccountSummary accountSummaryProto) { }
+        public virtual void accountSummaryEndProtoBuf(IBApi.protobuf.AccountSummaryEnd accountSummaryEndProto) { }
+        public virtual void positionMultiProtoBuf(IBApi.protobuf.PositionMulti positionMultiProto) { }
+        public virtual void positionMultiEndProtoBuf(IBApi.protobuf.PositionMultiEnd positionMultiEndProto) { }
+        public virtual void accountUpdateMultiProtoBuf(IBApi.protobuf.AccountUpdateMulti accountUpdateMultiProto) { }
+        public virtual void accountUpdateMultiEndProtoBuf(IBApi.protobuf.AccountUpdateMultiEnd accountUpdateMultiEndProto) { }
+        public virtual void historicalDataProtoBuf(IBApi.protobuf.HistoricalData historicalDataProto) { }
+        public virtual void historicalDataUpdateProtoBuf(IBApi.protobuf.HistoricalDataUpdate historicalDataUpdateProto) { }
+        public virtual void historicalDataEndProtoBuf(IBApi.protobuf.HistoricalDataEnd historicalDataEndProto) { }
+        public virtual void realTimeBarTickProtoBuf(IBApi.protobuf.RealTimeBarTick realTimeBarTickProto) { }
+        public virtual void headTimestampProtoBuf(IBApi.protobuf.HeadTimestamp headTimestampProto) { }
+        public virtual void histogramDataProtoBuf(IBApi.protobuf.HistogramData histogramDataProto) { }
+        public virtual void historicalTicksProtoBuf(IBApi.protobuf.HistoricalTicks historicalTicksProto) { }
+        public virtual void historicalTicksBidAskProtoBuf(IBApi.protobuf.HistoricalTicksBidAsk historicalTicksBidAskProto) { }
+        public virtual void historicalTicksLastProtoBuf(IBApi.protobuf.HistoricalTicksLast historicalTicksLastProto) { }
+        public virtual void tickByTickDataProtoBuf(IBApi.protobuf.TickByTickData tickByTickDataProto) { }
+        public virtual void updateNewsBulletinProtoBuf(IBApi.protobuf.NewsBulletin newsBulletinProto) { }
+        public virtual void newsArticleProtoBuf(IBApi.protobuf.NewsArticle newsArticleProto) { }
+        public virtual void newsProvidersProtoBuf(IBApi.protobuf.NewsProviders newsProvidersProto) { }
+        public virtual void historicalNewsProtoBuf(IBApi.protobuf.HistoricalNews historicalNewsProto) {
+            Util.printProtoSingleLine("Historical News: ", historicalNewsProto);
+        }
+        public virtual void historicalNewsEndProtoBuf(IBApi.protobuf.HistoricalNewsEnd historicalNewsEndProto) {
+            Util.printProtoSingleLine("Historical News End: ", historicalNewsEndProto);
+        }
+        public virtual void wshMetaDataProtoBuf(IBApi.protobuf.WshMetaData wshMetaDataProto) { }
+        public virtual void wshEventDataProtoBuf(IBApi.protobuf.WshEventData wshEventDataProto) { }
+        public virtual void tickNewsProtoBuf(IBApi.protobuf.TickNews tickNewsProto) { }
+        public virtual void scannerParametersProtoBuf(IBApi.protobuf.ScannerParameters scannerParametersProto) { }
+        public virtual void scannerDataProtoBuf(IBApi.protobuf.ScannerData scannerDataProto) { }
+        public virtual void fundamentalsDataProtoBuf(IBApi.protobuf.FundamentalsData fundamentalsDataProto) { }
+        public virtual void pnlProtoBuf(IBApi.protobuf.PnL pnlProto) { }
+        public virtual void pnlSingleProtoBuf(IBApi.protobuf.PnLSingle pnlSingleProto) { }
+        public virtual void receiveFAProtoBuf(IBApi.protobuf.ReceiveFA receiveFAProto) { }
+        public virtual void replaceFAEndProtoBuf(IBApi.protobuf.ReplaceFAEnd replaceFAEndProto) { }
+        public virtual void commissionAndFeesReportProtoBuf(IBApi.protobuf.CommissionAndFeesReport commissionAndFeesReportProto) { }
+        public virtual void historicalScheduleProtoBuf(IBApi.protobuf.HistoricalSchedule historicalScheduleProto) { }
+        public virtual void rerouteMarketDataRequestProtoBuf(IBApi.protobuf.RerouteMarketDataRequest rerouteMarketDataRequestProto) { }
+        public virtual void rerouteMarketDepthRequestProtoBuf(IBApi.protobuf.RerouteMarketDepthRequest rerouteMarketDepthRequestProto) { }
+        public virtual void secDefOptParameterProtoBuf(IBApi.protobuf.SecDefOptParameter secDefOptParameterProto) { }
+        public virtual void secDefOptParameterEndProtoBuf(IBApi.protobuf.SecDefOptParameterEnd secDefOptParameterEndProto) { }
+        public virtual void softDollarTiersProtoBuf(IBApi.protobuf.SoftDollarTiers softDollarTiersProto) { }
+        public virtual void familyCodesProtoBuf(IBApi.protobuf.FamilyCodes familyCodesProto) { }
+        public virtual void symbolSamplesProtoBuf(IBApi.protobuf.SymbolSamples symbolSamplesProto) { }
+        public virtual void smartComponentsProtoBuf(IBApi.protobuf.SmartComponents smartComponentsProto) { }
+        public virtual void marketRuleProtoBuf(IBApi.protobuf.MarketRule marketRuleProto) { }
+        public virtual void userInfoProtoBuf(IBApi.protobuf.UserInfo userInfoProto) { }
+        public virtual void nextValidIdProtoBuf(IBApi.protobuf.NextValidId nextValidIdProto) { }
+        public virtual void currentTimeProtoBuf(IBApi.protobuf.CurrentTime currentTimeProto) { }
+        public virtual void currentTimeInMillisProtoBuf(IBApi.protobuf.CurrentTimeInMillis currentTimeInMillisProto) { }
+        public virtual void verifyMessageApiProtoBuf(IBApi.protobuf.VerifyMessageApi verifyMessageApiProto) { }
+        public virtual void verifyCompletedProtoBuf(IBApi.protobuf.VerifyCompleted verifyCompletedProto) { }
+        public virtual void displayGroupListProtoBuf(IBApi.protobuf.DisplayGroupList displayGroupListProto) { }
+        public virtual void displayGroupUpdatedProtoBuf(IBApi.protobuf.DisplayGroupUpdated displayGroupUpdatedProto) { }
+        public virtual void marketDepthExchangesProtoBuf(IBApi.protobuf.MarketDepthExchanges marketDepthExchangesProto) { }
+        public virtual void configResponseProtoBuf(IBApi.protobuf.ConfigResponse configResponseProto)
+        {
+            Console.WriteLine("==== Config Response Begin ====");
+            var formatter = new JsonFormatter(JsonFormatter.Settings.Default.WithIndentation());
+            Console.WriteLine(formatter.Format(configResponseProto));
+            Console.WriteLine("==== Config Response End ====");
+        }
+
+        public virtual void updateConfigResponseProtoBuf(IBApi.protobuf.UpdateConfigResponse updateConfigResponseProto)
+        {
+            Console.WriteLine("==== Update Config Response Begin ====");
+            var formatter = new JsonFormatter(JsonFormatter.Settings.Default.WithIndentation());
+            Console.WriteLine(formatter.Format(updateConfigResponseProto));
+            Console.WriteLine("==== Update Config Response End ====");
+        }
     }
 }

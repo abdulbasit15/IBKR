@@ -51,7 +51,7 @@ public class ScannerDlg extends JDialog {
     private JTextField m_maturityDateBelow = new JTextField();
     private JTextField m_couponRateAbove = new JTextField();
     private JTextField m_couponRateBelow = new JTextField();
-    private JTextField m_excludeConvertible = new JTextField("0");
+    private JTextField m_excludeConvertible = new JTextField("false");
     private JTextField m_scannerSettingPairs = new JTextField("Annual,true");
     private JTextField m_stockTypeFilter = new JTextField("ALL");
 
@@ -227,7 +227,7 @@ public class ScannerDlg extends JDialog {
             m_subscription.couponRateBelow(parseDouble(m_couponRateBelow));
             m_subscription.excludeConvertible(Boolean.parseBoolean(m_excludeConvertible.getText().trim()));
             m_subscription.scannerSettingPairs(m_scannerSettingPairs.getText().trim());
- //           m_subscription.stockTypeFilter(m_stockTypeFilter.getText().trim()); Peter ???
+            m_subscription.stockTypeFilter(m_stockTypeFilter.getText().trim());
         }
         catch( Exception e) {
             Main.inform( this, "Error - " + e);

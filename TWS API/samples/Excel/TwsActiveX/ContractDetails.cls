@@ -45,7 +45,7 @@ Public Sub RequestContractDetails_Click()
         .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
         .SecType = UCase(contractTable(id, Col_SECTYPE).value)
         .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-        .Strike = contractTable(id, Col_STRIKE).value
+        .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
         .Right = UCase(contractTable(id, Col_RIGHT).value)
         .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
         .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -95,6 +95,8 @@ Public Sub UpdateContractDetails(ByVal reqId As Long, ByVal ContractDetails As T
     Dim i As Integer
     Dim ineligibilityReason As TWSLib.ComIneligibilityReason
     Dim ineligibilityReasons As String
+    Dim secIdTagValue As TWSLib.ComTagValue
+    Dim secIdListStr As String
     
     With sheet.Rows(rowId)
         .Cells(1).value = contract.conId
@@ -102,7 +104,7 @@ Public Sub UpdateContractDetails(ByVal reqId As Long, ByVal ContractDetails As T
         .Cells(3).value = contract.SecType
         .Cells(4).value = contract.lastTradeDateOrContractMonth
         .Cells(5).value = contract.lastTradeDate
-        .Cells(6).value = contract.Strike
+        .Cells(6).value = Util.DblMaxStr(contract.Strike)
         .Cells(7).value = contract.Right
         .Cells(8).value = contract.multiplier
         .Cells(9).value = contract.Exchange
@@ -110,54 +112,66 @@ Public Sub UpdateContractDetails(ByVal reqId As Long, ByVal ContractDetails As T
         .Cells(11).value = contract.currency
         .Cells(12).value = contract.localSymbol
         .Cells(13).value = contract.tradingClass
-        .Cells(14).value = ContractDetails.marketName
-        .Cells(15).value = ContractDetails.minTick
-        .Cells(16).value = ContractDetails.priceMagnifier
-        .Cells(17).value = ContractDetails.orderTypes
-        .Cells(18).value = ContractDetails.validExchanges
-        .Cells(19).value = ContractDetails.underConId
-        .Cells(20).value = ContractDetails.longName
-        .Cells(21).value = ContractDetails.contractMonth
-        .Cells(22).value = ContractDetails.industry
-        .Cells(23).value = ContractDetails.Category
-        .Cells(24).value = ContractDetails.subcategory
-        .Cells(25).value = ContractDetails.timeZoneId
-        .Cells(26).value = ContractDetails.tradingHours
-        .Cells(27).value = ContractDetails.liquidHours
-        .Cells(28).value = ContractDetails.evRule
-        .Cells(29).value = ContractDetails.evMultiplier
-        .Cells(30).value = ContractDetails.aggGroup
-        .Cells(31).value = ContractDetails.underSymbol
-        .Cells(32).value = ContractDetails.underSecType
-        .Cells(33).value = ContractDetails.marketRuleIds
-        .Cells(34).value = ContractDetails.realExpirationDate
-        .Cells(35).value = ContractDetails.stockType
-        .Cells(36).value = Util.DecimalToString(ContractDetails.minSize)
-        .Cells(37).value = Util.DecimalToString(ContractDetails.sizeIncrement)
-        .Cells(38).value = Util.DecimalToString(ContractDetails.suggestedSizeIncrement)
-        .Cells(39).value = ContractDetails.fundName
-        .Cells(40).value = ContractDetails.fundFamily
-        .Cells(41).value = ContractDetails.fundType
-        .Cells(42).value = ContractDetails.fundFrontLoad
-        .Cells(43).value = ContractDetails.fundBackLoad
-        .Cells(44).value = ContractDetails.fundBackLoadTimeInterval
-        .Cells(45).value = ContractDetails.fundManagementFee
-        .Cells(46).value = ContractDetails.fundClosed
-        .Cells(47).value = ContractDetails.fundClosedForNewInvestors
-        .Cells(48).value = ContractDetails.fundClosedForNewMoney
-        .Cells(49).value = ContractDetails.fundNotifyAmount
-        .Cells(50).value = ContractDetails.fundMinimumInitialPurchase
-        .Cells(51).value = ContractDetails.fundSubsequentMinimumPurchase
-        .Cells(52).value = ContractDetails.fundBlueSkyStates
-        .Cells(53).value = ContractDetails.fundBlueSkyTerritories
-        .Cells(54).value = ContractDetails.FundDistributionPolicyIndicator
-        .Cells(55).value = ContractDetails.FundAssetType
+        
+        For i = 1 To ContractDetails.secIdList.Count
+            Set secIdTagValue = ContractDetails.secIdList.Item(i - 1)
+            secIdListStr = secIdListStr & secIdTagValue.tag & "=" & secIdTagValue.value & ";"
+        Next
+        .Cells(14).value = secIdListStr
+        
+        .Cells(15).value = ContractDetails.marketName
+        .Cells(16).value = ContractDetails.minTick
+        .Cells(17).value = ContractDetails.priceMagnifier
+        .Cells(18).value = ContractDetails.orderTypes
+        .Cells(19).value = ContractDetails.validExchanges
+        .Cells(20).value = ContractDetails.underConId
+        .Cells(21).value = ContractDetails.longName
+        .Cells(22).value = ContractDetails.contractMonth
+        .Cells(23).value = ContractDetails.industry
+        .Cells(24).value = ContractDetails.Category
+        .Cells(25).value = ContractDetails.subcategory
+        .Cells(26).value = ContractDetails.timeZoneId
+        .Cells(27).value = ContractDetails.tradingHours
+        .Cells(28).value = ContractDetails.liquidHours
+        .Cells(29).value = ContractDetails.evRule
+        .Cells(30).value = ContractDetails.evMultiplier
+        .Cells(31).value = ContractDetails.aggGroup
+        .Cells(32).value = ContractDetails.underSymbol
+        .Cells(33).value = ContractDetails.underSecType
+        .Cells(34).value = ContractDetails.marketRuleIds
+        .Cells(35).value = ContractDetails.realExpirationDate
+        .Cells(36).value = ContractDetails.stockType
+        .Cells(37).value = Util.DecimalToString(ContractDetails.minSize)
+        .Cells(38).value = Util.DecimalToString(ContractDetails.sizeIncrement)
+        .Cells(39).value = Util.DecimalToString(ContractDetails.suggestedSizeIncrement)
+        .Cells(40).value = Util.DecimalToString(ContractDetails.minAlgoSize)
+        .Cells(41).value = Util.DecimalToString(ContractDetails.lastPricePrecision)
+        .Cells(42).value = Util.DecimalToString(ContractDetails.lastSizePrecision)
+        .Cells(43).value = ContractDetails.fundName
+        .Cells(44).value = ContractDetails.fundFamily
+        .Cells(45).value = ContractDetails.fundType
+        .Cells(46).value = ContractDetails.fundFrontLoad
+        .Cells(47).value = ContractDetails.fundBackLoad
+        .Cells(48).value = ContractDetails.fundBackLoadTimeInterval
+        .Cells(49).value = ContractDetails.fundManagementFee
+        .Cells(50).value = ContractDetails.fundClosed
+        .Cells(51).value = ContractDetails.fundClosedForNewInvestors
+        .Cells(52).value = ContractDetails.fundClosedForNewMoney
+        .Cells(53).value = ContractDetails.fundNotifyAmount
+        .Cells(54).value = ContractDetails.fundMinimumInitialPurchase
+        .Cells(55).value = ContractDetails.fundSubsequentMinimumPurchase
+        .Cells(56).value = ContractDetails.fundBlueSkyStates
+        .Cells(57).value = ContractDetails.fundBlueSkyTerritories
+        .Cells(58).value = ContractDetails.FundDistributionPolicyIndicator
+        .Cells(59).value = ContractDetails.FundAssetType
         For i = 1 To ContractDetails.ineligibilityReasonList.Count
             Set ineligibilityReason = ContractDetails.ineligibilityReasonList.Item(i - 1)
             ineligibilityReasons = ineligibilityReasons & "[id: " & ineligibilityReason.id & ", description: " & ineligibilityReason.Description & "];"
         Next
-        .Cells(56).value = ineligibilityReasons
-        
+        .Cells(60).value = ineligibilityReasons
+        .Cells(61).value = ContractDetails.eventContract1
+        .Cells(62).value = ContractDetails.eventContractDescription1
+        .Cells(63).value = ContractDetails.eventContractDescription2
     End With
     
     IncrementSheetRowId sheet
@@ -181,50 +195,57 @@ Private Sub InitialiseSheet(sheet As Worksheet)
     sheet.Cells(2, 11).value = "Currency"
     sheet.Cells(2, 12).value = "Local Sym"
     sheet.Cells(2, 13).value = "Trading Class"
+    sheet.Cells(2, 14).value = "SecId List"
     
-    sheet.Cells(2, 14).value = "Market Name"
-    sheet.Cells(2, 15).value = "Min Tick"
-    sheet.Cells(2, 16).value = "Price Magnifier"
-    sheet.Cells(2, 17).value = "Order Types"
-    sheet.Cells(2, 18).value = "Exchanges"
-    sheet.Cells(2, 19).value = "Under ConId"
-    sheet.Cells(2, 20).value = "Long Name"
-    sheet.Cells(2, 21).value = "Contract Month"
-    sheet.Cells(2, 22).value = "Industry"
-    sheet.Cells(2, 23).value = "Category"
-    sheet.Cells(2, 24).value = "Subcategory"
-    sheet.Cells(2, 25).value = "Time Zone Id"
-    sheet.Cells(2, 26).value = "Trading Hours"
-    sheet.Cells(2, 27).value = "Liquid Hours"
-    sheet.Cells(2, 28).value = "EvRule"
-    sheet.Cells(2, 29).value = "EvMultiplier"
-    sheet.Cells(2, 30).value = "Agg Group"
-    sheet.Cells(2, 31).value = "Under Symbol"
-    sheet.Cells(2, 32).value = "Under SecType"
-    sheet.Cells(2, 33).value = "Market Rule Ids"
-    sheet.Cells(2, 34).value = "RealExpirationDate"
-    sheet.Cells(2, 35).value = "Stock Type"
-    sheet.Cells(2, 36).value = "Min Size"
-    sheet.Cells(2, 37).value = "Size Incr"
-    sheet.Cells(2, 38).value = "Sugg Size Incr"
-    sheet.Cells(2, 39).value = "Fund Name"
-    sheet.Cells(2, 40).value = "Fund Family"
-    sheet.Cells(2, 41).value = "Fund Type"
-    sheet.Cells(2, 42).value = "Fund Front Load"
-    sheet.Cells(2, 43).value = "Fund Back Load"
-    sheet.Cells(2, 44).value = "Fund Back Load Time Interval"
-    sheet.Cells(2, 45).value = "Fund Management Fee"
-    sheet.Cells(2, 46).value = "Fund Closed"
-    sheet.Cells(2, 47).value = "Fund Closed For New Investors"
-    sheet.Cells(2, 48).value = "Fund Closed For New Money"
-    sheet.Cells(2, 49).value = "Fund Notify Amount"
-    sheet.Cells(2, 50).value = "Fund Minimum Initial Purchase"
-    sheet.Cells(2, 51).value = "Fund Subsequent Minimum Purchase"
-    sheet.Cells(2, 52).value = "Fund Blue Sky States"
-    sheet.Cells(2, 53).value = "Fund Blue Sky Territories"
-    sheet.Cells(2, 54).value = "Fund Distribution Policy Indicator"
-    sheet.Cells(2, 55).value = "Fund Asset Type"
-    sheet.Cells(2, 56).value = "Ineligibility Reasons"
+    sheet.Cells(2, 15).value = "Market Name"
+    sheet.Cells(2, 16).value = "Min Tick"
+    sheet.Cells(2, 17).value = "Price Magnifier"
+    sheet.Cells(2, 18).value = "Order Types"
+    sheet.Cells(2, 19).value = "Exchanges"
+    sheet.Cells(2, 20).value = "Under ConId"
+    sheet.Cells(2, 21).value = "Long Name"
+    sheet.Cells(2, 22).value = "Contract Month"
+    sheet.Cells(2, 23).value = "Industry"
+    sheet.Cells(2, 24).value = "Category"
+    sheet.Cells(2, 25).value = "Subcategory"
+    sheet.Cells(2, 26).value = "Time Zone Id"
+    sheet.Cells(2, 27).value = "Trading Hours"
+    sheet.Cells(2, 28).value = "Liquid Hours"
+    sheet.Cells(2, 29).value = "EvRule"
+    sheet.Cells(2, 30).value = "EvMultiplier"
+    sheet.Cells(2, 31).value = "Agg Group"
+    sheet.Cells(2, 32).value = "Under Symbol"
+    sheet.Cells(2, 33).value = "Under SecType"
+    sheet.Cells(2, 34).value = "Market Rule Ids"
+    sheet.Cells(2, 35).value = "RealExpirationDate"
+    sheet.Cells(2, 36).value = "Stock Type"
+    sheet.Cells(2, 37).value = "Min Size"
+    sheet.Cells(2, 38).value = "Size Incr"
+    sheet.Cells(2, 39).value = "Sugg Size Incr"
+    sheet.Cells(2, 40).value = "Min Algo Size"
+    sheet.Cells(2, 41).value = "Last Price Precision"
+    sheet.Cells(2, 42).value = "Last Size Precision"
+    sheet.Cells(2, 43).value = "Fund Name"
+    sheet.Cells(2, 44).value = "Fund Family"
+    sheet.Cells(2, 45).value = "Fund Type"
+    sheet.Cells(2, 46).value = "Fund Front Load"
+    sheet.Cells(2, 47).value = "Fund Back Load"
+    sheet.Cells(2, 48).value = "Fund Back Load Time Interval"
+    sheet.Cells(2, 49).value = "Fund Management Fee"
+    sheet.Cells(2, 50).value = "Fund Closed"
+    sheet.Cells(2, 51).value = "Fund Closed For New Investors"
+    sheet.Cells(2, 52).value = "Fund Closed For New Money"
+    sheet.Cells(2, 53).value = "Fund Notify Amount"
+    sheet.Cells(2, 54).value = "Fund Minimum Initial Purchase"
+    sheet.Cells(2, 55).value = "Fund Subsequent Minimum Purchase"
+    sheet.Cells(2, 56).value = "Fund Blue Sky States"
+    sheet.Cells(2, 57).value = "Fund Blue Sky Territories"
+    sheet.Cells(2, 58).value = "Fund Distribution Policy Indicator"
+    sheet.Cells(2, 59).value = "Fund Asset Type"
+    sheet.Cells(2, 60).value = "Ineligibility Reasons"
+    sheet.Cells(2, 61).value = "Event Contract 1"
+    sheet.Cells(2, 62).value = "Event Contract Description 1"
+    sheet.Cells(2, 63).value = "Event Contract Description 2"
 End Sub
 
 
@@ -246,9 +267,9 @@ Public Sub ContractDetailsEnd(ByVal reqId As Long)
 End Sub
 
 
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
     
-    queryTable(id - ID_CONTRACTDETAILS, Col_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+    queryTable(id - ID_CONTRACTDETAILS, Col_STATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
         
 End Sub
 

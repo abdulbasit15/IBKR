@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.client;
@@ -247,6 +247,7 @@ public class Types {
 		_1_min("1 min"),
 		_2_mins("2 mins"),
 		_3_mins("3 mins"),
+		_4_mins("4 mins"),
 		_5_mins("5 mins"),
 		_10_mins("10 mins"),
 		_15_mins("15 mins"),
@@ -380,6 +381,20 @@ public class Types {
 	    }
 	}
 
+    public enum ThreeStateBoolean {
+        Default(null), No(false), Yes(true);
+
+        private Boolean value;
+
+        ThreeStateBoolean (Boolean value) {
+            this.value = value;
+        }
+
+        public Boolean toBoolean() {
+            return value;
+        }
+    }
+
     public enum FundDistributionPolicyIndicator implements IApiEnum {
         None ("None", "None"),
         AccumulationFund("N", "Accumulation Fund"), 
@@ -398,7 +413,7 @@ public class Types {
 
         public static FundDistributionPolicyIndicator get(String value) {
             for (FundDistributionPolicyIndicator v : values() ) {
-                if (v.m_value == value) {
+                if (v.m_value.equals(value)) {
                     return v;
                 }
             }
@@ -434,7 +449,7 @@ public class Types {
 
         public static FundAssetType get(String value) {
             for (FundAssetType v : values() ) {
-                if (v.m_value == value) {
+                if (v.m_value.equals(value)) {
                     return v;
                 }
             }

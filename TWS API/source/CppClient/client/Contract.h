@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -9,8 +9,8 @@
 #include "Decimal.h"
 #include "CommonDefs.h"
 #include "IneligibilityReason.h"
-
-#define UNSET_INTEGER INT_MAX
+#include <cfloat>
+#include <memory>
 
 /*
 	SAME_POS    = open/close leg value is same as combo
@@ -31,17 +31,17 @@ struct ComboLeg
 	{
 	}
 
-	long		conId;
-	long		ratio;
+	int		conId;
+	int		ratio;
 	std::string	action; //BUY/SELL/SSHORT
 
 	std::string	exchange;
-	long		openClose; // LegOpenClose enum values
+	int		openClose; // LegOpenClose enum values
 
 	// for stock legs when doing short sale
-	long		shortSaleSlot; // 1 = clearing broker, 2 = third party
+	int		shortSaleSlot; // 1 = clearing broker, 2 = third party
 	std::string	designatedLocation;
-	int			exemptCode;
+	int		exemptCode;
 
 	bool operator==( const ComboLeg& other) const
 	{
@@ -64,7 +64,7 @@ struct DeltaNeutralContract
 		, price(0)
 	{}
 
-	long	conId;
+	int 	conId;
 	double	delta;
 	double	price;
 };
@@ -75,14 +75,71 @@ struct Contract
 {
 	Contract()
 		: conId(0)
-		, strike(0)
+		, strike(UNSET_DOUBLE)
 		, includeExpired(false)
 		, comboLegs(NULL)
-		, deltaNeutralContract(NULL)
 	{
 	}
 
-	long		conId;
+	Contract(const Contract& other)
+		: conId(other.conId)
+		, symbol(other.symbol)
+		, secType(other.secType)
+		, lastTradeDateOrContractMonth(other.lastTradeDateOrContractMonth)
+		, lastTradeDate(other.lastTradeDate)
+		, strike(other.strike)
+		, right(other.right)
+		, multiplier(other.multiplier)
+		, exchange(other.exchange)
+		, primaryExchange(other.primaryExchange)
+		, currency(other.currency)
+		, localSymbol(other.localSymbol)
+		, tradingClass(other.tradingClass)
+		, includeExpired(other.includeExpired)
+		, secIdType(other.secIdType)
+		, secId(other.secId)
+		, description(other.description)
+		, issuerId(other.issuerId)
+		, comboLegsDescrip(other.comboLegsDescrip)
+		, comboLegs(other.comboLegs)
+		, deltaNeutralContract(other.deltaNeutralContract
+			? std::unique_ptr<DeltaNeutralContract>(new DeltaNeutralContract(*other.deltaNeutralContract))
+			: nullptr)
+	{
+	}
+
+	Contract& operator=(const Contract& other)
+	{
+		if (this != &other) {
+			conId = other.conId;
+			symbol = other.symbol;
+			secType = other.secType;
+			lastTradeDateOrContractMonth = other.lastTradeDateOrContractMonth;
+			lastTradeDate = other.lastTradeDate;
+			strike = other.strike;
+			right = other.right;
+			multiplier = other.multiplier;
+			exchange = other.exchange;
+			primaryExchange = other.primaryExchange;
+			currency = other.currency;
+			localSymbol = other.localSymbol;
+			tradingClass = other.tradingClass;
+			includeExpired = other.includeExpired;
+			secIdType = other.secIdType;
+			secId = other.secId;
+			description = other.description;
+			issuerId = other.issuerId;
+			comboLegsDescrip = other.comboLegsDescrip;
+			comboLegs = other.comboLegs;
+
+			deltaNeutralContract = other.deltaNeutralContract
+				? std::unique_ptr<DeltaNeutralContract>(new DeltaNeutralContract(*other.deltaNeutralContract))
+				: nullptr;
+		}
+		return *this;
+	}
+
+	int 		conId;
 	std::string	symbol;
 	std::string	secType;
 	std::string	lastTradeDateOrContractMonth;
@@ -111,7 +168,7 @@ struct Contract
 	ComboLegListSPtr comboLegs;
 
 	// delta neutral contract
-	DeltaNeutralContract* deltaNeutralContract;
+	std::unique_ptr<DeltaNeutralContract> deltaNeutralContract;
 
 public:
 
@@ -130,6 +187,9 @@ struct ContractDetails
 		, minSize(UNSET_DECIMAL)
 		, sizeIncrement(UNSET_DECIMAL)
 		, suggestedSizeIncrement(UNSET_DECIMAL)
+		, minAlgoSize(UNSET_DECIMAL)
+		, lastPricePrecision(UNSET_DECIMAL)
+		, lastSizePrecision(UNSET_DECIMAL)
 		, callable(false)
 		, putable(false)
 		, coupon(0)
@@ -149,8 +209,8 @@ struct ContractDetails
 	double		minTick;
 	std::string	orderTypes;
 	std::string	validExchanges;
-	long		priceMagnifier;
-	int			underConId;
+	int 		priceMagnifier;
+	int 		underConId;
 	std::string	longName;
 	std::string	contractMonth;
 	std::string	industry;
@@ -161,7 +221,7 @@ struct ContractDetails
 	std::string	liquidHours;
 	std::string	evRule;
 	double		evMultiplier;
-	int			aggGroup;
+	int 		aggGroup;
 	std::string	underSymbol;
 	std::string	underSecType;
 	std::string marketRuleIds;
@@ -171,6 +231,9 @@ struct ContractDetails
 	Decimal		minSize;
 	Decimal		sizeIncrement;
 	Decimal		suggestedSizeIncrement;
+	Decimal		minAlgoSize;
+	Decimal		lastPricePrecision;
+	Decimal		lastSizePrecision;
 
 	TagValueListSPtr secIdList;
 
@@ -212,6 +275,10 @@ struct ContractDetails
 
 	// ineligibility reason list
 	IneligibilityReasonListSPtr ineligibilityReasonList;
+
+	std::string eventContract1;
+	std::string eventContractDescription1;
+	std::string eventContractDescription2;
 };
 
 struct ContractDescription

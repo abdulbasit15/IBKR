@@ -33,7 +33,7 @@ Private conditionTable As Range
 '=================
 ' methods
 '=================
-' apply template from Extended Order Atributes sheet
+' apply template from Extended Order Attributes sheet
 Private Sub ApplyExtendedTemplate_Click()
     OrderUtils.ApplyExtendedTemplate getActiveOrderIndex, extendedAttributeTable
 End Sub
@@ -75,7 +75,7 @@ Public Sub Initialise()
     Set orderTable = ConditionalOrders.Range("$N$7:$S$125")
     Set orderStatusTable = ConditionalOrders.Range("$T$7:$Z$125")
     Set conditionTable = ConditionalOrders.Range("$AA$7:$AH$125")
-    Set extendedAttributeTable = ConditionalOrders.Range("$AI$7:$EK$125")
+    Set extendedAttributeTable = ConditionalOrders.Range("$AI$7:$FB$125")
 End Sub
 
 Private Sub Worksheet_Activate()
@@ -146,8 +146,8 @@ Public Sub UpdateOrderStatus(id As Long, status As String, filled As Variant, re
 End Sub
 
 ' process error
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
-    OrderUtils.ProcessError orderStatusTable, id, errorCode, errorMsg
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
+    OrderUtils.ProcessError orderStatusTable, id, errorTime, errorCode, errorMsg
 End Sub
 
 Private Sub SmartComboRoutingParams_Click()

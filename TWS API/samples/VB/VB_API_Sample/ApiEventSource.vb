@@ -1,4 +1,4 @@
-﻿' Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 Imports IBApi
@@ -102,10 +102,10 @@ Friend Class ApiEventSource
                          End Sub)
     End Sub
 
-    Private Sub EWrapper_CommissionReport(commissionReport As IBApi.CommissionReport) Implements IBApi.EWrapper.commissionReport
+    Private Sub EWrapper_CommissionAndFeesReport(commissionAndFeesReport As IBApi.CommissionAndFeesReport) Implements IBApi.EWrapper.commissionAndFeesReport
         InvokeIfRequired(Sub()
-                             RaiseEvent CommissionReport(Me, New CommissionReportEventArgs With {
-                                                                     .commissionReport = commissionReport
+                             RaiseEvent CommissionAndFeesReport(Me, New CommissionAndFeesReportEventArgs With {
+                                                                     .commissionAndFeesReport = commissionAndFeesReport
                                                                      })
                          End Sub)
     End Sub
@@ -168,21 +168,21 @@ Friend Class ApiEventSource
                          End Sub)
     End Sub
 
-    Private Sub EWrapper_Error(id As Integer, errorCode As Integer, errorMsg As String, advancedOrderRejectJson As String) Implements IBApi.EWrapper.error
+    Private Sub EWrapper_Error(id As Integer, errorTime As Long, errorCode As Integer, errorMsg As String, advancedOrderRejectJson As String) Implements IBApi.EWrapper.error
         InvokeIfRequired(Sub()
-                             RaiseEvent ErrMsg(Me, New ErrMsgEventArgs With {.id = id, .errorCode = errorCode, .errorMsg = errorMsg, .advancedOrderRejectJson = advancedOrderRejectJson})
+                             RaiseEvent ErrMsg(Me, New ErrMsgEventArgs With {.id = id, .errorTime = errorTime, .errorCode = errorCode, .errorMsg = errorMsg, .advancedOrderRejectJson = advancedOrderRejectJson})
                          End Sub)
     End Sub
 
     Private Sub EWrapper_Error(str As String) Implements IBApi.EWrapper.error
         InvokeIfRequired(Sub()
-                             RaiseEvent ErrMsg(Me, New ErrMsgEventArgs With {.id = -1, .errorCode = -1, .errorMsg = str})
+                             RaiseEvent ErrMsg(Me, New ErrMsgEventArgs With {.id = -1, .errorTime = Util.CurrentTimeMillis(), .errorCode = -1, .errorMsg = str})
                          End Sub)
     End Sub
 
     Private Sub EWrapper_Error(e As Exception) Implements IBApi.EWrapper.error
         InvokeIfRequired(Sub()
-                             RaiseEvent ErrMsg(Me, New ErrMsgEventArgs With {.id = -1, .errorCode = -1, .errorMsg = e.Message})
+                             RaiseEvent ErrMsg(Me, New ErrMsgEventArgs With {.id = -1, .errorTime = Util.CurrentTimeMillis(), .errorCode = -1, .errorMsg = e.Message})
                          End Sub)
     End Sub
 
@@ -279,7 +279,7 @@ Friend Class ApiEventSource
                          End Sub)
     End Sub
 
-    Private Sub EWrapper_OrderStatus(orderId As Integer, status As String, filled As Decimal, remaining As Decimal, avgFillPrice As Double, permId As Integer, parentId As Integer, lastFillPrice As Double, clientId As Integer, whyHeld As String, mktCapPrice As Double) Implements IBApi.EWrapper.orderStatus
+    Private Sub EWrapper_OrderStatus(orderId As Integer, status As String, filled As Decimal, remaining As Decimal, avgFillPrice As Double, permId As Long, parentId As Integer, lastFillPrice As Double, clientId As Integer, whyHeld As String, mktCapPrice As Double) Implements IBApi.EWrapper.orderStatus
         InvokeIfRequired(Sub()
                              RaiseEvent OrderStatus(Me, New OrderStatusEventArgs With {
                                                                      .orderId = orderId,
@@ -820,12 +820,12 @@ Friend Class ApiEventSource
                          End Sub)
     End Sub
 
-    Public Sub EWrapper_OrderBound(orderId As Long, apiClientId As Integer, apiOrderId As Integer) Implements EWrapper.orderBound
+    Public Sub EWrapper_OrderBound(permId As Long, clientId As Integer, orderId As Integer) Implements EWrapper.orderBound
         InvokeIfRequired(Sub()
                              RaiseEvent OrderBound(Me, New OrderBoundEventArgs With {
-                                                            .orderId = orderId,
-                                                            .apiClientId = apiClientId,
-                                                            .apiOrderId = apiOrderId
+                                                            .permId = permId,
+                                                            .clientId = clientId,
+                                                            .orderId = orderId
                                                             })
                          End Sub)
     End Sub
@@ -893,6 +893,671 @@ Friend Class ApiEventSource
                          End Sub)
     End Sub
 
+    Private Sub EWrapper_CurrentTimeInMillis(timeInMillis As Long) Implements IBApi.EWrapper.currentTimeInMillis
+        InvokeIfRequired(Sub()
+                             RaiseEvent CurrentTimeInMillis(Me, New CurrentTimeInMillisEventArgs With {
+                                                                     .timeInMillis = timeInMillis
+                                                                     })
+                         End Sub)
+    End Sub
+
+    '! [protobuf]
+    Public Sub EWrapper_OrderStatusProtoBuf(orderStatusProto As IBApi.protobuf.OrderStatus) Implements IBApi.EWrapper.orderStatusProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent OrderStatusProtoBuf(Me, New OrderStatusProtoBufEventArgs With {
+                                                                     .orderStatusProto = orderStatusProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_OpenOrderProtoBuf(openOrderProto As IBApi.protobuf.OpenOrder) Implements IBApi.EWrapper.openOrderProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent OpenOrderProtoBuf(Me, New OpenOrderProtoBufEventArgs With {
+                                                                     .OpenOrderProto = openOrderProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_OpenOrdersEndProtoBuf(openOrdersEndProto As IBApi.protobuf.OpenOrdersEnd) Implements IBApi.EWrapper.openOrdersEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent OpenOrdersEndProtoBuf(Me, New OpenOrdersEndProtoBufEventArgs With {
+                                                                     .OpenOrdersEndProto = openOrdersEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_ErrorMessageProtoBuf(errorMessageProto As IBApi.protobuf.ErrorMessage) Implements IBApi.EWrapper.errorProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ErrorMessageProtoBuf(Me, New ErrorMessageProtoBufEventArgs With {
+                                                                     .ErrorMessageProto = errorMessageProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_ExecutionDetailsProtoBuf(executionDetailsProto As IBApi.protobuf.ExecutionDetails) Implements IBApi.EWrapper.execDetailsProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ExecutionDetailsProtoBuf(Me, New ExecutionDetailsProtoBufEventArgs With {
+                                                                     .ExecutionDetailsProto = executionDetailsProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_ExecutionDetailsEndProtoBuf(executionDetailsEndProto As IBApi.protobuf.ExecutionDetailsEnd) Implements IBApi.EWrapper.execDetailsEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ExecutionDetailsEndProtoBuf(Me, New ExecutionDetailsEndProtoBufEventArgs With {
+                                                                     .ExecutionDetailsEndProto = executionDetailsEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_CompletedOrderProtoBuf(completedOrderProto As IBApi.protobuf.CompletedOrder) Implements IBApi.EWrapper.completedOrderProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent CompletedOrderProtoBuf(Me, New CompletedOrderProtoBufEventArgs With {
+                                                                     .CompletedOrderProto = completedOrderProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_CompletedOrdersEndProtoBuf(completedOrdersEndProto As IBApi.protobuf.CompletedOrdersEnd) Implements IBApi.EWrapper.completedOrdersEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent CompletedOrdersEndProtoBuf(Me, New CompletedOrdersEndProtoBufEventArgs With {
+                                                                     .CompletedOrdersEndProto = completedOrdersEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+    Public Sub EWrapper_OrderBoundProtoBuf(orderBoundProto As IBApi.protobuf.OrderBound) Implements IBApi.EWrapper.orderBoundProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent OrderBoundProtoBuf(Me, New OrderBoundProtoBufEventArgs With {
+                                                                     .OrderBoundProto = orderBoundProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_ContractDataProtoBuf(contractDataProto As IBApi.protobuf.ContractData) Implements IBApi.EWrapper.contractDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ContractDataProtoBuf(Me, New ContractDataProtoBufEventArgs With {
+                                                                     .ContractDataProto = contractDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_BondContractDataProtoBuf(contractDataProto As IBApi.protobuf.ContractData) Implements IBApi.EWrapper.bondContractDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent BondContractDataProtoBuf(Me, New ContractDataProtoBufEventArgs With {
+                                                                     .ContractDataProto = contractDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_contractDataEndProtoBuf(contractDataEndProto As IBApi.protobuf.ContractDataEnd) Implements IBApi.EWrapper.contractDataEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ContractDataEndProtoBuf(Me, New ContractDataEndProtoBufEventArgs With {
+                                                                     .ContractDataEndProto = contractDataEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickPriceProtoBuf(tickPriceProto As IBApi.protobuf.TickPrice) Implements IBApi.EWrapper.tickPriceProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickPriceProtoBuf(Me, New TickPriceProtoBufEventArgs With {
+                                                                     .TickPriceProto = tickPriceProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickSizeProtoBuf(tickSizeProto As IBApi.protobuf.TickSize) Implements IBApi.EWrapper.tickSizeProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickSizeProtoBuf(Me, New TickSizeProtoBufEventArgs With {
+                                                                     .TickSizeProto = tickSizeProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickOptionComputationProtoBuf(tickOptionComputationProto As IBApi.protobuf.TickOptionComputation) Implements IBApi.EWrapper.tickOptionComputationProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickOptionComputationProtoBuf(Me, New TickOptionComputationProtoBufEventArgs With {
+                                                                     .TickOptionComputationProto = tickOptionComputationProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickGenericProtoBuf(tickGenericProto As IBApi.protobuf.TickGeneric) Implements IBApi.EWrapper.tickGenericProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickGenericProtoBuf(Me, New TickGenericProtoBufEventArgs With {
+                                                                     .TickGenericProto = tickGenericProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickStringProtoBuf(tickStringProto As IBApi.protobuf.TickString) Implements IBApi.EWrapper.tickStringProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickStringProtoBuf(Me, New TickStringProtoBufEventArgs With {
+                                                                     .TickStringProto = tickStringProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickSnapshotEndProtoBuf(tickSnapshotEndProto As IBApi.protobuf.TickSnapshotEnd) Implements IBApi.EWrapper.tickSnapshotEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickSnapshotEndProtoBuf(Me, New TickSnapshotEndProtoBufEventArgs With {
+                                                                     .TickSnapshotEndProto = tickSnapshotEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_updateMarketDepthProtoBuf(marketDepthProto As IBApi.protobuf.MarketDepth) Implements IBApi.EWrapper.updateMarketDepthProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UpdateMarketDepthProtoBuf(Me, New UpdateMarketDepthProtoBufEventArgs With {
+                                                                     .marketDepthProto = marketDepthProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_updateMarketDepthL2ProtoBuf(marketDepthL2Proto As IBApi.protobuf.MarketDepthL2) Implements IBApi.EWrapper.updateMarketDepthL2ProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UpdateMarketDepthL2ProtoBuf(Me, New UpdateMarketDepthL2ProtoBufEventArgs With {
+                                                                     .marketDepthL2Proto = marketDepthL2Proto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_marketDataTypeProtoBuf(marketDataTypeProto As IBApi.protobuf.MarketDataType) Implements IBApi.EWrapper.marketDataTypeProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent marketDataTypeProtoBuf(Me, New MarketDataTypeProtoBufEventArgs With {
+                                                                     .marketDataTypeProto = marketDataTypeProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickReqParamsProtoBuf(tickReqParamsProto As IBApi.protobuf.TickReqParams) Implements IBApi.EWrapper.tickReqParamsProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickReqParamsProtoBuf(Me, New TickReqParamsProtoBufEventArgs With {
+                                                                     .TickReqParamsProto = tickReqParamsProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_updateAccountValueProtoBuf(accountValueProto As IBApi.protobuf.AccountValue) Implements IBApi.EWrapper.updateAccountValueProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UpdateAccountValueProtoBuf(Me, New UpdateAccountValueProtoBufEventArgs With {
+                                                                     .accountValueProto = accountValueProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_updatePortfolioProtoBuf(portfolioValueProto As IBApi.protobuf.PortfolioValue) Implements IBApi.EWrapper.updatePortfolioProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UpdatePortfolioProtoBuf(Me, New UpdatePortfolioProtoBufEventArgs With {
+                                                                     .portfolioValueProto = portfolioValueProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_updateAccountTimeProtoBuf(accountUpdateTimeProto As IBApi.protobuf.AccountUpdateTime) Implements IBApi.EWrapper.updateAccountTimeProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UpdateAccountTimeProtoBuf(Me, New UpdateAccountTimeProtoBufEventArgs With {
+                                                                     .accountUpdateTimeProto = accountUpdateTimeProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_accountDataEndProtoBuf(accountDataEndProto As IBApi.protobuf.AccountDataEnd) Implements IBApi.EWrapper.accountDataEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent AccountDataEndProtoBuf(Me, New AccountDataEndProtoBufEventArgs With {
+                                                                     .accountDataEndProto = accountDataEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_managedAccountsProtoBuf(managedAccountsProto As IBApi.protobuf.ManagedAccounts) Implements IBApi.EWrapper.managedAccountsProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ManagedAccountsProtoBuf(Me, New ManagedAccountsProtoBufEventArgs With {
+                                                                     .managedAccountsProto = managedAccountsProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_positionProtoBuf(positionProto As IBApi.protobuf.Position) Implements IBApi.EWrapper.positionProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent PositionProtoBuf(Me, New PositionProtoBufEventArgs With {
+                                                                     .positionProto = positionProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_positionEndProtoBuf(positionEndProto As IBApi.protobuf.PositionEnd) Implements IBApi.EWrapper.positionEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent PositionEndProtoBuf(Me, New PositionEndProtoBufEventArgs With {
+                                                                     .positionEndProto = positionEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_accountSummaryProtoBuf(accountSummaryProto As IBApi.protobuf.AccountSummary) Implements IBApi.EWrapper.accountSummaryProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent AccountSummaryProtoBuf(Me, New AccountSummaryProtoBufEventArgs With {
+                                                                     .accountSummaryProto = accountSummaryProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_accountSummaryEndProtoBuf(accountSummaryEndProto As IBApi.protobuf.AccountSummaryEnd) Implements IBApi.EWrapper.accountSummaryEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent AccountSummaryEndProtoBuf(Me, New AccountSummaryEndProtoBufEventArgs With {
+                                                                     .accountSummaryEndProto = accountSummaryEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_positionMultiProtoBuf(positionMultiProto As IBApi.protobuf.PositionMulti) Implements IBApi.EWrapper.positionMultiProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent PositionMultiProtoBuf(Me, New PositionMultiProtoBufEventArgs With {
+                                                                     .positionMultiProto = positionMultiProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_positionMultiEndProtoBuf(positionMultiEndProto As IBApi.protobuf.PositionMultiEnd) Implements IBApi.EWrapper.positionMultiEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent PositionMultiEndProtoBuf(Me, New PositionMultiEndProtoBufEventArgs With {
+                                                                     .positionMultiEndProto = positionMultiEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_accountUpdateMultiProtoBuf(accountUpdateMultiProto As IBApi.protobuf.AccountUpdateMulti) Implements IBApi.EWrapper.accountUpdateMultiProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent AccountUpdateMultiProtoBuf(Me, New AccountUpdateMultiProtoBufEventArgs With {
+                                                                     .accountUpdateMultiProto = accountUpdateMultiProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_accountUpdateMultiEndProtoBuf(accountUpdateMultiEndProto As IBApi.protobuf.AccountUpdateMultiEnd) Implements IBApi.EWrapper.accountUpdateMultiEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent AccountUpdateMultiEndProtoBuf(Me, New AccountUpdateMultiEndProtoBufEventArgs With {
+                                                                     .accountUpdateMultiEndProto = accountUpdateMultiEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalDataProtoBuf(historicalDataProto As IBApi.protobuf.HistoricalData) Implements IBApi.EWrapper.historicalDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalDataProtoBuf(Me, New HistoricalDataProtoBufEventArgs With {
+                                                                     .historicalDataProto = historicalDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalDataUpdateProtoBuf(historicalDataUpdateProto As IBApi.protobuf.HistoricalDataUpdate) Implements IBApi.EWrapper.historicalDataUpdateProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalDataUpdateProtoBuf(Me, New HistoricalDataUpdateProtoBufEventArgs With {
+                                                                     .historicalDataUpdateProto = historicalDataUpdateProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalDataEndProtoBuf(historicalDataEndProto As IBApi.protobuf.HistoricalDataEnd) Implements IBApi.EWrapper.historicalDataEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalDataEndProtoBuf(Me, New HistoricalDataEndProtoBufEventArgs With {
+                                                                     .historicalDataEndProto = historicalDataEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_realTimeBarTickProtoBuf(realTimeBarTickProto As IBApi.protobuf.RealTimeBarTick) Implements IBApi.EWrapper.realTimeBarTickProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent RealTimeBarTickProtoBuf(Me, New RealTimeBarTickProtoBufEventArgs With {
+                                                                     .realTimeBarTickProto = realTimeBarTickProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_headTimestampProtoBuf(headTimestampProto As IBApi.protobuf.HeadTimestamp) Implements IBApi.EWrapper.headTimestampProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HeadTimestampProtoBuf(Me, New HeadTimestampProtoBufEventArgs With {
+                                                                     .headTimestampProto = headTimestampProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_histogramDataProtoBuf(histogramDataProto As IBApi.protobuf.HistogramData) Implements IBApi.EWrapper.histogramDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistogramDataProtoBuf(Me, New HistogramDataProtoBufEventArgs With {
+                                                                     .histogramDataProto = histogramDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalTicksProtoBuf(historicalTicksProto As IBApi.protobuf.HistoricalTicks) Implements IBApi.EWrapper.historicalTicksProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalTicksProtoBuf(Me, New HistoricalTicksProtoBufEventArgs With {
+                                                                     .historicalTicksProto = historicalTicksProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalTicksBidAskProtoBuf(historicalTicksBidAskProto As IBApi.protobuf.HistoricalTicksBidAsk) Implements IBApi.EWrapper.historicalTicksBidAskProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalTicksBidAskProtoBuf(Me, New HistoricalTicksBidAskProtoBufEventArgs With {
+                                                                     .historicalTicksBidAskProto = historicalTicksBidAskProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalTicksLastProtoBuf(historicalTicksLastProto As IBApi.protobuf.HistoricalTicksLast) Implements IBApi.EWrapper.historicalTicksLastProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalTicksLastProtoBuf(Me, New HistoricalTicksLastProtoBufEventArgs With {
+                                                                     .historicalTicksLastProto = historicalTicksLastProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickByTickDataProtoBuf(tickByTickDataProto As IBApi.protobuf.TickByTickData) Implements IBApi.EWrapper.tickByTickDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickByTickDataProtoBuf(Me, New TickByTickDataProtoBufEventArgs With {
+                                                                     .tickByTickDataProto = tickByTickDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_updateNewsBulletinProtoBuf(newsBulletinProto As IBApi.protobuf.NewsBulletin) Implements IBApi.EWrapper.updateNewsBulletinProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UpdateNewsBulletinProtoBuf(Me, New UpdateNewsBulletinProtoBufEventArgs With {
+                                                                     .UpdateNewsBulletinProto = newsBulletinProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_newsArticleProtoBuf(newsArticleProto As IBApi.protobuf.NewsArticle) Implements IBApi.EWrapper.newsArticleProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent NewsArticleProtoBuf(Me, New NewsArticleProtoBufEventArgs With {
+                                                                     .newsArticleProto = newsArticleProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_newsProvidersProtoBuf(newsProvidersProto As IBApi.protobuf.NewsProviders) Implements IBApi.EWrapper.newsProvidersProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent NewsProvidersProtoBuf(Me, New NewsProvidersProtoBufEventArgs With {
+                                                                     .newsProvidersProto = newsProvidersProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalNewsProtoBuf(historicalNewsProto As IBApi.protobuf.HistoricalNews) Implements IBApi.EWrapper.historicalNewsProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalNewsProtoBuf(Me, New HistoricalNewsProtoBufEventArgs With {
+                                                                     .historicalNewsProto = historicalNewsProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_historicalNewsEndProtoBuf(historicalNewsEndProto As IBApi.protobuf.HistoricalNewsEnd) Implements IBApi.EWrapper.historicalNewsEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalNewsEndProtoBuf(Me, New HistoricalNewsEndProtoBufEventArgs With {
+                                                                     .historicalNewsEndProto = historicalNewsEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_wshMetaDataProtoBuf(wshMetaDataProto As IBApi.protobuf.WshMetaData) Implements IBApi.EWrapper.wshMetaDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent WshMetaDataProtoBuf(Me, New WshMetaDataProtoBufEventArgs With {
+                                                                     .wshMetaDataProto = wshMetaDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_wshEventDataProtoBuf(wshEventDataProto As IBApi.protobuf.WshEventData) Implements IBApi.EWrapper.wshEventDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent WshEventDataProtoBuf(Me, New WshEventDataProtoBufEventArgs With {
+                                                                     .wshEventDataProto = wshEventDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_tickNewsProtoBuf(tickNewsProto As IBApi.protobuf.TickNews) Implements IBApi.EWrapper.tickNewsProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent TickNewsProtoBuf(Me, New TickNewsProtoBufEventArgs With {
+                                                                     .tickNewsProto = tickNewsProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_scannerParametersProtoBuf(scannerParametersProto As IBApi.protobuf.ScannerParameters) Implements IBApi.EWrapper.scannerParametersProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ScannerParametersProtoBuf(Me, New ScannerParametersProtoBufEventArgs With {
+                                                                     .scannerParametersProto = scannerParametersProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_scannerDataProtoBuf(scannerDataProto As IBApi.protobuf.ScannerData) Implements IBApi.EWrapper.scannerDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ScannerDataProtoBuf(Me, New ScannerDataProtoBufEventArgs With {
+                                                                     .scannerDataProto = scannerDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_fundamentalsDataProtoBuf(fundamentalsDataProto As IBApi.protobuf.FundamentalsData) Implements IBApi.EWrapper.fundamentalsDataProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent FundamentalsDataProtoBuf(Me, New FundamentalsDataProtoBufEventArgs With {
+                                                                     .fundamentalsDataProto = fundamentalsDataProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_pnlProtoBuf(pnlProto As IBApi.protobuf.PnL) Implements IBApi.EWrapper.pnlProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent PnLProtoBuf(Me, New PnLProtoBufEventArgs With {
+                                                                     .pnlProto = pnlProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_pnlSingleProtoBuf(pnlSingleProto As IBApi.protobuf.PnLSingle) Implements IBApi.EWrapper.pnlSingleProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent PnLSingleProtoBuf(Me, New PnLSingleProtoBufEventArgs With {
+                                                                     .pnlSingleProto = pnlSingleProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_receiveFAProtoBuf(receiveFAProto As IBApi.protobuf.ReceiveFA) Implements IBApi.EWrapper.receiveFAProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ReceiveFAProtoBuf(Me, New ReceiveFAProtoBufEventArgs With {
+                                                                     .receiveFAProto = receiveFAProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_replaceFAEndProtoBuf(replaceFAEndProto As IBApi.protobuf.ReplaceFAEnd) Implements IBApi.EWrapper.replaceFAEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ReplaceFAEndProtoBuf(Me, New ReplaceFAEndProtoBufEventArgs With {
+                                                                     .replaceFAEndProto = replaceFAEndProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_commissionAndFeesReportProtoBuf(commissionAndFeesReportProto As IBApi.protobuf.CommissionAndFeesReport) Implements IBApi.EWrapper.commissionAndFeesReportProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent CommissionAndFeesReportProtoBuf(Me, New CommissionAndFeesReportProtoBufEventArgs With {
+                                                                     .commissionAndFeesReportProto = commissionAndFeesReportProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_historicalScheduleProtoBuf(historicalScheduleProto As IBApi.protobuf.HistoricalSchedule) Implements IBApi.EWrapper.historicalScheduleProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent HistoricalScheduleProtoBuf(Me, New HistoricalScheduleProtoBufEventArgs With {
+                                                                     .historicalScheduleProto = historicalScheduleProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_rerouteMarketDataRequestProtoBuf(rerouteMarketDataRequestProto As IBApi.protobuf.RerouteMarketDataRequest) Implements IBApi.EWrapper.rerouteMarketDataRequestProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent RerouteMarketDataRequestProtoBuf(Me, New RerouteMarketDataRequestProtoBufEventArgs With {
+                                                                     .rerouteMarketDataRequestProto = rerouteMarketDataRequestProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_rerouteMarketDepthRequestProtoBuf(rerouteMarketDepthRequestProto As IBApi.protobuf.RerouteMarketDepthRequest) Implements IBApi.EWrapper.rerouteMarketDepthRequestProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent RerouteMarketDepthRequestProtoBuf(Me, New RerouteMarketDepthRequestProtoBufEventArgs With {
+                                                                     .rerouteMarketDepthRequestProto = rerouteMarketDepthRequestProto
+                                                                     })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_secDefOptParameterProtoBuf(secDefOptParameterProto As IBApi.protobuf.SecDefOptParameter) Implements IBApi.EWrapper.secDefOptParameterProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent SecDefOptParameterProtoBuf(Me, New SecDefOptParameterProtoBufEventArgs With {
+                                                                  .secDefOptParameterProto = secDefOptParameterProto
+                                                              })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_secDefOptParameterEndProtoBuf(secDefOptParameterEndProto As IBApi.protobuf.SecDefOptParameterEnd) Implements IBApi.EWrapper.secDefOptParameterEndProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent SecDefOptParameterEndProtoBuf(Me, New SecDefOptParameterEndProtoBufEventArgs With {
+                                                                     .secDefOptParameterEndProto = secDefOptParameterEndProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_softDollarTiersProtoBuf(softDollarTiersProto As IBApi.protobuf.SoftDollarTiers) Implements IBApi.EWrapper.softDollarTiersProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent SoftDollarTiersProtoBuf(Me, New SoftDollarTiersProtoBufEventArgs With {
+                                                               .softDollarTiersProto = softDollarTiersProto
+                                                           })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_familyCodesProtoBuf(familyCodesProto As IBApi.protobuf.FamilyCodes) Implements IBApi.EWrapper.familyCodesProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent FamilyCodesProtoBuf(Me, New FamilyCodesProtoBufEventArgs With {
+                                                           .familyCodesProto = familyCodesProto
+                                                       })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_symbolSamplesProtoBuf(symbolSamplesProto As IBApi.protobuf.SymbolSamples) Implements IBApi.EWrapper.symbolSamplesProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent SymbolSamplesProtoBuf(Me, New SymbolSamplesProtoBufEventArgs With {
+                                                             .symbolSamplesProto = symbolSamplesProto
+                                                         })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_smartComponentsProtoBuf(smartComponentsProto As IBApi.protobuf.SmartComponents) Implements IBApi.EWrapper.smartComponentsProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent SmartComponentsProtoBuf(Me, New SmartComponentsProtoBufEventArgs With {
+                                                               .smartComponentsProto = smartComponentsProto
+                                                           })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_marketRuleProtoBuf(marketRuleProto As IBApi.protobuf.MarketRule) Implements IBApi.EWrapper.marketRuleProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent MarketRuleProtoBuf(Me, New MarketRuleProtoBufEventArgs With {
+                                                          .marketRuleProto = marketRuleProto
+                                                      })
+                         End Sub)
+    End Sub
+
+    Public Sub EWrapper_userInfoProtoBuf(userInfoProto As IBApi.protobuf.UserInfo) Implements IBApi.EWrapper.userInfoProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UserInfoProtoBuf(Me, New UserInfoProtoBufEventArgs With {
+                                                        .userInfoProto = userInfoProto
+                                                    })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_nextValidIdProtoBuf(nextValidIdProto As IBApi.protobuf.NextValidId) Implements IBApi.EWrapper.nextValidIdProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent NextValidIdProtoBuf(Me, New NextValidIdProtoBufEventArgs With {
+                                                                 .nextValidIdProto = nextValidIdProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_currentTimeProtoBuf(currentTimeProto As IBApi.protobuf.CurrentTime) Implements IBApi.EWrapper.currentTimeProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent CurrentTimeProtoBuf(Me, New CurrentTimeProtoBufEventArgs With {
+                                                                 .currentTimeProto = currentTimeProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_currentTimeInMillisProtoBuf(currentTimeInMillisProto As IBApi.protobuf.CurrentTimeInMillis) Implements IBApi.EWrapper.currentTimeInMillisProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent CurrentTimeInMillisProtoBuf(Me, New CurrentTimeInMillisProtoBufEventArgs With {
+                                                                 .currentTimeInMillisProto = currentTimeInMillisProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_verifyMessageApiProtoBuf(verifyMessageApiProto As IBApi.protobuf.VerifyMessageApi) Implements IBApi.EWrapper.verifyMessageApiProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent VerifyMessageApiProtoBuf(Me, New VerifyMessageApiProtoBufEventArgs With {
+                                                                 .verifyMessageApiProto = verifyMessageApiProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_verifyCompletedProtoBuf(verifyCompletedProto As IBApi.protobuf.VerifyCompleted) Implements IBApi.EWrapper.verifyCompletedProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent VerifyCompletedProtoBuf(Me, New VerifyCompletedProtoBufEventArgs With {
+                                                                 .verifyCompletedProto = verifyCompletedProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_displayGroupListProtoBuf(displayGroupListProto As IBApi.protobuf.DisplayGroupList) Implements IBApi.EWrapper.displayGroupListProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent DisplayGroupListProtoBuf(Me, New DisplayGroupListProtoBufEventArgs With {
+                                                                 .displayGroupListProto = displayGroupListProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_displayGroupUpdatedProtoBuf(displayGroupUpdatedProto As IBApi.protobuf.DisplayGroupUpdated) Implements IBApi.EWrapper.displayGroupUpdatedProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent DisplayGroupUpdatedProtoBuf(Me, New DisplayGroupUpdatedProtoBufEventArgs With {
+                                                                 .displayGroupUpdatedProto = displayGroupUpdatedProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_marketDepthExchangesProtoBuf(marketDepthExchangesProto As IBApi.protobuf.MarketDepthExchanges) Implements IBApi.EWrapper.marketDepthExchangesProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent MarketDepthExchangesProtoBuf(Me, New MarketDepthExchangesProtoBufEventArgs With {
+                                                                 .marketDepthExchangesProto = marketDepthExchangesProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_configResponseProtoBuf(configResponseProto As IBApi.protobuf.ConfigResponse) Implements IBApi.EWrapper.configResponseProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent ConfigResponseProtoBuf(Me, New ConfigResponseProtoBufEventArgs With {
+                                                                 .configResponseProto = configResponseProto
+                                                                 })
+                         End Sub)
+    End Sub
+
+    Private Sub EWrapper_updateConfigResponseProtoBuf(updateConfigResponseProto As IBApi.protobuf.UpdateConfigResponse) Implements IBApi.EWrapper.updateConfigResponseProtoBuf
+        InvokeIfRequired(Sub()
+                             RaiseEvent UpdateConfigResponseProtoBuf(Me, New UpdateConfigResponseProtoBufEventArgs With {
+                                                                 .updateConfigResponseProto = updateConfigResponseProto
+                                                                 })
+                         End Sub)
+    End Sub
+    '! [protobuf]
+
 #End Region
 
 #Region "Event declarations"
@@ -914,7 +1579,7 @@ Friend Class ApiEventSource
     Event AccountDownloadEnd(sender As Object, e As AccountDownloadEndEventArgs)
     Event AccountSummary(sender As Object, e As AccountSummaryEventArgs)
     Event AccountSummaryEnd(sender As Object, e As AccountSummaryEndEventArgs)
-    Event CommissionReport(sender As Object, e As CommissionReportEventArgs)
+    Event CommissionAndFeesReport(sender As Object, e As CommissionAndFeesReportEventArgs)
     Event ContractDetails(sender As Object, e As ContractDetailsEventArgs)
     Event ContractDetailsEnd(sender As Object, e As ContractDetailsEndEventArgs)
     Event CurrentTime(sender As Object, e As CurrentTimeEventArgs)
@@ -982,9 +1647,89 @@ Friend Class ApiEventSource
     Event WshEventData(sender As Object, e As WshEventDataEventArgs)
     Event HistoricalSchedule(sender As Object, e As HistoricalScheduleEventArgs)
     Event UserInfo(sender As Object, e As UserInfoEventArgs)
-
-
-
+    Event CurrentTimeInMillis(sender As Object, e As CurrentTimeInMillisEventArgs)
+    Event OrderStatusProtoBuf(sender As Object, e As OrderStatusProtoBufEventArgs)
+    Event OpenOrderProtoBuf(sender As Object, e As OpenOrderProtoBufEventArgs)
+    Event OpenOrdersEndProtoBuf(sender As Object, e As OpenOrdersEndProtoBufEventArgs)
+    Event ErrorMessageProtoBuf(sender As Object, e As ErrorMessageProtoBufEventArgs)
+    Event ExecutionDetailsProtoBuf(sender As Object, e As ExecutionDetailsProtoBufEventArgs)
+    Event ExecutionDetailsEndProtoBuf(sender As Object, e As ExecutionDetailsEndProtoBufEventArgs)
+    Event CompletedOrderProtoBuf(sender As Object, e As CompletedOrderProtoBufEventArgs)
+    Event CompletedOrdersEndProtoBuf(sender As Object, e As CompletedOrdersEndProtoBufEventArgs)
+    Event OrderBoundProtoBuf(sender As Object, e As OrderBoundProtoBufEventArgs)
+    Event ContractDataProtoBuf(sender As Object, e As ContractDataProtoBufEventArgs)
+    Event BondContractDataProtoBuf(sender As Object, e As ContractDataProtoBufEventArgs)
+    Event ContractDataEndProtoBuf(sender As Object, e As ContractDataEndProtoBufEventArgs)
+    Event TickPriceProtoBuf(sender As Object, e As TickPriceProtoBufEventArgs)
+    Event TickSizeProtoBuf(sender As Object, e As TickSizeProtoBufEventArgs)
+    Event TickOptionComputationProtoBuf(sender As Object, e As TickOptionComputationProtoBufEventArgs)
+    Event TickGenericProtoBuf(sender As Object, e As TickGenericProtoBufEventArgs)
+    Event TickStringProtoBuf(sender As Object, e As TickStringProtoBufEventArgs)
+    Event TickSnapshotEndProtoBuf(sender As Object, e As TickSnapshotEndProtoBufEventArgs)
+    Event UpdateMarketDepthProtoBuf(sender As Object, e As UpdateMarketDepthProtoBufEventArgs)
+    Event UpdateMarketDepthL2ProtoBuf(sender As Object, e As UpdateMarketDepthL2ProtoBufEventArgs)
+    Event MarketDataTypeProtoBuf(sender As Object, e As MarketDataTypeProtoBufEventArgs)
+    Event TickReqParamsProtoBuf(sender As Object, e As TickReqParamsProtoBufEventArgs)
+    Event UpdateAccountValueProtoBuf(sender As Object, e As UpdateAccountValueProtoBufEventArgs)
+    Event UpdatePortfolioProtoBuf(sender As Object, e As UpdatePortfolioProtoBufEventArgs)
+    Event UpdateAccountTimeProtoBuf(sender As Object, e As UpdateAccountTimeProtoBufEventArgs)
+    Event AccountDataEndProtoBuf(sender As Object, e As AccountDataEndProtoBufEventArgs)
+    Event ManagedAccountsProtoBuf(sender As Object, e As ManagedAccountsProtoBufEventArgs)
+    Event PositionProtoBuf(sender As Object, e As PositionProtoBufEventArgs)
+    Event PositionEndProtoBuf(sender As Object, e As PositionEndProtoBufEventArgs)
+    Event AccountSummaryProtoBuf(sender As Object, e As AccountSummaryProtoBufEventArgs)
+    Event AccountSummaryEndProtoBuf(sender As Object, e As AccountSummaryEndProtoBufEventArgs)
+    Event PositionMultiProtoBuf(sender As Object, e As PositionMultiProtoBufEventArgs)
+    Event PositionMultiEndProtoBuf(sender As Object, e As PositionMultiEndProtoBufEventArgs)
+    Event AccountUpdateMultiProtoBuf(sender As Object, e As AccountUpdateMultiProtoBufEventArgs)
+    Event AccountUpdateMultiEndProtoBuf(sender As Object, e As AccountUpdateMultiEndProtoBufEventArgs)
+    Event HistoricalDataProtoBuf(sender As Object, e As HistoricalDataProtoBufEventArgs)
+    Event HistoricalDataUpdateProtoBuf(sender As Object, e As HistoricalDataUpdateProtoBufEventArgs)
+    Event HistoricalDataEndProtoBuf(sender As Object, e As HistoricalDataEndProtoBufEventArgs)
+    Event RealTimeBarTickProtoBuf(sender As Object, e As RealTimeBarTickProtoBufEventArgs)
+    Event HeadTimestampProtoBuf(sender As Object, e As HeadTimestampProtoBufEventArgs)
+    Event HistogramDataProtoBuf(sender As Object, e As HistogramDataProtoBufEventArgs)
+    Event HistoricalTicksProtoBuf(sender As Object, e As HistoricalTicksProtoBufEventArgs)
+    Event HistoricalTicksBidAskProtoBuf(sender As Object, e As HistoricalTicksBidAskProtoBufEventArgs)
+    Event HistoricalTicksLastProtoBuf(sender As Object, e As HistoricalTicksLastProtoBufEventArgs)
+    Event TickByTickDataProtoBuf(sender As Object, e As TickByTickDataProtoBufEventArgs)
+    Event UpdateNewsBulletinProtoBuf(sender As Object, e As UpdateNewsBulletinProtoBufEventArgs)
+    Event NewsArticleProtoBuf(sender As Object, e As NewsArticleProtoBufEventArgs)
+    Event NewsProvidersProtoBuf(sender As Object, e As NewsProvidersProtoBufEventArgs)
+    Event HistoricalNewsProtoBuf(sender As Object, e As HistoricalNewsProtoBufEventArgs)
+    Event HistoricalNewsEndProtoBuf(sender As Object, e As HistoricalNewsEndProtoBufEventArgs)
+    Event WshMetaDataProtoBuf(sender As Object, e As WshMetaDataProtoBufEventArgs)
+    Event WshEventDataProtoBuf(sender As Object, e As WshEventDataProtoBufEventArgs)
+    Event TickNewsProtoBuf(sender As Object, e As TickNewsProtoBufEventArgs)
+    Event ScannerParametersProtoBuf(sender As Object, e As ScannerParametersProtoBufEventArgs)
+    Event ScannerDataProtoBuf(sender As Object, e As ScannerDataProtoBufEventArgs)
+    Event FundamentalsDataProtoBuf(sender As Object, e As FundamentalsDataProtoBufEventArgs)
+    Event PnLProtoBuf(sender As Object, e As PnLProtoBufEventArgs)
+    Event PnLSingleProtoBuf(sender As Object, e As PnLSingleProtoBufEventArgs)
+    Event ReceiveFAProtoBuf(sender As Object, e As ReceiveFAProtoBufEventArgs)
+    Event ReplaceFAEndProtoBuf(sender As Object, e As ReplaceFAEndProtoBufEventArgs)
+    Event CommissionAndFeesReportProtoBuf(sender As Object, e As CommissionAndFeesReportProtoBufEventArgs)
+    Event HistoricalScheduleProtoBuf(sender As Object, e As HistoricalScheduleProtoBufEventArgs)
+    Event RerouteMarketDataRequestProtoBuf(sender As Object, e As RerouteMarketDataRequestProtoBufEventArgs)
+    Event RerouteMarketDepthRequestProtoBuf(sender As Object, e As RerouteMarketDepthRequestProtoBufEventArgs)
+    Event SecDefOptParameterProtoBuf(sender As Object, e As SecDefOptParameterProtoBufEventArgs)
+    Event SecDefOptParameterEndProtoBuf(sender As Object, e As SecDefOptParameterEndProtoBufEventArgs)
+    Event SoftDollarTiersProtoBuf(sender As Object, e As SoftDollarTiersProtoBufEventArgs)
+    Event FamilyCodesProtoBuf(sender As Object, e As FamilyCodesProtoBufEventArgs)
+    Event SymbolSamplesProtoBuf(sender As Object, e As SymbolSamplesProtoBufEventArgs)
+    Event SmartComponentsProtoBuf(sender As Object, e As SmartComponentsProtoBufEventArgs)
+    Event MarketRuleProtoBuf(sender As Object, e As MarketRuleProtoBufEventArgs)
+    Event UserInfoProtoBuf(sender As Object, e As UserInfoProtoBufEventArgs)
+    Event NextValidIdProtoBuf(sender As Object, e As NextValidIdProtoBufEventArgs)
+    Event CurrentTimeProtoBuf(sender As Object, e As CurrentTimeProtoBufEventArgs)
+    Event CurrentTimeInMillisProtoBuf(sender As Object, e As CurrentTimeInMillisProtoBufEventArgs)
+    Event VerifyMessageApiProtoBuf(sender As Object, e As VerifyMessageApiProtoBufEventArgs)
+    Event VerifyCompletedProtoBuf(sender As Object, e As VerifyCompletedProtoBufEventArgs)
+    Event DisplayGroupListProtoBuf(sender As Object, e As DisplayGroupListProtoBufEventArgs)
+    Event DisplayGroupUpdatedProtoBuf(sender As Object, e As DisplayGroupUpdatedProtoBufEventArgs)
+    Event MarketDepthExchangesProtoBuf(sender As Object, e As MarketDepthExchangesProtoBufEventArgs)
+    Event ConfigResponseProtoBuf(sender As Object, e As ConfigResponseProtoBufEventArgs)
+    Event UpdateConfigResponseProtoBuf(sender As Object, e As UpdateConfigResponseProtoBufEventArgs)
 #End Region
 
 End Class

@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -6,6 +6,8 @@
 #define TWS_API_SAMPLES_TESTCPPCLIENT_ORDERSAMPLES_H
 
 #include <vector>
+
+#include "PriceCondition.h"
 
 struct Order;
 struct OrderCancel;
@@ -58,7 +60,7 @@ public:
 	static Order AttachAdjustableToStopLimit(Order parent, double attachedOrderStopPrice, double triggerPrice, double adjustStopPrice, double adjustedStopLimitPrice);
 	static Order AttachAdjustableToTrail(Order parent, double attachedOrderStopPrice, double triggerPrice, double adjustStopPrice, double adjustedTrailAmount, int trailUnit);
 	static Order WhatIfLimitOrder(std::string action, Decimal quantity, double limitPrice);
-	static OrderCondition* Price_Condition(int conId, std::string exchange, double price, bool isMore, bool isConjunction);
+	static OrderCondition* Price_Condition(int conId, std::string exchange, double price, PriceCondition::Method triggerMethod, bool isMore, bool isConjunction);
 	static OrderCondition* Execution_Condition(std::string symbol, std::string secType, std::string exchange, bool isConjunction);
 	static OrderCondition* Margin_Condition(int percent, bool isMore, bool isConjunction);
 	static OrderCondition* Percent_Change_Condition(double pctChange, int conId, std::string exchange, bool isMore, bool isConjunction);
@@ -72,9 +74,11 @@ public:
 	static Order LimitOrderWithCustomerAccount(std::string action, Decimal quantity, double limitPrice, std::string customerAccount);
 	static OrderCancel OrderCancelEmpty();
 	static OrderCancel OrderCancelWithManualTime(std::string manualOrderCancelTime);
-	static Order Rfq();
-	static Order RfqEmpty();
-	static OrderCancel RfqCancel();
+	static Order LimitOrderWithIncludeOvernight(std::string action, Decimal quantity, double limitPrice);
+	static Order LimitOrderWithCmeTaggingFields(std::string action, Decimal quantity, double limitPrice, std::string extOperator, int manualOrderIndicator);
+	static OrderCancel OrderCancelWithCmeTaggingFields(std::string extOperator, int manualOrderIndicator);
+	static Order LimitOnCloseOrderWithImbalanceOnly(std::string action, Decimal quantity, double limitPrice);
+	static Order LimitOrderWithStopLossAndProfitTaker(std::string action, Decimal quantity, double limitPrice, int slOrderId, int ptOrderId);
 };
 
 #endif

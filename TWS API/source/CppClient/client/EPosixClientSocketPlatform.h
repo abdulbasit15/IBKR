@@ -28,9 +28,10 @@
 		return ( !WSAStartup( MAKEWORD(2, 2), &data));
 	}
 	inline bool SocketsDestroy() { return ( !WSACleanup()); }
-	inline int SocketClose(int sockfd) { return closesocket( sockfd); }
+	inline int SocketClose(SOCKET sockfd) { return closesocket(sockfd); }
+	inline bool SocketValid(SOCKET sockfd) { return sockfd != INVALID_SOCKET; }
 
-	inline bool SetSocketNonBlocking(int sockfd) {
+	inline bool SetSocketNonBlocking(SOCKET sockfd) {
 		unsigned long mode = 1;
 		return ( ioctlsocket( sockfd, FIONBIO, &mode) == 0);
 	}
@@ -46,10 +47,14 @@
 	#include <sys/fcntl.h>
 	#include <unistd.h>
 
+	typedef int SOCKET;
+#define INVALID_SOCKET  (SOCKET)(-1)
+
 	// helpers
 	inline bool SocketsInit() { return true; }
 	inline bool SocketsDestroy() { return true; }
-	inline int SocketClose(int sockfd) { return close( sockfd); }
+	inline int SocketClose(int sockfd) { return close(sockfd); }
+	inline bool SocketValid(int sockfd) { return sockfd >= 0; }
 
 	inline bool SetSocketNonBlocking(int sockfd) {
 		// get socket flags

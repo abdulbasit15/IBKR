@@ -1,5 +1,5 @@
 'To resolve 'Programmatic access to Visual Basic Project is not trusted' issue, please go to
-'File -> Options -> Trust Center -> Trust Center Setttings -> Macro Settings -> Trust Access to the VBA Project object model.
+'File -> Options -> Trust Center -> Trust Center Settings -> Macro Settings -> Trust Access to the VBA Project object model.
 'For more details please refer to https://stackoverflow.com/questions/25638344/programmatic-access-to-visual-basic-project-is-not-trusted
 option explicit
 
@@ -22,7 +22,7 @@ Sub Main
     If Wscript.Arguments.Count <> 1 Then
         Wscript.Echo "Usage: cscript decompile.vbs <spreadsheetname>" & vbCrLf & vbCrLf & _
 "This will create a folder with the name of spreadsheet (without extension)" & vbCrLf & "and put all vbs project files from the spreadsheet to the folder."  & vbCrLf & _
-"The excel application will be opened during the decompile process." & vbCrLf & "At the end of the successful script execution it trys to close the excel app."  & vbCrLf & _
+"The excel application will be opened during the decompile process." & vbCrLf & "At the end of the successful script execution it tries to close the excel app."  & vbCrLf & _
 "You should reply 'Don't save' to the dialog appears to close the spreadsheet with no changes made to it"
     Else
 

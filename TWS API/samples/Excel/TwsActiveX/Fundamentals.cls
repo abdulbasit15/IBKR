@@ -96,7 +96,7 @@ Private Sub FundamentalRatios_Click()
         .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
         .SecType = UCase(contractTable(id, Col_SECTYPE).value)
         .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-        .Strike = contractTable(id, Col_STRIKE).value
+        .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
         .Right = UCase(contractTable(id, Col_RIGHT).value)
         .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
         .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -164,7 +164,7 @@ Private Sub RequestFundamentals_Click()
         .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
         .SecType = UCase(contractTable(id, Col_SECTYPE).value)
         .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-        .Strike = contractTable(id, Col_STRIKE).value
+        .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
         .Right = UCase(contractTable(id, Col_RIGHT).value)
         .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
         .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -364,7 +364,7 @@ Private Function processNodeValue(sheet As Worksheet, node As IXMLDOMNode, recur
     processNodeValue = True
 End Function
 
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
 
     ' handle errors
     If errorCode = ERROR_DUPLICATE_TICKER_ID Then

@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using IBApi;
@@ -131,9 +131,9 @@ namespace Samples
             //financialAdvisorOperations(client);
 
             /********************/
-            /*** Miscelaneous ***/
+            /*** Miscellaneous ***/
             /********************/
-            //miscelaneous(client);
+            //miscellaneous(client);
 
             /********************/
             /*** Linking ***/
@@ -170,11 +170,6 @@ namespace Samples
             /***********************/
             //marketRuleOperations(client);
 
-            /************/
-            /*** RFQ  ***/
-            /************/
-            rfqOperations(client, nextValidId);
-
             //pnl(client);
 
             //pnlSingle(client);
@@ -205,6 +200,15 @@ namespace Samples
             /*** WSHE Calendar API samples ***/
             /***********************/
             //wshCalendarOperations(client);
+
+            /**************/
+            /*** Config ***/
+            /**************/
+            //configOperations(client);
+
+            //orderParentChildOperations(client, nextValidId);
+            newsOperationsProto(client);
+
 
             Thread.Sleep(3000);
             Console.WriteLine("Done");
@@ -281,11 +285,17 @@ namespace Samples
 
         private static void historicalTicks(EClientSocket client)
         {
-			//! [reqhistoricalticks]
+			////! [reqhistoricalticks]
             client.reqHistoricalTicks(18001, ContractSamples.USStockAtSmart(), "20170712 21:39:33 US/Eastern", null, 10, "TRADES", 1, true, null);
             client.reqHistoricalTicks(18002, ContractSamples.USStockAtSmart(), "20170712 21:39:33 US/Eastern", null, 10, "BID_ASK", 1, true, null);
             client.reqHistoricalTicks(18003, ContractSamples.USStockAtSmart(), "20170712 21:39:33 US/Eastern", null, 10, "MIDPOINT", 1, true, null);
-			//! [reqhistoricalticks]
+            //! [reqhistoricalticks]
+
+            Thread.Sleep(1000);
+
+            //! [cancelhistoricalticks]
+            client.cancelHistoricalTicks(18001);
+            //! [cancelhistoricalticks]
         }
 
         private static void pnl(EClientSocket client)
@@ -578,12 +588,20 @@ namespace Samples
             client.reqContractDetails(217, ContractSamples.Fund());
             client.reqContractDetails(218, ContractSamples.USStock());
             client.reqContractDetails(219, ContractSamples.USStockAtSmart());
+            client.reqContractDetails(220, ContractSamples.OptForecastx());
+            client.reqContractDetails(221, ContractSamples.OptForecastxZeroStrike());
+            client.reqContractDetails(222, ContractSamples.OptForecastxByConId());
             //! [reqcontractdetails]
 
             Thread.Sleep(2000);
             //! [reqmatchingsymbols]
             client.reqMatchingSymbols(211, "IBM");
             //! [reqmatchingsymbols]
+
+            //! [cancelcontractdata]
+            client.cancelContractData(209);
+            //! [cancelcontractdata]
+
         }
 
         private static void contractNewsFeed(EClientSocket client)
@@ -849,12 +867,32 @@ namespace Samples
             //! [cancelorder]
             /*** Cancel all orders for all accounts ***/
             //! [reqglobalcancel]
-            client.reqGlobalCancel();
+            client.reqGlobalCancel(OrderSamples.OrderCancelEmpty());
             //! [reqglobalcancel]
             /*** Request the day's executions ***/
             //! [reqexecutions]
-            client.reqExecutions(10001, new ExecutionFilter());
+            ExecutionFilter executionFilter1 = new ExecutionFilter();
+            executionFilter1.LastNDays = 7;
+            client.reqExecutions(10001, executionFilter1);
+            ExecutionFilter executionFilter2 = new ExecutionFilter();
+            executionFilter2.SpecificDates = new List<int>() { 20250306, 20250312 };
+            client.reqExecutions(10002, executionFilter2);
             //! [reqexecutions]
+
+            //! [reqexecutions_protobuf]
+            IBApi.protobuf.ExecutionFilter executionFilterProto1 = new IBApi.protobuf.ExecutionFilter();
+            executionFilterProto1.LastNDays = 7;
+            IBApi.protobuf.ExecutionRequest executionRequestProto1 = new IBApi.protobuf.ExecutionRequest();
+            executionRequestProto1.ReqId = 10003;
+            executionRequestProto1.ExecutionFilter = executionFilterProto1;
+            client.reqExecutionsProtoBuf(executionRequestProto1);
+            IBApi.protobuf.ExecutionFilter executionFilterProto2 = new IBApi.protobuf.ExecutionFilter();
+            executionFilterProto2.SpecificDates.AddRange(new List<int>() { 20250512, 20250513, 20250514 });
+            IBApi.protobuf.ExecutionRequest executionRequestProto2 = new IBApi.protobuf.ExecutionRequest();
+            executionRequestProto2.ReqId = 10004;
+            executionRequestProto2.ExecutionFilter = executionFilterProto2;
+            client.reqExecutionsProtoBuf(executionRequestProto2);
+            //! [reqexecutions_protobuf]
 
             /*** Requesting completed orders ***/
             //! [reqcompletedorders]
@@ -890,6 +928,33 @@ namespace Samples
             //! [order_submission_with_customer_account]
             client.placeOrder(nextOrderId++, ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithCustomerAccount("BUY", Util.StringToDecimal("100"), 111.11, "CustAcct"));
             //! [order_submission_with_customer_account]
+
+            //! [order_submission_with_include_overnight]
+            client.placeOrder(nextOrderId++, ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithIncludeOvernight("BUY", Util.StringToDecimal("100"), 111.11));
+            //! [order_submission_with_include_overnight]
+
+            //! [cme_tagging_fields]
+            client.placeOrder(nextOrderId++, ContractSamples.SimpleFuture(), OrderSamples.LimitOrderWithCmeTaggingFields("BUY", Util.StringToDecimal("1"), 5333, "ABCD", 1));
+            Thread.Sleep(5000);
+            client.cancelOrder(nextOrderId - 1, OrderSamples.OrderCancelWithCmeTaggingFields("BCDE", 0));
+            Thread.Sleep(2000);
+            client.placeOrder(nextOrderId++, ContractSamples.SimpleFuture(), OrderSamples.LimitOrderWithCmeTaggingFields("BUY", Util.StringToDecimal("1"), 5444, "CDEF", 0));
+            Thread.Sleep(5000);
+            client.reqGlobalCancel(OrderSamples.OrderCancelWithCmeTaggingFields("DEFG", 1));
+            //! [cme_tagging_fields]
+
+            //! [order_submission_with_imbalance_only]
+            client.placeOrder(nextOrderId++, ContractSamples.USStockAtSmart(), OrderSamples.LimitOnCloseOrderWithImbalanceOnly("BUY", Util.StringToDecimal("100"), 44.44));
+            //! [order_submission_with_imbalance_only]
+
+            //! [zero_strike_opt_order]
+            client.placeOrder(nextOrderId++, ContractSamples.OptForecastxZeroStrike(), OrderSamples.LimitOrder("BUY", Util.StringToDecimal("1"), 0.05));
+            //! [zero_strike_opt_order]
+
+            //! [limit_order_with_stop_loss_and_profit_taker]
+            client.placeOrder(nextOrderId++, ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithStopLossAndProfitTaker("BUY", Util.StringToDecimal("100"), 40, nextOrderId++, nextOrderId++));
+            //! [limit_order_with_stop_loss_and_profit_taker]
+
         }
 
         private static void newsOperations(EClientSocket client)
@@ -945,7 +1010,7 @@ namespace Samples
             //! [order_conditioning_activate]
             Order mkt = OrderSamples.MarketOrder("BUY", 100);
             //Order will become active if conditioning criteria is met
-            mkt.Conditions.Add(OrderSamples.PriceCondition(208813720, "SMART", 600, false, false));
+            mkt.Conditions.Add(OrderSamples.PriceCondition(208813720, "SMART", 600, TriggerMethod.BidAsk, true, false));
             mkt.Conditions.Add(OrderSamples.ExecutionCondition("EUR.USD", "CASH", "IDEALPRO", true));
             mkt.Conditions.Add(OrderSamples.MarginCondition(30, true, false));
             mkt.Conditions.Add(OrderSamples.PercentageChangeCondition(15.0, 208813720, "SMART", true, true));
@@ -959,7 +1024,7 @@ namespace Samples
             Order lmt = OrderSamples.LimitOrder("BUY", 100, 20);
             //The active order will be cancelled if conditioning criteria is met
             lmt.ConditionsCancelOrder = true;
-            lmt.Conditions.Add(OrderSamples.PriceCondition(208813720, "SMART", 600, false, false));
+            lmt.Conditions.Add(OrderSamples.PriceCondition(208813720, "SMART", 600, TriggerMethod.BidAsk, false, false));
             client.placeOrder(nextOrderId++, ContractSamples.EuropeanStock(), lmt);
             //! [order_conditioning_cancel]
         }
@@ -1107,12 +1172,17 @@ namespace Samples
             //! [reqSoftDollarTiers]
         }
 
-        private static void miscelaneous(EClientSocket client)
+        private static void miscellaneous(EClientSocket client)
         {
             /*** Request TWS' current time ***/
             client.reqCurrentTime();
             /*** Setting TWS logging level  ***/
             client.setServerLogLevel(1);
+
+            Thread.Sleep(3000);
+
+            /*** Request TWS' current time in millis ***/
+            client.reqCurrentTimeInMillis();
         }
 
         private static void linkingOperations(EClientSocket client)
@@ -1155,8 +1225,7 @@ namespace Samples
             client.reqContractDetails(18001, ContractSamples.ContFut());
 
             //! [reqhistoricaldatacontfut]
-            String queryTime = DateTime.Now.ToUniversalTime().ToString("yyyyMMdd-HH:mm:ss");
-            client.reqHistoricalData(18002, ContractSamples.ContFut(), queryTime, "1 Y", "1 month", "TRADES", 0, 1, false, null);
+            client.reqHistoricalData(18002, ContractSamples.ContFut(), "", "1 Y", "1 month", "TRADES", 0, 1, false, null);
             Thread.Sleep(10000);
             client.cancelHistoricalData(18002);
             //! [reqhistoricaldatacontfut]
@@ -1178,23 +1247,55 @@ namespace Samples
             //! [ibkratssubmit]
         }
 
-        private static void rfqOperations(EClientSocket client, int nextOrderId)
+        private static void configOperations(EClientSocket client)
         {
-            //! [rfq_submission]
-            client.placeOrder(nextOrderId++, ContractSamples.BondWithCusip(), OrderSamples.RfqEmpty());
-            //! [rfq_submission]
+            //! [request_config]
+            IBApi.protobuf.ConfigRequest configRequestProto = new IBApi.protobuf.ConfigRequest();
+            configRequestProto.ReqId = 20001;
+            client.reqConfigProtoBuf(configRequestProto);
+            //! [request_config]
 
-            Thread.Sleep(5000);
+            //! [update_api_settings_config_request]
+            client.updateConfigProtoBuf(ConfigSamples.UpdateConfigApiSettings(20002));
+            //! [update_api_settings_config_request]
 
-            //! [rfq_cancel]
-            client.cancelOrder(nextOrderId - 1, OrderSamples.RfqCancel());
-            //! [rfq_cancel]
+            //! [update_orders_config_request]
+            client.updateConfigProtoBuf(ConfigSamples.UpdateOrdersConfig(20003));
+            //! [update_orders_config_request]
 
-            Thread.Sleep(5000);
+            //! [update_message_config_request]
+            client.updateConfigProtoBuf(ConfigSamples.UpdateMessageConfigConfirmMandatoryCapPriceAccepted(20004));
+            //! [update_message_config_request]
 
-            //! [rfq_submission]
-            client.placeOrder(nextOrderId++, ContractSamples.BondWithCusip(), OrderSamples.Rfq());
-            //! [rfq_submission]
+            //! [update_config_request_order_id_reset]
+            client.updateConfigProtoBuf(ConfigSamples.UpdateConfigOrderIdReset(20005));
+            //! [update_config_request_order_id_reset]
+
+            Thread.Sleep(1000);
         }
-    }
+        
+        private static void orderParentChildOperations(EClientSocket client, int nextOrderId)
+        {
+            //! [beta_hedge_order]
+            int parentOrderId = nextOrderId++;
+            int childOrderId = nextOrderId++;
+            client.placeOrderProtoBuf(OrderSamplesProto.createPlaceOrderRequest(parentOrderId, ContractSamplesProto.IBMStockAtSmart(), OrderSamplesProto.LimitOrder("BUY", 100, 40, false)));
+            Thread.Sleep(1000);
+            client.placeOrderProtoBuf(OrderSamplesProto.createPlaceOrderRequest(childOrderId, ContractSamplesProto.MSFTStockAtSmart(), OrderSamplesProto.BetaHedgeOrder(parentOrderId, "SELL", "0.05", 75, true)));
+            //! [beta_hedge_order]
+        }
+
+        private static void newsOperationsProto(EClientSocket client)
+        {
+            //! [request_historical_news_with_end_time]
+            client.reqHistoricalNewsProtoBuf(NewsSamplesProto.HistoricalNewsRequestWithEndTime(10001));
+            //! [request_historical_news_with_end_time]
+
+            Thread.Sleep(1000);
+
+            //! [request_historical_news_with_start_time]
+            client.reqHistoricalNewsProtoBuf(NewsSamplesProto.HistoricalNewsRequestWithStartTime(10002));
+            //! [request_historical_news_with_start_time]
+        }
+}
 }

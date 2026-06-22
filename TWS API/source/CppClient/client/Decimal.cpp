@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #include "StdAfx.h"
@@ -36,7 +36,9 @@ Decimal DecimalFunctions::doubleToDecimal(double d) {
 
 Decimal DecimalFunctions::stringToDecimal(std::string str) {
     unsigned int flags;
-    if (str.compare(std::string{ "2147483647" }) == 0 || str.compare(std::string{ "9223372036854775807" }) == 0 || str.compare(std::string{ "1.7976931348623157E308" }) == 0) {
+
+    if (str.compare(std::string{ "2147483647" }) == 0 || str.compare(std::string{ "9223372036854775807" }) == 0 || str.compare(std::string{ "1.7976931348623157E308" }) == 0 ||
+        str.compare(std::string{ "-9223372036854775808" }) == 0) {
         str.clear();
     }
     return __bid64_from_string(const_cast<char*>(str.c_str()), 0, &flags);

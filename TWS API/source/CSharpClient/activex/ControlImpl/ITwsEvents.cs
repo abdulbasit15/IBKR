@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -22,25 +22,25 @@ namespace TWSLib
         [DispId(3)]
         void connectionClosed();
         [DispId(4)]
-        void openOrder1(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol);
+        void openOrder1(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol);
         [DispId(5)]
         void openOrder2(int id, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId);
         [DispId(6)]
         void updateAccountTime(string timeStamp);
         [DispId(7)]
-        void updateAccountValue(string key, string value, string curency, string accountName);
+        void updateAccountValue(string key, string value, string currency, string accountName);
         [DispId(8)]
         void nextValidId(int id);
         [DispId(10)]
         void permId(int id, int permId);
         [DispId(12)]
-        void updatePortfolio(string symbol, string secType, string lastTradeDate, double strike, string right, string curency, string localSymbol, double position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, string accountName);
+        void updatePortfolio(string symbol, string secType, string lastTradeDate, double strike, string right, string currency, string localSymbol, double position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, string accountName);
         [DispId(13)]
         void orderStatus(int id, string status, object filled, object remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice);
         [DispId(14)]
-        void contractDetails(string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string marketName, string tradingClass, int conId, double minTick, int priceMagnifier, string multiplier, string orderTypes, string validExchanges);
+        void contractDetails(string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string marketName, string tradingClass, int conId, double minTick, int priceMagnifier, string multiplier, string orderTypes, string validExchanges);
         [DispId(15)]
-        void execDetails(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string cExchange, string curency, string localSymbol, string execId, string time, string acctNumber, string eExchange, string side, double shares, double price, int permId, int clientId, int isLiquidation, string lastLiquidity);
+        void execDetails(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string cExchange, string currency, string localSymbol, string execId, string time, string acctNumber, string eExchange, string side, double shares, double price, int permId, int clientId, int isLiquidation, string lastLiquidity);
         [DispId(16)]
         void updateMktDepth(int id, int position, int operation, int side, double price, object size);
         [DispId(17)]
@@ -50,19 +50,19 @@ namespace TWSLib
         [DispId(19)]
         void managedAccounts(string accountsList);
         [DispId(20)]
-        void openOrder3(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate);
+        void openOrder3(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate);
         [DispId(21)]
         void receiveFA(int faDataType, string cxml);
         [DispId(22)]
         void historicalData(int reqId, string date, double open, double high, double low, double close, object volume, int barCount, object WAP, int hasGaps);
         [DispId(23)]
-        void openOrder4(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate, int ocaType, string rule80A, string settlingFirm, int allOrNone, int minQty, double percentOffset, int eTradeOnly, int firmQuoteOnly, double nbboPriceCap, int auctionStrategy, double startingPrice, double stockRefPrice, double delta, double stockRangeLower, double stockRangeUpper, int blockOrder, int sweepToFill, int ignoreRth, int hidden, double discretionaryAmt, int displaySize, int parentId, int triggerMethod, int shortSaleSlot, string designatedLocation, double volatility, int volatilityType, string deltaNeutralOrderType, double deltaNeutralAuxPrice, int continuousUpdate, int referencePriceType, double trailStopPrice, double basisPoints, int basisPointsType, string legsStr, int scaleInitLevelSize, int scaleSubsLevelSize, double scalePriceIncrement);
+        void openOrder4(int id, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string action, double quantity, string orderType, double lmtPrice, double auxPrice, string tif, string ocaGroup, string account, string openClose, int origin, string orderRef, int clientId, int permId, string sharesAllocation, string faGroup, string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodAfterTime, string goodTillDate, int ocaType, string rule80A, string settlingFirm, int allOrNone, int minQty, double percentOffset, int eTradeOnly, int firmQuoteOnly, double nbboPriceCap, int auctionStrategy, double startingPrice, double stockRefPrice, double delta, double stockRangeLower, double stockRangeUpper, int blockOrder, int sweepToFill, int ignoreRth, int hidden, double discretionaryAmt, int displaySize, int parentId, int triggerMethod, int shortSaleSlot, string designatedLocation, double volatility, int volatilityType, string deltaNeutralOrderType, double deltaNeutralAuxPrice, int continuousUpdate, int referencePriceType, double trailStopPrice, double basisPoints, int basisPointsType, string legsStr, int scaleInitLevelSize, int scaleSubsLevelSize, double scalePriceIncrement);
         [DispId(24)]
-        void bondContractDetails(string symbol, string secType, string cusip, double coupon, string maturity, string issueDate, string ratings, string bondType, string couponType, int convertible, int callable, int putable, string descAppend, string exchange, string curency, string marketName, string tradingClass, int conId, double minTick, string orderTypes, string validExchanges, string nextOptionDate, string nextOptionType, int nextOptionPartial, string notes);
+        void bondContractDetails(string symbol, string secType, string cusip, double coupon, string maturity, string issueDate, string ratings, string bondType, string couponType, int convertible, int callable, int putable, string descAppend, string exchange, string currency, string marketName, string tradingClass, int conId, double minTick, string orderTypes, string validExchanges, string nextOptionDate, string nextOptionType, int nextOptionPartial, string notes);
         [DispId(25)]
         void scannerParameters(string xml);
         [DispId(26)]
-        void scannerData(int reqId, int rank, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string curency, string localSymbol, string marketName, string tradingClass, string distance, string benchmark, string projection, string legsStr);
+        void scannerData(int reqId, int rank, string symbol, string secType, string lastTradeDate, double strike, string right, string exchange, string currency, string localSymbol, string marketName, string tradingClass, string distance, string benchmark, string projection, string legsStr);
         [DispId(27)]
         void tickOptionComputation(int id, int tickType, int tickAttrib, double impliedVol, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice);
         [DispId(28)]
@@ -108,13 +108,13 @@ namespace TWSLib
         [DispId(104)]
         void scannerDataEx(int reqId, int rank, IContractDetails contractDetails, string distance, string benchmark, string projection, string legsStr);
         [DispId(105)]
-        void commissionReport(ICommissionReport commissionReport);
+        void commissionAndFeesReport(ICommissionAndFeesReport commissionAndFeesReport);
         [DispId(106)]
         void position(string account, IContract contract, object position, double avgCost);
         [DispId(107)]
         void positionEnd();
         [DispId(108)]
-        void accountSummary(int reqId, string account, string tag, string value, string curency);
+        void accountSummary(int reqId, string account, string tag, string value, string currency);
         [DispId(109)]
         void accountSummaryEnd(int reqId);
         [DispId(110)]
@@ -196,7 +196,7 @@ namespace TWSLib
         [DispId(148)]
         void tickByTickMidPoint(int reqId, string time, double midPoint);
         [DispId(149)]
-        void orderBound(string orderId, int apiClientId, int apiOrderId);
+        void orderBound(string permId, int clientId, int orderId);
         [DispId(150)]
         void histogramDataEnd(int reqId);
         [DispId(151)]
@@ -215,5 +215,13 @@ namespace TWSLib
         void errMsg(int id, int errorCode, string errorMsg, string advancedOrderRejectJson);
         [DispId(158)]
         void userInfo(int reqId, string whiteBrandingId);
+        [DispId(159)]
+        void errMsg2(int id, String errorTime, int errorCode, string errorMsg, string advancedOrderRejectJson);
+        [DispId(160)]
+        void orderStatus2(int id, string status, object filled, object remaining, double avgFillPrice, string permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice);
+        [DispId(161)]
+        void currentTimeInMillis(string timeInMillis);
+        [DispId(162)]
+        void tickReqParamsEx(ITickReqParams tickReqParams);
     }
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package samples.testbed.contracts;
@@ -166,6 +166,41 @@ public class ContractSamples {
 		//! [stkcontract]
 		return contract;
 	}
+
+	public static Contract OptForecastx() {
+		//! [optforecastxcontract]
+		Contract contract = new Contract();
+		contract.symbol("CPIY");
+		contract.secType("OPT");
+		contract.lastTradeDateOrContractMonth("202612");
+		contract.currency("USD");
+		contract.exchange("FORECASTX");
+		//! [optforecastxcontract]
+		return contract;
+	}
+
+	public static Contract OptForecastxZeroStrike() {
+		//! [optforecastxcontract]
+		Contract contract = new Contract();
+		contract.symbol("CPIY");
+		contract.secType("OPT");
+		contract.lastTradeDateOrContractMonth("202612");
+		contract.currency("USD");
+		contract.strike(0);
+		contract.right("C");
+		contract.exchange("FORECASTX");
+		//! [optforecastxcontract]
+		return contract;
+	}
+
+	public static Contract OptForecastxByConId() {
+		//! [optforecastxbyconid]
+		Contract contract = new Contract();
+		contract.conid(789013783);
+		contract.exchange("FORECASTX");
+		//! [optforecastxbyconid]
+		return contract;
+	}
 	
 	public static Contract USStockAtSmart() {
 		Contract contract = new Contract();
@@ -241,6 +276,21 @@ public class ContractSamples {
 		return contract;
 	}
 	
+	public static Contract optionSample() {
+		//! [optcontract_localsymbol]
+		Contract contract = new Contract();
+		contract.conid(785790272);
+		contract.symbol("BMW");        // BMW AG
+		contract.secType("OPT");       // Option
+		contract.exchange("EUREX");      // Deutsche Terminbörse (Eurex)
+		contract.currency("EUR");      // Euro
+		contract.lastTradeDateOrContractMonth("202507");  // July 2025
+		contract.strike(83);           // 83 EUR strike price
+		contract.right("P");           // Put option
+		contract.multiplier("100");    // Standard multiplier for German options
+		return contract;
+	}
+	
 	public static Contract DutchWarrant() {
 		//! [ioptcontract]
 		Contract contract = new Contract();
@@ -255,11 +305,11 @@ public class ContractSamples {
 	public static Contract SimpleFuture() {
 		//! [futcontract]
 		Contract contract = new Contract();
-		contract.symbol("GBL");
+		contract.symbol("ES");
 		contract.secType("FUT");
-		contract.currency("EUR");
-		contract.exchange("EUREX");
-		contract.lastTradeDateOrContractMonth("202303");
+		contract.currency("USD");
+		contract.exchange("CME");
+		contract.lastTradeDateOrContractMonth("202503");
 		//! [futcontract]
 		return contract;
 	}

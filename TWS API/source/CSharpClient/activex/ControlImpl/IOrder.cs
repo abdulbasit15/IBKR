@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -327,7 +327,7 @@ namespace TWSLib
         bool imbalanceOnly { get; set; }
 
         [DispId(182)]
-        bool routeMarketableToBbo { get; set; }
+        int routeMarketableToBbo { get; set; }
 
         [DispId(183)]
         int parentPermId { get; set; }
@@ -372,10 +372,52 @@ namespace TWSLib
         string bondAccruedInterest { get; set; }
 
         [DispId(197)]
-        string externalUserId { get; set; }
+        bool includeOvernight { get; set; }
 
         [DispId(198)]
         int manualOrderIndicator { get; set; }
+
+        [DispId(199)]
+        string permIdStr { get; set; }
+
+        [DispId(200)]
+        string parentPermIdStr { get; set; }
+
+        [DispId(201)]
+        string submitter { get; set; }
+
+        [DispId(202)]
+        bool postOnly { get; set; }
+
+        [DispId(203)]
+        bool allowPreOpen { get; set; }
+
+        [DispId(204)]
+        bool ignoreOpenAuction { get; set; }
+
+        [DispId(205)]
+        bool deactivate { get; set; }
+
+        [DispId(206)]
+        int seekPriceImprovement { get; set; }
+
+        [DispId(207)]
+        int whatIfType { get; set; }
+
+        [DispId(208)]
+        int slOrderId { get; set; }
+
+        [DispId(209)]
+        string slOrderType { get; set; }
+
+        [DispId(210)]
+        int ptOrderId { get; set; }
+
+        [DispId(211)]
+        string ptOrderType { get; set; }
+
+        [DispId(212)]
+        int hedgeMaxSize { get; set; }
 
     }
 }

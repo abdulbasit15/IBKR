@@ -24,7 +24,7 @@ Const STR_ID = "id"
 
 ' cells
 Const CELL_SERVER_NAME = "B5" ' cell with server name
-Const CELL_MARKET_RULE_ID = "W5" ' cell with market rule id
+Const CELL_MARKET_RULE_ID = "X5" ' cell with market rule id
 Const CELL_MARKET_RULE_CONTROL = "V9" ' cell with market rule control
 Const CELL_MARKET_RULE_ERROR = "W9" ' cell with market rule error
 
@@ -71,6 +71,7 @@ Private Function getHeaderColumns() As Variant()
                             "Multiplier", "OrderTypes", "ValidExchanges", "PriceMagnifier", "UnderConId", "LongName", "PrimExchange", "ContractMonth", _
                             "Industry", "Category", "Subcategory", "TimeZoneId", "TradingHours", "LiquidHours", "EvRule", "EvMultiplier", "SecIdList", "AggGroup", _
                             "UnderSymbol", "UnderSecType", "MarketRuleIds", "RealExpirationDate", "StockType", "MinSize", "SizeIncrement", "SuggestedSizeIncrement", _
+                            "MinAlgoSize", "LastPricePrecision", "LastSizePrecision", "EventContract1", "EventContractDescription1", "EventContractDescription2", _
                             "FundName", "FundFamily", "FundType", "FundFrontLoad", "FundBackLoad", "FundBackLoadTimeInterval", "FundManagementFee", _
                             "FundClosed", "FundClosedForNewInvestors", "FundClosedForNewMoney", "FundNotifyAmount", "FundMinimumInitialPurchase", "FundSubsequentMinimumPurchase", _
                             "FundBlueSkyStates", "FundBlueSkyTerritories", "FundDistributionPolicyIndicator", "FundAssetType", "IneligibilityReasons")
@@ -79,7 +80,8 @@ End Function
 Private Function getHeaderColumnsFixedIncome() As Variant()
     getHeaderColumnsFixedIncome = Array("Symbol", "SecType", "Cusip", "Coupon", "Maturity", "LastTradeTime", "TimeZoneId", "IssueDate", "Ratings", "BondType", "CouponType", "Convertible", _
                             "Callable", "Putable", "DescAppend", "Exchange", "Currency", "MarketName", "TradingClass", "ConId", "MinTick", "OrderTypes", _
-                            "ValidExchanges", "NextOptionDate", "NextOptionType", "NextOptionPartial", "Notes", "LongName", "EvRule", "EvMultiplier", "SecIdList", "AggGroup", _
+                            "ValidExchanges", "NextOptionDate", "NextOptionType", "NextOptionPartial", "Notes", "LongName", "TimeZoneId", "TradingHours", "LiquidHours", _
+                            "EvRule", "EvMultiplier", "SecIdList", "AggGroup", _
                             "MarketRuleIds", "MinSize", "SizeIncrement", "SuggestedSizeIncrement")
                             
 End Function
@@ -142,7 +144,7 @@ Sub requestContractDetails()
         End If
 
         ' send request
-        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQ_CONTRACT_DETAILS, id, ActiveCell, startOfContractColumns, getContractColumns(), 0, idColumnIndex, 0, 0, 0, 0
+        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQ_CONTRACT_DETAILS, id, ActiveCell, startOfContractColumns, getContractColumns(), 0, idColumnIndex
     
         ' fill error column with formula
         .Cells(ActiveCell.row, errorColumnIndex).Formula = util.composeLink(server, STR_CONTRACT_DETAILS_TICK, id, util.STR_ERROR)

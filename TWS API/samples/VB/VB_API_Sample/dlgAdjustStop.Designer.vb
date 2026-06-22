@@ -93,7 +93,7 @@ Partial Class dlgAdjustStop
         Me.label14.Name = "label14"
         Me.label14.Size = New System.Drawing.Size(115, 13)
         Me.label14.TabIndex = 22
-        Me.label14.Text = "Adusted stop limit price"
+        Me.label14.Text = "Adjusted stop limit price"
         '
         'tbAdjustedStopPrice
         '

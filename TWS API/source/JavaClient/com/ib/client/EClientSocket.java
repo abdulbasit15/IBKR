@@ -10,9 +10,7 @@ import java.net.Socket;
 
 public class EClientSocket extends EClient implements EClientMsgSink  {
 
-	protected int m_redirectCount = 0;
 	protected int m_defaultPort;
-    private boolean m_allowRedirect;
     protected DataInputStream m_dis;
 	private boolean m_asyncEConnect = false;
 	private boolean m_connected = false;
@@ -75,7 +73,6 @@ public class EClientSocket extends EClient implements EClientMsgSink  {
 
 	public synchronized void eConnect(Socket socket, int clientId) throws IOException {
 	    m_clientId = clientId;
-	    m_redirectCount = 0;
 	    eConnect(socket);
 	}
 
@@ -97,53 +94,18 @@ public class EClientSocket extends EClient implements EClientMsgSink  {
 	
 	    m_clientId = clientId;
 	    m_extraAuth = extraAuth;
-	    m_redirectCount = 0;
-	
+
 	    if(m_host == null){
 	        return;
 	    }
-	    try{
-	        Socket socket = new Socket( m_host, port);
-	        eConnect(socket);
-	    }
-	    catch( Exception e) {
-	    	eDisconnect();
-	        connectionError();
-	    }
-	}
 
-	public boolean allowRedirect() {
-		return m_allowRedirect;
-	}
-
-	public void allowRedirect(boolean val) {
-		m_allowRedirect = val;
-	}
-
-	@Override
-	public synchronized void redirect(String newAddress) {
-	    if( m_useV100Plus ) {
-	    	if (!m_allowRedirect) {
-	    		m_eWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.CONNECT_FAIL.code(), EClientErrors.CONNECT_FAIL.msg(), null);
-	    		return;
-	    	}
-	    	
-	        ++m_redirectCount;
-	        
-	        if ( m_redirectCount > REDIRECT_COUNT_MAX ) {
-	            eDisconnect();
-	            m_eWrapper.error( "Redirect count exceeded" );
-	            return;
-	        }
-	                    
-	        eDisconnect( false );
-	        
-	      	try {
-				performRedirect( newAddress, m_defaultPort );
-			} catch (IOException e) {
-				m_eWrapper.error(e);
-			}
-	    }
+		try {
+			Socket socket = new Socket(m_host, port);
+			eConnect(socket);
+		} catch (Exception e) {
+			eDisconnect();
+			connectionError();
+		}
 	}
 
 	@Override
@@ -153,13 +115,13 @@ public class EClientSocket extends EClient implements EClientMsgSink  {
 		
 		if( m_useV100Plus && (m_serverVersion < MIN_VERSION || m_serverVersion > MAX_VERSION) ) {
 			eDisconnect();
-			m_eWrapper.error(EClientErrors.NO_VALID_ID, EClientErrors.UNSUPPORTED_VERSION.code(), EClientErrors.UNSUPPORTED_VERSION.msg(), null);
+			m_eWrapper.error(EClientErrors.NO_VALID_ID, Util.currentTimeMillis(), EClientErrors.UNSUPPORTED_VERSION.code(), EClientErrors.UNSUPPORTED_VERSION.msg(), null);
 			return;
 		}
 		
 	    if( m_serverVersion < MIN_SERVER_VER_SUPPORTED) {
 	    	eDisconnect();
-	        m_eWrapper.error( EClientErrors.NO_VALID_ID, EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg(), null);
+	        m_eWrapper.error( EClientErrors.NO_VALID_ID, Util.currentTimeMillis(), EClientErrors.UPDATE_TWS.code(), EClientErrors.UPDATE_TWS.msg(), null);
 	        return;
 	    }
 
@@ -179,23 +141,6 @@ public class EClientSocket extends EClient implements EClientMsgSink  {
 	    	startAPI();
 	}
 
-	protected synchronized void performRedirect( String address, int defaultPort ) throws IOException {
-	    System.out.println("Server Redirect: " + address);
-	    
-	    // Get host:port from address string and reconnect (note: port is optional)
-	    String[] array = address.split(":");
-	    m_host = array[0]; // reset connected host
-	    int newPort;
-	    try {
-	        newPort = ( array.length > 1 ) ? Integer.parseInt(array[1]) : defaultPort;
-	    }
-	    catch ( NumberFormatException e ) {
-	        System.out.println( "Warning: redirect port is invalid, using default port");
-	        newPort = defaultPort;
-	    }
-	    eConnect( new Socket( m_host, newPort ) );
-	}
-
 	@Override
     public synchronized void eDisconnect() {
 	    eDisconnect( true );
@@ -213,7 +158,6 @@ public class EClientSocket extends EClient implements EClientMsgSink  {
 	        m_clientId = -1;
 	        m_serverVersion = 0;
 	        m_TwsTime = "";
-	        m_redirectCount = 0;
 	    }
 	
 	    FilterInputStream dis = m_dis;
@@ -237,10 +181,16 @@ public class EClientSocket extends EClient implements EClientMsgSink  {
 	}
 
 	public int read(byte[] buf, int off, int len) throws IOException {
+        if (m_dis == null) {
+            throw new EClientException(EClientErrors.FAIL_READ_MESSAGE, "");
+        }
 		return m_dis.read(buf, off, len);
 	}
 
 	public int readInt() throws IOException {
+        if (m_dis == null) {
+            throw new EClientException(EClientErrors.FAIL_READ_MESSAGE, "");
+        }
 		return m_dis.readInt();
 	}
 

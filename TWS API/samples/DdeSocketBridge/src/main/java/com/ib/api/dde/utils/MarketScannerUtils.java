@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.utils;
@@ -19,7 +19,7 @@ public class MarketScannerUtils {
         item.add(Utils.toString(scannerData.contractDetails().contract().symbol()));
         item.add(Utils.toString(scannerData.contractDetails().contract().getSecType()));
         item.add(Utils.toString(scannerData.contractDetails().contract().lastTradeDateOrContractMonth()));
-        item.add(Utils.toString(scannerData.contractDetails().contract().strike()));
+        item.add(Utils.toStringMax(scannerData.contractDetails().contract().strike()));
         item.add(Utils.toString(scannerData.contractDetails().contract().getRight()));
         item.add(Utils.toString(scannerData.contractDetails().contract().exchange()));
         item.add(Utils.toString(scannerData.contractDetails().contract().currency()));

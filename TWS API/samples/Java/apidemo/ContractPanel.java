@@ -40,6 +40,7 @@ public class ContractPanel extends JPanel {
 		if (c.secType() == SecType.None) {
 			m_symbol.setText( "SPY");
 			m_secType.setSelectedItem( SecType.STK);
+			m_strike.setText(Double.MAX_VALUE);
 			m_exchange.setText( "SMART");
 			m_compExch.setText( "ARCA");
 			m_currency.setText( "USD");

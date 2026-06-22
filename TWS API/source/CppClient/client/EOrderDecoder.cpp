@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #include "StdAfx.h"
@@ -67,7 +67,7 @@ bool EOrderDecoder::decodeOrderType(const char*& ptr, const char* endPtr) {
 }
 
 bool EOrderDecoder::decodeLmtPrice(const char*& ptr, const char* endPtr) {
-    if (m_version < 29) { 
+    if (m_version < 29) {
         DECODE_FIELD( m_order->lmtPrice);
     } else {
         DECODE_FIELD_MAX( m_order->lmtPrice);
@@ -77,7 +77,7 @@ bool EOrderDecoder::decodeLmtPrice(const char*& ptr, const char* endPtr) {
 }
 
 bool EOrderDecoder::decodeAuxPrice(const char*& ptr, const char* endPtr) {
-    if (m_version < 30) { 
+    if (m_version < 30) {
         DECODE_FIELD( m_order->auxPrice);
     } else {
         DECODE_FIELD_MAX( m_order->auxPrice);
@@ -486,15 +486,14 @@ bool EOrderDecoder::decodeNotHeld(const char*& ptr, const char* endPtr) {
 }
 
 bool EOrderDecoder::decodeDeltaNeutral(const char*& ptr, const char* endPtr) {
-    DeltaNeutralContract deltaNeutralContract;
     if( m_version >= 20) {
         bool deltaNeutralContractPresent = false;
         DECODE_FIELD(deltaNeutralContractPresent);
         if( deltaNeutralContractPresent){
-            DECODE_FIELD(deltaNeutralContract.conId);
-            DECODE_FIELD(deltaNeutralContract.delta);
-            DECODE_FIELD(deltaNeutralContract.price);
-            m_contract->deltaNeutralContract = &deltaNeutralContract;
+            m_contract->deltaNeutralContract.reset(new DeltaNeutralContract());
+            DECODE_FIELD(m_contract->deltaNeutralContract->conId);
+            DECODE_FIELD(m_contract->deltaNeutralContract->delta);
+            DECODE_FIELD(m_contract->deltaNeutralContract->price);
         }
     }
 
@@ -532,7 +531,7 @@ bool EOrderDecoder::decodeSolicited(const char*& ptr, const char* endPtr) {
     return true;
 }
 
-bool EOrderDecoder::decodeWhatIfInfoAndCommission(const char*& ptr, const char* endPtr) {
+bool EOrderDecoder::decodeWhatIfInfoAndCommissionAndFees(const char*& ptr, const char* endPtr) {
     DECODE_FIELD( m_order->whatIf);
 
     decodeOrderStatus(ptr, endPtr);
@@ -548,10 +547,43 @@ bool EOrderDecoder::decodeWhatIfInfoAndCommission(const char*& ptr, const char* 
     DECODE_FIELD( m_orderState->initMarginAfter);
     DECODE_FIELD( m_orderState->maintMarginAfter);
     DECODE_FIELD( m_orderState->equityWithLoanAfter);
-    DECODE_FIELD_MAX( m_orderState->commission);
-    DECODE_FIELD_MAX( m_orderState->minCommission);
-    DECODE_FIELD_MAX( m_orderState->maxCommission);
-    DECODE_FIELD( m_orderState->commissionCurrency);
+    DECODE_FIELD_MAX( m_orderState->commissionAndFees);
+    DECODE_FIELD_MAX( m_orderState->minCommissionAndFees);
+    DECODE_FIELD_MAX( m_orderState->maxCommissionAndFees);
+    DECODE_FIELD( m_orderState->commissionAndFeesCurrency);
+    if (m_serverVersion >= MIN_SERVER_VER_FULL_ORDER_PREVIEW_FIELDS) {
+        DECODE_FIELD(m_orderState->marginCurrency);
+        DECODE_FIELD_MAX(m_orderState->initMarginBeforeOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->maintMarginBeforeOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->equityWithLoanBeforeOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->initMarginChangeOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->maintMarginChangeOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->equityWithLoanChangeOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->initMarginAfterOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->maintMarginAfterOutsideRTH);
+        DECODE_FIELD_MAX(m_orderState->equityWithLoanAfterOutsideRTH);
+        DECODE_FIELD(m_orderState->suggestedSize);
+        DECODE_FIELD(m_orderState->rejectReason);
+
+        int accountsCount = 0;
+        DECODE_FIELD(accountsCount);
+        if (accountsCount > 0) {
+            OrderAllocationListSPtr orderAllocations(new OrderAllocationList);
+            orderAllocations->reserve(accountsCount);
+            for (int i = 0; i < accountsCount; ++i) {
+                OrderAllocationSPtr orderAllocation(new OrderAllocation());
+                DECODE_FIELD(orderAllocation->account);
+                DECODE_FIELD(orderAllocation->position);
+                DECODE_FIELD(orderAllocation->positionDesired);
+                DECODE_FIELD(orderAllocation->positionAfter);
+                DECODE_FIELD(orderAllocation->desiredAllocQty);
+                DECODE_FIELD(orderAllocation->allowedAllocQty);
+                DECODE_FIELD(orderAllocation->isMonetary);
+                orderAllocations->push_back(orderAllocation);
+            }
+            m_orderState->orderAllocations = orderAllocations;
+        }
+    }
     DECODE_FIELD( m_orderState->warningText);
 
     return true;
@@ -719,14 +751,21 @@ bool EOrderDecoder::decodeShareholder(const char*& ptr, const char* endPtr) {
 }
 
 bool EOrderDecoder::decodeImbalanceOnly(const char*& ptr, const char* endPtr) {
-    DECODE_FIELD( m_order->imbalanceOnly);
+    return decodeImbalanceOnly(ptr, endPtr, MIN_CLIENT_VER);
+}
+
+bool EOrderDecoder::decodeImbalanceOnly(const char*& ptr, const char* endPtr, int minVersionImbalanceOnly) {
+    if (m_version >= minVersionImbalanceOnly) {
+        DECODE_FIELD(m_order->imbalanceOnly);
+    }
 
     return true;
 }
 
 bool EOrderDecoder::decodeRouteMarketableToBbo(const char*& ptr, const char* endPtr) {
-    DECODE_FIELD( m_order->routeMarketableToBbo);
-
+    bool routeMarketableToBbo;
+    DECODE_FIELD(routeMarketableToBbo);
+    m_order->routeMarketableToBbo = routeMarketableToBbo ? ThreeStateBoolean::STATE_YES : ThreeStateBoolean::STATE_NO;
     return true;
 }
 
@@ -805,6 +844,31 @@ bool EOrderDecoder::decodeProfessionalCustomer(const char*& ptr, const char* end
 bool EOrderDecoder::decodeBondAccruedInterest(const char*& ptr, const char* endPtr) {
     if (m_serverVersion >= MIN_SERVER_VER_BOND_ACCRUED_INTEREST) {
         DECODE_FIELD(m_order->bondAccruedInterest);
+    }
+
+    return true;
+}
+
+bool EOrderDecoder::decodeIncludeOvernight(const char*& ptr, const char* endPtr) {
+    if (m_serverVersion >= MIN_SERVER_VER_INCLUDE_OVERNIGHT) {
+        DECODE_FIELD(m_order->includeOvernight);
+    }
+
+    return true;
+}
+
+bool EOrderDecoder::decodeCMETaggingFields(const char*& ptr, const char* endPtr) {
+    if (m_serverVersion >= MIN_SERVER_VER_CME_TAGGING_FIELDS_IN_OPEN_ORDER) {
+        DECODE_FIELD(m_order->extOperator);
+        DECODE_FIELD(m_order->manualOrderIndicator);
+    }
+
+    return true;
+}
+
+bool EOrderDecoder::decodeSubmitter(const char*& ptr, const char* endPtr) {
+    if (m_serverVersion >= MIN_SERVER_VER_SUBMITTER) {
+        DECODE_FIELD(m_order->submitter);
     }
 
     return true;

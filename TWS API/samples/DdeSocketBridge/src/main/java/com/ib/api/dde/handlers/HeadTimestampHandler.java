@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -40,6 +40,9 @@ public class HeadTimestampHandler extends BaseHandler {
     /** Method sends head timestamp request to TWS */
     public byte[] handleHeadTimestampRequest(String requestStr, byte[] data) {
         HeadTimestampRequest request = m_requestParser.parseHeadTimestampRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending head timestamp request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()));
         BaseStringDataMap dataMap = new BaseStringDataMap(request);
         m_headTimestampDataRequests.put(request.requestId(), dataMap);

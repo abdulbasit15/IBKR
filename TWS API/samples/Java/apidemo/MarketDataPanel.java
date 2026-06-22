@@ -526,7 +526,9 @@ class MarketDataPanel extends JPanel {
 		}
 
 		void onCancelTop() {
-			m_topResultPanel.m_model.removeSelectedRows();
+			if (m_topResultPanel != null) {
+				m_topResultPanel.m_model.removeSelectedRows();
+			}
 		}
 	}
 	
@@ -1309,7 +1311,7 @@ class MarketDataPanel extends JPanel {
 	class PnLPanel extends JPanel {
 
 	    final UpperField m_account = new UpperField();
-	    final UpperField m_modelCode = new UpperField();
+	    final JTextField m_modelCode = new JTextField();
 	    final UpperField m_conId = new UpperField();
 
 	    PnLPanel() {

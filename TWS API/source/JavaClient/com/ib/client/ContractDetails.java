@@ -38,6 +38,9 @@ public class ContractDetails {
     private Decimal  m_minSize;
     private Decimal  m_sizeIncrement;
     private Decimal  m_suggestedSizeIncrement;
+    private Decimal  m_minAlgoSize;
+    private Decimal  m_lastPricePrecision;
+    private Decimal  m_lastSizePrecision;
 
     // BOND values
     private String   m_cusip;
@@ -75,6 +78,9 @@ public class ContractDetails {
     private FundDistributionPolicyIndicator m_fundDistributionPolicyIndicator;
     private FundAssetType m_fundAssetType;
     private List<IneligibilityReason> m_ineligibilityReasonList;
+    private String   m_eventContract1;
+    private String   m_eventContractDescription1;
+    private String   m_eventContractDescription2;
 
     // Get
     public int conid()                  { return m_contract.conid(); }
@@ -106,6 +112,9 @@ public class ContractDetails {
     public Decimal minSize()            { return m_minSize; }
     public Decimal sizeIncrement()      { return m_sizeIncrement; }
     public Decimal suggestedSizeIncrement() { return m_suggestedSizeIncrement; }
+    public Decimal minAlgoSize()        { return m_minAlgoSize; }
+    public Decimal lastPricePrecision() { return m_lastPricePrecision; }
+    public Decimal lastSizePrecision()  { return m_lastSizePrecision; }
     
     public String cusip()               { return m_cusip; }
     public String ratings()             { return m_ratings; }
@@ -141,6 +150,9 @@ public class ContractDetails {
     public FundDistributionPolicyIndicator fundDistributionPolicyIndicator() { return m_fundDistributionPolicyIndicator; }
     public FundAssetType fundAssetType()          { return m_fundAssetType; }
     public List<IneligibilityReason> ineligibilityReasonList() { return m_ineligibilityReasonList; }
+    public String eventContract1()                { return m_eventContract1; }
+    public String eventContractDescription1()     { return m_eventContractDescription1; }
+    public String eventContractDescription2()     { return m_eventContractDescription2; }
     
     // Set
     public void contract(Contract contract)         { m_contract = contract; }
@@ -171,6 +183,9 @@ public class ContractDetails {
     public void minSize(Decimal minSize)            { m_minSize = minSize; }
     public void sizeIncrement(Decimal sizeIncrement) { m_sizeIncrement = sizeIncrement; }
     public void suggestedSizeIncrement(Decimal suggestedSizeIncrement) { m_suggestedSizeIncrement = suggestedSizeIncrement; }
+    public void minAlgoSize(Decimal minAlgoSize)    { m_minAlgoSize = minAlgoSize; }
+    public void lastPricePrecision(Decimal lastPricePrecision) { m_lastPricePrecision = lastPricePrecision; }
+    public void lastSizePrecision(Decimal lastSizePrecision) { m_lastSizePrecision = lastSizePrecision; }
     
     public void cusip(String cusip)             { m_cusip = cusip; }
     public void ratings(String ratings)         { m_ratings = ratings; }
@@ -206,6 +221,9 @@ public class ContractDetails {
     public void fundDistributionPolicyIndicator(FundDistributionPolicyIndicator fundDistributionPolicyIndicator) { m_fundDistributionPolicyIndicator = fundDistributionPolicyIndicator; }
     public void fundAssetType(FundAssetType fundAssetType)                    { m_fundAssetType = fundAssetType; }
     public void ineligibilityReasonList(List<IneligibilityReason> ineligibilityReasonList) { m_ineligibilityReasonList = ineligibilityReasonList; }
+    public void eventContract1(String eventContract1)                         { this.m_eventContract1 = eventContract1; }
+    public void eventContractDescription1(String eventContractDescription1)   { this.m_eventContractDescription1 = eventContractDescription1; }
+    public void eventContractDescription2(String eventContractDescription2)   { this.m_eventContractDescription2 = eventContractDescription2; }
     
     public ContractDetails() {
         m_contract = new Contract();
@@ -218,7 +236,7 @@ public class ContractDetails {
         StringBuilder sb = new StringBuilder( m_contract.toString() );
 
         add( sb, "marketName", m_marketName);
-        add( sb, "minTick", m_minTick);
+        add( sb, "minTick", Util.formatDouble(m_minTick));
         add( sb, "priceMagnifier", m_priceMagnifier);
         add( sb, "orderTypes", m_orderTypes);
         add( sb, "validExchanges", m_validExchanges);
@@ -243,6 +261,9 @@ public class ContractDetails {
         add( sb, "minSize", m_minSize);
         add( sb, "sizeIncrement", m_sizeIncrement);
         add( sb, "suggestedSizeIncrement", m_suggestedSizeIncrement);
+        add( sb, "minAlgoSize", m_minAlgoSize);
+        add( sb, "lastPricePrecision", m_lastPricePrecision);
+        add( sb, "lastSizePrecision", m_lastSizePrecision);
 
         add( sb, "cusip", m_cusip);
         add( sb, "ratings", m_ratings);
@@ -281,6 +302,10 @@ public class ContractDetails {
         }
 
         add( sb, "ineligibilityReasonList", EWrapperMsgGenerator.contractDetailsIneligibilityReasonList(this));
+        
+        add( sb, "eventContract1", m_eventContract1);
+        add( sb, "eventContractDescription1", m_eventContractDescription1);
+        add( sb, "eventContractDescription2", m_eventContractDescription2);
 
         return sb.toString();
     }

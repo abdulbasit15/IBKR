@@ -5,7 +5,7 @@ namespace IBApi
 {
     /**
      * @class DepthMktDataDescription
-     * @brief A class for storing depth market data desctiption
+     * @brief A class for storing depth market data description
      */
     public class DepthMktDataDescription
     {

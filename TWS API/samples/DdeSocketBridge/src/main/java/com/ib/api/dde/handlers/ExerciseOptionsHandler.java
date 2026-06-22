@@ -39,6 +39,9 @@ public class ExerciseOptionsHandler extends BaseHandler {
     /** Method sends exercise options request to TWS */
     public byte[] handleExerciseOptionsRequest(String requestStr, byte[] data) {
         ExerciseOptionsRequest request = m_requestParser.parseExerciseOptionsRequest(requestStr, data);
+        if (request == null) {
+            return null;
+        }
         System.out.println("Sending exercise options request: id=" + request.requestId() + " contract=" + Utils.shortContractString(request.contract()) 
                     + " action=" + request.exerciseAction() + " quantity=" + request.exerciseQuantity() + " override=" + request.override());
         BaseStringDataMap dataMap = new BaseStringDataMap(request);

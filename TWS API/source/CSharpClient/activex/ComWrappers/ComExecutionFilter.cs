@@ -1,19 +1,17 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using IBApi;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace TWSLib
 {
     /**
      * @class ExecutionFilter
      * @brief when requesting executions, a filter can be specified to receive only a subset of them
-     * @sa Contract, Execution, CommissionReport
+     * @sa Contract, Execution, CommissionAndFeesReport
      */
     [ComVisible(true), ClassInterface(ClassInterfaceType.None)]
     public class ComExecutionFilter : ComWrapper<ExecutionFilter>, IExecutionFilter
@@ -37,7 +35,7 @@ namespace TWSLib
         }
 
         /**
-         * @brief Time from which the executions will be brough yyyymmdd hh:mm:ss
+         * @brief Time from which the executions will be brought yyyymmdd hh:mm:ss
          * Only those executions reported after the specified time will be returned.
          */
         string Time
@@ -82,6 +80,24 @@ namespace TWSLib
             set { if (data != null) data.Side = value; }
         }
 
+        /**
+        * @brief Last N days for which the request is sent
+        */
+        int LastNDays
+        {
+            get { return data != null ? data.LastNDays : default(int); }
+            set { if (data != null) data.LastNDays = value; }
+        }
+
+        /**
+         * @brief List of specific dates for which the request is sent
+         */
+        object SpecificDates
+        {
+            get { return data != null && data.SpecificDates != null ? new TWSLib.ComIntegerList(data.SpecificDates) : null; }
+            set { if (data != null && value != null) data.SpecificDates = (value as TWSLib.ComIntegerList); }
+        }
+
         public override bool Equals(Object other)
         {
             bool l_bRetVal = false;
@@ -97,13 +113,22 @@ namespace TWSLib
             else
             {
                 ComExecutionFilter l_theOther = (ComExecutionFilter)other;
+
+                List<int> list = SpecificDates as TWSLib.ComIntegerList;
+                List<int> listOther = l_theOther.SpecificDates as TWSLib.ComIntegerList;
+                if (!Util.VectorEqualsUnordered(list, listOther))
+                {
+                    return false;
+                }
+
                 l_bRetVal = (ClientId == l_theOther.ClientId &&
                     String.Compare(AcctCode, l_theOther.AcctCode, true) == 0 &&
                     String.Compare(Time, l_theOther.Time, true) == 0 &&
                     String.Compare(Symbol, l_theOther.Symbol, true) == 0 &&
                     String.Compare(SecType, l_theOther.SecType, true) == 0 &&
                     String.Compare(Exchange, l_theOther.Exchange, true) == 0 &&
-                    String.Compare(Side, l_theOther.Side, true) == 0);
+                    String.Compare(Side, l_theOther.Side, true) == 0 &&
+                    LastNDays == l_theOther.LastNDays);
             }
             return l_bRetVal;
         }
@@ -121,6 +146,10 @@ namespace TWSLib
         string TWSLib.IExecutionFilter.exchange { get { return Exchange; } set { Exchange = value; } }
 
         string TWSLib.IExecutionFilter.side { get { return Side; } set { Side = value; } }
+
+        int TWSLib.IExecutionFilter.lastNDays { get { return LastNDays; } set { LastNDays = value; } }
+
+        object TWSLib.IExecutionFilter.specificDates { get { return SpecificDates; } set { SpecificDates = value; } }
 
         public static explicit operator ComExecutionFilter(ExecutionFilter ef)
         {

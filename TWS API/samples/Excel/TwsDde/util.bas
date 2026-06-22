@@ -1,6 +1,12 @@
 Attribute VB_Name = "util"
 Option Explicit
 
+Public Type RowProcessingData
+    rowRange As Range
+    id As String
+    isValid As Boolean
+End Type
+
 Public Const STR_EMPTY = ""
 Public Const STR_SPACE = " "
 Public Const STR_GENERIC_TICKS = "GENERICTICKS"
@@ -73,6 +79,12 @@ Public Const ID_REQ_SMART_COMPONENTS = 2500001
 Public Const ID_REQ_HISTOGRAM_DATA = 2600001
 Public Const ID_REQ_HISTORICAL_SCHEDULE = 2700001
 
+
+
+Public Function GetDecimalSeparator()
+    GetDecimalSeparator = Mid(Format(1000, "#,##0.00"), 6, 1)
+End Function
+
 Public Function sheetExists(sheetToFind As String) As Boolean
     Dim sheet As Worksheet
     sheetExists = False
@@ -106,7 +118,7 @@ Public Function getServerVal(ByVal sheetName As String, ByVal descRangeName As S
     Dim server As String
     server = Worksheets(sheetName).Range(descRangeName).value
     If server = "" Or IsEmpty(server) Then
-        MsgBox ("You must enter a valid user name.")
+        MsgBox ("You must enter a valid service name.")
     End If
     getServerVal = SERVER_NAME_CHAR & server
 End Function
@@ -192,10 +204,114 @@ Function trimSymbol(STR As String, symbol As String) As String
 End Function
 
 ' ========================================================
+' send multiple orders
+' ========================================================
+Sub sendOrders(sheet As Worksheet, serverName As String, topic As String, requestIds() As String, selectedCells As Range, startOfContractColumns As Integer, contractColumnsArray As Variant, idColumnIndex As Integer, _
+        orderBaseColumnsStart As Integer, orderBaseColumnsEnd As Integer, orderExtColumnsStart As Integer, orderExtColumnsEnd As Integer)
+
+    ' create hidden temp sheet to store values to send
+    Dim row As Range, i As Integer
+    Dim tempSheet As Worksheet
+    Dim tempSheetName As String
+    tempSheetName = "Temp"
+    On Error Resume Next
+    On Error GoTo 0
+    Set tempSheet = sheet.Parent.Worksheets.Add
+    tempSheet.Visible = xlSheetHidden
+    tempSheet.Cells.NumberFormat = "@"
+    
+    Dim chan As Integer
+    chan = Application.DDEInitiate(serverName, topic)
+    
+    i = 1
+    For Each row In selectedCells.Rows
+        sendOrder sheet, serverName, topic, requestIds(i), row, startOfContractColumns, contractColumnsArray, idColumnIndex, _
+            orderBaseColumnsStart, orderBaseColumnsEnd, orderExtColumnsStart, orderExtColumnsEnd, tempSheet, i
+        i = i + 1
+    Next row
+    
+    Application.DDETerminate chan
+
+    Application.DisplayAlerts = False
+    tempSheet.Delete
+    Application.DisplayAlerts = True
+
+End Sub
+
+' ========================================================
+' send order
+' ========================================================
+Sub sendOrder(sheet As Worksheet, serverName As String, topic As String, requestId As String, cell As Range, startOfContractColumns As Integer, contractColumnsArray As Variant, idColumnIndex As Integer, _
+        orderBaseColumnsStart As Integer, orderBaseColumnsEnd As Integer, orderExtColumnsStart As Integer, orderExtColumnsEnd As Integer, tempSheet As Worksheet, pos As Integer)
+
+    On Error Resume Next
+   
+    Dim rangeToPoke As Range
+    Set rangeToPoke = Nothing
+   
+    Dim chan As Integer, i As Integer
+   
+    ' Build rangeToPoke first - contract columns
+    If startOfContractColumns > 0 Then
+        Dim size As Integer
+        size = UBound(contractColumnsArray) - LBound(contractColumnsArray)
+        Set rangeToPoke = sheet.Range(sheet.Cells(cell.row, startOfContractColumns), sheet.Cells(cell.row, startOfContractColumns + size))
+    End If
+   
+    ' Add order base columns to rangeToPoke
+    If orderBaseColumnsStart > 0 And orderBaseColumnsEnd > 0 And orderBaseColumnsStart <= orderBaseColumnsEnd Then
+        If rangeToPoke Is Nothing Then
+            Set rangeToPoke = sheet.Range(sheet.Cells(cell.row, orderBaseColumnsStart), sheet.Cells(cell.row, orderBaseColumnsEnd))
+        Else
+            Set rangeToPoke = Union(rangeToPoke, sheet.Range(sheet.Cells(cell.row, orderBaseColumnsStart), sheet.Cells(cell.row, orderBaseColumnsEnd)))
+        End If
+    End If
+       
+    ' Add order extended columns to rangeToPoke
+    If orderExtColumnsStart > 0 And orderExtColumnsEnd > 0 And orderExtColumnsStart <= orderExtColumnsEnd Then
+        If rangeToPoke Is Nothing Then
+            Set rangeToPoke = sheet.Range(sheet.Cells(cell.row, orderExtColumnsStart), sheet.Cells(cell.row, orderExtColumnsEnd))
+        Else
+            Set rangeToPoke = Union(rangeToPoke, sheet.Range(sheet.Cells(cell.row, orderExtColumnsStart), sheet.Cells(cell.row, orderExtColumnsEnd)))
+        End If
+    End If
+   
+    ' copy rangeToPoke to empty sheet and send DDEPoke request
+    If Not rangeToPoke Is Nothing Then
+        Dim val As Variant
+        Dim area As Range
+        Dim totalItems As Integer
+        Dim rangeToSend As Range
+        
+        i = 1
+        totalItems = rangeToPoke.count
+        
+        Set rangeToSend = tempSheet.Range(tempSheet.Cells(1, 1), tempSheet.Cells(1, totalItems))
+        rangeToSend.value = ""
+
+        For Each area In rangeToPoke.Areas
+            For Each val In area.Value2
+                If val <> "" Then
+                    If IsNumeric(val) Then
+                        rangeToSend.Cells(1, i).Value2 = Replace(CStr(val), GetDecimalSeparator(), ".")
+                    Else
+                        rangeToSend.Cells(1, i).Value2 = CStr(val)
+                    End If
+                End If
+                i = i + 1
+            Next val
+        Next area
+        
+        Application.DDEPoke chan, requestId, rangeToSend
+        
+    End If
+   
+End Sub
+
+' ========================================================
 ' send poke
 ' ========================================================
-Sub sendPoke(sheet As Worksheet, serverName As String, topic As String, request As String, cell As Range, startOfContractColumns As Integer, contractColumnsArray As Variant, genericTicksColumnIndex As Integer, idColumnIndex As Integer, _
-        orderBaseColumnsStart As Integer, orderBaseColumnsEnd As Integer, orderExtColumnsStart As Integer, orderExtColumnsEnd As Integer)
+Sub sendPoke(sheet As Worksheet, serverName As String, topic As String, request As String, cell As Range, startOfContractColumns As Integer, contractColumnsArray As Variant, genericTicksColumnIndex As Integer, idColumnIndex As Integer)
     On Error Resume Next
     
     Dim rangeToPoke As Range
@@ -204,12 +320,18 @@ Sub sendPoke(sheet As Worksheet, serverName As String, topic As String, request 
     Dim chan As Integer, i As Integer
     chan = Application.DDEInitiate(serverName, topic)
     
+    Dim oldValues() As String
+    Dim oldFormats() As String
+    Dim genericTicksOldStr As String
+    Dim genericTicksOldFormat As String
+    Dim oldOrderBaseValues() As String
+    Dim oldOrderBaseFormats() As String
+    Dim oldOrderExtValues() As String
+    Dim oldOrderExtFormats() As String
+            Dim anyCell As Range
+    
     ' change contract values to sent
     If startOfContractColumns > 0 Then
-        Dim oldValues() As String
-        Dim oldFormats() As String
-        
-        
         Dim size As Integer
         size = UBound(contractColumnsArray) - LBound(contractColumnsArray)
     
@@ -217,12 +339,13 @@ Sub sendPoke(sheet As Worksheet, serverName As String, topic As String, request 
         ReDim oldFormats(size)
 
         For i = 0 To size
-            If IsNumeric(sheet.Cells(cell.row, i + startOfContractColumns).Value2) Then
-                oldFormats(i) = sheet.Cells(cell.row, i + startOfContractColumns).NumberFormat
-                oldValues(i) = sheet.Cells(cell.row, i + startOfContractColumns).Value2
+            Set anyCell = sheet.Cells(cell.row, i + startOfContractColumns)
+            If Not IsEmpty(anyCell.Value2) And IsNumeric(anyCell.Value2) Then
+                oldFormats(i) = anyCell.NumberFormat
+                oldValues(i) = anyCell.Value2
                 
-                sheet.Cells(cell.row, i + startOfContractColumns).NumberFormat = "@"
-                sheet.Cells(cell.row, i + startOfContractColumns).Value2 = CStr(sheet.Cells(cell.row, i + startOfContractColumns).Value2)
+                anyCell.NumberFormat = "@"
+                anyCell.Value2 = Replace(CStr(anyCell.Value2), GetDecimalSeparator(), ".")
             End If
         Next
 
@@ -232,56 +355,17 @@ Sub sendPoke(sheet As Worksheet, serverName As String, topic As String, request 
     
     ' change generic ticks value to sent
     If genericTicksColumnIndex > 0 Then
-        If sheet.Cells(cell.row, genericTicksColumnIndex).value <> util.STR_EMPTY Then
-            Dim genericTicksOldStr As String
-            Dim genericTicksOldFormat As String
-            genericTicksOldStr = sheet.Cells(cell.row, genericTicksColumnIndex).Value2
-            genericTicksOldFormat = sheet.Cells(cell.row, genericTicksColumnIndex).NumberFormat
-            sheet.Cells(cell.row, genericTicksColumnIndex).NumberFormat = "@"
-            sheet.Cells(cell.row, genericTicksColumnIndex).Value2 = CStr(sheet.Cells(cell.row, genericTicksColumnIndex).Value2)
+        Set anyCell = sheet.Cells(cell.row, genericTicksColumnIndex)
+        If anyCell.value <> util.STR_EMPTY Then
+            genericTicksOldStr = anyCell.Value2
+            genericTicksOldFormat = anyCell.NumberFormat
+            anyCell.NumberFormat = "@"
+            anyCell.Value2 = Replace(CStr(anyCell.Value2), GetDecimalSeparator(), ".")
         End If
         
-        Set rangeToPoke = Union(rangeToPoke, sheet.Range(sheet.Cells(cell.row, genericTicksColumnIndex), sheet.Cells(cell.row, genericTicksColumnIndex)))
+        Set rangeToPoke = Union(rangeToPoke, sheet.Range(anyCell, anyCell))
     End If
         
-    ' change order base values to sent
-    If orderBaseColumnsStart > 0 And orderBaseColumnsEnd > 0 And orderBaseColumnsStart <= orderBaseColumnsEnd Then
-        Dim oldOrderBaseValues() As String
-        Dim oldOrderBaseFormats() As String
-        ReDim oldOrderBaseValues(orderBaseColumnsEnd - orderBaseColumnsStart)
-        ReDim oldOrderBaseFormats(orderBaseColumnsEnd - orderBaseColumnsStart)
-        For i = 0 To orderBaseColumnsEnd - orderBaseColumnsStart
-            If IsNumeric(sheet.Cells(cell.row, i + orderBaseColumnsStart).Value2) Then
-                oldOrderBaseFormats(i) = sheet.Cells(cell.row, i + orderBaseColumnsStart).NumberFormat
-                oldOrderBaseValues(i) = sheet.Cells(cell.row, i + orderBaseColumnsStart).Value2
-                
-                sheet.Cells(cell.row, i + orderBaseColumnsStart).NumberFormat = "@"
-                sheet.Cells(cell.row, i + orderBaseColumnsStart).Value2 = CStr(sheet.Cells(cell.row, i + orderBaseColumnsStart).Value2)
-            End If
-        Next
-
-        Set rangeToPoke = Union(rangeToPoke, sheet.Range(sheet.Cells(cell.row, orderBaseColumnsStart), sheet.Cells(cell.row, orderBaseColumnsEnd)))
-    End If
-        
-    ' change order extended values to sent
-    If orderExtColumnsStart > 0 And orderExtColumnsEnd > 0 And orderExtColumnsStart <= orderExtColumnsEnd Then
-        Dim oldOrderExtValues() As String
-        Dim oldOrderExtFormats() As String
-        ReDim oldOrderExtValues(orderExtColumnsEnd - orderExtColumnsStart)
-        ReDim oldOrderExtFormats(orderExtColumnsEnd - orderExtColumnsStart)
-        For i = 0 To orderExtColumnsEnd - orderExtColumnsStart
-            If IsNumeric(sheet.Cells(cell.row, i + orderExtColumnsStart).Value2) Then
-                oldOrderExtFormats(i) = sheet.Cells(cell.row, i + orderExtColumnsStart).NumberFormat
-                oldOrderExtValues(i) = sheet.Cells(cell.row, i + orderExtColumnsStart).Value2
-
-                sheet.Cells(cell.row, i + orderExtColumnsStart).NumberFormat = "@"
-                sheet.Cells(cell.row, i + orderExtColumnsStart).Value2 = CStr(sheet.Cells(cell.row, i + orderExtColumnsStart).Value2)
-            End If
-        Next
-
-        Set rangeToPoke = Union(rangeToPoke, sheet.Range(sheet.Cells(cell.row, orderExtColumnsStart), sheet.Cells(cell.row, orderExtColumnsEnd)))
-    End If
-    
     ' sent values via DDEPoke
     If Not rangeToPoke Is Nothing Then
         Dim singleArea As Range
@@ -299,7 +383,6 @@ Sub sendPoke(sheet As Worksheet, serverName As String, topic As String, request 
             End If
         Next
     End If
-
     
     ' restore initial generic ticks value
     If genericTicksColumnIndex > 0 Then
@@ -307,26 +390,6 @@ Sub sendPoke(sheet As Worksheet, serverName As String, topic As String, request 
             sheet.Cells(cell.row, genericTicksColumnIndex).NumberFormat = genericTicksOldFormat
             sheet.Cells(cell.row, genericTicksColumnIndex).Value2 = genericTicksOldStr
         End If
-    End If
-    
-    ' restore initial order base values
-    If orderBaseColumnsStart > 0 And orderBaseColumnsEnd > 0 And orderBaseColumnsStart <= orderBaseColumnsEnd Then
-        For i = 0 To orderBaseColumnsEnd - orderBaseColumnsStart
-            If oldOrderBaseValues(i) <> STR_EMPTY Then
-                sheet.Cells(cell.row, i + orderBaseColumnsStart).NumberFormat = oldOrderBaseFormats(i)
-                sheet.Cells(cell.row, i + orderBaseColumnsStart).Value2 = oldOrderBaseValues(i)
-            End If
-        Next
-    End If
-    
-    ' restore initial order ext values
-    If orderExtColumnsStart > 0 And orderExtColumnsEnd > 0 And orderExtColumnsStart <= orderExtColumnsEnd Then
-        For i = 0 To orderExtColumnsEnd - orderExtColumnsStart
-            If oldOrderExtValues(i) <> STR_EMPTY Then
-                sheet.Cells(cell.row, i + orderExtColumnsStart).NumberFormat = oldOrderExtFormats(i)
-                sheet.Cells(cell.row, i + orderExtColumnsStart).Value2 = oldOrderExtValues(i)
-            End If
-        Next
     End If
     
     Application.DDETerminate chan
@@ -359,7 +422,7 @@ Sub sendPokeSimple(sheet As Worksheet, serverName As String, topic As String, re
             oldValues(i) = sheet.Cells(rowNumber, i + columnNumber).Value2
             
             sheet.Cells(rowNumber, i + columnNumber).NumberFormat = "@"
-            sheet.Cells(rowNumber, i + columnNumber).Value2 = CStr(sheet.Cells(rowNumber, i + columnNumber).Value2)
+            sheet.Cells(rowNumber, i + columnNumber).Value2 = Replace(CStr(sheet.Cells(rowNumber, i + columnNumber).Value2), GetDecimalSeparator(), ".")
         End If
     Next i
 
@@ -373,7 +436,7 @@ Sub sendPokeSimple(sheet As Worksheet, serverName As String, topic As String, re
     
     Application.DDETerminate chan
     
-        ' restore initial contract values
+    ' restore initial contract values
     For i = 0 To numOfColumns
         If oldValues(i) <> STR_EMPTY Then
             sheet.Cells(rowNumber, i + columnNumber).NumberFormat = oldFormats(i)
@@ -396,6 +459,15 @@ Function sendRequest(serverName As String, topic As String, request As String) A
     Application.DDETerminate chan
     sendRequest = arr
 End Function
+
+' ========================================================
+' send request using specified channel
+' ========================================================
+Sub sendRequestForChannel(serverName As String, topic As String, request As String, channel As Long)
+    On Error Resume Next
+    Dim arr() As Variant
+    arr = Application.DDERequest(channel, request)
+End Sub
 
 ' ========================================================
 ' get dimension of array
@@ -431,7 +503,7 @@ End Function
 ' returns current time in milliseconds
 ' ========================================================
 Public Function TimeInMS() As String
-    TimeInMS = Strings.Format(Now, "HH:nn:ss") & "." & Strings.right(Strings.Format(Timer, "#0.00"), 2)
+    TimeInMS = Strings.Format(Now, "HH:nn:ss") & "." & Strings.Right(Strings.Format(Timer, "#0.00"), 2)
 End Function
 
 ' ========================================================
@@ -695,7 +767,7 @@ End Function
 Private Sub clearSheet(sheet As Worksheet)
     Dim i As Long
     For i = 3 To 65536
-        sheet.rows(i).ClearContents
+        sheet.Rows(i).ClearContents
     Next i
 End Sub
 

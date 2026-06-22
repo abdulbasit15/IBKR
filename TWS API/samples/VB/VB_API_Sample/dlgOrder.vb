@@ -1,4 +1,4 @@
-' Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+' Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 
@@ -162,6 +162,7 @@ Friend Class dlgOrder
     Friend WithEvents chkUsePriceMgmtAlgo As System.Windows.Forms.CheckBox
     Friend WithEvents txtIssuerId As TextBox
     Friend WithEvents Label17 As Label
+    Friend WithEvents cmdAttachedOrders As Button
     Public WithEvents txtIncludeExpired As System.Windows.Forms.TextBox
     <System.Diagnostics.DebuggerStepThrough()> Private Sub InitializeComponent()
         Me.Frame1 = New System.Windows.Forms.GroupBox()
@@ -188,6 +189,8 @@ Friend Class dlgOrder
         Me.cmdCancel = New System.Windows.Forms.Button()
         Me.cmdOk = New System.Windows.Forms.Button()
         Me.frameTickerDesc = New System.Windows.Forms.GroupBox()
+        Me.txtIssuerId = New System.Windows.Forms.TextBox()
+        Me.Label17 = New System.Windows.Forms.Label()
         Me.txtTradingClass = New System.Windows.Forms.TextBox()
         Me.Label8 = New System.Windows.Forms.Label()
         Me.txtSecId = New System.Windows.Forms.TextBox()
@@ -267,8 +270,7 @@ Friend Class dlgOrder
         Me.labelMarketDataType = New System.Windows.Forms.Label()
         Me.frameMarketDataType = New System.Windows.Forms.GroupBox()
         Me.cmbMarketDataType = New System.Windows.Forms.ComboBox()
-        Me.Label17 = New System.Windows.Forms.Label()
-        Me.txtIssuerId = New System.Windows.Forms.TextBox()
+        Me.cmdAttachedOrders = New System.Windows.Forms.Button()
         Me.Frame1.SuspendLayout()
         Me.frameTickerDesc.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
@@ -661,6 +663,24 @@ Friend Class dlgOrder
         Me.frameTickerDesc.TabStop = False
         Me.frameTickerDesc.Text = "Ticker Description"
         '
+        'txtIssuerId
+        '
+        Me.txtIssuerId.BorderStyle = System.Windows.Forms.BorderStyle.None
+        Me.txtIssuerId.Location = New System.Drawing.Point(120, 437)
+        Me.txtIssuerId.Name = "txtIssuerId"
+        Me.txtIssuerId.Size = New System.Drawing.Size(85, 13)
+        Me.txtIssuerId.TabIndex = 31
+        '
+        'Label17
+        '
+        Me.Label17.AutoSize = True
+        Me.Label17.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.Label17.Location = New System.Drawing.Point(8, 437)
+        Me.Label17.Name = "Label17"
+        Me.Label17.Size = New System.Drawing.Size(48, 14)
+        Me.Label17.TabIndex = 30
+        Me.Label17.Text = "Issuer Id"
+        '
         'txtTradingClass
         '
         Me.txtTradingClass.AcceptsReturn = True
@@ -903,7 +923,6 @@ Friend Class dlgOrder
         Me.txtStrike.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.txtStrike.Size = New System.Drawing.Size(88, 13)
         Me.txtStrike.TabIndex = 9
-        Me.txtStrike.Text = "0"
         '
         'txtLastTradeDateOrContractMonth
         '
@@ -1138,7 +1157,7 @@ Friend Class dlgOrder
         Me.txtGenericTickTags.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.txtGenericTickTags.Size = New System.Drawing.Size(88, 13)
         Me.txtGenericTickTags.TabIndex = 1
-        Me.txtGenericTickTags.Text = "100,101,104,106,165,221,232,236,258,293,294,295,318,411,460,619"
+        Me.txtGenericTickTags.Text = "100,101,104,106,165,221,232,236,293,294,295,318,411,460,619"
         '
         'Label22
         '
@@ -1603,6 +1622,7 @@ Friend Class dlgOrder
         'frameOrderDesc
         '
         Me.frameOrderDesc.BackColor = System.Drawing.Color.Gainsboro
+        Me.frameOrderDesc.Controls.Add(Me.cmdAttachedOrders)
         Me.frameOrderDesc.Controls.Add(Me.chkUsePriceMgmtAlgo)
         Me.frameOrderDesc.Controls.Add(Me.txtCashQty)
         Me.frameOrderDesc.Controls.Add(Me.labelCashQty)
@@ -1682,11 +1702,11 @@ Friend Class dlgOrder
         'cmdPegBench
         '
         Me.cmdPegBench.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdPegBench.Location = New System.Drawing.Point(63, 396)
+        Me.cmdPegBench.Location = New System.Drawing.Point(18, 396)
         Me.cmdPegBench.Name = "cmdPegBench"
-        Me.cmdPegBench.Size = New System.Drawing.Size(125, 25)
+        Me.cmdPegBench.Size = New System.Drawing.Size(98, 26)
         Me.cmdPegBench.TabIndex = 24
-        Me.cmdPegBench.Text = "Pegged to benchmark"
+        Me.cmdPegBench.Text = "Peg to bench"
         Me.cmdPegBench.UseVisualStyleBackColor = True
         '
         'cmdAdjustStop
@@ -1771,23 +1791,15 @@ Friend Class dlgOrder
         Me.cmbMarketDataType.Size = New System.Drawing.Size(115, 22)
         Me.cmbMarketDataType.TabIndex = 1
         '
-        'Label17
+        'cmdAttachedOrders
         '
-        Me.Label17.AutoSize = True
-        Me.Label17.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.Label17.Location = New System.Drawing.Point(8, 437)
-        Me.Label17.Name = "Label17"
-        Me.Label17.Size = New System.Drawing.Size(48, 14)
-        Me.Label17.TabIndex = 30
-        Me.Label17.Text = "Issuer Id"
-        '
-        'txtIssuerId
-        '
-        Me.txtIssuerId.BorderStyle = System.Windows.Forms.BorderStyle.None
-        Me.txtIssuerId.Location = New System.Drawing.Point(120, 437)
-        Me.txtIssuerId.Name = "txtIssuerId"
-        Me.txtIssuerId.Size = New System.Drawing.Size(85, 13)
-        Me.txtIssuerId.TabIndex = 31
+        Me.cmdAttachedOrders.ForeColor = System.Drawing.SystemColors.ControlText
+        Me.cmdAttachedOrders.Location = New System.Drawing.Point(122, 396)
+        Me.cmdAttachedOrders.Name = "cmdAttachedOrders"
+        Me.cmdAttachedOrders.Size = New System.Drawing.Size(98, 26)
+        Me.cmdAttachedOrders.TabIndex = 25
+        Me.cmdAttachedOrders.Text = "Attached Orders"
+        Me.cmdAttachedOrders.UseVisualStyleBackColor = True
         '
         'dlgOrder
         '
@@ -1860,6 +1872,7 @@ Friend Class dlgOrder
         PlaceOrder
         CancelOrder
         RequestContractDetails
+        CancelContractData
         RequestHistoricalData
         ExerciseOptions
         CancelHistoricalData
@@ -1874,6 +1887,7 @@ Friend Class dlgOrder
         CancelFundamentalData
         RequestMatchingSymbols
         RequestHistoricalTicks
+        CancelHistoricalTicks
         RequestTickByTick
         CancelTickByTick
 
@@ -2142,7 +2156,7 @@ Friend Class dlgOrder
         m_contractInfo.Symbol = txtSymbol.Text
         m_contractInfo.SecType = txtSecType.Text
         m_contractInfo.LastTradeDateOrContractMonth = txtLastTradeDateOrContractMonth.Text
-        m_contractInfo.Strike = CDbl(txtStrike.Text)
+        m_contractInfo.Strike = If(txtStrike.Text = "", Double.MaxValue, CDbl(txtStrike.Text))
         m_contractInfo.Right = txtRight.Text
         m_contractInfo.Multiplier = TextMultiplier.Text
         m_contractInfo.Exchange = txtExchange.Text
@@ -2158,9 +2172,9 @@ Friend Class dlgOrder
         m_orderInfo.Action = txtAction.Text
         m_orderInfo.TotalQuantity = CDbl(txtQuantity.Text)
         m_orderInfo.OrderType = txtOrderType.Text
-        m_orderInfo.LmtPrice = dval(txtLmtPrice.Text)
-        m_orderInfo.AuxPrice = dval(txtAuxPrice.Text)
-        m_orderInfo.CashQty = dval(txtCashQty.Text)
+        m_orderInfo.LmtPrice = Utils.StringToDouble(txtLmtPrice.Text)
+        m_orderInfo.AuxPrice = Utils.StringToDouble(txtAuxPrice.Text)
+        m_orderInfo.CashQty = Utils.StringToDouble(txtCashQty.Text)
 
         m_orderInfo.GoodAfterTime = tGAT.Text
         m_orderInfo.GoodTillDate = tGTD.Text
@@ -2408,6 +2422,12 @@ Friend Class dlgOrder
             cmdOptions.Text = "RTB Options"
         End If
 
+        m_orderInfo.Tif = "DAY"
+        m_orderInfo.SlOrderId = Integer.MaxValue
+        m_orderInfo.SlOrderType = ""
+        m_orderInfo.PtOrderId = Integer.MaxValue
+        m_orderInfo.PtOrderType = ""
+
     End Sub
     '--------------------------------------------------------------------------------
     ' Set the various dialog title string for each dialog type and the initial
@@ -2426,6 +2446,7 @@ Friend Class dlgOrder
         m_arrDlgTitles.Add("Place Order")
         m_arrDlgTitles.Add("Cancel Order")
         m_arrDlgTitles.Add("Request Contract Details")
+        m_arrDlgTitles.Add("Cancel Contract Data")
         m_arrDlgTitles.Add("Request Historical Data")
         m_arrDlgTitles.Add("Exercise Options")
         m_arrDlgTitles.Add("Cancel Historical Data")
@@ -2440,6 +2461,7 @@ Friend Class dlgOrder
         m_arrDlgTitles.Add("Cancel Fundamental Data")
         m_arrDlgTitles.Add("Request Matching Symbols")
         m_arrDlgTitles.Add("Request Historical Ticks")
+        m_arrDlgTitles.Add("Cancel Historical Ticks")
         m_arrDlgTitles.Add("Request Tick-By-Tick")
         m_arrDlgTitles.Add("Cancel Tick-By-Tick")
 
@@ -2474,17 +2496,13 @@ Friend Class dlgOrder
 
     End Sub
 
-
-    Private Function dval(text As String) As Double
-        If Len(text) = 0 Then
-            dval = Double.MaxValue
-        Else
-            dval = CDbl(text)
-        End If
-    End Function
-
-    Private Sub Button3_Click(sender As Object, e As EventArgs) Handles cmdPegBench.Click
+    Private Sub cmdPegBench_Click(sender As Object, e As EventArgs) Handles cmdPegBench.Click
         Dim dlg = New dlgPegBench(m_orderInfo)
+        dlg.ShowDialog()
+    End Sub
+
+    Private Sub cmdAttachedOrders_Click(sender As Object, e As EventArgs) Handles cmdAttachedOrders.Click
+        Dim dlg = New dlgAttachedOrders(m_orderInfo)
         dlg.ShowDialog()
     End Sub
 

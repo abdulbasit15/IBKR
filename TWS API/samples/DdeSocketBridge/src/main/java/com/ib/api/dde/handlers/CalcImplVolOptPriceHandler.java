@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers;
@@ -34,6 +34,9 @@ public class CalcImplVolOptPriceHandler extends MarketDataBaseHandler {
     /** Method sends calculate implied volatility/option price request to TWS */
     public byte[] handleCalculateRequest(String requestStr, byte[] data, DdeRequestType requestType) {
         DdeRequest ddeRequest = m_requestParser.parseCalculateRequest(requestStr, data, requestType);
+        if (ddeRequest == null) {
+            return null;
+        }
         byte[] ret = handleMarketDataBaseRequest(ddeRequest);
         switch(requestType) {
             case CALCULATE_IMPLIED_VOLATILITY:

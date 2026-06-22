@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 namespace IBApi
@@ -12,11 +12,15 @@ namespace IBApi
         public static readonly CodeMsgPair AlreadyConnected = new CodeMsgPair(501, "Already Connected.");
         public static readonly CodeMsgPair CONNECT_FAIL = new CodeMsgPair(502, @"Couldn't connect to TWS. Confirm that ""Enable ActiveX and Socket Clients""
                             is enabled and connection port is the same as ""Socket Port"" on the TWS ""Edit->Global Configuration...->API->Settings"" menu.
-                            Live Trading ports: TWS: 7496; IB Gateway: 4001. Simulated Trading ports for new installations of version 954.1 or newer:
-                            TWS: 7497; IB Gateway: 4002");
+                            Live Trading ports: TWS: 7496; IB Gateway: 4001. Simulated Trading ports: TWS: 7497; IB Gateway: 4002.
+                            Verify that the maximum API connection threshold (default 32) is not exceeded.");
         public static readonly CodeMsgPair UPDATE_TWS = new CodeMsgPair(503, "The TWS is out of date and must be upgraded.");
         public static readonly CodeMsgPair NOT_CONNECTED = new CodeMsgPair(504, "Not connected");
         public static readonly CodeMsgPair UNKNOWN_ID = new CodeMsgPair(505, "Fatal Error: Unknown message id.");
+        public static readonly CodeMsgPair UNSUPPORTED_VERSION = new CodeMsgPair(506, "Unsupported version");
+        public static readonly CodeMsgPair BAD_LENGTH = new CodeMsgPair(507, "Bad message length");
+        public static readonly CodeMsgPair BAD_MESSAGE = new CodeMsgPair(508, "Bad message");
+        public static readonly CodeMsgPair SOCKET_EXCEPTION = new CodeMsgPair(509, "Exception caught while reading socket - ");
         public static readonly CodeMsgPair FAIL_SEND_REQMKT = new CodeMsgPair(510, "Request Market Data Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_CANMKT = new CodeMsgPair(511, "Cancel Market Data Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_ORDER = new CodeMsgPair(512, "Order Sending Error - ");
@@ -24,10 +28,9 @@ namespace IBApi
         public static readonly CodeMsgPair FAIL_SEND_EXEC = new CodeMsgPair(514, "Request For Executions Sending Error -");
         public static readonly CodeMsgPair FAIL_SEND_CORDER = new CodeMsgPair(515, "Cancel Order Sending Error -");
         public static readonly CodeMsgPair FAIL_SEND_OORDER = new CodeMsgPair(516, "Request Open Order Sending Error -");
-        public static readonly CodeMsgPair UNKNOWN_CONTRACT = new CodeMsgPair(517, "Unknown contract. Verify the contract details supplied.");
+        // public static readonly CodeMsgPair UNKNOWN_CONTRACT = new CodeMsgPair(517, "Unknown contract. Verify the contract details supplied."); // not used
         public static readonly CodeMsgPair FAIL_SEND_REQCONTRACT = new CodeMsgPair(518, "Request Contract Data Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_REQMKTDEPTH = new CodeMsgPair(519, "Request Market Depth Sending Error - ");
-        public static readonly CodeMsgPair FAIL_SEND_CANMKTDEPTH = new CodeMsgPair(520, "Cancel Market Depth Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_SERVER_LOG_LEVEL = new CodeMsgPair(521, "Set Server Log Level Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_FA_REQUEST = new CodeMsgPair(522, "FA Information Request Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_FA_REPLACE = new CodeMsgPair(523, "FA Information Replace Sending Error - ");
@@ -58,9 +61,7 @@ namespace IBApi
         public static readonly CodeMsgPair FAIL_SEND_SUBSCRIBETOGROUPEVENTS = new CodeMsgPair(547, "Subscribe To Group Events Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_UPDATEDISPLAYGROUP = new CodeMsgPair(548, "Update Display Group Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_UNSUBSCRIBEFROMGROUPEVENTS = new CodeMsgPair(549, "Unsubscribe From Group Events Sending Error - ");
-        public static readonly CodeMsgPair BAD_LENGTH = new CodeMsgPair(507, "Bad message length");
-        public static readonly CodeMsgPair BAD_MESSAGE = new CodeMsgPair(508, "Bad message");
-        public static readonly CodeMsgPair UNSUPPORTED_VERSION = new CodeMsgPair(506, "Unsupported version");
+        public static readonly CodeMsgPair FAIL_SEND_STARTAPI = new CodeMsgPair(550, "Start API Sending Error - ");
 
         public static readonly CodeMsgPair FAIL_SEND_VERIFYANDAUTHREQUEST = new CodeMsgPair(551, "Verify And Auth Request Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_VERIFYANDAUTHMESSAGE = new CodeMsgPair(552, "Verify And Auth Message Sending Error - ");
@@ -98,6 +99,13 @@ namespace IBApi
         public static readonly CodeMsgPair FAIL_SEND_CAN_WSH_EVENT_DATA = new CodeMsgPair(583, "Cancel WSH Event Data Sending Error - ");
         public static readonly CodeMsgPair FAIL_SEND_REQ_USER_INFO = new CodeMsgPair(584, "Request User Info Sending Error - ");
         public static readonly CodeMsgPair FA_PROFILE_NOT_SUPPORTED = new CodeMsgPair(585, "FA Profile is not supported anymore, use FA Group instead - ");
+        public static readonly CodeMsgPair FAIL_SEND_REQCURRTIMEINMILLIS = new CodeMsgPair(587, "Request Current Time In Millis Sending Error - ");
+        public static readonly CodeMsgPair ERROR_ENCODING_PROTOBUF = new CodeMsgPair(588, "Error encoding protobuf - ");
+        public static readonly CodeMsgPair FAIL_SEND_CANMKTDEPTH = new CodeMsgPair(589, "Cancel Market Depth Sending Error - ");
+        public static readonly CodeMsgPair FAIL_SEND_CANCEL_CONTRACT_DATA = new CodeMsgPair(590, "Cancel Contract Data Sending Error - ");
+        public static readonly CodeMsgPair FAIL_SEND_CANCEL_HISTORICAL_TICKS = new CodeMsgPair(591, "Cancel Historical Ticks Sending Error - ");
+        public static readonly CodeMsgPair FAIL_SEND_REQCONFIG = new CodeMsgPair(592, "Request Config Sending Error - ");
+        public static readonly CodeMsgPair FAIL_SEND_UPDATECONFIG = new CodeMsgPair(593, "Update Config Request Sending Error - ");
 
 
         public static readonly CodeMsgPair FAIL_GENERIC = new CodeMsgPair(-1, "Specific error message needs to be given for these requests! ");

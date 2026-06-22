@@ -15,8 +15,8 @@ Option Explicit
 
 Private Enum LogTableColumns
     Col_MSGID = 1
-    Col_MSGCODE
     Col_MSGTIME
+    Col_MSGCODE
     Col_MSGTEXT
     Col_MSGADVANCEDORDERREJECTJSON
 End Enum
@@ -29,14 +29,12 @@ Private logTable As Range
 ' methods
 '=================
 ' log message
-Public Sub LogMessage(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String, ByVal advancedOrderRejectJson As String)
+Public Sub LogMessage(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String, ByVal advancedOrderRejectJson As String)
     logTable(rowId, Col_MSGID).value = id
+    logTable(rowId, Col_MSGTIME).value = errorTime
     logTable(rowId, Col_MSGCODE).value = errorCode
     logTable(rowId, Col_MSGTEXT).value = errorMsg
     logTable(rowId, Col_MSGADVANCEDORDERREJECTJSON).value = advancedOrderRejectJson
-    
-    ' current time
-    logTable(rowId, Col_MSGTIME).value = Now
     
     rowId = rowId + 1
     

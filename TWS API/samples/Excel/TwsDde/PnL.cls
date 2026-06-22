@@ -83,7 +83,7 @@ Sub cancelPnL()
     If Not hasRequestData(ActiveCell) Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
 
             If .Cells(row.row, idColumnIndex).value = STR_EMPTY Then GoTo Continue
@@ -130,7 +130,7 @@ Sub requestPnL()
     If Not hasRequestData(ActiveCell) Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
     
             If .Cells(row.row, idColumnIndex).value <> STR_EMPTY Then GoTo Continue
@@ -195,7 +195,7 @@ Sub cancelAllPnL()
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, util.IDENTIFIER_PREFIX) <> 0 Then
                 util.sendRequest server, STR_CANCEL_PNL, cell.value
@@ -219,7 +219,7 @@ Sub requestAllPnL()
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
         Dim row As Range, cell As Range
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, util.IDENTIFIER_PREFIX) <> 0 Then
                 sendPnLRequest server, cell

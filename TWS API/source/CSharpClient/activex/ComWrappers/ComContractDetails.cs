@@ -586,6 +586,60 @@ namespace TWSLib
             get { return data != null ? data.IneligibilityReasonList != null ? new ComList<ComIneligibilityReason, IneligibilityReason>(data.IneligibilityReasonList) : null : null; }
         }
 
+        /**
+        * @brief EventContract1
+        */
+        string EventContract1
+        {
+            get { return data != null ? data.EventContract1 : default(string); }
+            set { if (data != null) data.EventContract1 = value; }
+        }
+
+        /**
+        * @brief EventContractDescription1
+        */
+        string EventContractDescription1
+        {
+            get { return data != null ? data.EventContractDescription1 : default(string); }
+            set { if (data != null) data.EventContractDescription1 = value; }
+        }
+
+        /**
+        * @brief EventContractDescription2
+        */
+        string EventContractDescription2
+        {
+            get { return data != null ? data.EventContractDescription2 : default(string); }
+            set { if (data != null) data.EventContractDescription2 = value; }
+        }
+
+        /**
+        * @brief Minimum order quantity for an algo
+        */
+        object MinAlgoSize
+        {
+            get { return data != null ? data.MinAlgoSize : default(object); }
+            set { if (data != null) data.MinAlgoSize = Util.GetDecimal(value); }
+        }
+
+        /**
+        * @brief Precision of Last Price
+        */
+        object LastPricePrecision
+        {
+            get { return data != null ? data.LastPricePrecision : default(object); }
+            set { if (data != null) data.LastPricePrecision = Util.GetDecimal(value); }
+        }
+
+        /**
+        * @brief Precision of Last Size
+        */
+        object LastSizePrecision
+        {
+            get { return data != null ? data.LastSizePrecision : default(object); }
+            set { if (data != null) data.LastSizePrecision = Util.GetDecimal(value); }
+        }
+
         string TWSLib.IContractDetails.marketName
         {
             get { return MarketName; }
@@ -663,7 +717,7 @@ namespace TWSLib
 
         object TWSLib.IContractDetails.secIdList
         {
-            get { return SecIdList; }
+            get { return new TWSLib.ComTagValueList(SecIdList); }
         }
 
         string TWSLib.IContractDetails.cusip
@@ -889,6 +943,36 @@ namespace TWSLib
         object TWSLib.IContractDetails.ineligibilityReasonList
         {
             get { return new TWSLib.ComIneligibilityReasonList(IneligibilityReasonList); }
+        }
+
+        string TWSLib.IContractDetails.eventContract1
+        {
+            get { return EventContract1; }
+        }
+
+        string TWSLib.IContractDetails.eventContractDescription1
+        {
+            get { return EventContractDescription1; }
+        }
+
+        string TWSLib.IContractDetails.eventContractDescription2
+        {
+            get { return EventContractDescription2; }
+        }
+
+        object TWSLib.IContractDetails.minAlgoSize
+        {
+            get { return MinAlgoSize; }
+        }
+
+        object IContractDetails.lastPricePrecision
+        {
+            get { return LastPricePrecision; }
+        }
+
+        object IContractDetails.lastSizePrecision
+        {
+            get { return LastSizePrecision; }
         }
 
         public static explicit operator ComContractDetails(ContractDetails cd)

@@ -6,13 +6,13 @@
 #define TWS_API_CLIENT_ESOCKET_H
 
 #include "ETransport.h"
+#include "EPosixClientSocketPlatform.h"
 #include <vector>
 
-class ESocket :
-    public ETransport
+class ESocket : public ETransport
 {
-    int m_fd;
-	std::vector<char> m_outBuffer;
+    SOCKET m_fd;
+    std::vector<char> m_outBuffer;
 
     int bufferedSend(const char* buf, size_t sz);
     int send(const char* buf, size_t sz);
@@ -25,7 +25,7 @@ public:
     int send(EMessage *pMsg);
     bool isOutBufferEmpty() const;
     int sendBufferedData();
-    void fd(int fd);
+    void fd(SOCKET fd);
 };
 
 #endif

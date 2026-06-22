@@ -74,7 +74,7 @@ Sub requestAllNewsTicks()
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
         Dim row As Range, cell As Range
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 sendNewsTicksRequest server, cell
@@ -98,7 +98,7 @@ Sub cancelAllNewsTicks()
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 If .Cells(row.row, statusColumnIndex).value = util.STR_SUBSCRIBED Or .Cells(row.row, statusColumnIndex).value = util.STR_RECEIVED Then

@@ -80,7 +80,7 @@ Sub cancelTickByTickData()
     If server = util.STR_EMPTY Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
 
             If .Cells(row.row, idColumnIndex).value = STR_EMPTY Then GoTo Continue
@@ -127,7 +127,7 @@ Sub requestTickByTickData()
     If server = STR_EMPTY Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
             If .Cells(row.row, idColumnIndex).value <> STR_EMPTY Then GoTo Continue
             If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -167,7 +167,7 @@ Sub sendTickByTickDataRequest(server As String, cell As Range)
         End If
 
         ' send request
-        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQ_TICK_BY_TICK_DATA, id & util.QMARK & tickType & util.QMARK & ignoreSize, cell, startOfContractColumns, getContractColumns(), 0, idColumnIndex, 0, 0, 0, 0
+        util.sendPoke Worksheets(STR_SHEET_NAME), server, STR_REQ_TICK_BY_TICK_DATA, id & util.QMARK & tickType & util.QMARK & ignoreSize, cell, startOfContractColumns, getContractColumns(), 0, idColumnIndex
 
 
         ' fill tick-by-tick data columns with formulas
@@ -195,7 +195,7 @@ Sub cancelAllTickByTickData()
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, util.IDENTIFIER_PREFIX) <> 0 Then
                 util.sendRequest server, STR_CANCEL_TICK_BY_TICK_DATA, cell.value
@@ -219,7 +219,7 @@ Sub requestAllTickByTickData()
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
         Dim row As Range, cell As Range
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, util.IDENTIFIER_PREFIX) <> 0 Then
                 sendTickByTickDataRequest server, cell

@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System.Collections.Generic;
@@ -51,8 +51,16 @@ namespace IBSampleApp.ui
             }
             else
             {
-                IBClient.ClientSocket.placeOrder(IBClient.NextOrderId, contract, order);
-                IBClient.NextOrderId++;
+                int orderId = IBClient.NextOrderId++;
+                if (!string.IsNullOrWhiteSpace(order.SlOrderType))
+                {
+                    order.SlOrderId = IBClient.NextOrderId++;
+                }
+                if (!string.IsNullOrWhiteSpace(order.PtOrderType))
+                {
+                    order.PtOrderId = IBClient.NextOrderId++;
+                }
+                IBClient.ClientSocket.placeOrder(orderId, contract, order);
             }
         }
 
@@ -62,6 +70,11 @@ namespace IBSampleApp.ui
             {
                 IBClient.ClientSocket.cancelOrder(order.OrderId, orderCancel);
             }
+        }
+
+        public void GlobalCancel(OrderCancel orderCancel)
+        {
+            IBClient.ClientSocket.reqGlobalCancel(orderCancel);
         }
 
         public void OpenOrderDialog()
@@ -164,14 +177,14 @@ namespace IBSampleApp.ui
             return null;
         }
 
-        public void HandleCommissionMessage(CommissionMessage message)
+        public void HandleCommissionAndFeesMessage(CommissionAndFeesMessage message)
         {
             for (int i = 0; i < tradeLogGrid.Rows.Count; i++)
             {
-                if (((string)tradeLogGrid[0, i].Value).Equals(message.CommissionReport.ExecId))
+                if (tradeLogGrid["executionIdExecColumn", i].Value != null && ((string)tradeLogGrid["executionIdExecColumn", i].Value).Equals(message.CommissionAndFeesReport.ExecId))
                 {
-                    tradeLogGrid[8, i].Value = Util.DoubleMaxString(message.CommissionReport.Commission);
-                    tradeLogGrid[9, i].Value = Util.DoubleMaxString(message.CommissionReport.RealizedPNL);
+                    tradeLogGrid["commissionAndFeesExecColumn", i].Value = Util.DoubleMaxString(message.CommissionAndFeesReport.CommissionAndFees);
+                    tradeLogGrid["realizedPnLExecColumn", i].Value = Util.DoubleMaxString(message.CommissionAndFeesReport.RealizedPNL);
                 }
             }
         }
@@ -196,7 +209,7 @@ namespace IBSampleApp.ui
         {
             for (int i = 0; i < tradeLogGrid.Rows.Count; i++)
             {
-                if (((string)tradeLogGrid[0, i].Value).Equals(message.Execution.ExecId))
+                if (message.Execution.ExecId != null && ((string)tradeLogGrid["executionIdExecColumn", i].Value).Equals(message.Execution.ExecId))
                 {
                     PopulateTradeLog(i, message);
                 }
@@ -207,25 +220,28 @@ namespace IBSampleApp.ui
 
         private void PopulateTradeLog(int index, ExecutionMessage message)
         {
-            tradeLogGrid[0, index].Value = message.Execution.ExecId;
-            tradeLogGrid[1, index].Value = message.Execution.Time;
-            tradeLogGrid[2, index].Value = message.Execution.AcctNumber;
-            tradeLogGrid[3, index].Value = message.Execution.ModelCode;
-            tradeLogGrid[4, index].Value = message.Execution.Side;
-            tradeLogGrid[5, index].Value = Util.DecimalMaxString(message.Execution.Shares);
-            tradeLogGrid[6, index].Value = message.Contract.Symbol + " " + message.Contract.SecType + " " + message.Contract.Exchange;
-            tradeLogGrid[7, index].Value = Util.DoubleMaxString(message.Execution.Price);
-            tradeLogGrid["LastLiquidity", index].Value = message.Execution.LastLiquidity;
-            tradeLogGrid["PendingPriceRevision", index].Value = message.Execution.PendingPriceRevision;
+            tradeLogGrid["executionIdExecColumn", index].Value = message.Execution.ExecId;
+            tradeLogGrid["dateTimeExecColumn", index].Value = message.Execution.Time;
+            tradeLogGrid["accountExecColumn", index].Value = message.Execution.AcctNumber;
+            tradeLogGrid["modelCodeExecColumn", index].Value = message.Execution.ModelCode;
+            tradeLogGrid["actionExecColumn", index].Value = message.Execution.Side;
+            tradeLogGrid["quantityExecColumn", index].Value = Util.DecimalMaxString(message.Execution.Shares);
+            tradeLogGrid["descriptionExecColumn", index].Value = message.Contract.Symbol + " " + message.Contract.SecType + " " + message.Contract.Exchange;
+            tradeLogGrid["priceExecColumn", index].Value = Util.DoubleMaxString(message.Execution.Price);
+            tradeLogGrid["lastLiquidityExecColumn", index].Value = message.Execution.LastLiquidity;
+            tradeLogGrid["pendingPriceRevisionExecColumn", index].Value = message.Execution.PendingPriceRevision;
+            tradeLogGrid["permIdExecColumn", index].Value = message.Execution.PermId;
+            tradeLogGrid["submitterExecColumn", index].Value = message.Execution.Submitter;
+            tradeLogGrid["optExerciseOrLapseTypeExecColumn", index].Value = message.Execution.OptExerciseOrLapseType;
         }
 
         public void HandleOrderStatus(OrderStatusMessage statusMessage)
         {
             for (int i = 0; i < liveOrdersGrid.Rows.Count; i++)
             {
-                if (liveOrdersGrid[0, i].Value.Equals(statusMessage.PermId))
+                if (liveOrdersGrid["permIdColumn", i].Value.Equals(statusMessage.PermId))
                 {
-                    liveOrdersGrid[8, i].Value = statusMessage.Status;
+                    liveOrdersGrid["statusColumn", i].Value = statusMessage.Status;
                     return;
                 }
             }
@@ -259,7 +275,7 @@ namespace IBSampleApp.ui
         {
             for (int i = 0; i<liveOrdersGrid.Rows.Count; i++)
             {
-                if (Convert.ToInt32(liveOrdersGrid[2, i].Value) == orderMessage.Order.OrderId)
+                if (Convert.ToInt32(liveOrdersGrid["orderIdColumn", i].Value) == orderMessage.Order.OrderId)
                 {
                     PopulateOrderRow(i, orderMessage);
                     return;
@@ -271,37 +287,50 @@ namespace IBSampleApp.ui
 
         private void PopulateOrderRow(int rowIndex, OpenOrderMessage orderMessage)
         {
-            liveOrdersGrid[0, rowIndex].Value = Util.IntMaxString(orderMessage.Order.PermId);
-            liveOrdersGrid[1, rowIndex].Value = Util.IntMaxString(orderMessage.Order.ClientId);
-            liveOrdersGrid[2, rowIndex].Value = Util.IntMaxString(orderMessage.Order.OrderId);
-            liveOrdersGrid[3, rowIndex].Value = orderMessage.Order.Account;
-            liveOrdersGrid[4, rowIndex].Value = orderMessage.Order.ModelCode;
-            liveOrdersGrid[5, rowIndex].Value = orderMessage.Order.Action;
-            liveOrdersGrid[6, rowIndex].Value = Util.DecimalMaxString(orderMessage.Order.TotalQuantity);
-            liveOrdersGrid[7, rowIndex].Value = orderMessage.Contract.Symbol+" "+orderMessage.Contract.SecType+" "+orderMessage.Contract.Exchange;
-            liveOrdersGrid[8, rowIndex].Value = orderMessage.Order.CustomerAccount;
-            liveOrdersGrid[9, rowIndex].Value = orderMessage.Order.ProfessionalCustomer;
-            liveOrdersGrid[10, rowIndex].Value = orderMessage.OrderState.Status;
-            liveOrdersGrid[11, rowIndex].Value = Util.DoubleMaxString(orderMessage.Order.CashQty);
+            liveOrdersGrid["permIdColumn", rowIndex].Value = Util.LongMaxString(orderMessage.Order.PermId);
+            liveOrdersGrid["clientIdColumn", rowIndex].Value = Util.IntMaxString(orderMessage.Order.ClientId);
+            liveOrdersGrid["orderIdColumn", rowIndex].Value = Util.IntMaxString(orderMessage.Order.OrderId);
+            liveOrdersGrid["accountColumn", rowIndex].Value = orderMessage.Order.Account;
+            liveOrdersGrid["modelCodeColumn", rowIndex].Value = orderMessage.Order.ModelCode;
+            liveOrdersGrid["actionColumn", rowIndex].Value = orderMessage.Order.Action;
+            liveOrdersGrid["quantityColumn", rowIndex].Value = Util.DecimalMaxString(orderMessage.Order.TotalQuantity);
+            liveOrdersGrid["contractColumn", rowIndex].Value = orderMessage.Contract.Symbol+" "+orderMessage.Contract.SecType+" "+orderMessage.Contract.Exchange;
+            liveOrdersGrid["customerAccountColumn", rowIndex].Value = orderMessage.Order.CustomerAccount;
+            liveOrdersGrid["professionalCustomerColumn", rowIndex].Value = orderMessage.Order.ProfessionalCustomer;
+            liveOrdersGrid["includeOvernightColumn", rowIndex].Value = orderMessage.Order.IncludeOvernight;
+            liveOrdersGrid["statusColumn", rowIndex].Value = orderMessage.OrderState.Status;
+            liveOrdersGrid["cashQtyColumn", rowIndex].Value = Util.DoubleMaxString(orderMessage.Order.CashQty);
+            liveOrdersGrid["extOperatorColumn", rowIndex].Value = orderMessage.Order.ExtOperator;
+            liveOrdersGrid["manualOrderIndicatorColumn", rowIndex].Value = Util.IntMaxString(orderMessage.Order.ManualOrderIndicator);
+            liveOrdersGrid["submitterColumn", rowIndex].Value = orderMessage.Order.Submitter;
+            liveOrdersGrid["imbalanceOnlyColumn", rowIndex].Value = orderMessage.Order.ImbalanceOnly;
+            liveOrdersGrid["postOnlyColumn", rowIndex].Value = orderMessage.Order.PostOnly;
+            liveOrdersGrid["allowPreOpenColumn", rowIndex].Value = orderMessage.Order.AllowPreOpen;
+            liveOrdersGrid["ignoreOpenAuctionColumn", rowIndex].Value = orderMessage.Order.IgnoreOpenAuction;
+            liveOrdersGrid["deactivateColumn", rowIndex].Value = orderMessage.Order.Deactivate;
+            liveOrdersGrid["seekPriceImprovementColumn", rowIndex].Value = orderMessage.Order.SeekPriceImprovement;
+            liveOrdersGrid["routeMarketableToBboColumn", rowIndex].Value = orderMessage.Order.RouteMarketableToBbo;
         }
 
         private void PopulateCompletedOrderRow(int rowIndex, CompletedOrderMessage completedOrderMessage)
         {
-            completedOrdersGrid[0, rowIndex].Value = Util.IntMaxString(completedOrderMessage.Order.PermId);
-            completedOrdersGrid[1, rowIndex].Value = Util.LongMaxString(completedOrderMessage.Order.ParentPermId);
-            completedOrdersGrid[2, rowIndex].Value = completedOrderMessage.Order.Account;
-            completedOrdersGrid[3, rowIndex].Value = completedOrderMessage.Order.Action;
-            completedOrdersGrid[4, rowIndex].Value = Util.DecimalMaxString(completedOrderMessage.Order.TotalQuantity);
-            completedOrdersGrid[5, rowIndex].Value = Util.DoubleMaxString(completedOrderMessage.Order.CashQty);
-            completedOrdersGrid[6, rowIndex].Value = Util.DecimalMaxString(completedOrderMessage.Order.FilledQuantity);
-            completedOrdersGrid[7, rowIndex].Value = Util.DoubleMaxString(completedOrderMessage.Order.LmtPrice);
-            completedOrdersGrid[8, rowIndex].Value = Util.DoubleMaxString(completedOrderMessage.Order.AuxPrice);
-            completedOrdersGrid[9, rowIndex].Value = completedOrderMessage.Contract.Symbol + " " + completedOrderMessage.Contract.SecType + " " + completedOrderMessage.Contract.Exchange;
-            completedOrdersGrid[10, rowIndex].Value = completedOrderMessage.Order.CustomerAccount;
-            completedOrdersGrid[11, rowIndex].Value = completedOrderMessage.Order.ProfessionalCustomer;
-            completedOrdersGrid[12, rowIndex].Value = completedOrderMessage.OrderState.Status;
-            completedOrdersGrid[13, rowIndex].Value = completedOrderMessage.OrderState.CompletedTime;
-            completedOrdersGrid[14, rowIndex].Value = completedOrderMessage.OrderState.CompletedStatus;
+            completedOrdersGrid["completedOrdersPermId", rowIndex].Value = Util.LongMaxString(completedOrderMessage.Order.PermId);
+            completedOrdersGrid["completedOrdersParentPermId", rowIndex].Value = Util.LongMaxString(completedOrderMessage.Order.ParentPermId);
+            completedOrdersGrid["completedOrdersAccount", rowIndex].Value = completedOrderMessage.Order.Account;
+            completedOrdersGrid["completedOrdersAction", rowIndex].Value = completedOrderMessage.Order.Action;
+            completedOrdersGrid["completedOrdersQuantity", rowIndex].Value = Util.DecimalMaxString(completedOrderMessage.Order.TotalQuantity);
+            completedOrdersGrid["completedOrdersCashQuantity", rowIndex].Value = Util.DoubleMaxString(completedOrderMessage.Order.CashQty);
+            completedOrdersGrid["completedOrdersFilledQuantity", rowIndex].Value = Util.DecimalMaxString(completedOrderMessage.Order.FilledQuantity);
+            completedOrdersGrid["completedOrdersLmtPrice", rowIndex].Value = Util.DoubleMaxString(completedOrderMessage.Order.LmtPrice);
+            completedOrdersGrid["completedOrdersAuxPrice", rowIndex].Value = Util.DoubleMaxString(completedOrderMessage.Order.AuxPrice);
+            completedOrdersGrid["completedOrdersContract", rowIndex].Value = completedOrderMessage.Contract.Symbol + " " + completedOrderMessage.Contract.SecType + " " + completedOrderMessage.Contract.Exchange;
+            completedOrdersGrid["completedOrdersCustomerAccount", rowIndex].Value = completedOrderMessage.Order.CustomerAccount;
+            completedOrdersGrid["completedOrdersProfessionalCustomer", rowIndex].Value = completedOrderMessage.Order.ProfessionalCustomer;
+            completedOrdersGrid["completedOrdersSubmitter", rowIndex].Value = completedOrderMessage.Order.Submitter;
+            completedOrdersGrid["completedOrdersImbalanceOnly", rowIndex].Value = completedOrderMessage.Order.ImbalanceOnly;
+            completedOrdersGrid["completedOrdersStatus", rowIndex].Value = completedOrderMessage.OrderState.Status;
+            completedOrdersGrid["completedOrdersCompTime", rowIndex].Value = completedOrderMessage.OrderState.CompletedTime;
+            completedOrdersGrid["completedOrdersCompStatus", rowIndex].Value = completedOrderMessage.OrderState.CompletedStatus;
         }
 
     }

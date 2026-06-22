@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 #pragma once
@@ -145,12 +145,49 @@ const int MIN_SERVER_VER_PROFESSIONAL_CUSTOMER       = 184;
 const int MIN_SERVER_VER_BOND_ACCRUED_INTEREST       = 185;
 const int MIN_SERVER_VER_INELIGIBILITY_REASONS       = 186;
 const int MIN_SERVER_VER_RFQ_FIELDS                  = 187;
+const int MIN_SERVER_VER_BOND_TRADING_HOURS          = 188;
+const int MIN_SERVER_VER_INCLUDE_OVERNIGHT           = 189;
+const int MIN_SERVER_VER_UNDO_RFQ_FIELDS             = 190;
+const int MIN_SERVER_VER_PERM_ID_AS_LONG             = 191;
+const int MIN_SERVER_VER_CME_TAGGING_FIELDS          = 192;
+const int MIN_SERVER_VER_CME_TAGGING_FIELDS_IN_OPEN_ORDER = 193;
+const int MIN_SERVER_VER_ERROR_TIME                  = 194;
+const int MIN_SERVER_VER_FULL_ORDER_PREVIEW_FIELDS   = 195;
+const int MIN_SERVER_VER_HISTORICAL_DATA_END         = 196;
+const int MIN_SERVER_VER_CURRENT_TIME_IN_MILLIS      = 197;
+const int MIN_SERVER_VER_SUBMITTER                   = 198;
+const int MIN_SERVER_VER_IMBALANCE_ONLY              = 199;
+const int MIN_SERVER_VER_PARAMETRIZED_DAYS_OF_EXECUTIONS = 200;
+const int MIN_SERVER_VER_PROTOBUF                        = 201;
+const int MIN_SERVER_VER_ZERO_STRIKE                     = 202;
+const int MIN_SERVER_VER_PROTOBUF_PLACE_ORDER            = 203;
+const int MIN_SERVER_VER_PROTOBUF_COMPLETED_ORDER        = 204;
+const int MIN_SERVER_VER_PROTOBUF_CONTRACT_DATA          = 205;
+const int MIN_SERVER_VER_PROTOBUF_MARKET_DATA            = 206;
+const int MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS     = 207;
+const int MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA        = 208;
+const int MIN_SERVER_VER_PROTOBUF_NEWS_DATA              = 209;
+const int MIN_SERVER_VER_PROTOBUF_SCAN_DATA              = 210;
+const int MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1        = 211;
+const int MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2        = 212;
+const int MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3        = 213;
+const int MIN_SERVER_VER_ADD_Z_SUFFIX_TO_UTC_DATE_TIME   = 214;
+const int MIN_SERVER_VER_CANCEL_CONTRACT_DATA            = 215;
+const int MIN_SERVER_VER_ADDITIONAL_ORDER_PARAMS_1       = 216;
+const int MIN_SERVER_VER_ADDITIONAL_ORDER_PARAMS_2       = 217;
+const int MIN_SERVER_VER_ATTACHED_ORDERS                 = 218;
+const int MIN_SERVER_VER_CONFIG                          = 219;
+const int MIN_SERVER_VER_MARKET_DATA_VOLUMES_IN_SHARES   = 220;
+const int MIN_SERVER_VER_UPDATE_CONFIG                   = 221;
+const int MIN_SERVER_VER_FRACTIONAL_LAST_SIZE            = 222;
+const int MIN_SERVER_VER_HEDGE_MAX_SIZE                  = 223;
+
 
 /* 100+ messaging */
 // 100 = enhanced handshake, msg length prefixes
 
 const int MIN_CLIENT_VER = 100;
-const int MAX_CLIENT_VER = MIN_SERVER_VER_RFQ_FIELDS;
+const int MAX_CLIENT_VER = MIN_SERVER_VER_HEDGE_MAX_SIZE;
 
 
 // incoming msg id's
@@ -188,7 +225,7 @@ const int EXECUTION_DATA_END                        = 55;
 const int DELTA_NEUTRAL_VALIDATION                  = 56;
 const int TICK_SNAPSHOT_END                         = 57;
 const int MARKET_DATA_TYPE                          = 58;
-const int COMMISSION_REPORT                         = 59;
+const int COMMISSION_AND_FEES_REPORT                = 59;
 const int POSITION_DATA                             = 61;
 const int POSITION_END                              = 62;
 const int ACCOUNT_SUMMARY                           = 63;
@@ -236,9 +273,14 @@ const int WSH_META_DATA                             = 104;
 const int WSH_EVENT_DATA                            = 105;
 const int HISTORICAL_SCHEDULE                       = 106;
 const int USER_INFO                                 = 107;
+const int HISTORICAL_DATA_END                       = 108;
+const int CURRENT_TIME_IN_MILLIS                    = 109;
+const int CONFIG_RESPONSE                           = 110;
+const int UPDATE_CONFIG_RESPONSE                    = 111;
 
 
 const int HEADER_LEN = 4; // 4 bytes for msg length
+const int RAW_INT_LEN = 4; // 4 bytes for raw int
 const int MAX_MSG_LEN = 0xFFFFFF; // 16Mb - 1byte
 const char API_SIGN[4] = { 'A', 'P', 'I', '\0' }; // "API"
 
@@ -312,7 +354,7 @@ class TWSAPIDLLEXP EDecoder
     const char* processDeltaNeutralValidationMsg(const char* ptr, const char* endPtr);
     const char* processTickSnapshotEndMsg(const char* ptr, const char* endPtr);
     const char* processMarketDataTypeMsg(const char* ptr, const char* endPtr);
-    const char* processCommissionReportMsg(const char* ptr, const char* endPtr);
+    const char* processCommissionAndFeesReportMsg(const char* ptr, const char* endPtr);
     const char* processPositionDataMsg(const char* ptr, const char* endPtr);
     const char* processPositionEndMsg(const char* ptr, const char* endPtr);
     const char* processAccountSummaryMsg(const char* ptr, const char* endPtr);
@@ -360,7 +402,92 @@ class TWSAPIDLLEXP EDecoder
     const char* processWshEventData(const char* ptr, const char* endPtr);
     const char* processHistoricalSchedule(const char* ptr, const char* endPtr);
     const char* processUserInfo(const char* ptr, const char* endPtr);
+    const char* processHistoricalDataEndMsg(const char* ptr, const char* endPtr);
+    const char* processCurrentTimeInMillisMsg(const char* ptr, const char* endPtr);
 
+    // protobuf
+    const char* processOrderStatusMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processErrorMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processOpenOrderMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processExecutionDetailsMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processOpenOrderEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processExecutionDetailsEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processCompletedOrderMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processCompletedOrdersEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processOrderBoundMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processContractDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processBondContractDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processContractDataEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickPriceMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickSizeMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickStringMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickGenericMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickOptionComputationMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickSnapshotEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processMarketDataTypeMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processMarketDepthMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processMarketDepthL2MsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickReqParamsMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processAccountValueMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processPortfolioValueMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processAcctUpdateTimeMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processAccountDataEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processManagedAccountsMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processPositionMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processPositionEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processAccountSummaryMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processAccountSummaryEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processPositionMultiMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processPositionMultiEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processAccountUpdateMultiMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processAccountUpdateMultiEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalDataUpdateMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalDataEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processRealTimeBarsMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHeadTimestampMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistogramDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalTicksMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalTicksBidAskMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalTicksLastMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickByTickMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processNewsBulletinMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processNewsArticleMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processNewsProvidersMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalNewsMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalNewsEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processWshMetaDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processWshEventDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processTickNewsMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processScannerParametersMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processScannerDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processFundamentalsDataMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processPnLMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processPnLSingleMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processReceiveFAMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processReplaceFAEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processCommissionAndFeesReportMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processHistoricalScheduleMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processRerouteMktDataReqMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processRerouteMktDepthReqMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processSecurityDefinitionOptionParameterMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processSecurityDefinitionOptionParameterEndMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processSoftDollarTiersMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processFamilyCodesMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processSymbolSamplesMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processSmartComponentsMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processMarketRuleMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processUserInfoMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processNextValidIdMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processCurrentTimeMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processCurrentTimeInMillisMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processVerifyMessageApiMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processVerifyCompletedMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processDisplayGroupListMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processDisplayGroupUpdatedMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processMktDepthExchangesMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processConfigResponseMsgProtoBuf(const char* ptr, const char* endPtr);
+    const char* processUpdateConfigResponseMsgProtoBuf(const char* ptr, const char* endPtr);
 
     int processConnectAck(const char*& beginPtr, const char* endPtr);
 
@@ -380,7 +507,6 @@ public:
     // decoders
     static bool DecodeField(bool&, const char*& ptr, const char* endPtr);
     static bool DecodeField(int&, const char*& ptr, const char* endPtr);
-    static bool DecodeField(long&, const char*& ptr, const char* endPtr);
     static bool DecodeField(long long&, const char*& ptr, const char* endPtr);
     static bool DecodeField(double&, const char*& ptr, const char* endPtr);
     static bool DecodeField(std::string&, const char*& ptr, const char* endPtr);
@@ -390,15 +516,20 @@ public:
     static bool DecodeFieldTime(time_t&, const char*& ptr, const char* endPtr);
 
     static bool DecodeFieldMax(int&, const char*& ptr, const char* endPtr);
-    static bool DecodeFieldMax(long&, const char*& ptr, const char* endPtr);
     static bool DecodeFieldMax(double&, const char*& ptr, const char* endPtr);
+    static bool DecodeRawInt(int&, const char*& ptr, const char* endPtr);
 
     EDecoder(int serverVersion, EWrapper *callback, EClientMsgSink *clientMsgSink = 0);
 
     int parseAndProcessMsg(const char*& beginPtr, const char* endPtr);
+
+private:
+    static bool DecodeField(long&, const char*& ptr, const char* endPtr);
+    static bool DecodeFieldMax(long&, const char*& ptr, const char* endPtr);
 };
 
 #define DECODE_FIELD(x) if (!EDecoder::DecodeField(x, ptr, endPtr)) return 0;
 #define DECODE_FIELD_TIME(x) if (!EDecoder::DecodeFieldTime(x, ptr, endPtr)) return 0;
 #define DECODE_FIELD_MAX(x) if (!EDecoder::DecodeFieldMax(x, ptr, endPtr)) return 0;
+#define DECODE_RAW_INT(x) if (!EDecoder::DecodeRawInt(x, ptr, endPtr)) return 0;
 #endif

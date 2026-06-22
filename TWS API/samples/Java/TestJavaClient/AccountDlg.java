@@ -256,7 +256,7 @@ class PortfolioTable extends AbstractTableModel {
                 case 6:
                 	return m_contract.multiplier();
                 case 7:
-                	return (m_contract.primaryExch() != null ? m_contract.primaryExch() : "");
+                	return (m_contract.exchange() != null ? m_contract.exchange() : (m_contract.primaryExch() != null ? m_contract.primaryExch() : ""));
                 case 8:
                     return m_contract.currency();
                 case 9:

@@ -18,8 +18,8 @@ private:
 public:
     CodeMsgPair error() const { return m_error; }
     std::string text() const  { return m_text; }
-    
+
     EClientException(CodeMsgPair error, std::string text) : m_error(error), m_text(text) { }
-}; 
+};
 
 #endif

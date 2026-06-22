@@ -49,6 +49,8 @@ namespace IBSampleApp.ui
             this.maintenanceMarginAfter = new System.Windows.Forms.Label();
             this.bondAccruedInterestLabel = new System.Windows.Forms.Label();
             this.bondAccruedInterest = new System.Windows.Forms.Label();
+            this.whatIfTypeLabel = new System.Windows.Forms.Label();
+            this.whatIfType = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // equityWithLoanLabel
@@ -222,12 +224,33 @@ namespace IBSampleApp.ui
             this.bondAccruedInterest.Text = "0.00";
             this.bondAccruedInterest.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
+            // whatIfTypeLabel
+            // 
+            this.whatIfTypeLabel.AutoSize = true;
+            this.whatIfTypeLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.whatIfTypeLabel.Location = new System.Drawing.Point(12, 162);
+            this.whatIfTypeLabel.Name = "whatIfTypeLabel";
+            this.whatIfTypeLabel.Size = new System.Drawing.Size(73, 13);
+            this.whatIfTypeLabel.TabIndex = 18;
+            this.whatIfTypeLabel.Text = "WhatIfType";
+            // 
+            // whatIfType
+            // 
+            this.whatIfType.Location = new System.Drawing.Point(179, 162);
+            this.whatIfType.Name = "whatIfType";
+            this.whatIfType.Size = new System.Drawing.Size(81, 13);
+            this.whatIfType.TabIndex = 19;
+            this.whatIfType.Text = "0.00";
+            this.whatIfType.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
             // MarginDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(492, 219);
             this.ControlBox = false;
+            this.Controls.Add(this.whatIfType);
+            this.Controls.Add(this.whatIfTypeLabel);
             this.Controls.Add(this.bondAccruedInterest);
             this.Controls.Add(this.bondAccruedInterestLabel);
             this.Controls.Add(this.maintenanceMarginAfter);
@@ -274,5 +297,7 @@ namespace IBSampleApp.ui
         private System.Windows.Forms.Label maintenanceMarginAfter;
         private System.Windows.Forms.Label bondAccruedInterestLabel;
         private System.Windows.Forms.Label bondAccruedInterest;
+        private System.Windows.Forms.Label whatIfTypeLabel;
+        private System.Windows.Forms.Label whatIfType;
     }
 }

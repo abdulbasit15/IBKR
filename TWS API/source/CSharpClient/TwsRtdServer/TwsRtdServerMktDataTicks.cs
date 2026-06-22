@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -51,7 +51,6 @@ namespace TwsRtdServer
         private double m_genTickShortable = 0.0;
         private double m_genTickEstimatedIPOMidpoint = 0.0;
         private double m_genTickFinalIPOLast = 0.0;
-        private string m_genTickFundamentals = "";
         private double m_genTickTradeCount = 0.0;
         private double m_genTickTradeRate = 0.0;
         private double m_genTickVolumeRate = 0.0;
@@ -211,9 +210,6 @@ namespace TwsRtdServer
                     break;
                 case TwsRtdServerData.GEN_TICK_FINAL_IPO_LAST:
                     m_genTickFinalIPOLast = (double)value;
-                    break;
-                case TwsRtdServerData.GEN_TICK_FUNDAMENTALS:
-                    m_genTickFundamentals = (string)value;
                     break;
                 case TwsRtdServerData.GEN_TICK_TRADE_COUNT:
                     m_genTickTradeCount = (double)value;
@@ -541,9 +537,6 @@ namespace TwsRtdServer
                     break;
                 case TwsRtdServerData.GEN_TICK_FINAL_IPO_LAST:
                     value = m_genTickFinalIPOLast;
-                    break;
-                case TwsRtdServerData.GEN_TICK_FUNDAMENTALS:
-                    value = m_genTickFundamentals;
                     break;
                 case TwsRtdServerData.GEN_TICK_TRADE_COUNT:
                     value = m_genTickTradeCount;

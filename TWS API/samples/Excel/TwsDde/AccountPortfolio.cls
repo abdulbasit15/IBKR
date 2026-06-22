@@ -81,7 +81,7 @@ Sub clearExerciseOptionsOnExit()
     Dim rng As Range, row As Range, cell As Range
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(ACCOUNT_UPDATES_START_ROW, EXERCISE_OPTIONS_ID), .Cells(ACCOUNT_UPDATES_END_ROW, EXERCISE_OPTIONS_ID))
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, util.IDENTIFIER_PREFIX) <> 0 Then
                 clearExerciseOptionsForRow cell

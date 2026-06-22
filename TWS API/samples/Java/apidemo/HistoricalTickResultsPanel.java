@@ -89,6 +89,7 @@ class HistoricalTickResultsPanel extends NewTabPanel implements IHistoricalTickH
     public void activated() { }
 
     @Override
-    public void closed() { }
-    
+    public void closed() { 
+        ApiDemo.INSTANCE.controller().cancelHistoricalTicks(this);
+    }
 }

@@ -109,7 +109,7 @@ Sub cancelCalculateRequest(requestType As String)
 
     With Worksheets(STR_SHEET_NAME)
 
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
 
             If .Cells(row.row, idColumnIndex).value = STR_EMPTY Then GoTo Continue
@@ -143,7 +143,7 @@ Sub calculateImpliedVolatility()
     If server = STR_EMPTY Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
     
             If .Cells(row.row, calculateImpliedVolatilityIdColumnIndex).value <> STR_EMPTY Then GoTo Continue
@@ -166,7 +166,7 @@ Sub calculateOptionPrice()
     If server = STR_EMPTY Then Exit Sub
 
     With Worksheets(STR_SHEET_NAME)
-        For Each row In Selection.rows
+        For Each row In Selection.Rows
             lastRowIndex = row.row
             If .Cells(row.row, calculateOptionPriceIdColumnIndex).value <> STR_EMPTY Then GoTo Continue
             If Not util.hasContractData(Worksheets(STR_SHEET_NAME), dataStartRowIndex, row, startOfContractColumns, getContractColumns()) Then GoTo Continue
@@ -235,7 +235,7 @@ Sub sendCalculateRequest(server As String, cell As Range, requestType As String)
         End If
 
         ' send request
-        util.sendPoke Worksheets(STR_SHEET_NAME), server, requestType, id & util.QMARK & firstVal & util.QMARK & secondVal, cell, startOfContractColumns, getContractColumns(), 0, calculateOptionPriceIdColumnIndex, 0, 0, 0, 0
+        util.sendPoke Worksheets(STR_SHEET_NAME), server, requestType, id & util.QMARK & firstVal & util.QMARK & secondVal, cell, startOfContractColumns, getContractColumns(), 0, calculateOptionPriceIdColumnIndex
 
         ' fill error column with formula
         .Cells(cell.row, errorColumnIndex).Formula = util.composeLink(server, tickStr, id, util.STR_ERROR)
@@ -279,7 +279,7 @@ Sub cancelAllCalculateRequests(requestType As String)
     With Worksheets(STR_SHEET_NAME)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, util.IDENTIFIER_PREFIX) <> 0 Then
                 util.sendRequest server, requestType, cell.value
@@ -320,7 +320,7 @@ Sub requestAllCalculateRequests(requestType As String)
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
 
         Dim row As Range, cell As Range
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, util.IDENTIFIER_PREFIX) <> 0 Then
                 sendCalculateRequest server, cell, requestType

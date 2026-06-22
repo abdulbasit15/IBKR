@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 namespace IBSampleApp.messages
@@ -9,7 +9,7 @@ namespace IBSampleApp.messages
         public decimal Filled { get; private set; }
         public decimal Remaining { get; private set; }
         public double AvgFillPrice { get; private set; }
-        public int PermId { get; private set; }
+        public long PermId { get; private set; }
         public int ParentId { get; private set; }
         public double LastFillPrice { get; private set; }
         public int ClientId { get; private set; }
@@ -17,7 +17,7 @@ namespace IBSampleApp.messages
         public double MktCapPrice { get; private set; }
 
         public OrderStatusMessage(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice,
-           int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
+           long permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
         {
             OrderId = orderId;
             Status = status;

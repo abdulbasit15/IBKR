@@ -29,6 +29,7 @@ namespace IBSampleApp.ui
             initialMarginAfter.Text = Util.formatDoubleString(state.InitMarginAfter);
             maintenanceMarginAfter.Text = Util.formatDoubleString(state.MaintMarginAfter);
             bondAccruedInterest.Text = order.BondAccruedInterest;
+            whatIfType.Text = order.WhatIfType.ToString();
         }
 
         public void UpdateMarginInformation(OrderState state, Order order)
@@ -49,6 +50,7 @@ namespace IBSampleApp.ui
             initialMarginAfter.Text = "";
             maintenanceMarginAfter.Text = "";
             bondAccruedInterest.Text = "";
+            whatIfType.Text = "";
             Visible = false;
         }
 

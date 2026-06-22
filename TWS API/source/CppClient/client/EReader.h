@@ -17,7 +17,7 @@ struct EReaderSignal;
 class EMessage;
 
 class TWSAPIDLLEXP EReader
-{  
+{
     EClientSocket *m_pClientSocket;
     EReaderSignal *m_pEReaderSignal;
     EDecoder processMsgsDecoder_;
@@ -51,7 +51,7 @@ protected:
 #else
 #   error "Not implemented on this platform"
 #endif
-    
+
     EMessage * readSingleMsg();
 
 public:

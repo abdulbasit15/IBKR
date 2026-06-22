@@ -18,7 +18,7 @@ End Enum
 Public ExtendedAttributesTable As Range
 
 Public Sub Initialise()
-    Set ExtendedAttributesTable = ExtendedOrderAttributes.Range("$A$7:$J$113")
+    Set ExtendedAttributesTable = ExtendedOrderAttributes.Range("$A$7:$J$130")
 End Sub
 
 Private Sub Worksheet_Activate()

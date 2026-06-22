@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -124,7 +124,7 @@ namespace TWSLib
         [DispId(57)]
         void placeOrder(int id, string action, double quantity, string symbol, string secType,
                   string lastTradeDate, double strike, string right, string multiplier,
-                  string exchange, string primaryExchange, string curency, string orderType,
+                  string exchange, string primaryExchange, string currency, string orderType,
                   double price, double auxPrice, string goodAfterTime, string group,
                   string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodTillDate);
 
@@ -158,20 +158,20 @@ namespace TWSLib
 
         [DispId(66)]
         void placeOrder2(int id, string action, double quantity, string localSymbol,
-                  string secType, string exchange, string primaryExchange, string curency,
+                  string secType, string exchange, string primaryExchange, string currency,
                   string orderType, double lmtPrice, double auxPrice,
                   string goodAfterTime, string group,
                   string faMethod, string faPercentage, /* deprecated */ string faProfile, string goodTillDate);
         [DispId(67)]
         void reqContractDetails(string symbol, string secType, string lastTradeDate, double strike,
-                  string right, string multiplier, string exchange, string curency, int includeExpired);
+                  string right, string multiplier, string exchange, string currency, int includeExpired);
         [DispId(68)]
-        void reqContractDetails2(string localSymbol, string secType, string exchange, string curency, int includeExpired);
+        void reqContractDetails2(string localSymbol, string secType, string exchange, string currency, int includeExpired);
         [DispId(69)]
         void reqMktDepth(int id, string symbol, string secType, string lastTradeDate, double strike,
-                  string right, string multiplier, string exchange, string curency, int numRows, bool isSmartDepth, ITagValueList options);
+                  string right, string multiplier, string exchange, string currency, int numRows, bool isSmartDepth, ITagValueList options);
         [DispId(70)]
-        void reqMktDepth2(int id, string localSymbol, string secType, string exchange, string curency, int numRows, bool isSmartDepth, ITagValueList options);
+        void reqMktDepth2(int id, string localSymbol, string secType, string exchange, string currency, int numRows, bool isSmartDepth, ITagValueList options);
         [DispId(71)]
         void cancelMktDepth(int id, bool isSmartDepth);
         [DispId(72)]
@@ -196,12 +196,12 @@ namespace TWSLib
         void replaceFA(int reqId, int faDataType, string cxml);
         [DispId(82)]
         void reqHistoricalData(int id, string symbol, string secType, string lastTradeDate, double strike,
-                  string right, string multiplier, string exchange, string curency, int isExpired,
+                  string right, string multiplier, string exchange, string currency, int isExpired,
                   string endDateTime, string durationStr, string barSizeSetting, string whatToShow,
                   int useRTH, int formatDate, bool keepUpToDate, ITagValueList options);
         [DispId(83)]
         void exerciseOptions(int id, string symbol, string secType, string lastTradeDate, double strike,
-                  string right, string multiplier, string exchange, string curency,
+                  string right, string multiplier, string exchange, string currency,
                   int exerciseAction, int exerciseQuantity, int @override);
         [DispId(84)]
         void reqScannerParameters();
@@ -240,7 +240,7 @@ namespace TWSLib
         [DispId(97)]
         void cancelCalculateOptionPrice(int reqId);
         [DispId(98)]
-        void reqGlobalCancel();
+        void reqGlobalCancel(IOrderCancel orderCancel);
         [DispId(99)]
         void reqMarketDataType(int marketDataType);
 
@@ -386,6 +386,14 @@ namespace TWSLib
            int exerciseQuantity, string account, int @override, string manualOrderTime, string customerAccount, bool professionalCustomer);
         [DispId(243)]
         IOrderCancel createOrderCancel();
+        [DispId(244)]
+        void reqCurrentTimeInMillis();
+        [DispId(245)]
+        IIntegerList createIntegerList();
+        [DispId(246)]
+        void cancelContractData(int reqId);
+        [DispId(247)]
+        void cancelHistoricalTicks(int reqId);
         #endregion
     }
 }

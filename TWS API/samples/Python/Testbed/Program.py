@@ -1,5 +1,5 @@
 """
-Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 """
 
@@ -14,7 +14,7 @@ import os.path
 
 from ibapi import wrapper
 from ibapi.client import EClient
-from ibapi.utils import longMaxString
+from ibapi.utils import getTimeStrFromMillis, longMaxString, decimalMaxString, getEnumTypeName, printProtoSingleLine
 from ibapi.utils import iswrapper
 
 # types
@@ -25,12 +25,13 @@ from ibapi.order import * # @UnusedWildImport
 from ibapi.order_state import * # @UnusedWildImport
 from ibapi.execution import Execution
 from ibapi.execution import ExecutionFilter
-from ibapi.commission_report import CommissionReport
+from ibapi.commission_and_fees_report import CommissionAndFeesReport
 from ibapi.ticktype import * # @UnusedWildImport
 from ibapi.tag_value import TagValue
 
 from ibapi.account_summary_tags import *
 
+from ConfigSamples import ConfigSamples
 from ContractSamples import ContractSamples
 from OrderSamples import OrderSamples
 from AvailableAlgoParams import AvailableAlgoParams
@@ -38,8 +39,94 @@ from ScannerSubscriptionSamples import ScannerSubscriptionSamples
 from FaAllocationSamples import FaAllocationSamples
 from ibapi.scanner import ScanData
 from decimal import Decimal
-from ibapi.ineligibility_reason import IneligibilityReason
+from ContractSamplesProto import ContractSamplesProto
+from OrderSamplesProto import OrderSamplesProto
+from NewsSamplesProto import NewsSamplesProto
 
+from ibapi.protobuf.OrderStatus_pb2 import OrderStatus as OrderStatusProto
+from ibapi.protobuf.OpenOrder_pb2 import OpenOrder as OpenOrderProto
+from ibapi.protobuf.OpenOrdersEnd_pb2 import OpenOrdersEnd as OpenOrdersEndProto
+from ibapi.protobuf.ErrorMessage_pb2 import ErrorMessage as ErrorMessageProto
+from ibapi.protobuf.ExecutionDetails_pb2 import ExecutionDetails as ExecutionDetailsProto
+from ibapi.protobuf.ExecutionDetailsEnd_pb2 import ExecutionDetailsEnd as ExecutionDetailsEndProto
+from ibapi.protobuf.ExecutionRequest_pb2 import ExecutionRequest as ExecutionRequestProto
+from ibapi.protobuf.ExecutionFilter_pb2 import ExecutionFilter as ExecutionFilterProto
+from ibapi.protobuf.CompletedOrder_pb2 import CompletedOrder as CompletedOrderProto
+from ibapi.protobuf.CompletedOrdersEnd_pb2 import CompletedOrdersEnd as CompletedOrdersEndProto
+from ibapi.protobuf.OrderBound_pb2 import OrderBound as OrderBoundProto
+from ibapi.protobuf.ContractData_pb2 import ContractData as ContractDataProto
+from ibapi.protobuf.ContractDataEnd_pb2 import ContractDataEnd as ContractDataEndProto
+from ibapi.protobuf.TickPrice_pb2 import TickPrice as TickPriceProto
+from ibapi.protobuf.TickSize_pb2 import TickSize as TickSizeProto
+from ibapi.protobuf.TickOptionComputation_pb2 import TickOptionComputation as TickOptionComputationProto
+from ibapi.protobuf.TickGeneric_pb2 import TickGeneric as TickGenericProto
+from ibapi.protobuf.TickString_pb2 import TickString as TickStringProto
+from ibapi.protobuf.TickSnapshotEnd_pb2 import TickSnapshotEnd as TickSnapshotEndProto
+from ibapi.protobuf.MarketDepth_pb2 import MarketDepth as MarketDepthProto
+from ibapi.protobuf.MarketDepthL2_pb2 import MarketDepthL2 as MarketDepthL2Proto
+from ibapi.protobuf.MarketDataType_pb2 import MarketDataType as MarketDataTypeProto
+from ibapi.protobuf.TickReqParams_pb2 import TickReqParams as TickReqParamsProto
+from ibapi.protobuf.AccountValue_pb2 import AccountValue as AccountValueProto
+from ibapi.protobuf.PortfolioValue_pb2 import PortfolioValue as PortfolioValueProto
+from ibapi.protobuf.AccountUpdateTime_pb2 import AccountUpdateTime as AccountUpdateTimeProto
+from ibapi.protobuf.AccountDataEnd_pb2 import AccountDataEnd as AccountDataEndProto
+from ibapi.protobuf.ManagedAccounts_pb2 import ManagedAccounts as ManagedAccountsProto
+from ibapi.protobuf.Position_pb2 import Position as PositionProto
+from ibapi.protobuf.PositionEnd_pb2 import PositionEnd as PositionEndProto
+from ibapi.protobuf.AccountSummary_pb2 import AccountSummary as AccountSummaryProto
+from ibapi.protobuf.AccountSummaryEnd_pb2 import AccountSummaryEnd as AccountSummaryEndProto
+from ibapi.protobuf.PositionMulti_pb2 import PositionMulti as PositionMultiProto
+from ibapi.protobuf.PositionMultiEnd_pb2 import PositionMultiEnd as PositionMultiEndProto
+from ibapi.protobuf.AccountUpdateMulti_pb2 import AccountUpdateMulti as AccountUpdateMultiProto
+from ibapi.protobuf.AccountUpdateMultiEnd_pb2 import AccountUpdateMultiEnd as AccountUpdateMultiEndProto
+from ibapi.protobuf.HistoricalData_pb2 import HistoricalData as HistoricalDataProto
+from ibapi.protobuf.HistoricalDataUpdate_pb2 import HistoricalDataUpdate as HistoricalDataUpdateProto
+from ibapi.protobuf.HistoricalDataEnd_pb2 import HistoricalDataEnd as HistoricalDataEndProto
+from ibapi.protobuf.RealTimeBarTick_pb2 import RealTimeBarTick as RealTimeBarTickProto
+from ibapi.protobuf.HeadTimestamp_pb2 import HeadTimestamp as HeadTimestampProto
+from ibapi.protobuf.HistogramData_pb2 import HistogramData as HistogramDataProto
+from ibapi.protobuf.HistoricalTicks_pb2 import HistoricalTicks as HistoricalTicksProto
+from ibapi.protobuf.HistoricalTicksBidAsk_pb2 import HistoricalTicksBidAsk as HistoricalTicksBidAskProto
+from ibapi.protobuf.HistoricalTicksLast_pb2 import HistoricalTicksLast as HistoricalTicksLastProto
+from ibapi.protobuf.TickByTickData_pb2 import TickByTickData as TickByTickDataProto
+from ibapi.protobuf.NewsBulletin_pb2 import NewsBulletin as NewsBulletinProto
+from ibapi.protobuf.NewsArticle_pb2 import NewsArticle as NewsArticleProto
+from ibapi.protobuf.NewsProviders_pb2 import NewsProviders as NewsProvidersProto
+from ibapi.protobuf.HistoricalNews_pb2 import HistoricalNews as HistoricalNewsProto
+from ibapi.protobuf.HistoricalNewsEnd_pb2 import HistoricalNewsEnd as HistoricalNewsEndProto
+from ibapi.protobuf.WshMetaData_pb2 import WshMetaData as WshMetaDataProto
+from ibapi.protobuf.WshEventData_pb2 import WshEventData as WshEventDataProto
+from ibapi.protobuf.TickNews_pb2 import TickNews as TickNewsProto
+from ibapi.protobuf.ScannerParameters_pb2 import ScannerParameters as ScannerParametersProto
+from ibapi.protobuf.ScannerData_pb2 import ScannerData as ScannerDataProto
+from ibapi.protobuf.FundamentalsData_pb2 import FundamentalsData as FundamentalsDataProto
+from ibapi.protobuf.PnL_pb2 import PnL as PnLProto
+from ibapi.protobuf.PnLSingle_pb2 import PnLSingle as PnLSingleProto
+from ibapi.protobuf.ReceiveFA_pb2 import ReceiveFA as ReceiveFAProto
+from ibapi.protobuf.ReplaceFAEnd_pb2 import ReplaceFAEnd as ReplaceFAEndProto
+from ibapi.protobuf.CommissionAndFeesReport_pb2 import CommissionAndFeesReport as CommissionAndFeesReportProto
+from ibapi.protobuf.HistoricalSchedule_pb2 import HistoricalSchedule as HistoricalScheduleProto
+from ibapi.protobuf.RerouteMarketDataRequest_pb2 import RerouteMarketDataRequest as RerouteMarketDataRequestProto
+from ibapi.protobuf.RerouteMarketDepthRequest_pb2 import RerouteMarketDepthRequest as RerouteMarketDepthRequestProto
+from ibapi.protobuf.SecDefOptParameter_pb2 import SecDefOptParameter as SecDefOptParameterProto
+from ibapi.protobuf.SecDefOptParameterEnd_pb2 import SecDefOptParameterEnd as SecDefOptParameterEndProto
+from ibapi.protobuf.SoftDollarTiers_pb2 import SoftDollarTiers as SoftDollarTiersProto
+from ibapi.protobuf.FamilyCodes_pb2 import FamilyCodes as FamilyCodesProto
+from ibapi.protobuf.SymbolSamples_pb2 import SymbolSamples as SymbolSamplesProto
+from ibapi.protobuf.SmartComponents_pb2 import SmartComponents as SmartComponentsProto
+from ibapi.protobuf.MarketRule_pb2 import MarketRule as MarketRuleProto
+from ibapi.protobuf.UserInfo_pb2 import UserInfo as UserInfoProto
+from ibapi.protobuf.NextValidId_pb2 import NextValidId as NextValidIdProto
+from ibapi.protobuf.CurrentTime_pb2 import CurrentTime as CurrentTimeProto
+from ibapi.protobuf.CurrentTimeInMillis_pb2 import CurrentTimeInMillis as CurrentTimeInMillisProto
+from ibapi.protobuf.VerifyMessageApi_pb2 import VerifyMessageApi as VerifyMessageApiProto
+from ibapi.protobuf.VerifyCompleted_pb2 import VerifyCompleted as VerifyCompletedProto
+from ibapi.protobuf.DisplayGroupList_pb2 import DisplayGroupList as DisplayGroupListProto
+from ibapi.protobuf.DisplayGroupUpdated_pb2 import DisplayGroupUpdated as DisplayGroupUpdatedProto
+from ibapi.protobuf.MarketDepthExchanges_pb2 import MarketDepthExchanges as MarketDepthExchangesProto
+from ibapi.protobuf.ConfigRequest_pb2 import ConfigRequest as ConfigRequestProto
+from ibapi.protobuf.ConfigResponse_pb2 import ConfigResponse as ConfigResponseProto
+from ibapi.protobuf.UpdateConfigResponse_pb2 import UpdateConfigResponse as UpdateConfigResponseProto
 
 def SetupLogger():
     if not os.path.exists("log"):
@@ -255,10 +342,10 @@ class TestApp(TestWrapper, TestClient):
 
         if self.globalCancelOnly:
             print("Executing GlobalCancel only")
-            self.reqGlobalCancel()
+            self.reqGlobalCancel(OrderSamples.CancelOrderEmpty())
         else:
             print("Executing requests")
-            #self.reqGlobalCancel()
+            #self.reqGlobalCancel(OrderSamples.CancelOrderEmpty()))
             #self.marketDataTypeOperations()
             #self.accountOperations_req()
             #self.tickDataOperations_req()
@@ -270,23 +357,26 @@ class TestApp(TestWrapper, TestClient):
             #self.marketScannersOperations_req()
             #self.fundamentalsOperations_req()
             #self.bulletinsOperations_req()
-            #self.contractOperations()
+            #self.contractOperations_req()
             #self.newsOperations_req()
             #self.miscelaneousOperations()
             #self.linkingOperations()
             #self.financialAdvisorOperations()
             #self.orderOperations_req()
-            #self.orderOperations_cancel()
             #self.rerouteCFDOperations()
             #self.marketRuleOperations()
             #self.pnlOperations_req()
             #self.histogramOperations_req()
             #self.continuousFuturesOperations_req()
-            #self.historicalTicksOperations()
+            #self.historicalTicksOperations_req()
             #self.tickByTickOperations_req()
             #self.whatIfOrderOperations()
             #self.wshCalendarOperations()
-            self.rfqOperations()
+            #self.algoSamples()
+            #self.conditionSamples()
+            #self.configOperations_req()
+            #self.orderParentChildOperations_req()
+            self.newsOperationsProto_req()
             
             print("Executing requests ... finished")
 
@@ -316,6 +406,8 @@ class TestApp(TestWrapper, TestClient):
         #self.histogramOperations_cancel()
         #self.continuousFuturesOperations_cancel()
         #self.tickByTickOperations_cancel()
+        #self.contractOperations_cancel()
+        #self.historicalTicksOperations_cancel()
         print("Executing cancels ... finished")
 
     def nextOrderId(self):
@@ -325,12 +417,12 @@ class TestApp(TestWrapper, TestClient):
 
     @iswrapper
     # ! [error]
-    def error(self, reqId: TickerId, errorCode: int, errorString: str, advancedOrderRejectJson = ""):
-        super().error(reqId, errorCode, errorString, advancedOrderRejectJson)
+    def error(self, reqId: TickerId, errorTime: int, errorCode: int, errorString: str, advancedOrderRejectJson = ""):
+        errorTimeStr = getTimeStrFromMillis(errorTime)
         if advancedOrderRejectJson:
-            print("Error. Id:", reqId, "Code:", errorCode, "Msg:", errorString, "AdvancedOrderRejectJson:", advancedOrderRejectJson)
+            print("Error. Id:", reqId, "Time:", errorTimeStr, "Code:", errorCode, "Msg:", errorString, "AdvancedOrderRejectJson:", advancedOrderRejectJson)
         else:
-            print("Error. Id:", reqId, "Code:", errorCode, "Msg:", errorString)
+            print("Error. Id:", reqId, "Time:", errorTimeStr, "Code:", errorCode, "Msg:", errorString)
 
     # ! [error] self.reqId2nErr[reqId] += 1
 
@@ -341,31 +433,14 @@ class TestApp(TestWrapper, TestClient):
 
     @iswrapper
     # ! [openorder]
-    def openOrder(self, orderId: OrderId, contract: Contract, order: Order,
-                  orderState: OrderState):
+    def openOrder(self, orderId: OrderId, contract: Contract, order: Order, orderState: OrderState):
         super().openOrder(orderId, contract, order, orderState)
-        print("OpenOrder. PermId:", intMaxString(order.permId), "ClientId:", intMaxString(order.clientId), " OrderId:", intMaxString(orderId), 
-              "Account:", order.account, "Symbol:", contract.symbol, "SecType:", contract.secType,
-              "Exchange:", contract.exchange, "Action:", order.action, "OrderType:", order.orderType,
-              "TotalQty:", decimalMaxString(order.totalQuantity), "CashQty:", floatMaxString(order.cashQty), 
-              "LmtPrice:", floatMaxString(order.lmtPrice), "AuxPrice:", floatMaxString(order.auxPrice), "Status:", orderState.status,
-              "MinTradeQty:", intMaxString(order.minTradeQty), "MinCompeteSize:", intMaxString(order.minCompeteSize),
-              "competeAgainstBestOffset:", "UpToMid" if order.competeAgainstBestOffset == COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID else floatMaxString(order.competeAgainstBestOffset),
-              "MidOffsetAtWhole:", floatMaxString(order.midOffsetAtWhole),"MidOffsetAtHalf:" ,floatMaxString(order.midOffsetAtHalf),
-              "FAGroup:", order.faGroup, "FAMethod:", order.faMethod, "CustomerAccount:", order.customerAccount, "ProfessionalCustomer:", order.professionalCustomer, 
-              "BondAccruedInterest:", order.bondAccruedInterest)
-
-        order.contract = contract
-        self.permId2ord[order.permId] = order
     # ! [openorder]
 
     @iswrapper
     # ! [openorderend]
     def openOrderEnd(self):
         super().openOrderEnd()
-        print("OpenOrderEnd")
-
-        logging.debug("Received %d openOrders", len(self.permId2ord))
     # ! [openorderend]
 
     @iswrapper
@@ -374,13 +449,7 @@ class TestApp(TestWrapper, TestClient):
                     remaining: Decimal, avgFillPrice: float, permId: int,
                     parentId: int, lastFillPrice: float, clientId: int,
                     whyHeld: str, mktCapPrice: float):
-        super().orderStatus(orderId, status, filled, remaining,
-                            avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice)
-        print("OrderStatus. Id:", orderId, "Status:", status, "Filled:", decimalMaxString(filled),
-              "Remaining:", decimalMaxString(remaining), "AvgFillPrice:", floatMaxString(avgFillPrice),
-              "PermId:", intMaxString(permId), "ParentId:", intMaxString(parentId), "LastFillPrice:",
-              floatMaxString(lastFillPrice), "ClientId:", intMaxString(clientId), "WhyHeld:",
-              whyHeld, "MktCapPrice:", floatMaxString(mktCapPrice))
+        super().orderStatus(orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice)
     # ! [orderstatus]
 
 
@@ -494,8 +563,7 @@ class TestApp(TestWrapper, TestClient):
         # ! [reqcontractdetailscontfut]
 
         # ! [reqhistoricaldatacontfut]
-        timeStr = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H:%M:%S')
-        self.reqHistoricalData(18002, ContractSamples.ContFut(), timeStr, "1 Y", "1 month", "TRADES", 0, 1, False, [])
+        self.reqHistoricalData(18002, ContractSamples.ContFut(), "", "1 Y", "1 month", "TRADES", 0, 1, False, [])
         # ! [reqhistoricaldatacontfut]
 
     def continuousFuturesOperations_cancel(self):
@@ -881,9 +949,9 @@ class TestApp(TestWrapper, TestClient):
         
     @iswrapper
     # ! [orderbound]
-    def orderBound(self, orderId: int, apiClientId: int, apiOrderId: int):
-        super().orderBound(orderId, apiClientId, apiOrderId)
-        print("OrderBound.", "OrderId:", intMaxString(orderId), "ApiClientId:", intMaxString(apiClientId), "ApiOrderId:", intMaxString(apiOrderId))
+    def orderBound(self, permId: int, clientId: int, orderId: int):
+        super().orderBound(permId, clientId, orderId)
+        print("OrderBound.", "PermId:", longMaxString(permId), "ClientId:", intMaxString(clientId), "OrderId:", intMaxString(orderId))
     # ! [orderbound]
 
     @iswrapper
@@ -898,7 +966,7 @@ class TestApp(TestWrapper, TestClient):
         else:
             print("AllLast.", end='')
         print(" ReqId:", reqId,
-              "Time:", datetime.datetime.fromtimestamp(time).strftime("%Y%m%d-%H:%M:%S"),
+              "Time:", getTimeStrFromMillis(time),
               "Price:", floatMaxString(price), "Size:", decimalMaxString(size), "Exch:" , exchange,
               "Spec Cond:", specialConditions, "PastLimit:", tickAtrribLast.pastLimit, "Unreported:", tickAtrribLast.unreported)
     # ! [tickbytickalllast]
@@ -910,7 +978,7 @@ class TestApp(TestWrapper, TestClient):
         super().tickByTickBidAsk(reqId, time, bidPrice, askPrice, bidSize,
                                  askSize, tickAttribBidAsk)
         print("BidAsk. ReqId:", reqId,
-              "Time:", datetime.datetime.fromtimestamp(time).strftime("%Y%m%d-%H:%M:%S"),
+              "Time:", getTimeStrFromMillis(time),
               "BidPrice:", floatMaxString(bidPrice), "AskPrice:", floatMaxString(askPrice), "BidSize:", decimalMaxString(bidSize),
               "AskSize:", decimalMaxString(askSize), "BidPastLow:", tickAttribBidAsk.bidPastLow, "AskPastHigh:", tickAttribBidAsk.askPastHigh)
     # ! [tickbytickbidask]
@@ -920,7 +988,7 @@ class TestApp(TestWrapper, TestClient):
     def tickByTickMidPoint(self, reqId: int, time: int, midPoint: float):
         super().tickByTickMidPoint(reqId, time, midPoint)
         print("Midpoint. ReqId:", reqId,
-              "Time:", datetime.datetime.fromtimestamp(time).strftime("%Y%m%d-%H:%M:%S"),
+              "Time:", getTimeStrFromMillis(time),
               "MidPoint:", floatMaxString(midPoint))
     # ! [tickbytickmidpoint]
 
@@ -1030,7 +1098,7 @@ class TestApp(TestWrapper, TestClient):
         # ! [cancelhistoricaldata]
 
     @printWhenExecuting
-    def historicalTicksOperations(self):
+    def historicalTicksOperations_req(self):
         # ! [reqhistoricalticks]
         self.reqHistoricalTicks(18001, ContractSamples.USStockAtSmart(),
                                 "20170712 21:39:33 US/Eastern", "", 10, "TRADES", 1, True, [])
@@ -1039,6 +1107,12 @@ class TestApp(TestWrapper, TestClient):
         self.reqHistoricalTicks(18003, ContractSamples.USStockAtSmart(),
                                 "20170712 21:39:33 US/Eastern", "", 10, "MIDPOINT", 1, True, [])
         # ! [reqhistoricalticks]
+
+    @printWhenExecuting
+    def historicalTicksOperations_cancel(self):
+        # ! [cancelHistoricalTicks]
+        self.cancelHistoricalTicks(18001)
+        # ! [cancelHistoricalTicks]
 
     @iswrapper
     # ! [headTimestamp]
@@ -1159,7 +1233,7 @@ class TestApp(TestWrapper, TestClient):
 
 
     @printWhenExecuting
-    def contractOperations(self):
+    def contractOperations_req(self):
         # ! [reqcontractdetails]
         self.reqContractDetails(210, ContractSamples.OptionForQuery())
         self.reqContractDetails(211, ContractSamples.EurGbpFx())
@@ -1172,11 +1246,20 @@ class TestApp(TestWrapper, TestClient):
         self.reqContractDetails(219, ContractSamples.FundContract())
         self.reqContractDetails(220, ContractSamples.USStock())
         self.reqContractDetails(221, ContractSamples.USStockAtSmart())
+        self.reqContractDetails(220, ContractSamples.OptForecastx())
+        self.reqContractDetails(221, ContractSamples.OptForecastxZeroStrike())
+        self.reqContractDetails(222, ContractSamples.OptForecastxByConId())
         # ! [reqcontractdetails]
 
         # ! [reqmatchingsymbols]
         self.reqMatchingSymbols(218, "IBM")
         # ! [reqmatchingsymbols]
+
+    @printWhenExecuting
+    def contractOperations_cancel(self):
+        # ! [cancelContractData]
+        self.cancelContractData(210)
+        # ! [cancelContractData]
 
     @printWhenExecuting
     def newsOperations_req(self):
@@ -1222,17 +1305,14 @@ class TestApp(TestWrapper, TestClient):
 
     @iswrapper
     #! [historicalNews]
-    def historicalNews(self, reqId: int, time: str, providerCode: str,
-                       articleId: str, headline: str):
-        print("HistoricalNews. ReqId:", reqId, "Time:", time,
-              "ProviderCode:", providerCode, "ArticleId:", articleId,
-              "Headline:", headline)
+    def historicalNews(self, reqId: int, time: str, providerCode: str, articleId: str, headline: str):
+        super().historicalNews(reqId, time, providerCode, articleId, headline)
     #! [historicalNews]
 
     @iswrapper
     #! [historicalNewsEnd]
     def historicalNewsEnd(self, reqId:int, hasMore:bool):
-        print("HistoricalNewsEnd. ReqId:", reqId, "HasMore:", hasMore)
+        super().historicalNewsEnd(reqId, hasMore)
     #! [historicalNewsEnd]
 
     @iswrapper
@@ -1283,7 +1363,7 @@ class TestApp(TestWrapper, TestClient):
             for derivSecType in contractDescription.derivativeSecTypes:
                 derivSecTypes += " "
                 derivSecTypes += derivSecType
-            print("Contract: conId:%s, symbol:%s, secType:%s primExchange:%s, "
+            print("Contract: conId:%s, symbol:%s, secType:%s, primExchange:%s, "
                   "currency:%s, derivativeSecTypes:%s, description:%s, issuerId:%s" % (
                 contractDescription.contract.conId,
                 contractDescription.contract.symbol,
@@ -1349,7 +1429,7 @@ class TestApp(TestWrapper, TestClient):
 #              "Currency:", contractDetails.contract.currency,
 #              "Distance:", distance, "Benchmark:", benchmark,
 #              "Projection:", projection, "Legs String:", legsStr)
-        print("ScannerData. ReqId:", reqId, ScanData(contractDetails.contract, rank, distance, benchmark, projection, legsStr))
+        print("ScannerData. ReqId:", reqId, ScanData(contractDetails.contract, rank, distance, benchmark, projection, legsStr, contractDetails.marketName))
     # ! [scannerdata]
 
     @iswrapper
@@ -1363,9 +1443,9 @@ class TestApp(TestWrapper, TestClient):
     # ! [smartcomponents]
     def smartComponents(self, reqId:int, smartComponentMap:SmartComponentMap):
         super().smartComponents(reqId, smartComponentMap)
-        print("SmartComponents:")
-        for smartComponent in smartComponentMap:
-            print("SmartComponent.", smartComponent)
+        print(f"SmartComponents - ReqId: {reqId}")
+        for bitNumber, (exchange, exchangeLetter) in smartComponentMap.items():
+            print(f"  BitNumber: {bitNumber}, Exchange: '{exchange}', ExchangeLetter: '{exchangeLetter}'")
     # ! [smartcomponents]
 
     @iswrapper
@@ -1373,8 +1453,6 @@ class TestApp(TestWrapper, TestClient):
     def tickReqParams(self, tickerId:int, minTick:float,
                       bboExchange:str, snapshotPermissions:int):
         super().tickReqParams(tickerId, minTick, bboExchange, snapshotPermissions)
-        print("TickReqParams. TickerId:", tickerId, "MinTick:", floatMaxString(minTick),
-              "BboExchange:", bboExchange, "SnapshotPermissions:", intMaxString(snapshotPermissions))
     # ! [tickReqParams]
 
     @iswrapper
@@ -1670,6 +1748,9 @@ class TestApp(TestWrapper, TestClient):
         self.reqCurrentTime()
         # Setting TWS logging level
         self.setServerLogLevel(1)
+        time.sleep(3)
+        # Request TWS' current time in millis
+        self.reqCurrentTimeInMillis()
 
     @printWhenExecuting
     def linkingOperations(self):
@@ -1708,6 +1789,7 @@ class TestApp(TestWrapper, TestClient):
     # ! [whatiflimitorder]
         whatIfOrder = OrderSamples.LimitOrder("BUY", 100, 20)
         whatIfOrder.whatIf = True
+        whatIfOrder.tif = "DAY"
         self.placeOrder(self.nextOrderId(), ContractSamples.BondWithCusip(), whatIfOrder)
     # ! [whatiflimitorder]
         time.sleep(2)
@@ -1860,9 +1942,29 @@ class TestApp(TestWrapper, TestClient):
 
         # Request the day's executions
         # ! [reqexecutions]
-        self.reqExecutions(10001, ExecutionFilter())
-        # ! [reqexecutions]
-        
+        executionFilter1 = ExecutionFilter()
+        executionFilter1.lastNDays = 7
+        self.reqExecutions(10001, executionFilter1)
+        executionFilter2 = ExecutionFilter()
+        executionFilter2.specificDates = {20250312, 20250306};
+        self.reqExecutions(10002, executionFilter2)
+        # # ! [reqexecutions]
+
+        # ! [reqexecutions_protobuf]
+        executionFilterProto1 = ExecutionFilterProto()
+        executionFilterProto1.lastNDays = 7
+        executionRequestProto1  = ExecutionRequestProto()
+        executionRequestProto1.reqId = 10003
+        executionRequestProto1.executionFilter.CopyFrom(executionFilterProto1)
+        self.reqExecutionsProtoBuf(executionRequestProto1)
+        executionFilterProto2 = ExecutionFilterProto()
+        executionFilterProto2.specificDates.extend({20250512, 20250513, 20250514})
+        executionRequestProto2  = ExecutionRequestProto()
+        executionRequestProto2.reqId = 10004
+        executionRequestProto2.executionFilter.CopyFrom(executionFilterProto2)
+        self.reqExecutionsProtoBuf(executionRequestProto2)
+        # ! [reqexecutions_protobuf]
+
         # Requesting completed orders
         # ! [reqcompletedorders]
         self.reqCompletedOrders(False)
@@ -1899,6 +2001,38 @@ class TestApp(TestWrapper, TestClient):
         self.placeOrder(self.nextOrderId(), ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithCustomerAccount("BUY", Decimal("100"), 111.11, "CustAcct"))
         # ! [place_order_with_customer_account]
 
+        # Placing limit order with include overnight
+        # ! [place_order_with_include_overnight]
+        self.placeOrder(self.nextOrderId(), ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithIncludeOvernight("BUY", Decimal("100"), 111.11))
+        # ! [place_order_with_include_overnight]
+
+        # Placing limit order with CME tagging fields
+        # ! [cme_tagging_fields]
+        self.simplePlaceOid = self.nextOrderId()
+        self.placeOrder(self.simplePlaceOid, ContractSamples.SimpleFuture(), OrderSamples.LimitOrderWithCmeTaggingFields("BUY", Decimal("1"), 5333, "ABCD", 1))
+        time.sleep(5)
+        if self.simplePlaceOid is not None:
+            self.cancelOrder(self.simplePlaceOid, OrderSamples.OrderCancelWithCmeTaggingFields("BCDE", 0));
+        time.sleep(2)
+        self.simplePlaceOid = self.nextOrderId()
+        self.placeOrder(self.simplePlaceOid, ContractSamples.SimpleFuture(), OrderSamples.LimitOrderWithCmeTaggingFields("BUY", Decimal("1"), 5444, "CDEF", 0))
+        time.sleep(5)
+        self.reqGlobalCancel(OrderSamples.OrderCancelWithCmeTaggingFields("DEFG", 1))
+        # ! [cme_tagging_fields]
+        #
+        # # Placing limit on close order with imbalance only
+        # # ! [place_order_with_imbalance_only]
+        self.placeOrder(self.nextOrderId(), ContractSamples.USStockAtSmart(), OrderSamples.LimitOnCloseOrderWithImbalanceOnly("BUY", Decimal("100"), 44.44))
+        # # ! [place_order_with_imbalance_only]
+
+        # ! [zero_strike_opt_order]
+        self.placeOrder(self.nextOrderId(), ContractSamples.OptForecastxZeroStrike(), OrderSamples.LimitOrder("BUY", Decimal("1"), 0.05));
+        # ! [zero_strike_opt_order]
+
+        # ! [limit_order_with_stop_loss_and_profit_taker]
+        self.placeOrder(self.nextOrderId(), ContractSamples.USStockAtSmart(), OrderSamples.LimitOrderWithStopLossAndProfitTaker("BUY", Decimal("100"), 40, self.nextOrderId(), self.nextOrderId()));
+        # ! [limit_order_with_stop_loss_and_profit_taker]
+
     def orderOperations_cancel(self):
         if self.simplePlaceOid is not None:
             # ! [cancelorder]
@@ -1907,7 +2041,7 @@ class TestApp(TestWrapper, TestClient):
             
         # Cancel all orders for all accounts
         # ! [reqglobalcancel]
-        self.reqGlobalCancel()
+        self.reqGlobalCancel(OrderSamples.CancelOrderEmpty())
         # ! [reqglobalcancel]
          
         # Cancel limit order with manual order cancel time
@@ -1944,31 +2078,52 @@ class TestApp(TestWrapper, TestClient):
         self.placeOrder(self.nextOrderId(), ContractSamples.IBKRATSContract(), ibkratsOrder)
         # ! [ibkratssubmit]
 
-    @printWhenExecuting
-    def rfqOperations(self):
-        # ! [rfq_submission]
-        self.simplePlaceOid = self.nextOrderId()
-        self.placeOrder(self.simplePlaceOid, ContractSamples.BondWithCusip(), OrderSamples.RfqEmpty())
-        # ! [rfq_submission]
+    def configOperations_req(self):
+        # ! [req_config]
+        configRequestProto = ConfigRequestProto()
+        configRequestProto.reqId = 20001
+        self.reqConfigProtoBuf(configRequestProto)
+        # ! [req_config]
 
-        time.sleep(5)
+        # ! [update_api_settings_config_request]
+        self.updateConfigProtoBuf(ConfigSamples.UpdateConfigApiSettings(20002));
+        # ! [update_api_settings_config_request]
 
-        if self.simplePlaceOid is not None:
-            # ! [rfq_cancel]
-            self.cancelOrder(self.simplePlaceOid, OrderSamples.RfqCancel())
-            # ! [rfq_cancel]
+        # ! [update_orders_config_request]
+        self.updateConfigProtoBuf(ConfigSamples.UpdateOrdersConfig(20003));
+        # ! [update_orders_config_request]
+        
+        # ! [update_message_config_request]
+        self.updateConfigProtoBuf(ConfigSamples.UpdateMessageConfigConfirmMandatoryCapPriceAccepted(20004));
+        # ! [update_message_config_request]
 
+        # ! [update_config_request_order_id_reset]
+        self.updateConfigProtoBuf(ConfigSamples.UpdateConfigOrderIdReset(20005));
+        # ! [update_config_request_order_id_reset]
+
+    def orderParentChildOperations_req(self):
+        # ! [beta_hedge_order]
+        parentOrderId = self.nextOrderId()
+        childOrderId = self.nextOrderId()
+        self.placeOrderProtoBuf(OrderSamplesProto.createPlaceOrderRequest(parentOrderId, ContractSamplesProto.IBMStockAtSmart(), OrderSamplesProto.LimitOrder("BUY", Decimal("100"), 40, False)));
         time.sleep(1)
+        self.placeOrderProtoBuf(OrderSamplesProto.createPlaceOrderRequest(childOrderId, ContractSamplesProto.MSFTStockAtSmart(), OrderSamplesProto.BetaHedgeOrder(parentOrderId, "SELL", "0.05", 75, True)));
+        # ! [beta_hedge_order]
 
-        # ! [rfq_submission]
-        self.placeOrder(self.nextOrderId(), ContractSamples.BondWithCusip(), OrderSamples.Rfq())
-        # ! [rfq_submission]
+    def newsOperationsProto_req(self):
+        # ! [request_historical_news_with_end_time]]
+        self.reqHistoricalNewsProtoBuf(NewsSamplesProto.HistoricalNewsRequestWithEndTime(10001));
+        # ! [request_historical_news_with_end_time]]
+        time.sleep(1)
+        #! [request_historical_news_with_start_time]
+        self.reqHistoricalNewsProtoBuf(NewsSamplesProto.HistoricalNewsRequestWithStartTime(10002));
+        #! [request_historical_news_with_start_time]
 
     @iswrapper
     # ! [execdetails]
     def execDetails(self, reqId: int, contract: Contract, execution: Execution):
         super().execDetails(reqId, contract, execution)
-        print("ExecDetails. ReqId:", reqId, "Symbol:", contract.symbol, "SecType:", contract.secType, "Currency:", contract.currency, execution)
+        print("ExecDetails. ReqId:", reqId, "Contract - ", contract, "Execution - ", execution)
     # ! [execdetails]
 
     @iswrapper
@@ -1979,17 +2134,17 @@ class TestApp(TestWrapper, TestClient):
     # ! [execdetailsend]
 
     @iswrapper
-    # ! [commissionreport]
-    def commissionReport(self, commissionReport: CommissionReport):
-        super().commissionReport(commissionReport)
-        print("CommissionReport.", commissionReport)
-    # ! [commissionreport]
+    # ! [commissionandfeesreport]
+    def commissionAndFeesReport(self, commissionAndFeesReport: CommissionAndFeesReport):
+        super().commissionAndFeesReport(commissionAndFeesReport)
+        print("CommissionAndFeesReport.", commissionAndFeesReport)
+    # ! [commissionandfeesreport]
 
     @iswrapper
     # ! [currenttime]
     def currentTime(self, time:int):
         super().currentTime(time)
-        print("CurrentTime:", datetime.datetime.fromtimestamp(time).strftime("%Y%m%d-%H:%M:%S"))
+        print("CurrentTime:", time, "-", getTimeStrFromMillis(time * 1000))
     # ! [currenttime]
 
     @iswrapper
@@ -1997,23 +2152,12 @@ class TestApp(TestWrapper, TestClient):
     def completedOrder(self, contract: Contract, order: Order,
                   orderState: OrderState):
         super().completedOrder(contract, order, orderState)
-        print("CompletedOrder. PermId:", intMaxString(order.permId), "ParentPermId:", longMaxString(order.parentPermId), "Account:", order.account, 
-              "Symbol:", contract.symbol, "SecType:", contract.secType, "Exchange:", contract.exchange, 
-              "Action:", order.action, "OrderType:", order.orderType, "TotalQty:", decimalMaxString(order.totalQuantity), 
-              "CashQty:", floatMaxString(order.cashQty), "FilledQty:", decimalMaxString(order.filledQuantity), 
-              "LmtPrice:", floatMaxString(order.lmtPrice), "AuxPrice:", floatMaxString(order.auxPrice), "Status:", orderState.status,
-              "Completed time:", orderState.completedTime, "Completed Status:" + orderState.completedStatus,
-              "MinTradeQty:", intMaxString(order.minTradeQty), "MinCompeteSize:", intMaxString(order.minCompeteSize),
-              "competeAgainstBestOffset:", "UpToMid" if order.competeAgainstBestOffset == COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID else floatMaxString(order.competeAgainstBestOffset),
-              "MidOffsetAtWhole:", floatMaxString(order.midOffsetAtWhole),"MidOffsetAtHalf:" ,floatMaxString(order.midOffsetAtHalf), "CustomerAccount:", order.customerAccount,
-              "ProfessionalCustomer:", order.professionalCustomer)
     # ! [completedorder]
 
     @iswrapper
     # ! [completedordersend]
     def completedOrdersEnd(self):
         super().completedOrdersEnd()
-        print("CompletedOrdersEnd")
     # ! [completedordersend]
 
     @iswrapper
@@ -2053,6 +2197,603 @@ class TestApp(TestWrapper, TestClient):
         super().userInfo(reqId, whiteBrandingId)
         print("UserInfo.", "ReqId:", reqId, "WhiteBrandingId:", whiteBrandingId)
     # ! [userinfo]
+
+    @iswrapper
+    # ! [currenttimeinmillis]
+    def currentTimeInMillis(self, timeInMillis: int):
+        super().currentTimeInMillis(timeInMillis)
+        print("CurrentTimeInMillis:", timeInMillis, "-", getTimeStrFromMillis(timeInMillis))
+    # ! [currenttimeinmillis]
+
+    # Protobuf
+    @iswrapper
+    # ! [orderstatus_protobuf]
+    def orderStatusProtoBuf(self, orderStatusProto: OrderStatusProto):
+        super().orderStatusProtoBuf(orderStatusProto)
+        printProtoSingleLine("OrderStatus:", orderStatusProto)
+    # ! [orderstatus_protobuf]
+
+    # ! [openorder_protobuf]
+    @iswrapper
+    def openOrderProtoBuf(self, openOrderProto: OpenOrderProto):
+        super().openOrderProtoBuf(openOrderProto)
+        printProtoSingleLine("OpenOrder:", openOrderProto)
+        self.permId2ord[openOrderProto.order.permId] = openOrderProto.order
+    # ! [openorder_protobuf]
+
+    # ! [openordersend_protobuf]
+    @iswrapper
+    def openOrdersEndProtoBuf(self, openOrdersEndProto: OpenOrdersEndProto):
+        super().openOrdersEndProtoBuf(openOrdersEndProto)
+        printProtoSingleLine("OpenOrdersEnd:", openOrdersEndProto)
+        logging.debug("Received %d openOrders", len(self.permId2ord))
+    # ! [openordersend_protobuf]
+
+    # ! [errormessage_protobuf]
+    @iswrapper
+    def errorProtoBuf(self, errorMessageProto: ErrorMessageProto):
+        super().errorProtoBuf(errorMessageProto)
+        print("ErrorProtoBuf")
+    # ! [errormessage_protobuf]
+
+    # ! [executiondetails_protobuf]
+    @iswrapper
+    def executionDetailsProtoBuf(self, executionDetailsProto: ExecutionDetailsProto):
+        super().executionDetailsProtoBuf(executionDetailsProto)
+        print("ExecutionDetailsProtoBuf")
+    # ! [executiondetails_protobuf]
+
+    # ! [executiondetailsend_protobuf]
+    @iswrapper
+    def executionDetailsEndProtoBuf(self, executionDetailsEndProto: ExecutionDetailsProto):
+        super().executionDetailsEndProtoBuf(executionDetailsEndProto)
+        print("ExecutionDetailsEndProtoBuf")
+    # ! [executiondetailsend_protobuf]
+
+    # ! [completedorder_protobuf]
+    @iswrapper
+    def completedOrderProtoBuf(self, completedOrderProto: CompletedOrderProto):
+        super().completedOrderProtoBuf(completedOrderProto)
+        printProtoSingleLine("CompletedOrder:", completedOrderProto)
+    # ! [completedorder_protobuf]
+
+    # ! [completedordersend_protobuf]
+    @iswrapper
+    def completedOrdersEndProtoBuf(self, completedOrdersEndProto: CompletedOrdersEndProto):
+        super().completedOrdersEndProtoBuf(completedOrdersEndProto)
+        printProtoSingleLine("CompletedOrdersEnd:", completedOrdersEndProto)
+    # ! [completedordersend_protobuf]
+
+    # ! [orderbound_protobuf]
+    @iswrapper
+    def orderBoundProtoBuf(self, orderBoundProto: OrderBoundProto):
+        super().orderBoundProtoBuf(orderBoundProto)
+        print("OrderBoundProtoBuf")
+    # ! [orderbound_protobuf]
+
+    # ! [contractdata_protobuf]
+    @iswrapper
+    def contractDataProtoBuf(self, contractDataProto: ContractDataProto):
+        super().contractDataProtoBuf(contractDataProto)
+        print("ContractDataProtoBuf")
+    # ! [contractdata_protobuf]
+
+    # ! [bondcontractdata_protobuf]
+    @iswrapper
+    def bondContractDataProtoBuf(self, contractDataProto: ContractDataProto):
+        super().bondContractDataProtoBuf(contractDataProto)
+        print("BondContractDataProtoBuf")
+    # ! [bondcontractdata_protobuf]
+
+    # ! [contractdataend_protobuf]
+    @iswrapper
+    def contractDataEndProtoBuf(self, contractDataEndProto: ContractDataEndProto):
+        super().contractDataEndProtoBuf(contractDataEndProto)
+        print("ContractDataEndProtoBuf")
+    # ! [contractdataend_protobuf]
+
+    # ! [tickprice_protobuf]
+    @iswrapper
+    def tickPriceProtoBuf(self, tickPriceProto: TickPriceProto):
+        super().tickPriceProtoBuf(tickPriceProto)
+        print("TickPriceProtoBuf")
+    # ! [tickprice_protobuf]
+
+    # ! [ticksize_protobuf]
+    @iswrapper
+    def tickSizeProtoBuf(self, tickSizeProto: TickSizeProto):
+        super().tickSizeProtoBuf(tickSizeProto)
+        print("TickSizeProtoBuf")
+    # ! [ticksize_protobuf]
+
+    # ! [tickoptioncomputation_protobuf]
+    @iswrapper
+    def tickOptionComputationProtoBuf(self, tickOptionComputationProto: TickOptionComputationProto):
+        super().tickOptionComputationProtoBuf(tickOptionComputationProto)
+        print("TickOptionComputationProtoBuf")
+    # ! [tickoptioncomputation_protobuf]
+
+    # ! [tickgeneric_protobuf]
+    @iswrapper
+    def tickGenericProtoBuf(self, tickGenericProto: TickGenericProto):
+        super().tickGenericProtoBuf(tickGenericProto)
+        print("TickGenericProtoBuf")
+    # ! [tickgeneric_protobuf]
+
+    # ! [tickstring_protobuf]
+    @iswrapper
+    def tickStringProtoBuf(self, tickStringProto: TickStringProto):
+        super().tickStringProtoBuf(tickStringProto)
+        print("TickStringProtoBuf")
+    # ! [tickstring_protobuf]
+
+    # ! [ticksnapshotend_protobuf]
+    @iswrapper
+    def tickSnapshotEndProtoBuf(self, tickSnapshotEndProto: TickSnapshotEndProto):
+        super().tickSnapshotEndProtoBuf(tickSnapshotEndProto)
+        print("TickSnapshotEndProtoBuf")
+    # ! [ticksnapshotend_protobuf]
+
+    # ! [updatemarketdepth_protobuf]
+    @iswrapper
+    def updateMarketDepthProtoBuf(self, marketDepthProto: MarketDepthProto):
+        super().updateMarketDepthProtoBuf(marketDepthProto)
+        print("UpdateMarketDepthProtoBuf")
+    # ! [updatemarketdepth_protobuf]
+
+    # ! [updatemarketdepthl2_protobuf]
+    @iswrapper
+    def updateMarketDepthL2ProtoBuf(self, marketDepthL2Proto: MarketDepthL2Proto):
+        super().updateMarketDepthL2ProtoBuf(marketDepthL2Proto)
+        print("UpdateMarketDepthL2ProtoBuf")
+    # ! [updatemarketdepthl2_protobuf]
+
+    # ! [updatemarketdatatype_protobuf]
+    @iswrapper
+    def updateMarketDataTypeProtoBuf(self, marketDataTypeProto: MarketDataTypeProto):
+        super().updateMarketDataTypeProtoBuf(marketDataTypeProto)
+        print("UpdateMarketDataTypeProtoBuf")
+    # ! [updatemarketdatatype_protobuf]
+
+    # ! [tickreqparams_protobuf]
+    @iswrapper
+    def tickReqParamsProtoBuf(self, tickReqParamsProto: TickReqParamsProto):
+        super().tickReqParamsProtoBuf(tickReqParamsProto)
+        parts = [
+            f"TickerId: {tickReqParamsProto.reqId}" if tickReqParamsProto.HasField('reqId') else None,
+            f"MinTick: {tickReqParamsProto.minTick}" if tickReqParamsProto.HasField('minTick') else None,
+            f"BboExchange: {tickReqParamsProto.bboExchange}" if tickReqParamsProto.HasField('bboExchange') else None,
+            f"SnapshotPermissions: {tickReqParamsProto.snapshotPermissions}" if tickReqParamsProto.HasField('snapshotPermissions') else None,
+            f"LastPricePrecision: {tickReqParamsProto.lastPricePrecision}" if tickReqParamsProto.HasField('lastPricePrecision') else None,
+            f"LastSizePrecision: {tickReqParamsProto.lastSizePrecision}" if tickReqParamsProto.HasField('lastSizePrecision') else None,
+        ]
+        tickReqParamsStr = " ".join(filter(None, parts))
+        print("TickReqParams.", tickReqParamsStr)
+    # ! [tickreqparams_protobuf]
+
+    # ! [updateaccountvalue_protobuf]
+    @iswrapper
+    def updateAccountValueProtoBuf(self, accountValueProto: AccountValueProto):
+        super().updateAccountValueProtoBuf(accountValueProto)
+        print("UpdateAccountValueProtoBuf")
+    # ! [updateaccountvalue_protobuf]
+
+    # ! [updateportfolio_protobuf]
+    @iswrapper
+    def updatePortfolioProtoBuf(self, portfolioValueProto: PortfolioValueProto):
+        super().updatePortfolioProtoBuf(portfolioValueProto)
+        print("UpdatePortfolioProtoBuf")
+    # ! [updateportfolio_protobuf]
+
+    # ! [updateaccounttime_protobuf]
+    @iswrapper
+    def updateAccountTimeProtoBuf(self, accountUpdateTimeProto: AccountUpdateTimeProto):
+        super().updateAccountTimeProtoBuf(accountUpdateTimeProto)
+        print("UpdateAccountTimeProtoBuf")
+    # ! [updateaccounttime_protobuf]
+
+    # ! [accountdataend_protobuf]
+    @iswrapper
+    def accountDataEndProtoBuf(self, accountDataEndProto: AccountDataEndProto):
+        super().accountDataEndProtoBuf(accountDataEndProto)
+        print("AccountDataEndProtoBuf")
+    # ! [accountdataend_protobuf]
+
+    # ! [managedaccounts_protobuf]
+    @iswrapper
+    def managedAccountsProtoBuf(self, managedAccountsProto: ManagedAccountsProto):
+        super().managedAccountsProtoBuf(managedAccountsProto)
+        print("ManagedAccountsProtoBuf")
+    # ! [managedaccounts_protobuf]
+
+    # ! [position_protobuf]
+    @iswrapper
+    def positionProtoBuf(self, positionProto: PositionProto):
+        super().positionProtoBuf(positionProto)
+        print("PositionProtoBuf")
+    # ! [position_protobuf]
+
+    # ! [positionend_protobuf]
+    @iswrapper
+    def positionEndProtoBuf(self, positionEndProto: PositionEndProto):
+        super().positionEndProtoBuf(positionEndProto)
+        print("PositionEndProtoBuf")
+    # ! [positionend_protobuf]
+
+    # ! [accountsummary_protobuf]
+    @iswrapper
+    def accountSummaryProtoBuf(self, accountSummaryProto: AccountSummaryProto):
+        super().accountSummaryProtoBuf(accountSummaryProto)
+        print("AccountSummaryProtoBuf")
+    # ! [accountsummary_protobuf]
+
+    # ! [accountsummaryend_protobuf]
+    @iswrapper
+    def accountSummaryEndProtoBuf(self, accountSummaryEndProto: AccountSummaryEndProto):
+        super().accountSummaryEndProtoBuf(accountSummaryEndProto)
+        print("AccountSummaryEndProtoBuf")
+    # ! [accountsummaryend_protobuf]
+
+    # ! [positionmulti_protobuf]
+    @iswrapper
+    def positionMultiProtoBuf(self, positionMultiProto: PositionMultiProto):
+        super().positionMultiProtoBuf(positionMultiProto)
+        print("PositionMultiProtoBuf")
+    # ! [positionmulti_protobuf]
+
+    # ! [positionmultiend_protobuf]
+    @iswrapper
+    def positionMultiEndProtoBuf(self, positionMultiEndProto: PositionMultiEndProto):
+        super().positionMultiEndProtoBuf(positionMultiEndProto)
+        print("PositionMultiEndProtoBuf")
+    # ! [positionmultiend_protobuf]
+
+    # ! [accountupdatemulti_protobuf]
+    @iswrapper
+    def accountUpdateMultiProtoBuf(self, accountUpdateMultiProto: AccountUpdateMultiProto):
+        super().accountUpdateMultiProtoBuf(accountUpdateMultiProto)
+        print("AccountUpdateMultiProtoBuf")
+    # ! [accountupdatemulti_protobuf]
+
+    # ! [accountupdatemultiend_protobuf]
+    @iswrapper
+    def accountUpdateMultiEndProtoBuf(self, accountUpdateMultiEndProto: AccountUpdateMultiEndProto):
+        super().accountUpdateMultiEndProtoBuf(accountUpdateMultiEndProto)
+        print("AccountUpdateMultiEndProtoBuf")
+    # ! [accountupdatemultiend_protobuf]
+
+    # ! [historicaldata_protobuf]
+    @iswrapper
+    def historicalDataProtoBuf(self, historicalDataProto: HistoricalDataProto):
+        super().historicalDataProtoBuf(historicalDataProto)
+        print("HistoricalDataProtoBuf")
+    # ! [historicaldata_protobuf]
+
+    # ! [historicaldataupdate_protobuf]
+    @iswrapper
+    def historicalDataUpdateProtoBuf(self, historicalDataUpdateProto: HistoricalDataUpdateProto):
+        super().historicalDataUpdateProtoBuf(historicalDataUpdateProto)
+        print("HistoricalDataUpdateProtoBuf")
+    # ! [historicaldataupdate_protobuf]
+
+    # ! [historicaldataend_protobuf]
+    @iswrapper
+    def historicalDataEndProtoBuf(self, historicalDataEndProto: HistoricalDataEndProto):
+        super().historicalDataEndProtoBuf(historicalDataEndProto)
+        print("HistoricalDataEndProtoBuf")
+    # ! [historicaldataend_protobuf]
+
+    # ! [realtimebartick_protobuf]
+    @iswrapper
+    def realTimeBarTickProtoBuf(self, realTimeBarTickProto: RealTimeBarTickProto):
+        super().realTimeBarTickProtoBuf(realTimeBarTickProto)
+        print("RealTimeBarTickProtoBuf")
+    # ! [realtimebartick_protobuf]
+
+    # ! [headtimestamp_protobuf]
+    @iswrapper
+    def headTimestampProtoBuf(self, headTimestampProto: HeadTimestampProto):
+        super().headTimestampProtoBuf(headTimestampProto)
+        print("HeadTimestampProtoBuf")
+    # ! [headtimestamp_protobuf]
+
+    # ! [histogramdata_protobuf]
+    @iswrapper
+    def histogramDataProtoBuf(self, histogramDataProto: HistogramDataProto):
+        super().histogramDataProtoBuf(histogramDataProto)
+        print("HistogramDataProtoBuf")
+    # ! [histogramdata_protobuf]
+
+    # ! [historicalticks_protobuf]
+    @iswrapper
+    def historicalTicksProtoBuf(self, historicalTicksProto: HistoricalTicksProto):
+        super().historicalTicksProtoBuf(historicalTicksProto)
+        print("HistoricalTicksProtoBuf")
+    # ! [historicalticks_protobuf]
+
+    # ! [historicalticksbidask_protobuf]
+    @iswrapper
+    def historicalTicksBidAskProtoBuf(self, historicalTicksBidAskProto: HistoricalTicksBidAskProto):
+        super().historicalTicksBidAskProtoBuf(historicalTicksBidAskProto)
+        print("HistoricalTicksBidAskProtoBuf")
+    # ! [historicalticksbidask_protobuf]
+
+    # ! [historicaltickslast_protobuf]
+    @iswrapper
+    def historicalTicksLastProtoBuf(self, historicalTicksLastProto: HistoricalTicksLastProto):
+        super().historicalTicksLastProtoBuf(historicalTicksLastProto)
+        print("HistoricalTicksLastProtoBuf")
+    # ! [historicaltickslast_protobuf]
+
+    # ! [tickbytickdata_protobuf]
+    @iswrapper
+    def tickByTickDataProtoBuf(self, tickByTickDataProto: TickByTickDataProto):
+        super().tickByTickDataProtoBuf(tickByTickDataProto)
+        print("TickByTickDatatProtoBuf")
+    # ! [tickbytickdata_protobuf]
+
+    # ! [updatenewsbulletin_protobuf]
+    @iswrapper
+    def updateNewsBulletinProtoBuf(self, newsBulletinProto: NewsBulletinProto):
+        super().updateNewsBulletinProtoBuf(newsBulletinProto)
+        print("UpdateNewsBulletinProtoBuf")
+    # ! [updatenewsbulletin_protobuf]
+
+    # ! [newsarticle_protobuf]
+    @iswrapper
+    def newsArticleProtoBuf(self, newsArticleProto: NewsArticleProto):
+        super().newsArticleProtoBuf(newsArticleProto)
+        print("NewsArticleProtoBuf")
+    # ! [newsarticle_protobuf]
+
+    # ! [newsproviders_protobuf]
+    @iswrapper
+    def newsProvidersProtoBuf(self, newsProvidersProto: NewsProvidersProto):
+        super().newsProvidersProtoBuf(newsProvidersProto)
+        print("NewsProvidersProtoBuf")
+    # ! [newsproviders_protobuf]
+
+    # ! [historicalnews_protobuf]
+    @iswrapper
+    def historicalNewsProtoBuf(self, historicalNewsProto: HistoricalNewsProto):
+        super().historicalNewsProtoBuf(historicalNewsProto)
+        printProtoSingleLine("HistoricalNews:", historicalNewsProto)
+    # ! [historicalnews_protobuf]
+
+    # ! [historicalnewsend_protobuf]
+    @iswrapper
+    def historicalNewsEndProtoBuf(self, historicalNewsEndProto: HistoricalNewsEndProto):
+        super().historicalNewsEndProtoBuf(historicalNewsEndProto)
+        printProtoSingleLine("HistoricalNewsEnd:", historicalNewsEndProto)
+    # ! [historicalnewsend_protobuf]
+
+    # ! [wshmetadata_protobuf]
+    @iswrapper
+    def wshMetaDataProtoBuf(self, wshMetaDataProto: WshMetaDataProto):
+        super().wshMetaDataProtoBuf(wshMetaDataProto)
+        print("WshMetaDataProtoBuf")
+    # ! [wshmetadata_protobuf]
+
+    # ! [wsheventdata_protobuf]
+    @iswrapper
+    def wshEventDataProtoBuf(self, wshEventDataProto: WshEventDataProto):
+        super().wshEventDataProtoBuf(wshEventDataProto)
+        print("WshEventDataProtoBuf")
+    # ! [wsheventdata_protobuf]
+
+    # ! [ticknews_protobuf]
+    @iswrapper
+    def tickNewsProtoBuf(self, tickNewsProto: TickNewsProto):
+        super().tickNewsProtoBuf(tickNewsProto)
+        print("TickNewsProtoBuf")
+    # ! [ticknews_protobuf]
+
+    # ! [scannerparameters_protobuf]
+    @iswrapper
+    def scannerParametersProtoBuf(self, scannerParametersProto: ScannerParametersProto):
+        super().scannerParametersProtoBuf(scannerParametersProto)
+        print("ScannerParametersProtoBuf")
+    # ! [scannerparameters_protobuf]
+
+    # ! [scannerdata_protobuf]
+    @iswrapper
+    def scannerDataProtoBuf(self, scannerDataProto: ScannerDataProto):
+        super().scannerDataProtoBuf(scannerDataProto)
+        print("ScannerDataProtoBuf")
+    # ! [scannerdata_protobuf]
+
+    # ! [fundamentalsdata_protobuf]
+    @iswrapper
+    def fundamentalsDataProtoBuf(self, fundamentalsDataProto: FundamentalsDataProto):
+        super().fundamentalsDataProtoBuf(fundamentalsDataProto)
+        print("FundamentalsDataProtoBuf")
+    # ! [fundamentalsdata_protobuf]
+
+    # ! [pnl_protobuf]
+    @iswrapper
+    def pnlProtoBuf(self, pnlProto: PnLProto):
+        super().pnlProtoBuf(pnlProto)
+        print("PnLProtoBuf")
+    # ! [pnl_protobuf]
+
+    # ! [pnlsingle_protobuf]
+    @iswrapper
+    def pnlSingleProtoBuf(self, pnlSingleProto: PnLSingleProto):
+        super().pnlSingleProtoBuf(pnlSingleProto)
+        print("PnLSingleProtoBuf")
+    # ! [pnlsingle_protobuf]
+
+    # ! [receivefa_protobuf]
+    @iswrapper
+    def receiveFAProtoBuf(self, receiveFAProto: ReceiveFAProto):
+        super().receiveFAProtoBuf(receiveFAProto)
+        print("ReceiveFAProtoBuf")
+    # ! [receivefa_protobuf]
+
+    # ! [replacefaend_protobuf]
+    @iswrapper
+    def replaceFAEndProtoBuf(self, replaceFAEndProto: ReplaceFAEndProto):
+        super().replaceFAEndProtoBuf(replaceFAEndProto)
+        print("ReplaceFAEndProtoBuf")
+    # ! [replacefaend_protobuf]
+
+    # ! [commissionandfeesreport_protobuf]
+    @iswrapper
+    def commissionAndFeesReportProtoBuf(self, commissionAndFeesReportProto: CommissionAndFeesReportProto):
+        super().commissionAndFeesReportProtoBuf(commissionAndFeesReportProto)
+        print("CommissionAndFeesReportProtoBuf")
+    # ! [commissionandfeesreport_protobuf]
+
+    # ! [historicalschedule_protobuf]
+    @iswrapper
+    def historicalScheduleProtoBuf(self, historicalScheduleProto: HistoricalScheduleProto):
+        super().historicalScheduleProtoBuf(historicalScheduleProto)
+        print("HistoricalScheduleProtoBuf")
+    # ! [historicalschedule_protobuf]
+
+    # ! [reroutemarketdatarequest_protobuf]
+    @iswrapper
+    def rerouteMarketDataRequestProtoBuf(self, rerouteMarketDataRequestProto: RerouteMarketDataRequestProto):
+        super().rerouteMarketDataRequestProtoBuf(rerouteMarketDataRequestProto)
+        print("RerouteMarketDataRequestProtoBuf")
+    # ! [reroutemarketdatarequest_protobuf]
+
+    # ! [reroutemarketdepthrequest_protobuf]
+    @iswrapper
+    def rerouteMarketDepthRequestProtoBuf(self, rerouteMarketDepthRequestProto: RerouteMarketDepthRequestProto):
+        super().rerouteMarketDepthRequestProtoBuf(rerouteMarketDepthRequestProto)
+        print("RerouteMarketDepthRequestProtoBuf")
+    # ! [reroutemarketdepthrequest_protobuf]
+
+    # ! [secdefoptparameter_protobuf]
+    @iswrapper
+    def secDefOptParameterProtoBuf(self, secDefOptParameterProto: SecDefOptParameterProto):
+        super().secDefOptParameterProtoBuf(secDefOptParameterProto)
+        print("SecDefOptParameterProtoBuf")
+    # ! [secdefoptparameter_protobuf]
+
+    # ! [secdefoptparameterend_protobuf]
+    @iswrapper
+    def secDefOptParameterEndProtoBuf(self, secDefOptParameterEndProto: SecDefOptParameterEndProto):
+        super().secDefOptParameterEndProtoBuf(secDefOptParameterEndProto)
+        print("SecDefOptParameterEndProtoBuf")
+    # ! [secdefoptparameterend_protobuf]
+
+    # ! [softdollartiers_protobuf]
+    @iswrapper
+    def softDollarTiersProtoBuf(self, softDollarTiersProto: SoftDollarTiersProto):
+        super().softDollarTiersProtoBuf(softDollarTiersProto)
+        print("SoftDollarTiersProtoBuf")
+    # ! [softdollartiers_protobuf]
+
+    # ! [familycodes_protobuf]
+    @iswrapper
+    def familyCodesProtoBuf(self, familyCodesProto: FamilyCodesProto):
+        super().familyCodesProtoBuf(familyCodesProto)
+        print("FamilyCodesProtoBuf")
+    # ! [familycodes_protobuf]
+
+    # ! [symbolsamples_protobuf]
+    @iswrapper
+    def symbolSamplesProtoBuf(self, symbolSamplesProto: SymbolSamplesProto):
+        super().symbolSamplesProtoBuf(symbolSamplesProto)
+        print("SymbolSamplesProtoBuf")
+    # ! [symbolsamples_protobuf]
+
+    # ! [smartcomponents_protobuf]
+    @iswrapper
+    def smartComponentsProtoBuf(self, smartComponentsProto: SmartComponentsProto):
+        super().smartComponentsProtoBuf(smartComponentsProto)
+        print("SmartComponentsProtoBuf")
+    # ! [smartcomponents_protobuf]
+
+    # ! [marketrule_protobuf]
+    @iswrapper
+    def marketRuleProtoBuf(self, marketRuleProto: MarketRuleProto):
+        super().marketRuleProtoBuf(marketRuleProto)
+        print("MarketRuleProtoBuf")
+    # ! [marketrule_protobuf]
+
+    # ! [userinfo_protobuf]
+    @iswrapper
+    def userInfoProtoBuf(self, userInfoProto: UserInfoProto):
+        super().userInfoProtoBuf(userInfoProto)
+        print("UserInfoProtoBuf")
+    # ! [userinfo_protobuf]
+
+    # ! [nextvalidid_protobuf]
+    @iswrapper
+    def nextValidIdProtoBuf(self, nextValidIdProto: NextValidIdProto):
+        super().nextValidIdProtoBuf(nextValidIdProto)
+        print("NextValidIdProtoBuf")
+    # ! [nextvalidid_protobuf]
+
+    # ! [currenttime_protobuf]
+    @iswrapper
+    def currentTimeProtoBuf(self, currentTimeProto: CurrentTimeProto):
+        super().currentTimeProtoBuf(currentTimeProto)
+        print("CurrentTimeProtoBuf")
+    # ! [currenttime_protobuf]
+
+    # ! [currenttimeinmillis_protobuf]
+    @iswrapper
+    def currentTimeInMillisProtoBuf(self, currentTimeInMillisProto: CurrentTimeInMillisProto):
+        super().currentTimeInMillisProtoBuf(currentTimeInMillisProto)
+        print("CurrentTimeInMillisProtoBuf")
+    # ! [currenttimeinmillis_protobuf]
+
+    # ! [verifymessageapi_protobuf]
+    @iswrapper
+    def verifyMessageApiProtoBuf(self, verifyMessageApiProto: VerifyMessageApiProto):
+        super().verifyMessageApiProtoBuf(verifyMessageApiProto)
+        print("VerifyMessageApiProtoBuf")
+    # ! [verifymessageapi_protobuf]
+
+    # ! [verifycompleted_protobuf]
+    @iswrapper
+    def verifyCompletedProtoBuf(self, verifyCompletedProto: VerifyCompletedProto):
+        super().verifyCompletedProtoBuf(verifyCompletedProto)
+        print("VerifyCompletedProtoBuf")
+    # ! [verifycompleted_protobuf]
+
+    # ! [displaygrouplist_protobuf]
+    @iswrapper
+    def displayGroupListProtoBuf(self, displayGroupListProto: DisplayGroupListProto):
+        super().displayGroupListProtoBuf(displayGroupListProto)
+        print("DisplayGroupListProtoBuf")
+    # ! [displaygrouplist_protobuf]
+
+    # ! [displaygroupupdated_protobuf]
+    @iswrapper
+    def displayGroupUpdatedProtoBuf(self, displayGroupUpdatedProto: DisplayGroupUpdatedProto):
+        super().displayGroupUpdatedProtoBuf(displayGroupUpdatedProto)
+        print("DisplayGroupUpdatedProtoBuf")
+    # ! [displaygroupupdated_protobuf]
+
+    # ! [marketdepthexchanges_protobuf]
+    @iswrapper
+    def marketDepthExchangesProtoBuf(self, marketDepthExchangesProto: MarketDepthExchangesProto):
+        super().marketDepthExchangesProtoBuf(marketDepthExchangesProto)
+        print("MarketDepthExchangesProtoBuf")
+    # ! [marketdepthexchanges_protobuf]
+
+    # ! [config_response_protobuf]
+    @iswrapper
+    def configResponseProtoBuf(self, configResponseProto: ConfigResponseProto):
+        super().configResponseProtoBuf(configResponseProto)
+        print("==== Config Response Begin ====")
+        print(configResponseProto)
+        print("==== Config Response End ====")
+    # ! [config_response_protobuf]
+
+    # ! [update_config_response_protobuf]
+    @iswrapper
+    def updateConfigResponseProtoBuf(self, updateConfigResponseProto: UpdateConfigResponseProto):
+        super().updateConfigResponseProtoBuf(updateConfigResponseProto)
+        print("==== Update Config Response Begin ====")
+        print(updateConfigResponseProto)
+        print("==== Update Config Response End ====")
+    # ! [update_config_response_protobuf]
 
 def main():
     SetupLogger()

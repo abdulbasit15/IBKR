@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -29,11 +29,12 @@ namespace IBApi
         /**
          * @brief Errors sent by the TWS are received here.
          * @param id the request identifier which generated the error. Note: -1 will indicate a notification and not true error condition.
+         * @param errorTime the time of error
          * @param errorCode the code identifying the error.
          * @param errorMsg error's description.
          * @param advancedOrderRejectJson advanced order reject description in json format.
          */
-        void error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson);
+        void error(int id, long errorTime, int errorCode, string errorMsg, string advancedOrderRejectJson);
 
         /**
          * @brief TWS's current time. TWS is synchronized with the server (not local computer) using NTP and this function will receive the current time in TWS.
@@ -130,7 +131,7 @@ namespace IBApi
         void tickSnapshotEnd(int tickerId);
 
         /**
-         * @brief Receives next valid order id. Will be invoked automatically upon successfull API client connection, or after call to EClient::reqIds
+         * @brief Receives next valid order id. Will be invoked automatically upon successful API client connection, or after call to EClient::reqIds
          * Important: the next valid order ID is only valid at the time it is received.
          * @param orderId the next order id
          * @sa EClientSocket::reqIds
@@ -305,7 +306,7 @@ namespace IBApi
          *      - PreviousDayEquityWithLoanValue — Marginable Equity with Loan value as of 16:00 ET the previous day in securities segment
          *      - PreviousDayEquityWithLoanValue-S — IMarginable Equity with Loan value as of 16:00 ET the previous day
          *      - RealCurrency — Open positions are grouped by currency
-         *      - RealizedPnL — Shows your profit on closed positions, which is the difference between your entry execution cost and exit execution costs, or (execution price + commissions to open the positions) - (execution price + commissions to close the position)
+         *      - RealizedPnL — Shows your profit on closed positions, which is the difference between your entry execution cost and exit execution costs, or (execution price + commission and fees to open the positions) - (execution price + commission and fees to close the position)
          *      - RegTEquity — Regulation T equity for universal account
          *      - RegTEquity-S — Regulation T equity for security segment
          *      - RegTMargin — Regulation T margin for universal account
@@ -365,7 +366,7 @@ namespace IBApi
          *      PendingCancel - indicates that you have sent a request to cancel the order but have not yet received cancel confirmation from the order destination. At this point, your order is not confirmed canceled. It is not guaranteed that the cancellation will be successful.
          *      PreSubmitted - indicates that a simulated order type has been accepted by the IB system and that this order has yet to be elected. The order is held in the IB system until the election criteria are met. At that time the order is transmitted to the order destination as specified .
          *      Submitted - indicates that your order has been accepted by the system.
-         *      ApiCancelled - after an order has been submitted and before it has been acknowledged, an API client client can request its cancelation, producing this state.
+         *      ApiCancelled - after an order has been submitted and before it has been acknowledged, an API client client can request its cancellation, producing this state.
          *      Cancelled - indicates that the balance of your order has been confirmed canceled by the IB system. This could occur unexpectedly when IB or the destination has rejected your order.
          *      Filled - indicates that the order has been completely filled. Market orders executions will not always trigger a Filled status.
          *      Inactive - indicates that the order was received by the system but is no longer active because it was rejected or canceled.
@@ -380,7 +381,7 @@ namespace IBApi
          * @param mktCapPrice If an order has been capped, this indicates the current capped price. Requires TWS 967+ and API v973.04+. Python API specifically requires API v973.06+.
          * @sa openOrder, openOrderEnd, EClientSocket::placeOrder, EClientSocket::reqAllOpenOrders, EClientSocket::reqAutoOpenOrders
          */
-        void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice);
+        void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice);
 
         /**
          * @brief Feeds in currently open orders.
@@ -419,22 +420,22 @@ namespace IBApi
          * @param reqId the request's identifier
          * @param contract the Contract of the Order
          * @param execution the Execution details.
-         * @sa execDetailsEnd, commissionReport, EClientSocket::reqExecutions, Execution
+         * @sa execDetailsEnd, commissionAndFeesReport, EClientSocket::reqExecutions, Execution
          */
         void execDetails(int reqId, Contract contract, Execution execution);
 
         /**
          * @brief indicates the end of the Execution reception.
          * @param reqId the request's identifier
-         * @sa execDetails, commissionReport, EClientSocket::reqExecutions
+         * @sa execDetails, commissionAndFeesReport, EClientSocket::reqExecutions
          */
         void execDetailsEnd(int reqId);
 
         /**
-         * @brief provides the CommissionReport of an Execution
-         * @sa execDetails, execDetailsEnd, EClientSocket::reqExecutions, CommissionReport
+         * @brief provides the CommissionAndFeesReport of an Execution
+         * @sa execDetails, execDetailsEnd, EClientSocket::reqExecutions, CommissionAndFeesReport
          */
-        void commissionReport(CommissionReport commissionReport);
+        void commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport);
 
         /**
          * @brief returns fundamental data
@@ -900,12 +901,12 @@ namespace IBApi
 
         /**
          * @brief response to API bind order control message
-         * @param orderId - permId
-         * @param apiClientId - API client id
-         * @param apiOrderId - API order id
+         * @param permId - permId
+         * @param clientId - API client id
+         * @param orderId - API order id
          * @sa EClient::reqOpenOrders
          */
-        void orderBound(long orderId, int apiClientId, int apiOrderId);
+        void orderBound(long permId, int clientId, int orderId);
 
         /**
          * @brief Feeds in completed orders.
@@ -964,5 +965,97 @@ namespace IBApi
          * @sa EClient::reqUserInfo
          */
         void userInfo(int reqId, string whiteBrandingId);
+
+        /**
+         * @brief TWS's current time in milliseconds. TWS is synchronized with the server (not local computer) using NTP and this function will receive the current time in TWS.
+         * @sa EClient::reqCurrentTimeInMillis
+         */
+        void currentTimeInMillis(long timeInMillis);
+
+        /**
+         * Protobuf
+         */
+        void orderStatusProtoBuf(protobuf.OrderStatus orderStatusProto);
+        void openOrderProtoBuf(protobuf.OpenOrder openOrderProto);
+        void openOrdersEndProtoBuf(protobuf.OpenOrdersEnd openOrdersEndProto);
+        void errorProtoBuf(protobuf.ErrorMessage errorMessageProto);
+        void execDetailsProtoBuf(protobuf.ExecutionDetails executionDetailsProto);
+        void execDetailsEndProtoBuf(protobuf.ExecutionDetailsEnd executionDetailsEndProto);
+        void completedOrderProtoBuf(protobuf.CompletedOrder completedOrderProto);
+        void completedOrdersEndProtoBuf(protobuf.CompletedOrdersEnd completedOrdersEndProto);
+        void orderBoundProtoBuf(protobuf.OrderBound orderBoundProto);
+        void contractDataProtoBuf(protobuf.ContractData contractDataProto);
+        void bondContractDataProtoBuf(protobuf.ContractData contractDataProto);
+        void contractDataEndProtoBuf(protobuf.ContractDataEnd contractDataEndProto);
+        void tickPriceProtoBuf(protobuf.TickPrice tickPriceProto);
+        void tickSizeProtoBuf(protobuf.TickSize tickSizeProto);
+        void tickOptionComputationProtoBuf(protobuf.TickOptionComputation tickOptionComputationProto);
+        void tickGenericProtoBuf(protobuf.TickGeneric tickGenericProto);
+        void tickStringProtoBuf(protobuf.TickString tickStringProto);
+        void tickSnapshotEndProtoBuf(protobuf.TickSnapshotEnd tickSnapshotEndProto);
+        void updateMarketDepthProtoBuf(protobuf.MarketDepth marketDepthProto);
+        void updateMarketDepthL2ProtoBuf(protobuf.MarketDepthL2 marketDepthL2Proto);
+        void marketDataTypeProtoBuf(protobuf.MarketDataType marketDataTypeProto);
+        void tickReqParamsProtoBuf(protobuf.TickReqParams tickReqParamsProto);
+        void updateAccountValueProtoBuf(protobuf.AccountValue accountValueProto);
+        void updatePortfolioProtoBuf(protobuf.PortfolioValue portfolioValueProto);
+        void updateAccountTimeProtoBuf(protobuf.AccountUpdateTime accountUpdateTimeProto);
+        void accountDataEndProtoBuf(protobuf.AccountDataEnd accountDataEndProto);
+        void managedAccountsProtoBuf(protobuf.ManagedAccounts managedAccountsProto);
+        void positionProtoBuf(protobuf.Position positionProto);
+        void positionEndProtoBuf(protobuf.PositionEnd positionEndProto);
+        void accountSummaryProtoBuf(protobuf.AccountSummary accountSummaryProto);
+        void accountSummaryEndProtoBuf(protobuf.AccountSummaryEnd accountSummaryEndProto);
+        void positionMultiProtoBuf(protobuf.PositionMulti positionMultiProto);
+        void positionMultiEndProtoBuf(protobuf.PositionMultiEnd positionMultiEndProto);
+        void accountUpdateMultiProtoBuf(protobuf.AccountUpdateMulti accountUpdateMultiProto);
+        void accountUpdateMultiEndProtoBuf(protobuf.AccountUpdateMultiEnd accountUpdateMultiEndProto);
+        void historicalDataProtoBuf(protobuf.HistoricalData historicalDataProto);
+        void historicalDataUpdateProtoBuf(protobuf.HistoricalDataUpdate historicalDataUpdateProto);
+        void historicalDataEndProtoBuf(protobuf.HistoricalDataEnd historicalDataEndProto);
+        void realTimeBarTickProtoBuf(protobuf.RealTimeBarTick realTimeBarTickProto);
+        void headTimestampProtoBuf(protobuf.HeadTimestamp headTimestampProto);
+        void histogramDataProtoBuf(protobuf.HistogramData histogramDataProto);
+        void historicalTicksProtoBuf(protobuf.HistoricalTicks historicalTicksProto);
+        void historicalTicksBidAskProtoBuf(protobuf.HistoricalTicksBidAsk historicalTicksBidAskProto);
+        void historicalTicksLastProtoBuf(protobuf.HistoricalTicksLast historicalTicksLastProto);
+        void tickByTickDataProtoBuf(protobuf.TickByTickData tickByTickDataProto);
+        void updateNewsBulletinProtoBuf(protobuf.NewsBulletin newsBulletinProto);
+        void newsArticleProtoBuf(protobuf.NewsArticle newsArticleProto);
+        void newsProvidersProtoBuf(protobuf.NewsProviders newsProvidersProto);
+        void historicalNewsProtoBuf(protobuf.HistoricalNews historicalNewsProto);
+        void historicalNewsEndProtoBuf(protobuf.HistoricalNewsEnd historicalNewsEndProto);
+        void wshMetaDataProtoBuf(protobuf.WshMetaData wshMetaDataProto);
+        void wshEventDataProtoBuf(protobuf.WshEventData wshEventDataProto);
+        void tickNewsProtoBuf(protobuf.TickNews tickNewsProto);
+        void scannerParametersProtoBuf(protobuf.ScannerParameters scannerParametersProto);
+        void scannerDataProtoBuf(protobuf.ScannerData scannerDataProto);
+        void fundamentalsDataProtoBuf(protobuf.FundamentalsData fundamentalsDataProto);
+        void pnlProtoBuf(protobuf.PnL pnlProto);
+        void pnlSingleProtoBuf(protobuf.PnLSingle pnlSingleProto);
+        void receiveFAProtoBuf(protobuf.ReceiveFA receiveFAProto);
+        void replaceFAEndProtoBuf(protobuf.ReplaceFAEnd replaceFAEndProto);
+        void commissionAndFeesReportProtoBuf(protobuf.CommissionAndFeesReport commissionAndFeesReportProto);
+        void historicalScheduleProtoBuf(protobuf.HistoricalSchedule historicalScheduleProto);
+        void rerouteMarketDataRequestProtoBuf(protobuf.RerouteMarketDataRequest rerouteMarketDataRequestProto);
+        void rerouteMarketDepthRequestProtoBuf(protobuf.RerouteMarketDepthRequest rerouteMarketDepthRequestProto);
+        void secDefOptParameterProtoBuf(protobuf.SecDefOptParameter secDefOptParameterProto);
+        void secDefOptParameterEndProtoBuf(protobuf.SecDefOptParameterEnd secDefOptParameterEndProto);
+        void softDollarTiersProtoBuf(protobuf.SoftDollarTiers softDollarTiersProto);
+        void familyCodesProtoBuf(protobuf.FamilyCodes familyCodesProto);
+        void symbolSamplesProtoBuf(protobuf.SymbolSamples symbolSamplesProto);
+        void smartComponentsProtoBuf(protobuf.SmartComponents smartComponentsProto);
+        void marketRuleProtoBuf(protobuf.MarketRule marketRuleProto);
+        void userInfoProtoBuf(protobuf.UserInfo userInfoProto);
+        void nextValidIdProtoBuf(protobuf.NextValidId nextValidIdProto);
+        void currentTimeProtoBuf(protobuf.CurrentTime currentTimeProto);
+        void currentTimeInMillisProtoBuf(protobuf.CurrentTimeInMillis currentTimeInMillisProto);
+        void verifyMessageApiProtoBuf(protobuf.VerifyMessageApi verifyMessageApiProto);
+        void verifyCompletedProtoBuf(protobuf.VerifyCompleted verifyCompletedProto);
+        void displayGroupListProtoBuf(protobuf.DisplayGroupList displayGroupListProto);
+        void displayGroupUpdatedProtoBuf(protobuf.DisplayGroupUpdated displayGroupUpdatedProto);
+        void marketDepthExchangesProtoBuf(protobuf.MarketDepthExchanges marketDepthExchangesProto);
+        void configResponseProtoBuf(protobuf.ConfigResponse configResponseProto);
+        void updateConfigResponseProtoBuf(protobuf.UpdateConfigResponse updateConfigResponseProto);
     }
 }

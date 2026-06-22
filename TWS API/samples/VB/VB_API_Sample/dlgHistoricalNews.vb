@@ -1,4 +1,4 @@
-﻿' Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿' Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
 ' and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable.
 
 
@@ -84,7 +84,7 @@ Friend Class dlgHistoricalNews
         Me.cmdOk.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdOk.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdOk.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdOk.Location = New System.Drawing.Point(60, 203)
+        Me.cmdOk.Location = New System.Drawing.Point(149, 203)
         Me.cmdOk.Name = "cmdOk"
         Me.cmdOk.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdOk.Size = New System.Drawing.Size(73, 25)
@@ -99,7 +99,7 @@ Friend Class dlgHistoricalNews
         Me.cmdCancel.Cursor = System.Windows.Forms.Cursors.Default
         Me.cmdCancel.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmdCancel.ForeColor = System.Drawing.SystemColors.ControlText
-        Me.cmdCancel.Location = New System.Drawing.Point(148, 203)
+        Me.cmdCancel.Location = New System.Drawing.Point(237, 203)
         Me.cmdCancel.Name = "cmdCancel"
         Me.cmdCancel.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.cmdCancel.Size = New System.Drawing.Size(73, 25)
@@ -115,7 +115,7 @@ Friend Class dlgHistoricalNews
         Me.txtHistoricalNewsConId.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtHistoricalNewsConId.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtHistoricalNewsConId.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtHistoricalNewsConId.Location = New System.Drawing.Point(117, 42)
+        Me.txtHistoricalNewsConId.Location = New System.Drawing.Point(303, 42)
         Me.txtHistoricalNewsConId.MaxLength = 0
         Me.txtHistoricalNewsConId.Name = "txtHistoricalNewsConId"
         Me.txtHistoricalNewsConId.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -131,13 +131,13 @@ Friend Class dlgHistoricalNews
         Me.txtHistoricalNewsProviderCodes.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtHistoricalNewsProviderCodes.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtHistoricalNewsProviderCodes.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtHistoricalNewsProviderCodes.Location = New System.Drawing.Point(117, 68)
+        Me.txtHistoricalNewsProviderCodes.Location = New System.Drawing.Point(303, 68)
         Me.txtHistoricalNewsProviderCodes.MaxLength = 0
         Me.txtHistoricalNewsProviderCodes.Name = "txtHistoricalNewsProviderCodes"
         Me.txtHistoricalNewsProviderCodes.RightToLeft = System.Windows.Forms.RightToLeft.No
         Me.txtHistoricalNewsProviderCodes.Size = New System.Drawing.Size(151, 13)
         Me.txtHistoricalNewsProviderCodes.TabIndex = 5
-        Me.txtHistoricalNewsProviderCodes.Text = "BZ+FLY"
+        Me.txtHistoricalNewsProviderCodes.Text = "BRFUPDN+BRFG"
         '
         'txtHistoricalNewsRequstId
         '
@@ -147,7 +147,7 @@ Friend Class dlgHistoricalNews
         Me.txtHistoricalNewsRequstId.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtHistoricalNewsRequstId.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtHistoricalNewsRequstId.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtHistoricalNewsRequstId.Location = New System.Drawing.Point(117, 16)
+        Me.txtHistoricalNewsRequstId.Location = New System.Drawing.Point(303, 16)
         Me.txtHistoricalNewsRequstId.MaxLength = 0
         Me.txtHistoricalNewsRequstId.Name = "txtHistoricalNewsRequstId"
         Me.txtHistoricalNewsRequstId.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -203,9 +203,9 @@ Friend Class dlgHistoricalNews
         Me.labelHistoricalNewsStartDateTime.Location = New System.Drawing.Point(16, 97)
         Me.labelHistoricalNewsStartDateTime.Name = "labelHistoricalNewsStartDateTime"
         Me.labelHistoricalNewsStartDateTime.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.labelHistoricalNewsStartDateTime.Size = New System.Drawing.Size(95, 17)
+        Me.labelHistoricalNewsStartDateTime.Size = New System.Drawing.Size(281, 17)
         Me.labelHistoricalNewsStartDateTime.TabIndex = 6
-        Me.labelHistoricalNewsStartDateTime.Text = "Start Date/Time"
+        Me.labelHistoricalNewsStartDateTime.Text = "Start Date/Time - News: all historical up to that moment"
         '
         'labelHistoricalNewsEndDateTime
         '
@@ -216,9 +216,9 @@ Friend Class dlgHistoricalNews
         Me.labelHistoricalNewsEndDateTime.Location = New System.Drawing.Point(16, 124)
         Me.labelHistoricalNewsEndDateTime.Name = "labelHistoricalNewsEndDateTime"
         Me.labelHistoricalNewsEndDateTime.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.labelHistoricalNewsEndDateTime.Size = New System.Drawing.Size(95, 17)
+        Me.labelHistoricalNewsEndDateTime.Size = New System.Drawing.Size(268, 17)
         Me.labelHistoricalNewsEndDateTime.TabIndex = 8
-        Me.labelHistoricalNewsEndDateTime.Text = "End Date/Time"
+        Me.labelHistoricalNewsEndDateTime.Text = "End Date/Time - News: from that moment up to now"
         '
         'labelHistoricalNewsTotalResults
         '
@@ -241,7 +241,7 @@ Friend Class dlgHistoricalNews
         Me.txtHistoricalNewsStartDateTime.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtHistoricalNewsStartDateTime.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtHistoricalNewsStartDateTime.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtHistoricalNewsStartDateTime.Location = New System.Drawing.Point(117, 97)
+        Me.txtHistoricalNewsStartDateTime.Location = New System.Drawing.Point(303, 97)
         Me.txtHistoricalNewsStartDateTime.MaxLength = 0
         Me.txtHistoricalNewsStartDateTime.Name = "txtHistoricalNewsStartDateTime"
         Me.txtHistoricalNewsStartDateTime.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -256,7 +256,7 @@ Friend Class dlgHistoricalNews
         Me.txtHistoricalNewsEndDateTime.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtHistoricalNewsEndDateTime.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtHistoricalNewsEndDateTime.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtHistoricalNewsEndDateTime.Location = New System.Drawing.Point(117, 124)
+        Me.txtHistoricalNewsEndDateTime.Location = New System.Drawing.Point(303, 124)
         Me.txtHistoricalNewsEndDateTime.MaxLength = 0
         Me.txtHistoricalNewsEndDateTime.Name = "txtHistoricalNewsEndDateTime"
         Me.txtHistoricalNewsEndDateTime.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -271,7 +271,7 @@ Friend Class dlgHistoricalNews
         Me.txtHistoricalNewsTotalResults.Cursor = System.Windows.Forms.Cursors.IBeam
         Me.txtHistoricalNewsTotalResults.Font = New System.Drawing.Font("Arial", 8.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtHistoricalNewsTotalResults.ForeColor = System.Drawing.SystemColors.WindowText
-        Me.txtHistoricalNewsTotalResults.Location = New System.Drawing.Point(117, 151)
+        Me.txtHistoricalNewsTotalResults.Location = New System.Drawing.Point(303, 151)
         Me.txtHistoricalNewsTotalResults.MaxLength = 0
         Me.txtHistoricalNewsTotalResults.Name = "txtHistoricalNewsTotalResults"
         Me.txtHistoricalNewsTotalResults.RightToLeft = System.Windows.Forms.RightToLeft.No
@@ -289,7 +289,7 @@ Friend Class dlgHistoricalNews
         Me.cmdMiscOptions.Location = New System.Drawing.Point(19, 172)
         Me.cmdMiscOptions.Name = "cmdMiscOptions"
         Me.cmdMiscOptions.RightToLeft = System.Windows.Forms.RightToLeft.No
-        Me.cmdMiscOptions.Size = New System.Drawing.Size(249, 25)
+        Me.cmdMiscOptions.Size = New System.Drawing.Size(435, 25)
         Me.cmdMiscOptions.TabIndex = 14
         Me.cmdMiscOptions.Text = "Misc Options"
         Me.cmdMiscOptions.UseVisualStyleBackColor = True
@@ -298,7 +298,7 @@ Friend Class dlgHistoricalNews
         '
         Me.AutoScaleBaseSize = New System.Drawing.Size(5, 13)
         Me.BackColor = System.Drawing.Color.Gainsboro
-        Me.ClientSize = New System.Drawing.Size(280, 236)
+        Me.ClientSize = New System.Drawing.Size(472, 236)
         Me.Controls.Add(Me.cmdMiscOptions)
         Me.Controls.Add(Me.txtHistoricalNewsTotalResults)
         Me.Controls.Add(Me.txtHistoricalNewsEndDateTime)
@@ -433,8 +433,8 @@ Friend Class dlgHistoricalNews
 
     Private Sub dlgHistoricalNews_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         m_requestId = 0
-        txtHistoricalNewsStartDateTime.Text = String.Format("{0:yyyy-MM-dd HH:mm:ss.0}", DateTime.Now.AddDays(-4))
-        txtHistoricalNewsEndDateTime.Text = String.Format("{0:yyyy-MM-dd HH:mm:ss.0}", DateTime.Now.AddDays(-3))
+        txtHistoricalNewsStartDateTime.Text = String.Format("{0:yyyy-MM-dd HH:mm:ss.0}", DateTime.Now.AddDays(-10))
+        txtHistoricalNewsEndDateTime.Text = String.Format("{0:yyyy-MM-dd HH:mm:ss.0}", DateTime.Now.AddDays(-10))
     End Sub
 
     Private Function Text2Int(text As String) As Integer

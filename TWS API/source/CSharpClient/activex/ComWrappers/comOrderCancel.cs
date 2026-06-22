@@ -27,11 +27,7 @@ namespace TWSLib
         }
 
         string TWSLib.IOrderCancel.manualOrderCancelTime { get { return data.ManualOrderCancelTime; } set { data.ManualOrderCancelTime = value; } }
-
         string TWSLib.IOrderCancel.extOperator { get { return data.ExtOperator; } set { data.ExtOperator = value; } }
-
-        string TWSLib.IOrderCancel.externalUserId { get { return data.ExternalUserId; } set { data.ExternalUserId = value; } }
-
         int TWSLib.IOrderCancel.manualOrderIndicator { get { return data.ManualOrderIndicator; } set { data.ManualOrderIndicator = value; } }
 
         public static explicit operator ComOrderCancel(IBApi.OrderCancel oc)

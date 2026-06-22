@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+﻿/* Copyright (C) 2026 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 //using System.Collections;
@@ -71,19 +71,19 @@ namespace TwsRtdServer{
         // TODO:
         // generic ticks
 
-        // STK  100,101,104,105,106,165,221,225,232,236,258,293,294,295,318,411,456,460,595,619,577,614,623
-        // OPT  100,101,104,106,    165,221,225,232,236,258,293,294,295,318,411,456,460,595,619
-        // FUT  100,101,104,106,    165,221,225,232,236,258,293,294,295,318,411,    460,    619,588
-        // FOP  100,101,104,106,    165,221,225,232,236,258,293,294,295,318,411,    460,    619
-        // WAR  100,101,104,106,    165,221,225,232,236,258,293,294,295,318,411,    460,    619
-        // CFD  100,101,104,106,    165,221,225,232,236,258,293,294,295,318,411,    460,    619
-        // IND  100,101,104,106,162,165,221,225,232,236,258,293,294,295,318,411,    460,    619
-        // BAG  100,101,    106,    165,221,225,232,236,258,293,294,295,318,        460,    619
-        // BOND 100,101,104,106,    165,221,225,232,236,258,293,294,295,318,411,    460,    619
-        // CASH 100,101,104,106,    165,221,225,232,236,258,293,294,295,318,411,    460,    619
+        // STK  100,101,104,105,106,165,221,225,232,236,293,294,295,318,411,456,460,595,619,577,614,623
+        // OPT  100,101,104,106,    165,221,225,232,236,293,294,295,318,411,456,460,595,619
+        // FUT  100,101,104,106,    165,221,225,232,236,293,294,295,318,411,    460,    619,588
+        // FOP  100,101,104,106,    165,221,225,232,236,293,294,295,318,411,    460,    619
+        // WAR  100,101,104,106,    165,221,225,232,236,293,294,295,318,411,    460,    619
+        // CFD  100,101,104,106,    165,221,225,232,236,293,294,295,318,411,    460,    619
+        // IND  100,101,104,106,162,165,221,225,232,236,293,294,295,318,411,    460,    619
+        // BAG  100,101,    106,    165,221,225,232,236,293,294,295,318,        460,    619
+        // BOND 100,101,104,106,    165,221,225,232,236,293,294,295,318,411,    460,    619
+        // CASH 100,101,104,106,    165,221,225,232,236,293,294,295,318,411,    460,    619
 
 
-        public const string GENERIC_TICKS_BASE = "100,101,106,165,221,225,232,236,258,293,294,295,318,460,619"; // BAG
+        public const string GENERIC_TICKS_BASE = "100,101,106,165,221,225,232,236,293,294,295,318,460,619"; // BAG
         public const string GENERIC_TICKS_FUT = GENERIC_TICKS_BASE + ",104,411,588"; // FUT, FOP, WAR, CFD, BOND, CASH
         public const string GENERIC_TICKS_STK = GENERIC_TICKS_OPT  + ",105,577,614,623"; // STK
         public const string GENERIC_TICKS_OPT = GENERIC_TICKS_BASE + ",104,411,456,595"; // OPT
@@ -127,8 +127,6 @@ namespace TwsRtdServer{
         // IPO_PRICES (586)
         public const string GEN_TICK_ESTIMATED_IPO_MIDPOINT = "ESTIMATEDIPOMIDPOINT";
         public const string GEN_TICK_FINAL_IPO_LAST = "FINALIPOLAST";
-        // FUNDAMENTALS (258)
-        public const string GEN_TICK_FUNDAMENTALS = "FUNDAMENTALS";
         // TRADE_COUNT (293)
         public const string GEN_TICK_TRADE_COUNT = "TRADECOUNT";
         // TRADE_RATE (294)
@@ -279,7 +277,6 @@ namespace TwsRtdServer{
             GEN_TICK_INDEX_FUTURE_PREMIUM, // INDEX_FUTURE_PREM (162) - IND only
             GEN_TICK_SHORTABLE, GEN_TICK_SHORTABLE_SHARES, // SHORTABLE (236)
             GEN_TICK_ESTIMATED_IPO_MIDPOINT, GEN_TICK_FINAL_IPO_LAST, // IPO_PRICES (586)
-            GEN_TICK_FUNDAMENTALS, // FUNDAMENTALS (258)
             GEN_TICK_TRADE_COUNT, // TRADE_COUNT (293)
             GEN_TICK_TRADE_RATE, // TRADE_RATE (294)
             GEN_TICK_VOLUME_RATE, // VOLUME_RATE (295)
@@ -358,7 +355,6 @@ namespace TwsRtdServer{
             { 37, GEN_TICK_PL_PRICE },
             { 45, LASTTIME },
             { 46, GEN_TICK_SHORTABLE },
-            { 47, GEN_TICK_FUNDAMENTALS },
             { 49, HALTED },
             { 54, GEN_TICK_TRADE_COUNT },
             { 55, GEN_TICK_TRADE_RATE },

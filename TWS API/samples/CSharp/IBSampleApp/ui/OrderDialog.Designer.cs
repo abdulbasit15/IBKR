@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using IBSampleApp.types;
 using IBSampleApp.ui;
@@ -80,12 +80,27 @@ namespace IBSampleApp
             this.contractCurrency = new System.Windows.Forms.TextBox();
             this.contractExchange = new System.Windows.Forms.TextBox();
             this.extendedOrderTab = new System.Windows.Forms.TabPage();
+            this.label28 = new System.Windows.Forms.Label();
+            this.routeMarketableToBbo = new System.Windows.Forms.CheckBox();
+            this.labelRouteMarketableToBbo = new System.Windows.Forms.Label();
+            this.whatIfType = new System.Windows.Forms.TextBox();
+            this.labelWhatIfType = new System.Windows.Forms.Label();
+            this.seekPriceImprovement = new System.Windows.Forms.CheckBox();
+            this.labelSeekPriceImprovement = new System.Windows.Forms.Label();
+            this.activeStopTime = new System.Windows.Forms.TextBox();
+            this.activeStartTime = new System.Windows.Forms.TextBox();
+            this.labelActiveStopTime = new System.Windows.Forms.Label();
+            this.labelActiveStartTime = new System.Windows.Forms.Label();
+            this.deactivate = new System.Windows.Forms.CheckBox();
+            this.postOnly = new System.Windows.Forms.CheckBox();
+            this.allowPreOpen = new System.Windows.Forms.CheckBox();
+            this.ignoreOpenAuction = new System.Windows.Forms.CheckBox();
+            this.imbalanceOnly = new System.Windows.Forms.CheckBox();
             this.manualOrderIndicator = new System.Windows.Forms.TextBox();
             this.labelManualOrderIndicator = new System.Windows.Forms.Label();
-            this.externalUserId = new System.Windows.Forms.TextBox();
-            this.labelExternalUserId = new System.Windows.Forms.Label();
             this.extOperator = new System.Windows.Forms.TextBox();
             this.labelExtOperator = new System.Windows.Forms.Label();
+            this.includeOvernight = new System.Windows.Forms.CheckBox();
             this.professionalCustomer = new System.Windows.Forms.CheckBox();
             this.customerAccount = new System.Windows.Forms.TextBox();
             this.labelCustomerAccount = new System.Windows.Forms.Label();
@@ -251,7 +266,7 @@ namespace IBSampleApp
             this.label12 = new System.Windows.Forms.Label();
             this.cbAdjustedOrderType = new System.Windows.Forms.ComboBox();
             this.label11 = new System.Windows.Forms.Label();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.orderConditionsTab = new System.Windows.Forms.TabPage();
             this.ignoreRth = new System.Windows.Forms.CheckBox();
             this.cancelOrder = new System.Windows.Forms.ComboBox();
             this.conditionList = new System.Windows.Forms.DataGridView();
@@ -271,7 +286,15 @@ namespace IBSampleApp
             this.labelMinCompeteSize = new System.Windows.Forms.Label();
             this.tbMinTradeQty = new System.Windows.Forms.TextBox();
             this.labelMinTradeQty = new System.Windows.Forms.Label();
-            this.contractSearchControl1 = new IBSampleApp.ui.ContractSearchControl();
+            this.attachedOrdersTab = new System.Windows.Forms.TabPage();
+            this.textBoxProfitTakerOrderType = new System.Windows.Forms.TextBox();
+            this.textBoxStopLossOrderType = new System.Windows.Forms.TextBox();
+            this.labelProfitTakerOrderType = new System.Windows.Forms.Label();
+            this.labelStopLossOrderType = new System.Windows.Forms.Label();
+            this.textBoxProfitTakerOrderId = new System.Windows.Forms.TextBox();
+            this.labelProfitTakerOrderId = new System.Windows.Forms.Label();
+            this.textStopLossOrderId = new System.Windows.Forms.TextBox();
+            this.labelStopLossOrderId = new System.Windows.Forms.Label();
             this.sendOrderButton = new System.Windows.Forms.Button();
             this.textBox6 = new System.Windows.Forms.TextBox();
             this.textBox7 = new System.Windows.Forms.TextBox();
@@ -279,6 +302,9 @@ namespace IBSampleApp
             this.checkMarginButton = new System.Windows.Forms.Button();
             this.closeOrderDialogButton = new System.Windows.Forms.Button();
             this.cancelOrderButton = new System.Windows.Forms.Button();
+            this.globalCancelButton = new System.Windows.Forms.Button();
+            this.contractSearchControl1 = new IBSampleApp.ui.ContractSearchControl();
+            this.hedgeMaxSize = new System.Windows.Forms.TextBox();
             this.conditionsTab.SuspendLayout();
             this.orderContractTab.SuspendLayout();
             this.baseGroup.SuspendLayout();
@@ -290,9 +316,10 @@ namespace IBSampleApp
             this.algoTab.SuspendLayout();
             this.peg2benchTab.SuspendLayout();
             this.adjustStopTab.SuspendLayout();
-            this.tabPage1.SuspendLayout();
+            this.orderConditionsTab.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.conditionList)).BeginInit();
             this.PegBestPegMidTab.SuspendLayout();
+            this.attachedOrdersTab.SuspendLayout();
             this.SuspendLayout();
             // 
             // contractSymbol
@@ -316,12 +343,13 @@ namespace IBSampleApp
             this.conditionsTab.Controls.Add(this.algoTab);
             this.conditionsTab.Controls.Add(this.peg2benchTab);
             this.conditionsTab.Controls.Add(this.adjustStopTab);
-            this.conditionsTab.Controls.Add(this.tabPage1);
+            this.conditionsTab.Controls.Add(this.orderConditionsTab);
             this.conditionsTab.Controls.Add(this.PegBestPegMidTab);
+            this.conditionsTab.Controls.Add(this.attachedOrdersTab);
             this.conditionsTab.Location = new System.Drawing.Point(1, 1);
             this.conditionsTab.Name = "conditionsTab";
             this.conditionsTab.SelectedIndex = 0;
-            this.conditionsTab.Size = new System.Drawing.Size(823, 421);
+            this.conditionsTab.Size = new System.Drawing.Size(823, 449);
             this.conditionsTab.TabIndex = 1;
             // 
             // orderContractTab
@@ -332,7 +360,7 @@ namespace IBSampleApp
             this.orderContractTab.Location = new System.Drawing.Point(4, 22);
             this.orderContractTab.Name = "orderContractTab";
             this.orderContractTab.Padding = new System.Windows.Forms.Padding(3);
-            this.orderContractTab.Size = new System.Drawing.Size(815, 395);
+            this.orderContractTab.Size = new System.Drawing.Size(815, 423);
             this.orderContractTab.TabIndex = 0;
             this.orderContractTab.Text = "Basic Order";
             // 
@@ -826,12 +854,28 @@ namespace IBSampleApp
             // extendedOrderTab
             // 
             this.extendedOrderTab.BackColor = System.Drawing.Color.LightGray;
+            this.extendedOrderTab.Controls.Add(this.hedgeMaxSize);
+            this.extendedOrderTab.Controls.Add(this.label28);
+            this.extendedOrderTab.Controls.Add(this.routeMarketableToBbo);
+            this.extendedOrderTab.Controls.Add(this.labelRouteMarketableToBbo);
+            this.extendedOrderTab.Controls.Add(this.whatIfType);
+            this.extendedOrderTab.Controls.Add(this.labelWhatIfType);
+            this.extendedOrderTab.Controls.Add(this.seekPriceImprovement);
+            this.extendedOrderTab.Controls.Add(this.labelSeekPriceImprovement);
+            this.extendedOrderTab.Controls.Add(this.activeStopTime);
+            this.extendedOrderTab.Controls.Add(this.activeStartTime);
+            this.extendedOrderTab.Controls.Add(this.labelActiveStopTime);
+            this.extendedOrderTab.Controls.Add(this.labelActiveStartTime);
+            this.extendedOrderTab.Controls.Add(this.deactivate);
+            this.extendedOrderTab.Controls.Add(this.postOnly);
+            this.extendedOrderTab.Controls.Add(this.allowPreOpen);
+            this.extendedOrderTab.Controls.Add(this.ignoreOpenAuction);
+            this.extendedOrderTab.Controls.Add(this.imbalanceOnly);
             this.extendedOrderTab.Controls.Add(this.manualOrderIndicator);
             this.extendedOrderTab.Controls.Add(this.labelManualOrderIndicator);
-            this.extendedOrderTab.Controls.Add(this.externalUserId);
-            this.extendedOrderTab.Controls.Add(this.labelExternalUserId);
             this.extendedOrderTab.Controls.Add(this.extOperator);
             this.extendedOrderTab.Controls.Add(this.labelExtOperator);
+            this.extendedOrderTab.Controls.Add(this.includeOvernight);
             this.extendedOrderTab.Controls.Add(this.professionalCustomer);
             this.extendedOrderTab.Controls.Add(this.customerAccount);
             this.extendedOrderTab.Controls.Add(this.labelCustomerAccount);
@@ -898,57 +942,211 @@ namespace IBSampleApp
             this.extendedOrderTab.Location = new System.Drawing.Point(4, 22);
             this.extendedOrderTab.Name = "extendedOrderTab";
             this.extendedOrderTab.Padding = new System.Windows.Forms.Padding(3);
-            this.extendedOrderTab.Size = new System.Drawing.Size(815, 395);
+            this.extendedOrderTab.Size = new System.Drawing.Size(815, 423);
             this.extendedOrderTab.TabIndex = 1;
             this.extendedOrderTab.Text = "Extended Attributes";
             // 
+            // label28
+            // 
+            this.label28.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label28.AutoSize = true;
+            this.label28.Location = new System.Drawing.Point(558, 43);
+            this.label28.Name = "label28";
+            this.label28.Size = new System.Drawing.Size(82, 13);
+            this.label28.TabIndex = 89;
+            this.label28.Text = "Hedge max size";
+            // 
+            // routeMarketableToBbo
+            // 
+            this.routeMarketableToBbo.AutoSize = true;
+            this.routeMarketableToBbo.Checked = true;
+            this.routeMarketableToBbo.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.routeMarketableToBbo.Location = new System.Drawing.Point(751, 356);
+            this.routeMarketableToBbo.Name = "routeMarketableToBbo";
+            this.routeMarketableToBbo.Size = new System.Drawing.Size(15, 14);
+            this.routeMarketableToBbo.TabIndex = 88;
+            this.routeMarketableToBbo.UseVisualStyleBackColor = true;
+            // 
+            // labelRouteMarketableToBbo
+            // 
+            this.labelRouteMarketableToBbo.AutoSize = true;
+            this.labelRouteMarketableToBbo.Location = new System.Drawing.Point(622, 356);
+            this.labelRouteMarketableToBbo.Name = "labelRouteMarketableToBbo";
+            this.labelRouteMarketableToBbo.Size = new System.Drawing.Size(126, 13);
+            this.labelRouteMarketableToBbo.TabIndex = 87;
+            this.labelRouteMarketableToBbo.Text = "Route Marketable to Bbo";
+            // 
+            // whatIfType
+            // 
+            this.whatIfType.Location = new System.Drawing.Point(546, 377);
+            this.whatIfType.Name = "whatIfType";
+            this.whatIfType.Size = new System.Drawing.Size(70, 20);
+            this.whatIfType.TabIndex = 86;
+            // 
+            // labelWhatIfType
+            // 
+            this.labelWhatIfType.AutoSize = true;
+            this.labelWhatIfType.Location = new System.Drawing.Point(449, 382);
+            this.labelWhatIfType.Name = "labelWhatIfType";
+            this.labelWhatIfType.Size = new System.Drawing.Size(66, 13);
+            this.labelWhatIfType.TabIndex = 85;
+            this.labelWhatIfType.Text = "WhatIf Type";
+            // 
+            // seekPriceImprovement
+            // 
+            this.seekPriceImprovement.AutoSize = true;
+            this.seekPriceImprovement.Checked = true;
+            this.seekPriceImprovement.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.seekPriceImprovement.Location = new System.Drawing.Point(546, 355);
+            this.seekPriceImprovement.Name = "seekPriceImprovement";
+            this.seekPriceImprovement.Size = new System.Drawing.Size(15, 14);
+            this.seekPriceImprovement.TabIndex = 84;
+            this.seekPriceImprovement.UseVisualStyleBackColor = true;
+            // 
+            // labelSeekPriceImprovement
+            // 
+            this.labelSeekPriceImprovement.AutoSize = true;
+            this.labelSeekPriceImprovement.Location = new System.Drawing.Point(417, 356);
+            this.labelSeekPriceImprovement.Name = "labelSeekPriceImprovement";
+            this.labelSeekPriceImprovement.Size = new System.Drawing.Size(123, 13);
+            this.labelSeekPriceImprovement.TabIndex = 83;
+            this.labelSeekPriceImprovement.Text = "Seek Price Improvement";
+            // 
+            // activeStopTime
+            // 
+            this.activeStopTime.Location = new System.Drawing.Point(339, 379);
+            this.activeStopTime.Name = "activeStopTime";
+            this.activeStopTime.Size = new System.Drawing.Size(70, 20);
+            this.activeStopTime.TabIndex = 82;
+            // 
+            // activeStartTime
+            // 
+            this.activeStartTime.Location = new System.Drawing.Point(125, 381);
+            this.activeStartTime.Name = "activeStartTime";
+            this.activeStartTime.Size = new System.Drawing.Size(70, 20);
+            this.activeStartTime.TabIndex = 81;
+            // 
+            // labelActiveStopTime
+            // 
+            this.labelActiveStopTime.AutoSize = true;
+            this.labelActiveStopTime.Location = new System.Drawing.Point(241, 384);
+            this.labelActiveStopTime.Name = "labelActiveStopTime";
+            this.labelActiveStopTime.Size = new System.Drawing.Size(88, 13);
+            this.labelActiveStopTime.TabIndex = 80;
+            this.labelActiveStopTime.Text = "Active Stop Time";
+            // 
+            // labelActiveStartTime
+            // 
+            this.labelActiveStartTime.AutoSize = true;
+            this.labelActiveStartTime.Location = new System.Drawing.Point(31, 382);
+            this.labelActiveStartTime.Name = "labelActiveStartTime";
+            this.labelActiveStartTime.Size = new System.Drawing.Size(88, 13);
+            this.labelActiveStartTime.TabIndex = 79;
+            this.labelActiveStartTime.Text = "Active Start Time";
+            // 
+            // deactivate
+            // 
+            this.deactivate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.deactivate.AutoSize = true;
+            this.deactivate.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.deactivate.Location = new System.Drawing.Point(618, 273);
+            this.deactivate.Name = "deactivate";
+            this.deactivate.Size = new System.Drawing.Size(78, 17);
+            this.deactivate.TabIndex = 78;
+            this.deactivate.Text = "Deactivate";
+            this.deactivate.UseVisualStyleBackColor = true;
+            // 
+            // postOnly
+            // 
+            this.postOnly.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.postOnly.AutoSize = true;
+            this.postOnly.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.postOnly.Location = new System.Drawing.Point(625, 208);
+            this.postOnly.Name = "postOnly";
+            this.postOnly.Size = new System.Drawing.Size(71, 17);
+            this.postOnly.TabIndex = 77;
+            this.postOnly.Text = "Post Only";
+            this.postOnly.UseVisualStyleBackColor = true;
+            // 
+            // allowPreOpen
+            // 
+            this.allowPreOpen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.allowPreOpen.AutoSize = true;
+            this.allowPreOpen.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.allowPreOpen.Location = new System.Drawing.Point(597, 231);
+            this.allowPreOpen.Name = "allowPreOpen";
+            this.allowPreOpen.Size = new System.Drawing.Size(99, 17);
+            this.allowPreOpen.TabIndex = 76;
+            this.allowPreOpen.Text = "Allow Pre-Open";
+            this.allowPreOpen.UseVisualStyleBackColor = true;
+            // 
+            // ignoreOpenAuction
+            // 
+            this.ignoreOpenAuction.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ignoreOpenAuction.AutoSize = true;
+            this.ignoreOpenAuction.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.ignoreOpenAuction.Location = new System.Drawing.Point(572, 254);
+            this.ignoreOpenAuction.Name = "ignoreOpenAuction";
+            this.ignoreOpenAuction.Size = new System.Drawing.Size(124, 17);
+            this.ignoreOpenAuction.TabIndex = 75;
+            this.ignoreOpenAuction.Text = "Ignore Open Auction";
+            this.ignoreOpenAuction.UseVisualStyleBackColor = true;
+            // 
+            // imbalanceOnly
+            // 
+            this.imbalanceOnly.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.imbalanceOnly.AutoSize = true;
+            this.imbalanceOnly.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.imbalanceOnly.Location = new System.Drawing.Point(597, 185);
+            this.imbalanceOnly.Name = "imbalanceOnly";
+            this.imbalanceOnly.Size = new System.Drawing.Size(99, 17);
+            this.imbalanceOnly.TabIndex = 74;
+            this.imbalanceOnly.Text = "Imbalance Only";
+            this.imbalanceOnly.UseVisualStyleBackColor = true;
+            // 
             // manualOrderIndicator
             // 
-            this.manualOrderIndicator.Location = new System.Drawing.Point(546, 355);
+            this.manualOrderIndicator.Location = new System.Drawing.Point(339, 353);
             this.manualOrderIndicator.Name = "manualOrderIndicator";
             this.manualOrderIndicator.Size = new System.Drawing.Size(70, 20);
-            this.manualOrderIndicator.TabIndex = 68;
+            this.manualOrderIndicator.TabIndex = 73;
             // 
             // labelManualOrderIndicator
             // 
             this.labelManualOrderIndicator.AutoSize = true;
-            this.labelManualOrderIndicator.Location = new System.Drawing.Point(424, 358);
+            this.labelManualOrderIndicator.Location = new System.Drawing.Point(205, 356);
             this.labelManualOrderIndicator.Name = "labelManualOrderIndicator";
             this.labelManualOrderIndicator.Size = new System.Drawing.Size(115, 13);
-            this.labelManualOrderIndicator.TabIndex = 67;
+            this.labelManualOrderIndicator.TabIndex = 72;
             this.labelManualOrderIndicator.Text = "Manual Order Indicator";
-            // 
-            // externalUserId
-            // 
-            this.externalUserId.Location = new System.Drawing.Point(339, 355);
-            this.externalUserId.Name = "externalUserId";
-            this.externalUserId.Size = new System.Drawing.Size(70, 20);
-            this.externalUserId.TabIndex = 66;
-            // 
-            // labelExternalUserId
-            // 
-            this.labelExternalUserId.AutoSize = true;
-            this.labelExternalUserId.Location = new System.Drawing.Point(205, 358);
-            this.labelExternalUserId.Name = "labelExternalUserId";
-            this.labelExternalUserId.Size = new System.Drawing.Size(82, 13);
-            this.labelExternalUserId.TabIndex = 65;
-            this.labelExternalUserId.Text = "External User Id";
             // 
             // extOperator
             // 
-            this.extOperator.Location = new System.Drawing.Point(125, 355);
+            this.extOperator.Location = new System.Drawing.Point(125, 353);
             this.extOperator.Name = "extOperator";
             this.extOperator.Size = new System.Drawing.Size(70, 20);
-            this.extOperator.TabIndex = 64;
+            this.extOperator.TabIndex = 71;
             // 
             // labelExtOperator
             // 
             this.labelExtOperator.AutoSize = true;
-            this.labelExtOperator.Location = new System.Drawing.Point(22, 358);
+            this.labelExtOperator.Location = new System.Drawing.Point(22, 356);
             this.labelExtOperator.Name = "labelExtOperator";
             this.labelExtOperator.Size = new System.Drawing.Size(66, 13);
-            this.labelExtOperator.TabIndex = 63;
+            this.labelExtOperator.TabIndex = 70;
             this.labelExtOperator.Text = "Ext Operator";
+            // 
+            // includeOvernight
+            // 
+            this.includeOvernight.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.includeOvernight.AutoSize = true;
+            this.includeOvernight.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.includeOvernight.Location = new System.Drawing.Point(586, 165);
+            this.includeOvernight.Name = "includeOvernight";
+            this.includeOvernight.Size = new System.Drawing.Size(110, 17);
+            this.includeOvernight.TabIndex = 69;
+            this.includeOvernight.Text = "Include Overnight";
+            this.includeOvernight.UseVisualStyleBackColor = true;
             // 
             // professionalCustomer
             // 
@@ -1543,7 +1741,7 @@ namespace IBSampleApp
             this.advisorTab.Location = new System.Drawing.Point(4, 22);
             this.advisorTab.Name = "advisorTab";
             this.advisorTab.Padding = new System.Windows.Forms.Padding(3);
-            this.advisorTab.Size = new System.Drawing.Size(815, 395);
+            this.advisorTab.Size = new System.Drawing.Size(815, 423);
             this.advisorTab.TabIndex = 2;
             this.advisorTab.Text = "Advisor";
             // 
@@ -1618,7 +1816,7 @@ namespace IBSampleApp
             this.volatilityTab.Location = new System.Drawing.Point(4, 22);
             this.volatilityTab.Name = "volatilityTab";
             this.volatilityTab.Padding = new System.Windows.Forms.Padding(3);
-            this.volatilityTab.Size = new System.Drawing.Size(815, 395);
+            this.volatilityTab.Size = new System.Drawing.Size(815, 423);
             this.volatilityTab.TabIndex = 3;
             this.volatilityTab.Text = "Volatility";
             // 
@@ -1817,7 +2015,7 @@ namespace IBSampleApp
             this.scaleTab.Location = new System.Drawing.Point(4, 22);
             this.scaleTab.Name = "scaleTab";
             this.scaleTab.Padding = new System.Windows.Forms.Padding(3);
-            this.scaleTab.Size = new System.Drawing.Size(815, 395);
+            this.scaleTab.Size = new System.Drawing.Size(815, 423);
             this.scaleTab.TabIndex = 4;
             this.scaleTab.Text = "Scale";
             // 
@@ -2014,7 +2212,7 @@ namespace IBSampleApp
             this.algoTab.Location = new System.Drawing.Point(4, 22);
             this.algoTab.Name = "algoTab";
             this.algoTab.Padding = new System.Windows.Forms.Padding(3);
-            this.algoTab.Size = new System.Drawing.Size(815, 395);
+            this.algoTab.Size = new System.Drawing.Size(815, 423);
             this.algoTab.TabIndex = 5;
             this.algoTab.Text = "IB Algo";
             // 
@@ -2285,7 +2483,7 @@ namespace IBSampleApp
             this.peg2benchTab.Controls.Add(this.label4);
             this.peg2benchTab.Location = new System.Drawing.Point(4, 22);
             this.peg2benchTab.Name = "peg2benchTab";
-            this.peg2benchTab.Size = new System.Drawing.Size(815, 395);
+            this.peg2benchTab.Size = new System.Drawing.Size(815, 423);
             this.peg2benchTab.TabIndex = 6;
             this.peg2benchTab.Text = "Pegged to Benchmark";
             // 
@@ -2438,7 +2636,7 @@ namespace IBSampleApp
             this.adjustStopTab.Controls.Add(this.label11);
             this.adjustStopTab.Location = new System.Drawing.Point(4, 22);
             this.adjustStopTab.Name = "adjustStopTab";
-            this.adjustStopTab.Size = new System.Drawing.Size(815, 395);
+            this.adjustStopTab.Size = new System.Drawing.Size(815, 423);
             this.adjustStopTab.TabIndex = 7;
             this.adjustStopTab.Text = "Adjustable stops";
             // 
@@ -2491,9 +2689,9 @@ namespace IBSampleApp
             this.label14.AutoSize = true;
             this.label14.Location = new System.Drawing.Point(14, 85);
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(115, 13);
+            this.label14.Size = new System.Drawing.Size(117, 13);
             this.label14.TabIndex = 6;
-            this.label14.Text = "Adusted stop limit price";
+            this.label14.Text = "Adjusted stop limit price";
             // 
             // tbAdjustedStopPrice
             // 
@@ -2551,19 +2749,19 @@ namespace IBSampleApp
             this.label11.TabIndex = 0;
             this.label11.Text = "Trigger price";
             // 
-            // tabPage1
+            // orderConditionsTab
             // 
-            this.tabPage1.BackColor = System.Drawing.Color.LightGray;
-            this.tabPage1.Controls.Add(this.ignoreRth);
-            this.tabPage1.Controls.Add(this.cancelOrder);
-            this.tabPage1.Controls.Add(this.conditionList);
-            this.tabPage1.Controls.Add(this.lbAddCondition);
-            this.tabPage1.Controls.Add(this.lbRemoveCondition);
-            this.tabPage1.Location = new System.Drawing.Point(4, 22);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Size = new System.Drawing.Size(815, 395);
-            this.tabPage1.TabIndex = 8;
-            this.tabPage1.Text = "Conditions";
+            this.orderConditionsTab.BackColor = System.Drawing.Color.LightGray;
+            this.orderConditionsTab.Controls.Add(this.ignoreRth);
+            this.orderConditionsTab.Controls.Add(this.cancelOrder);
+            this.orderConditionsTab.Controls.Add(this.conditionList);
+            this.orderConditionsTab.Controls.Add(this.lbAddCondition);
+            this.orderConditionsTab.Controls.Add(this.lbRemoveCondition);
+            this.orderConditionsTab.Location = new System.Drawing.Point(4, 22);
+            this.orderConditionsTab.Name = "orderConditionsTab";
+            this.orderConditionsTab.Size = new System.Drawing.Size(815, 423);
+            this.orderConditionsTab.TabIndex = 8;
+            this.orderConditionsTab.Text = "Conditions";
             // 
             // ignoreRth
             // 
@@ -2657,7 +2855,7 @@ namespace IBSampleApp
             this.PegBestPegMidTab.Controls.Add(this.labelMinTradeQty);
             this.PegBestPegMidTab.Location = new System.Drawing.Point(4, 22);
             this.PegBestPegMidTab.Name = "PegBestPegMidTab";
-            this.PegBestPegMidTab.Size = new System.Drawing.Size(815, 395);
+            this.PegBestPegMidTab.Size = new System.Drawing.Size(815, 423);
             this.PegBestPegMidTab.TabIndex = 9;
             this.PegBestPegMidTab.Text = "PegBest / PegMid";
             // 
@@ -2758,14 +2956,92 @@ namespace IBSampleApp
             this.labelMinTradeQty.TabIndex = 2;
             this.labelMinTradeQty.Text = "Min Trade Qty";
             // 
-            // contractSearchControl1
+            // attachedOrdersTab
             // 
-            this.contractSearchControl1.Contract = null;
-            this.contractSearchControl1.IBClient = null;
-            this.contractSearchControl1.Location = new System.Drawing.Point(149, 32);
-            this.contractSearchControl1.Name = "contractSearchControl1";
-            this.contractSearchControl1.Size = new System.Drawing.Size(206, 13);
-            this.contractSearchControl1.TabIndex = 0;
+            this.attachedOrdersTab.BackColor = System.Drawing.Color.LightGray;
+            this.attachedOrdersTab.Controls.Add(this.textBoxProfitTakerOrderType);
+            this.attachedOrdersTab.Controls.Add(this.textBoxStopLossOrderType);
+            this.attachedOrdersTab.Controls.Add(this.labelProfitTakerOrderType);
+            this.attachedOrdersTab.Controls.Add(this.labelStopLossOrderType);
+            this.attachedOrdersTab.Controls.Add(this.textBoxProfitTakerOrderId);
+            this.attachedOrdersTab.Controls.Add(this.labelProfitTakerOrderId);
+            this.attachedOrdersTab.Controls.Add(this.textStopLossOrderId);
+            this.attachedOrdersTab.Controls.Add(this.labelStopLossOrderId);
+            this.attachedOrdersTab.Location = new System.Drawing.Point(4, 22);
+            this.attachedOrdersTab.Name = "attachedOrdersTab";
+            this.attachedOrdersTab.Size = new System.Drawing.Size(815, 423);
+            this.attachedOrdersTab.TabIndex = 10;
+            this.attachedOrdersTab.Text = "Attached Orders";
+            // 
+            // textBoxProfitTakerOrderType
+            // 
+            this.textBoxProfitTakerOrderType.Location = new System.Drawing.Point(164, 99);
+            this.textBoxProfitTakerOrderType.Name = "textBoxProfitTakerOrderType";
+            this.textBoxProfitTakerOrderType.Size = new System.Drawing.Size(121, 20);
+            this.textBoxProfitTakerOrderType.TabIndex = 11;
+            // 
+            // textBoxStopLossOrderType
+            // 
+            this.textBoxStopLossOrderType.Location = new System.Drawing.Point(164, 45);
+            this.textBoxStopLossOrderType.Name = "textBoxStopLossOrderType";
+            this.textBoxStopLossOrderType.Size = new System.Drawing.Size(121, 20);
+            this.textBoxStopLossOrderType.TabIndex = 10;
+            // 
+            // labelProfitTakerOrderType
+            // 
+            this.labelProfitTakerOrderType.AutoSize = true;
+            this.labelProfitTakerOrderType.CausesValidation = false;
+            this.labelProfitTakerOrderType.Location = new System.Drawing.Point(15, 106);
+            this.labelProfitTakerOrderType.Name = "labelProfitTakerOrderType";
+            this.labelProfitTakerOrderType.Size = new System.Drawing.Size(118, 13);
+            this.labelProfitTakerOrderType.TabIndex = 9;
+            this.labelProfitTakerOrderType.Text = "Profit-Taker Order Type";
+            // 
+            // labelStopLossOrderType
+            // 
+            this.labelStopLossOrderType.AutoSize = true;
+            this.labelStopLossOrderType.CausesValidation = false;
+            this.labelStopLossOrderType.Location = new System.Drawing.Point(15, 52);
+            this.labelStopLossOrderType.Name = "labelStopLossOrderType";
+            this.labelStopLossOrderType.Size = new System.Drawing.Size(110, 13);
+            this.labelStopLossOrderType.TabIndex = 8;
+            this.labelStopLossOrderType.Text = "Stop-Loss Order Type";
+            // 
+            // textBoxProfitTakerOrderId
+            // 
+            this.textBoxProfitTakerOrderId.Enabled = false;
+            this.textBoxProfitTakerOrderId.Location = new System.Drawing.Point(164, 71);
+            this.textBoxProfitTakerOrderId.Name = "textBoxProfitTakerOrderId";
+            this.textBoxProfitTakerOrderId.Size = new System.Drawing.Size(121, 20);
+            this.textBoxProfitTakerOrderId.TabIndex = 7;
+            this.textBoxProfitTakerOrderId.Text = "<set automatically>";
+            // 
+            // labelProfitTakerOrderId
+            // 
+            this.labelProfitTakerOrderId.AutoSize = true;
+            this.labelProfitTakerOrderId.Location = new System.Drawing.Point(15, 78);
+            this.labelProfitTakerOrderId.Name = "labelProfitTakerOrderId";
+            this.labelProfitTakerOrderId.Size = new System.Drawing.Size(103, 13);
+            this.labelProfitTakerOrderId.TabIndex = 6;
+            this.labelProfitTakerOrderId.Text = "Profit-Taker Order Id";
+            // 
+            // textStopLossOrderId
+            // 
+            this.textStopLossOrderId.Enabled = false;
+            this.textStopLossOrderId.Location = new System.Drawing.Point(164, 21);
+            this.textStopLossOrderId.Name = "textStopLossOrderId";
+            this.textStopLossOrderId.Size = new System.Drawing.Size(121, 20);
+            this.textStopLossOrderId.TabIndex = 5;
+            this.textStopLossOrderId.Text = "<set automatically>";
+            // 
+            // labelStopLossOrderId
+            // 
+            this.labelStopLossOrderId.AutoSize = true;
+            this.labelStopLossOrderId.Location = new System.Drawing.Point(15, 24);
+            this.labelStopLossOrderId.Name = "labelStopLossOrderId";
+            this.labelStopLossOrderId.Size = new System.Drawing.Size(95, 13);
+            this.labelStopLossOrderId.TabIndex = 4;
+            this.labelStopLossOrderId.Text = "Stop-Loss Order Id";
             // 
             // sendOrderButton
             // 
@@ -2805,7 +3081,7 @@ namespace IBSampleApp
             // checkMarginButton
             // 
             this.checkMarginButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkMarginButton.Location = new System.Drawing.Point(381, 456);
+            this.checkMarginButton.Location = new System.Drawing.Point(474, 456);
             this.checkMarginButton.Name = "checkMarginButton";
             this.checkMarginButton.Size = new System.Drawing.Size(87, 23);
             this.checkMarginButton.TabIndex = 1;
@@ -2835,12 +3111,41 @@ namespace IBSampleApp
             this.cancelOrderButton.UseVisualStyleBackColor = true;
             this.cancelOrderButton.Click += new System.EventHandler(this.cancelOrderButton_Click);
             // 
+            // globalCancelButton
+            // 
+            this.globalCancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.globalCancelButton.Location = new System.Drawing.Point(385, 456);
+            this.globalCancelButton.Name = "globalCancelButton";
+            this.globalCancelButton.Size = new System.Drawing.Size(83, 23);
+            this.globalCancelButton.TabIndex = 4;
+            this.globalCancelButton.Text = "Global Cancel";
+            this.globalCancelButton.UseVisualStyleBackColor = true;
+            this.globalCancelButton.Click += new System.EventHandler(this.globalCancelButton_Click);
+            // 
+            // contractSearchControl1
+            // 
+            this.contractSearchControl1.Contract = null;
+            this.contractSearchControl1.IBClient = null;
+            this.contractSearchControl1.Location = new System.Drawing.Point(149, 32);
+            this.contractSearchControl1.Name = "contractSearchControl1";
+            this.contractSearchControl1.Size = new System.Drawing.Size(206, 13);
+            this.contractSearchControl1.TabIndex = 0;
+            // 
+            // hedgeMaxSize
+            // 
+            this.hedgeMaxSize.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.hedgeMaxSize.Location = new System.Drawing.Point(646, 40);
+            this.hedgeMaxSize.Name = "hedgeMaxSize";
+            this.hedgeMaxSize.Size = new System.Drawing.Size(53, 20);
+            this.hedgeMaxSize.TabIndex = 90;
+            // 
             // OrderDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(836, 484);
             this.ControlBox = false;
+            this.Controls.Add(this.globalCancelButton);
             this.Controls.Add(this.cancelOrderButton);
             this.Controls.Add(this.closeOrderDialogButton);
             this.Controls.Add(this.checkMarginButton);
@@ -2873,11 +3178,13 @@ namespace IBSampleApp
             this.peg2benchTab.PerformLayout();
             this.adjustStopTab.ResumeLayout(false);
             this.adjustStopTab.PerformLayout();
-            this.tabPage1.ResumeLayout(false);
-            this.tabPage1.PerformLayout();
+            this.orderConditionsTab.ResumeLayout(false);
+            this.orderConditionsTab.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.conditionList)).EndInit();
             this.PegBestPegMidTab.ResumeLayout(false);
             this.PegBestPegMidTab.PerformLayout();
+            this.attachedOrdersTab.ResumeLayout(false);
+            this.attachedOrdersTab.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -3068,7 +3375,7 @@ namespace IBSampleApp
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.ComboBox cbAdjustedOrderType;
         private System.Windows.Forms.Label label11;
-        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage orderConditionsTab;
         private System.Windows.Forms.LinkLabel lbAddCondition;
         private System.Windows.Forms.LinkLabel lbRemoveCondition;
         private ui.ContractSearchControl contractSearchControl1;
@@ -3128,11 +3435,37 @@ namespace IBSampleApp
         private System.Windows.Forms.TextBox customerAccount;
         private System.Windows.Forms.Label labelCustomerAccount;
         private System.Windows.Forms.CheckBox professionalCustomer;
+        private System.Windows.Forms.CheckBox includeOvernight;
         private System.Windows.Forms.TextBox manualOrderIndicator;
         private System.Windows.Forms.Label labelManualOrderIndicator;
-        private System.Windows.Forms.TextBox externalUserId;
-        private System.Windows.Forms.Label labelExternalUserId;
         private System.Windows.Forms.TextBox extOperator;
         private System.Windows.Forms.Label labelExtOperator;
+        private System.Windows.Forms.Button globalCancelButton;
+        private System.Windows.Forms.CheckBox imbalanceOnly;
+        private System.Windows.Forms.CheckBox postOnly;
+        private System.Windows.Forms.CheckBox allowPreOpen;
+        private System.Windows.Forms.CheckBox ignoreOpenAuction;
+        private System.Windows.Forms.CheckBox deactivate;
+        private System.Windows.Forms.TextBox activeStopTime;
+        private System.Windows.Forms.TextBox activeStartTime;
+        private System.Windows.Forms.Label labelActiveStopTime;
+        private System.Windows.Forms.Label labelActiveStartTime;
+        private System.Windows.Forms.CheckBox seekPriceImprovement;
+        private System.Windows.Forms.Label labelSeekPriceImprovement;
+        private System.Windows.Forms.TextBox whatIfType;
+        private System.Windows.Forms.Label labelWhatIfType;
+        private System.Windows.Forms.CheckBox routeMarketableToBbo;
+        private System.Windows.Forms.Label labelRouteMarketableToBbo;
+        private System.Windows.Forms.TabPage attachedOrdersTab;
+        private System.Windows.Forms.TextBox textStopLossOrderId;
+        private System.Windows.Forms.Label labelStopLossOrderId;
+        private System.Windows.Forms.TextBox textBoxProfitTakerOrderType;
+        private System.Windows.Forms.TextBox textBoxStopLossOrderType;
+        private System.Windows.Forms.Label labelProfitTakerOrderType;
+        private System.Windows.Forms.Label labelStopLossOrderType;
+        private System.Windows.Forms.TextBox textBoxProfitTakerOrderId;
+        private System.Windows.Forms.Label labelProfitTakerOrderId;
+        private System.Windows.Forms.Label label28;
+        private System.Windows.Forms.TextBox hedgeMaxSize;
     }
 }

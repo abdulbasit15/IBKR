@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.utils;
@@ -19,7 +19,7 @@ public class ExecutionsUtils {
             item.add(Utils.toString(executionData.contract().symbol()));
             item.add(Utils.toString(executionData.contract().getSecType()));
             item.add(Utils.toString(executionData.contract().lastTradeDateOrContractMonth()));
-            item.add(Utils.toString(executionData.contract().strike()));
+            item.add(Utils.toStringMax(executionData.contract().strike()));
             item.add(Utils.toString(executionData.contract().getRight()));
             if (isNew) {
                 item.add(Utils.toString(executionData.contract().multiplier()));
@@ -63,18 +63,20 @@ public class ExecutionsUtils {
             item.add(Utils.toString(executionData.execution().evMultiplier()));
             item.add(Utils.toString(executionData.execution().lastLiquidityStr()));
             item.add(Utils.toString(executionData.execution().pendingPriceRevision()));
+            item.add(Utils.toString(executionData.execution().submitter()));
+            item.add(executionData.execution().optExerciseOrLapseType().name());
         }
         if (!isNew) {
             item.add("");
         }
             
         if (isNew) {
-            if (executionData.commissionReport() != null) {
-                item.add(Utils.toString(executionData.commissionReport().commission()));
-                item.add(Utils.toString(executionData.commissionReport().currency()));
-                item.add(Utils.toString(executionData.commissionReport().realizedPNL()));
-                item.add(Utils.toString(executionData.commissionReport().yield()));
-                item.add(Utils.toString(executionData.commissionReport().yieldRedemptionDate()));
+            if (executionData.commissionAndFeesReport() != null) {
+                item.add(Utils.toString(executionData.commissionAndFeesReport().commissionAndFees()));
+                item.add(Utils.toString(executionData.commissionAndFeesReport().currency()));
+                item.add(Utils.toString(executionData.commissionAndFeesReport().realizedPNL()));
+                item.add(Utils.toString(executionData.commissionAndFeesReport().yield()));
+                item.add(Utils.toString(executionData.commissionAndFeesReport().yieldRedemptionDate()));
             } else {
                 for (int j = 0; j < 5; j++) {
                     item.add(Utils.toString(""));

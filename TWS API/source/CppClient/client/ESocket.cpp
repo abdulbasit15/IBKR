@@ -15,7 +15,7 @@
 ESocket::ESocket() {
 }
 
-void ESocket::fd(int fd) {
+void ESocket::fd(SOCKET fd) {
     m_fd = fd;
 }
 

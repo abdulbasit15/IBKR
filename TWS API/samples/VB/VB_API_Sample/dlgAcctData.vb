@@ -230,7 +230,7 @@ Friend Class dlgAcctData
     ' Public methods
     ' ========================================================
     '--------------------------------------------------------------------------------
-    ' Class initializer. Make utilites available to this class
+    ' Class initializer. Make utilities available to this class
     '--------------------------------------------------------------------------------
     Public Sub init(utilities As Utils)
         m_utils = utilities
@@ -252,7 +252,7 @@ Friend Class dlgAcctData
 
         With contract
             msg = "conId=" & .ConId & " symbol=" & .Symbol & " secType=" & .SecType & " lastTradeDate=" & .LastTradeDateOrContractMonth & " strike=" & Util.DoubleMaxString(.Strike) _
-            & " right=" & .Right & " multiplier=" & .Multiplier & " primaryExch=" & .PrimaryExch & " currency=" & .Currency _
+            & " right=" & .Right & " multiplier=" & .Multiplier & " exchange=" & .Exchange & " currency=" & .Currency _
             & " localSymbol=" & .LocalSymbol & " tradingClass=" & .TradingClass & " position=" & Util.DecimalMaxString(position) & " mktPrice=" & Util.DoubleMaxString(marketPrice) & " mktValue=" & Util.DoubleMaxString(marketValue) _
             & " avgCost=" & Util.DoubleMaxString(averageCost) & " unrealizedPNL=" & Util.DoubleMaxString(unrealizedPNL) & " realizedPNL=" & Util.DoubleMaxString(realizedPNL) & " account=" & accountName
         End With

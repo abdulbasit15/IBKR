@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 namespace IBApi
@@ -140,5 +140,41 @@ namespace IBApi
         public const int MIN_SERVER_VER_BOND_ACCRUED_INTEREST = 185;
         public const int MIN_SERVER_VER_INELIGIBILITY_REASONS = 186;
         public const int MIN_SERVER_VER_RFQ_FIELDS = 187;
+        public const int MIN_SERVER_VER_BOND_TRADING_HOURS = 188;
+        public const int MIN_SERVER_VER_INCLUDE_OVERNIGHT = 189;
+        public const int MIN_SERVER_VER_UNDO_RFQ_FIELDS = 190;
+        public const int MIN_SERVER_VER_PERM_ID_AS_LONG = 191;
+        public const int MIN_SERVER_VER_CME_TAGGING_FIELDS = 192;
+        public const int MIN_SERVER_VER_CME_TAGGING_FIELDS_IN_OPEN_ORDER = 193;
+        public const int MIN_SERVER_VER_ERROR_TIME = 194;
+        public const int MIN_SERVER_VER_FULL_ORDER_PREVIEW_FIELDS = 195;
+        public const int MIN_SERVER_VER_HISTORICAL_DATA_END = 196;
+        public const int MIN_SERVER_VER_CURRENT_TIME_IN_MILLIS = 197;
+        public const int MIN_SERVER_VER_SUBMITTER = 198;
+        public const int MIN_SERVER_VER_IMBALANCE_ONLY = 199;
+        public const int MIN_SERVER_VER_PARAMETRIZED_DAYS_OF_EXECUTIONS = 200;
+        public const int MIN_SERVER_VER_PROTOBUF = 201;
+        public const int MIN_SERVER_ZERO_STRIKE = 202;
+        public const int MIN_SERVER_VER_PROTOBUF_PLACE_ORDER = 203;
+        public const int MIN_SERVER_VER_PROTOBUF_COMPLETED_ORDER = 204;
+        public const int MIN_SERVER_VER_PROTOBUF_CONTRACT_DATA = 205;
+        public const int MIN_SERVER_VER_PROTOBUF_MARKET_DATA = 206;
+        public const int MIN_SERVER_VER_PROTOBUF_ACCOUNTS_POSITIONS = 207;
+        public const int MIN_SERVER_VER_PROTOBUF_HISTORICAL_DATA = 208;
+        public const int MIN_SERVER_VER_PROTOBUF_NEWS_DATA = 209;
+        public const int MIN_SERVER_VER_PROTOBUF_SCAN_DATA = 210;
+        public const int MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_1 = 211;
+        public const int MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_2 = 212;
+        public const int MIN_SERVER_VER_PROTOBUF_REST_MESSAGES_3 = 213;
+        public const int MIN_SERVER_VER_ADD_Z_SUFFIX_TO_UTC_DATE_TIME = 214;
+        public const int MIN_SERVER_VER_CANCEL_CONTRACT_DATA = 215;
+        public const int MIN_SERVER_VER_ADDITIONAL_ORDER_PARAMS_1 = 216;
+        public const int MIN_SERVER_VER_ADDITIONAL_ORDER_PARAMS_2 = 217;
+        public const int MIN_SERVER_VER_ATTACHED_ORDERS = 218;
+        public const int MIN_SERVER_VER_CONFIG = 219;
+        public const int MIN_SERVER_VER_MARKET_DATA_VOLUMES_IN_SHARES = 220;
+        public const int MIN_SERVER_VER_UPDATE_CONFIG = 221;
+        public const int MIN_SERVER_VER_FRACTIONAL_LAST_SIZE = 222;
+        public const int MIN_SERVER_VER_HEDGE_MAX_SIZE = 223;
     }
 }

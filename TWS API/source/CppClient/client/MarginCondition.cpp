@@ -17,7 +17,7 @@ std::string MarginCondition::valueToString() const {
 
 void MarginCondition::valueFromString(const std::string & v) {
 	std::stringstream tmp;
-	
+
 	tmp << v;
 	tmp >> m_percent;
 }

@@ -1,19 +1,19 @@
-﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 namespace IBSampleApp.messages
 {
     class OrderBoundMessage
     {
-        public long OrderId { get; private set; }
-        public int ApiClientId { get; private set; }
-        public int ApiOrderId { get; private set; }
+        public long PermId { get; private set; }
+        public int ClientId { get; private set; }
+        public int OrderId { get; private set; }
 
-        public OrderBoundMessage(long orderId, int apiClientId, int apiOrderId)
+        public OrderBoundMessage(long permId, int clientId, int orderId)
         {
+            PermId = permId;
+            ClientId = clientId;
             OrderId = orderId;
-            ApiClientId = apiClientId;
-            ApiOrderId = apiOrderId;
         }
     }
 }

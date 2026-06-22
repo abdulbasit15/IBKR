@@ -169,7 +169,7 @@ Sub cancelAllScannerSubscriptions()
 
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
     
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 util.sendRequest server, STR_CANCEL_SCANNER_SUBSCRIPTION, cell.value
@@ -192,7 +192,7 @@ Sub requestAllScannerSubscriptions()
         Set rng = .Range(.Cells(dataStartRowIndex, idColumnIndex), .Cells(dataEndRowIndex, idColumnIndex))
     
         Dim row As Range, cell As Range
-        For Each row In rng.rows
+        For Each row In rng.Rows
             For Each cell In row.Cells
             If InStr(cell.value, STR_ID) <> 0 Then
                 sendScannerSubscription server, cell

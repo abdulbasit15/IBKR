@@ -1,0 +1,1502 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="ContractCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Decimal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DefaultEWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EClientSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EDecoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EMessage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EMutex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EOrderDecoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EReaderOSSignal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ESocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExecutionCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MarginCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperatorCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OrderCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PercentChangeCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PriceCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftDollarTier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StdAfx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VolumeCondition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EDecoderUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EClientUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ComboLeg.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\Contract.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\DeltaNeutralContract.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionDetails.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionDetailsEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionFilter.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExecutionRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\Execution.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelOrderRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ErrorMessage.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\GlobalCancelRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OpenOrder.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OpenOrdersEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\Order.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderAllocation.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderCancel.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderCondition.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderState.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderStatus.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PlaceOrderRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SoftDollarTier.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AllOpenOrdersRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AutoOpenOrdersRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CompletedOrder.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CompletedOrdersEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OpenOrdersRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrderBound.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CompletedOrdersRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractDataEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractDetails.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\IneligibilityReason.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelMarketData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelMarketDepth.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDataType.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDataTypeRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDepth.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDepthData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDepthL2.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDepthRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickGeneric.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickOptionComputation.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickPrice.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickSize.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickSnapshotEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickString.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickReqParams.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountDataEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountSummary.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountSummaryEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountSummaryRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountUpdateMulti.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountUpdateMultiEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountUpdatesMultiRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountUpdateTime.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AccountValue.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelAccountSummary.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelAccountUpdatesMulti.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelPositions.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelPositionsMulti.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ManagedAccounts.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ManagedAccountsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PortfolioValue.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\Position.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PositionEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PositionMulti.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PositionMultiEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PositionsMultiRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PositionsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelRealTimeBars.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelTickByTick.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HeadTimestamp.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HeadTimestampRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistogramData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistogramDataEntry.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistogramDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalDataBar.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalDataEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalDataUpdate.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickAttribBidAsk.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickAttribLast.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelHeadTimestamp.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelHistogramData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelHistoricalData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalTick.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalTickBidAsk.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalTickLast.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalTicks.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalTicksBidAsk.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalTicksLast.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalTicksRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\RealTimeBarsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\RealTimeBarTick.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickByTickData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickByTickRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\WshMetaData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\WshMetaDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelNewsBulletins.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelWshEventData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelWshMetaData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalNews.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalNewsEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalNewsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NewsArticle.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NewsArticleRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NewsBulletin.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NewsBulletinsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NewsProvider.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NewsProviders.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NewsProvidersRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\TickNews.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\WshEventData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\WshEventDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelFundamentalsData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelPnL.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelPnLSingle.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelScannerSubscription.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\FundamentalsData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\FundamentalsDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PnL.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PnLRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PnLSingle.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PnLSingleRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ScannerData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ScannerDataElement.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ScannerParameters.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ScannerParametersRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ScannerSubscription.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ScannerSubscriptionRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CalculateImpliedVolatilityRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CalculateOptionPriceRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelCalculateImpliedVolatility.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelCalculateOptionPrice.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CommissionAndFeesReport.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ExerciseOptionsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\FAReplace.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\FARequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalSchedule.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\HistoricalSession.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ReceiveFA.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ReplaceFAEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\RerouteMarketDataRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\RerouteMarketDepthRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ContractDescription.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\FamilyCode.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\FamilyCodes.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\FamilyCodesRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketRule.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketRuleRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MatchingSymbolsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\PriceIncrement.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SecDefOptParameter.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SecDefOptParameterEnd.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SecDefOptParamsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SmartComponent.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SmartComponents.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SmartComponentsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SoftDollarTiers.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SoftDollarTiersRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SymbolSamples.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\UserInfo.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\UserInfoRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\DepthMarketDataDescription.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDepthExchanges.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MarketDepthExchangesRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SetServerLogLevelRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\StartApiRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\SubscribeToGroupEventsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\UnsubscribeFromGroupEventsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\UpdateDisplayGroupRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\VerifyCompleted.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\VerifyMessageApi.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\VerifyMessageRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\VerifyRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CurrentTime.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CurrentTimeInMillis.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CurrentTimeInMillisRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CurrentTimeRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\DisplayGroupList.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\DisplayGroupUpdated.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\IdsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\NextValidId.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\QueryDisplayGroupsRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelContractData.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\CancelHistoricalTicks.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\AttachedOrders.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ConfigRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ConfigResponse.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\LockAndExitConfig.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\MessageConfig.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrdersConfig.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\OrdersSmartRoutingConfig.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ApiConfig.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ApiPrecautionsConfig.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\ApiSettingsConfig.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\UpdateConfigRequest.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\UpdateConfigResponse.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuf\UpdateConfigWarning.pb.cc">
+      <Filter>Source Files\protobuf</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommissionReport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommonDefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Contract.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ContractCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Decimal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DefaultEWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DepthMktDataDescription.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EClientException.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EClientMsgSink.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EClientSocket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EDecoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EMutex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EOrderDecoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EPosixClientSocketPlatform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EReaderOSSignal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EReaderSignal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ESocket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ETransport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EWrapper_prototypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Execution.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExecutionCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FamilyCode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HistogramEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HistoricalSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HistoricalTick.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HistoricalTickBidAsk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HistoricalTickLast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IExternalizable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IneligibilityReason.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MarginCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NewsProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperatorCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Order.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OrderCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OrderState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="platformspecific.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PriceCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PriceIncrement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PercentChangeCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScannerSubscription.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SoftDollarTier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StdAfx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TagValue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TickAttrib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TickAttribBidAsk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TickAttribLast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TwsSocketClientErrors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VolumeCondition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EDecoderUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EClientUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ComboLeg.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\Contract.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\DeltaNeutralContract.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ExecutionDetails.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ExecutionDetailsEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ExecutionFilter.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ExecutionRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\Execution.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelOrderRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ErrorMessage.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\GlobalCancelRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OpenOrder.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OpenOrdersEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\Order.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrderAllocation.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrderCancel.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrderCondition.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrderState.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrderStatus.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PlaceOrderRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SoftDollarTier.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AllOpenOrdersRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AutoOpenOrdersRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CompletedOrder.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CompletedOrdersEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CompletedOrdersRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OpenOrdersRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrderBound.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ContractData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ContractDataEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ContractDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ContractDetails.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\IneligibilityReason.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelMarketData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelMarketDepth.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDataType.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDataTypeRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDepth.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDepthData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDepthL2.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDepthRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickGeneric.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickOptionComputation.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickPrice.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickSize.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickSnapshotEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickString.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickReqParams.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountDataEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountSummary.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountSummaryEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountSummaryRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountUpdateMulti.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountUpdateMultiEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountUpdatesMultiRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountUpdateTime.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AccountValue.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelAccountSummary.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelAccountUpdatesMulti.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelPositions.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelPositionsMulti.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ManagedAccounts.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ManagedAccountsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PortfolioValue.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\Position.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PositionEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PositionMulti.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PositionMultiEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PositionsMultiRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PositionsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelRealTimeBars.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelTickByTick.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HeadTimestamp.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HeadTimestampRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistogramData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistogramDataEntry.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistogramDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalDataBar.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalDataEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalDataUpdate.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickAttribBidAsk.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickAttribLast.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelHeadTimestamp.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelHistogramData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelHistoricalData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalTick.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalTickBidAsk.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalTickLast.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalTicks.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalTicksBidAsk.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalTicksLast.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalTicksRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\RealTimeBarsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\RealTimeBarTick.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickByTickData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickByTickRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\WshMetaData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\WshMetaDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelNewsBulletins.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelWshEventData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelWshMetaData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalNews.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalNewsEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalNewsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NewsArticle.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NewsArticleRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NewsBulletin.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NewsBulletinsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NewsProvider.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NewsProviders.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NewsProvidersRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\TickNews.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\WshEventData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\WshEventDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="WshEventData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelFundamentalsData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelPnL.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelPnLSingle.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelScannerSubscription.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\FundamentalsData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\FundamentalsDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PnL.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PnLRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PnLSingle.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PnLSingleRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ScannerData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ScannerDataElement.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ScannerParameters.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ScannerParametersRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ScannerSubscription.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ScannerSubscriptionRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CalculateImpliedVolatilityRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CalculateOptionPriceRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelCalculateImpliedVolatility.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelCalculateOptionPrice.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CommissionAndFeesReport.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ExerciseOptionsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\FAReplace.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\FARequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalSchedule.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\HistoricalSession.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ReceiveFA.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ReplaceFAEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\RerouteMarketDataRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\RerouteMarketDepthRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ContractDescription.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\FamilyCode.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\FamilyCodes.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\FamilyCodesRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketRule.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketRuleRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MatchingSymbolsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\PriceIncrement.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SecDefOptParameter.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SecDefOptParameterEnd.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SecDefOptParamsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SmartComponent.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SmartComponents.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SmartComponentsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SoftDollarTiers.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SoftDollarTiersRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SymbolSamples.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\UserInfo.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\UserInfoRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\DepthMarketDataDescription.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDepthExchanges.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MarketDepthExchangesRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SetServerLogLevelRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\StartApiRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\SubscribeToGroupEventsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\UnsubscribeFromGroupEventsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\UpdateDisplayGroupRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\VerifyCompleted.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\VerifyMessageApi.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\VerifyMessageRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\VerifyRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CurrentTime.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CurrentTimeInMillis.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CurrentTimeInMillisRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CurrentTimeRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\DisplayGroupList.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\DisplayGroupUpdated.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\IdsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\NextValidId.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\QueryDisplayGroupsRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelContractData.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\CancelHistoricalTicks.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\AttachedOrders.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ConfigRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ConfigResponse.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\LockAndExitConfig.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\MessageConfig.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrdersConfig.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\OrdersSmartRoutingConfig.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ApiConfig.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ApiPrecautionsConfig.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\ApiSettingsConfig.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\UpdateConfigRequest.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\UpdateConfigResponse.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuf\UpdateConfigWarning.pb.h">
+      <Filter>Header Files\protobuf</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TwsSocketClient.def" />
+    <None Include="res\TwsSocketClient.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{f1ee4ce6-0bf6-4a20-a447-cf653331c152}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{dffb9517-8169-4f25-be42-1d06712e791b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{945a1112-eec7-4f2a-99a8-2e820007c5a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\protobuf">
+      <UniqueIdentifier>{9b1faa82-bf65-4bc7-aba6-e6e8c246478d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\protobuf">
+      <UniqueIdentifier>{6b6d289b-6ec2-4221-846d-669b528a95bf}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TwsSocketClient.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

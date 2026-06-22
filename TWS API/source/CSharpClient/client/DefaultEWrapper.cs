@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace IBApi
 
         public virtual void error(string str) { }
 
-        public virtual void error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson) { }
+        public virtual void error(int id, long errorTime, int errorCode, string errorMsg, string advancedOrderRejectJson) { }
 
         public virtual void currentTime(long time) { }
 
@@ -62,7 +62,7 @@ namespace IBApi
 
         public virtual void accountDownloadEnd(string account) { }
 
-        public virtual void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice) { }
+        public virtual void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, long permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice) { }
 
         public virtual void openOrder(int orderId, Contract contract, Order order, OrderState orderState) { }
 
@@ -76,7 +76,7 @@ namespace IBApi
 
         public virtual void execDetailsEnd(int reqId) { }
 
-        public virtual void commissionReport(CommissionReport commissionReport) { }
+        public virtual void commissionAndFeesReport(CommissionAndFeesReport commissionAndFeesReport) { }
 
         public virtual void fundamentalData(int reqId, string data) { }
 
@@ -185,7 +185,7 @@ namespace IBApi
 
         public virtual void tickByTickMidPoint(int reqId, long time, double midPoint) { }
 
-        public virtual void orderBound(long orderId, int apiClientId, int apiOrderId) { }
+        public virtual void orderBound(long permId, int clientId, int orderId) { }
 
         public virtual void completedOrder(Contract contract, Order order, OrderState orderState) { }
 
@@ -197,8 +197,96 @@ namespace IBApi
 
         public virtual void wshEventData(int reqId, string dataJson) { }
 
-        public void historicalSchedule(int reqId, string startDateTime, string endDateTime, string timeZone, HistoricalSession[] sessions) { }
+        public virtual void historicalSchedule(int reqId, string startDateTime, string endDateTime, string timeZone, HistoricalSession[] sessions) { }
 
-        public void userInfo(int reqId, string whiteBrandingId) { }
+        public virtual void userInfo(int reqId, string whiteBrandingId) { }
+
+        public virtual void currentTimeInMillis(long timeInMillis) { }
+
+        /**
+         * Protobuf
+         */
+        public virtual void orderStatusProtoBuf(protobuf.OrderStatus orderStatusProto) { }
+        public virtual void openOrderProtoBuf(protobuf.OpenOrder openOrderProto) { }
+        public virtual void openOrdersEndProtoBuf(protobuf.OpenOrdersEnd openOrdersEndProto) { }
+        public virtual void errorProtoBuf(protobuf.ErrorMessage errorMessageProto) { }
+        public virtual void execDetailsProtoBuf(protobuf.ExecutionDetails executionDetailsProto) { }
+        public virtual void execDetailsEndProtoBuf(protobuf.ExecutionDetailsEnd executionDetailsEndProto) { }
+        public virtual void completedOrderProtoBuf(protobuf.CompletedOrder completedOrderProto) { }
+        public virtual void completedOrdersEndProtoBuf(protobuf.CompletedOrdersEnd completedOrdersEndProto) { }
+        public virtual void orderBoundProtoBuf(protobuf.OrderBound orderBoundProto) { }
+        public virtual void contractDataProtoBuf(protobuf.ContractData contractDataProto) { }
+        public virtual void bondContractDataProtoBuf(protobuf.ContractData contractDataProto) { }
+        public virtual void contractDataEndProtoBuf(protobuf.ContractDataEnd contractDataEndProto) { }
+        public virtual void tickPriceProtoBuf(protobuf.TickPrice tickPriceProto) { }
+        public virtual void tickSizeProtoBuf(protobuf.TickSize tickSizeProto) { }
+        public virtual void tickOptionComputationProtoBuf(protobuf.TickOptionComputation tickOptionComputationProto) { }
+        public virtual void tickGenericProtoBuf(protobuf.TickGeneric tickGenericProto) { }
+        public virtual void tickStringProtoBuf(protobuf.TickString tickStringProto) { }
+        public virtual void tickSnapshotEndProtoBuf(protobuf.TickSnapshotEnd tickSnapshotEndProto) { }
+        public virtual void updateMarketDepthProtoBuf(protobuf.MarketDepth marketDepthProto) { }
+        public virtual void updateMarketDepthL2ProtoBuf(protobuf.MarketDepthL2 marketDepthL2Proto) { }
+        public virtual void marketDataTypeProtoBuf(protobuf.MarketDataType marketDataTypeProto) { }
+        public virtual void tickReqParamsProtoBuf(protobuf.TickReqParams tickReqParamsProto) { }
+        public virtual void updateAccountValueProtoBuf(protobuf.AccountValue accountValueProto) { }
+        public virtual void updatePortfolioProtoBuf(protobuf.PortfolioValue portfolioValueProto) { }
+        public virtual void updateAccountTimeProtoBuf(protobuf.AccountUpdateTime accountUpdateTimeProto) { }
+        public virtual void accountDataEndProtoBuf(protobuf.AccountDataEnd accountDataEndProto) { }
+        public virtual void managedAccountsProtoBuf(protobuf.ManagedAccounts managedAccountsProto) { }
+        public virtual void positionProtoBuf(protobuf.Position positionProto) { }
+        public virtual void positionEndProtoBuf(protobuf.PositionEnd positionEndProto) { }
+        public virtual void accountSummaryProtoBuf(protobuf.AccountSummary accountSummaryProto) { }
+        public virtual void accountSummaryEndProtoBuf(protobuf.AccountSummaryEnd accountSummaryEndProto) { }
+        public virtual void positionMultiProtoBuf(protobuf.PositionMulti positionMultiProto) { }
+        public virtual void positionMultiEndProtoBuf(protobuf.PositionMultiEnd positionMultiEndProto) { }
+        public virtual void accountUpdateMultiProtoBuf(protobuf.AccountUpdateMulti accountUpdateMultiProto) { }
+        public virtual void accountUpdateMultiEndProtoBuf(protobuf.AccountUpdateMultiEnd accountUpdateMultiEndProto) { }
+        public virtual void historicalDataProtoBuf(protobuf.HistoricalData historicalDataProto) { }
+        public virtual void historicalDataUpdateProtoBuf(protobuf.HistoricalDataUpdate historicalDataUpdateProto) { }
+        public virtual void historicalDataEndProtoBuf(protobuf.HistoricalDataEnd historicalDataEndProto) { }
+        public virtual void realTimeBarTickProtoBuf(protobuf.RealTimeBarTick realTimeBarTickProto) { }
+        public virtual void headTimestampProtoBuf(protobuf.HeadTimestamp headTimestampProto) { }
+        public virtual void histogramDataProtoBuf(protobuf.HistogramData histogramDataProto) { }
+        public virtual void historicalTicksProtoBuf(protobuf.HistoricalTicks historicalTicksProto) { }
+        public virtual void historicalTicksBidAskProtoBuf(protobuf.HistoricalTicksBidAsk historicalTicksBidAskProto) { }
+        public virtual void historicalTicksLastProtoBuf(protobuf.HistoricalTicksLast historicalTicksLastProto) { }
+        public virtual void tickByTickDataProtoBuf(protobuf.TickByTickData tickByTickDataProto) { }
+        public virtual void updateNewsBulletinProtoBuf(protobuf.NewsBulletin newsBulletinProto) { }
+        public virtual void newsArticleProtoBuf(protobuf.NewsArticle newsArticleProto) { }
+        public virtual void newsProvidersProtoBuf(protobuf.NewsProviders newsProvidersProto) { }
+        public virtual void historicalNewsProtoBuf(protobuf.HistoricalNews historicalNewsProto) { }
+        public virtual void historicalNewsEndProtoBuf(protobuf.HistoricalNewsEnd historicalNewsEndProto) { }
+        public virtual void wshMetaDataProtoBuf(protobuf.WshMetaData wshMetaDataProto) { }
+        public virtual void wshEventDataProtoBuf(protobuf.WshEventData wshEventDataProto) { }
+        public virtual void tickNewsProtoBuf(protobuf.TickNews tickNewsProto) { }
+        public virtual void scannerParametersProtoBuf(protobuf.ScannerParameters scannerParametersProto) { }
+        public virtual void scannerDataProtoBuf(protobuf.ScannerData scannerDataProto) { }
+        public virtual void fundamentalsDataProtoBuf(protobuf.FundamentalsData fundamentalsDataProto) { }
+        public virtual void pnlProtoBuf(protobuf.PnL pnlProto) { }
+        public virtual void pnlSingleProtoBuf(protobuf.PnLSingle pnlSingleProto) { }
+        public virtual void receiveFAProtoBuf(protobuf.ReceiveFA receiveFAProto) { }
+        public virtual void replaceFAEndProtoBuf(protobuf.ReplaceFAEnd replaceFAEndProto) { }
+        public virtual void commissionAndFeesReportProtoBuf(protobuf.CommissionAndFeesReport commissionAndFeesReportProto) { }
+        public virtual void historicalScheduleProtoBuf(protobuf.HistoricalSchedule historicalScheduleProto) { }
+        public virtual void rerouteMarketDataRequestProtoBuf(protobuf.RerouteMarketDataRequest rerouteMarketDataRequestProto) { }
+        public virtual void rerouteMarketDepthRequestProtoBuf(protobuf.RerouteMarketDepthRequest rerouteMarketDepthRequestProto) { }
+        public virtual void secDefOptParameterProtoBuf(protobuf.SecDefOptParameter secDefOptParameterProto) { }
+        public virtual void secDefOptParameterEndProtoBuf(protobuf.SecDefOptParameterEnd secDefOptParameterEndProto) { }
+        public virtual void softDollarTiersProtoBuf(protobuf.SoftDollarTiers softDollarTiersProto) { }
+        public virtual void familyCodesProtoBuf(protobuf.FamilyCodes familyCodesProto) { }
+        public virtual void symbolSamplesProtoBuf(protobuf.SymbolSamples symbolSamplesProto) { }
+        public virtual void smartComponentsProtoBuf(protobuf.SmartComponents smartComponentsProto) { }
+        public virtual void marketRuleProtoBuf(protobuf.MarketRule marketRuleProto) { }
+        public virtual void userInfoProtoBuf(protobuf.UserInfo userInfoProto) { }
+        public virtual void nextValidIdProtoBuf(protobuf.NextValidId nextValidIdProto) { }
+        public virtual void currentTimeProtoBuf(protobuf.CurrentTime currentTimeProto) { }
+        public virtual void currentTimeInMillisProtoBuf(protobuf.CurrentTimeInMillis currentTimeInMillisProto) { }
+        public virtual void verifyMessageApiProtoBuf(protobuf.VerifyMessageApi verifyMessageApiProto) { }
+        public virtual void verifyCompletedProtoBuf(protobuf.VerifyCompleted verifyCompletedProto) { }
+        public virtual void displayGroupListProtoBuf(protobuf.DisplayGroupList displayGroupListProto) { }
+        public virtual void displayGroupUpdatedProtoBuf(protobuf.DisplayGroupUpdated displayGroupUpdatedProto) { }
+        public virtual void marketDepthExchangesProtoBuf(protobuf.MarketDepthExchanges marketDepthExchangesProto) { }
+        public virtual void configResponseProtoBuf(protobuf.ConfigResponse configResponseProto) { }
+        public virtual void updateConfigResponseProtoBuf(protobuf.UpdateConfigResponse updateConfigResponseProto) { }
     }
 }

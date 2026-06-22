@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ScrollableMsgBox 
    Caption         =   "ScrollabeMsgBox"
    ClientHeight    =   7635
-   ClientLeft      =   45
-   ClientTop       =   435
-   ClientWidth     =   9660.001
+   ClientLeft      =   48
+   ClientTop       =   432
+   ClientWidth     =   9656.001
    OleObjectBlob   =   "ScrollableMsgBox.frx":0000
    StartUpPosition =   1  'CenterOwner
 End

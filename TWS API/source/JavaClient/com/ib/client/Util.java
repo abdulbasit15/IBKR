@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.client;
@@ -27,7 +27,19 @@ public class Util {
 	public static boolean isValidValue(double value) {
 		return value != Double.MAX_VALUE && !Double.isNaN(value) && !Double.isInfinite(value);
 	}
-    
+
+    public static boolean isValidValue(int value) {
+        return value != Integer.MAX_VALUE;
+    }
+
+    public static boolean isValidValue(long value) {
+        return value != Long.MAX_VALUE;
+    }
+
+    public static boolean isValidValue(Decimal value) {
+        return value != null && value.isValid();
+    }
+
 	public static boolean StringIsEmpty(String str) {
 		return str == null || str.length() == 0;
 	}
@@ -92,7 +104,7 @@ public class Util {
     }
     
     public static String DoubleMaxString(double value, String defValue) {
-        return (value == Double.MAX_VALUE) ? defValue : new DecimalFormat("0.########").format(value);
+        return (value == Double.MAX_VALUE) ? defValue : String.valueOf(value);
     }
     
     public static String UnixMillisecondsToString(long milliseconds, String dateFormat){
@@ -212,5 +224,22 @@ public class Util {
 
     public static Boolean IsPegBestOrder(OrderType orderType)  {
         return orderType == OrderType.PEG_BEST;
+    }
+
+    public static long currentTimeMillis() {
+        return System.currentTimeMillis();
+    }
+
+    public static Decimal stringToDecimal(String str) {
+        return (str == null || str.isEmpty() || 
+                str.equals(String.valueOf(Long.MAX_VALUE)) ||
+                str.equals(String.valueOf(Long.MIN_VALUE)) ||
+                str.equals(String.valueOf(Integer.MAX_VALUE)) ||
+                str.equals(String.valueOf(Double.MAX_VALUE))) ? Decimal.INVALID : Decimal.parse(str);
+    }
+
+    public static String formatDouble(double v) {
+        DecimalFormat df = new DecimalFormat("#.###########");
+        return df.format(v);
     }
 }

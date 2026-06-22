@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2025 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
@@ -41,7 +41,7 @@ namespace TWSLib
 
         int TWSLib.IOrder.clientId { get { return data.ClientId; } set { data.ClientId = value; } }
 
-        int TWSLib.IOrder.permId { get { return data.PermId; } set { data.PermId = value; } }
+        int TWSLib.IOrder.permId { get { return (int)data.PermId; } set { data.PermId = value; } }
 
         string TWSLib.IOrder.action { get { return data.Action; } set { data.Action = value; } }
 
@@ -188,6 +188,8 @@ namespace TWSLib
         string TWSLib.IOrder.hedgeType { get { return data.HedgeType; } set { data.HedgeType = value; } }
 
         string TWSLib.IOrder.hedgeParam { get { return data.HedgeParam; } set { data.HedgeParam = value; } }
+
+        int TWSLib.IOrder.hedgeMaxSize { get { return data.HedgeMaxSize; } set { data.HedgeMaxSize = value; } }
 
         string TWSLib.IOrder.account { get { return data.Account; } set { data.Account = value; } }
 
@@ -356,7 +358,11 @@ namespace TWSLib
         bool TWSLib.IOrder.autoCancelParent { get { return data.AutoCancelParent; } set { data.AutoCancelParent = value; } }
         string TWSLib.IOrder.shareholder { get { return data.Shareholder; } set { data.Shareholder = value; } }
         bool TWSLib.IOrder.imbalanceOnly { get { return data.ImbalanceOnly; } set { data.ImbalanceOnly = value; } }
-        bool TWSLib.IOrder.routeMarketableToBbo { get { return data.RouteMarketableToBbo; } set { data.RouteMarketableToBbo = value; } }
+        int TWSLib.IOrder.routeMarketableToBbo
+        {
+            get { return data.RouteMarketableToBbo.HasValue ? (data.RouteMarketableToBbo.Value ? 1 : 0) : -1; }
+            set { data.RouteMarketableToBbo = value == 0 ? false : (value == 1 ? true : (bool?)null); }
+        }
         int TWSLib.IOrder.parentPermId { get { return (int)data.ParentPermId; } set { data.ParentPermId = value; } }
         bool TWSLib.IOrder.usePriceMgmtAlgo { get { return data.UsePriceMgmtAlgo ?? false; } set { data.UsePriceMgmtAlgo = value; } }
         int TWSLib.IOrder.duration { get { return (int)data.Duration; } set { data.Duration = value; } }
@@ -371,7 +377,25 @@ namespace TWSLib
         string TWSLib.IOrder.customerAccount { get { return data.CustomerAccount; } set { data.CustomerAccount = value; } }
         bool TWSLib.IOrder.professionalCustomer { get { return data.ProfessionalCustomer; } set { data.ProfessionalCustomer = value; } }
         string TWSLib.IOrder.bondAccruedInterest { get { return data.BondAccruedInterest; } set { data.BondAccruedInterest = value; } }
-        string TWSLib.IOrder.externalUserId { get { return data.ExternalUserId; } set { data.ExternalUserId = value; } }
-        int TWSLib.IOrder.manualOrderIndicator { get { return (int)data.ManualOrderIndicator; } set { data.ManualOrderIndicator = value; } }
+        bool TWSLib.IOrder.includeOvernight { get { return data.IncludeOvernight; } set { data.IncludeOvernight = value; } }
+        int TWSLib.IOrder.manualOrderIndicator { get { return data.ManualOrderIndicator; } set { data.ManualOrderIndicator = value; } }
+        string TWSLib.IOrder.permIdStr { get { return data.PermId.ToString("G"); } set { data.PermId = long.Parse(value); } }
+        string TWSLib.IOrder.parentPermIdStr { get { return data.ParentPermId.ToString("G"); } set { data.ParentPermId = long.Parse(value); } }
+        string TWSLib.IOrder.submitter { get { return data.Submitter; } set { data.Submitter = value; } }
+        bool TWSLib.IOrder.postOnly { get { return data.PostOnly; } set { data.PostOnly = value; } }
+        bool TWSLib.IOrder.allowPreOpen { get { return data.AllowPreOpen; } set { data.AllowPreOpen = value; } }
+        bool TWSLib.IOrder.ignoreOpenAuction { get { return data.IgnoreOpenAuction; } set { data.IgnoreOpenAuction = value; } }
+        bool TWSLib.IOrder.deactivate { get { return data.Deactivate; } set { data.Deactivate = value; } }
+        int TWSLib.IOrder.seekPriceImprovement 
+        { 
+            get { return data.SeekPriceImprovement.HasValue ? (data.SeekPriceImprovement.Value ? 1 : 0) : -1; } 
+            set { data.SeekPriceImprovement = value == 0 ? false : (value == 1 ? true : (bool?)null); } 
+        }
+        int TWSLib.IOrder.whatIfType { get { return data.WhatIfType; } set { data.WhatIfType = value; } }
+        int TWSLib.IOrder.slOrderId { get { return data.SlOrderId; } set { data.SlOrderId = value; } }
+        string TWSLib.IOrder.slOrderType { get { return data.SlOrderType; } set { data.SlOrderType = value; } }
+        int TWSLib.IOrder.ptOrderId { get { return data.PtOrderId; } set { data.PtOrderId = value; } }
+        string TWSLib.IOrder.ptOrderType { get { return data.PtOrderType; } set { data.PtOrderType = value; } }
+
     }
 }

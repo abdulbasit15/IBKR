@@ -1,4 +1,4 @@
-/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
+/* Copyright (C) 2024 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 package com.ib.api.dde.handlers.base;
@@ -32,7 +32,7 @@ public abstract class MarketDataBaseHandler extends BaseHandler {
         MarketDataMap marketDataMap = new MarketDataMap(request);
         m_marketDataRequests.put(request.requestId(), marketDataMap);
         updateMarketDataStatus(request.requestId(), marketDataMap, DdeRequestStatus.REQUESTED);
-        return null;
+        return new byte[0];
     }
 
     /** Method handles long value base request */

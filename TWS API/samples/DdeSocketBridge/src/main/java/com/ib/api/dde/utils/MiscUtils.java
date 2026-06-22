@@ -26,7 +26,7 @@ public class MiscUtils {
         ArrayList<String> item = new ArrayList<String>();
         item.add(Utils.toString(data.name()));
         item.add(Utils.toString(data.value()));
-        item.add(Utils.toString(data.toString()));
+        item.add(Utils.toString(data.displayName()));
         return item;
     }
 

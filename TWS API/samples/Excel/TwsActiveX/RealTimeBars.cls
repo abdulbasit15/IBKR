@@ -100,7 +100,7 @@ Attribute RequestRealTimeBars_Click.VB_ProcData.VB_Invoke_Func = "T\n14"
                 .Symbol = UCase(contractTable(id, Col_SYMBOL).value)
                 .SecType = UCase(contractTable(id, Col_SECTYPE).value)
                 .lastTradeDateOrContractMonth = contractTable(id, Col_LASTTRADEDATE).value
-                .Strike = contractTable(id, Col_STRIKE).value
+                .Strike = Util.SetNonEmptyValue(contractTable(id, Col_STRIKE).value, .Strike)
                 .Right = IIf(UCase(contractTable(id, Col_RIGHT).value) = "", 0#, UCase(contractTable(id, Col_RIGHT).value))
                 .multiplier = UCase(contractTable(id, Col_MULTIPLIER).value)
                 .Exchange = UCase(contractTable(id, Col_EXCH).value)
@@ -140,7 +140,7 @@ End Sub
 Public Sub UpdateRealTimeBars(ByVal rtbTickerId As Long, ByVal rtbTime As Long, ByVal rtbOpen As Double, ByVal rtbHigh As Double, ByVal rtbLow As Double, ByVal rtbClose As Double, ByVal rtbVolume As Variant, ByVal rtbWAP As Variant, ByVal rtbCount As Long)
     
     rtbTickerId = rtbTickerId - ID_REALTIMEBARS
-    realtimeBarsTable(rtbTickerId, Col_TIME).value = Util.ConvertLongToDateStr(rtbTime)
+    realtimeBarsTable(rtbTickerId, Col_TIME).value = Util.ConvertLongStrToDateStr(CStr(rtbTime))
     realtimeBarsTable(rtbTickerId, Col_OPEN).value = rtbOpen
     realtimeBarsTable(rtbTickerId, Col_HIGH).value = rtbHigh
     realtimeBarsTable(rtbTickerId, Col_LOW).value = rtbLow
@@ -151,9 +151,9 @@ Public Sub UpdateRealTimeBars(ByVal rtbTickerId As Long, ByVal rtbTime As Long, 
 
 End Sub
 
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
     
-    querySpecificationTable(id - ID_REALTIMEBARS, Col_STATUS).value = STR_ERROR + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
+    querySpecificationTable(id - ID_REALTIMEBARS, Col_STATUS).value = STR_ERROR + STR_COLON + errorTime + STR_COLON + str(errorCode) + STR_SPACE + errorMsg
         
 End Sub
 

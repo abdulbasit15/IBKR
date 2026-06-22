@@ -13,13 +13,13 @@ Private contractTable As Range
 Private orderTable As Range
 Private orderStatusTable As Range
 Private extendedAttributeTable As Range
-Private commissionMarginTable As Range
+Private commissionAndFeesMarginTable As Range
 
 '=================
 ' methods
 '=================
 
-' apply template from Extended Order Atributes sheet
+' apply template from Extended Order Attributes sheet
 Private Sub ApplyExtendedTemplate_Click()
     OrderUtils.ApplyExtendedTemplate getActiveOrderIndex, extendedAttributeTable
 End Sub
@@ -62,12 +62,12 @@ Public Sub UpdateOrderStatus(id As Long, status As String, filled As Variant, re
 End Sub
 
 Public Sub UpdateWhatIfInfo(orderId As Long, contract As TWSLib.IContract, order As TWSLib.IOrder, orderState As TWSLib.IOrderState)
-    OrderUtils.UpdateWhatIfInfo orderStatusTable, commissionMarginTable, orderId, contract, order, orderState
+    OrderUtils.UpdateWhatIfInfo orderStatusTable, commissionAndFeesMarginTable, orderId, contract, order, orderState
 End Sub
 
 ' process error
-Public Sub ProcessError(ByVal id As Long, ByVal errorCode As Long, ByVal errorMsg As String)
-    OrderUtils.ProcessError orderStatusTable, id, errorCode, errorMsg
+Public Sub ProcessError(ByVal id As Long, ByVal errorTime As String, ByVal errorCode As Long, ByVal errorMsg As String)
+    OrderUtils.ProcessError orderStatusTable, id, errorTime, errorCode, errorMsg
 End Sub
 
 Private Sub SmartComboRoutingParams_Click()
@@ -82,8 +82,8 @@ Public Sub Initialise()
     Set contractTable = AdvancedOrders.Range("$A$7:$M$125")
     Set orderTable = AdvancedOrders.Range("$N$7:$S$125")
     Set orderStatusTable = AdvancedOrders.Range("$T$7:$Z$125")
-    Set commissionMarginTable = AdvancedOrders.Range("$AA$7:$AL$125")
-    Set extendedAttributeTable = AdvancedOrders.Range("$AM$7:$EO$125")
+    Set commissionAndFeesMarginTable = AdvancedOrders.Range("$AA$7:$AY$125")
+    Set extendedAttributeTable = AdvancedOrders.Range("$AZ$7:$FS$125")
 End Sub
 
 Private Sub Worksheet_Activate()
