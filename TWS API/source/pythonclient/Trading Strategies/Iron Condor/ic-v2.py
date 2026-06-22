@@ -20,13 +20,15 @@ def safe_console_print(message):
 
 # Load config from same directory as executable
 if getattr(sys, 'frozen', False):
-    # Running as compiled executable
-    config_path = os.path.join(os.path.dirname(sys.executable), 'ic.json')
+    exe_dir = os.path.dirname(sys.executable)
+    config_path = os.path.join(exe_dir, 'ic.json')
+    if not os.path.exists(config_path):
+        exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        config_path = os.path.join(exe_dir, 'ic.json')
 else:
-    # Running as script
     config_path = os.path.join(os.path.dirname(__file__), 'ic.json')
 
-with open(config_path, 'r') as f:
+with open(config_path, 'r', encoding='utf-8') as f:
     config = json.load(f)
 
 def run_strategy(strategy_name, strategy_config, client_id):
