@@ -1,5 +1,11 @@
-import time
+import sys
 import threading
+import time
+from pathlib import Path
+
+_root = next(p for p in Path(__file__).resolve().parents if (p / "ibapi").is_dir())
+sys.path.insert(0, str(_root))
+
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract

@@ -1,12 +1,19 @@
 import json
+import sys
+import threading
+import time
+from pathlib import Path
+
+_root = next(p for p in Path(__file__).resolve().parents if (p / "ibapi").is_dir())
+sys.path.insert(0, str(_root))
+
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
-import threading
-import time
 
-# Load symbol from config.json
-with open('C:/Repo/IBKR/TWS API/source/pythonclient/config.json', 'r') as f:
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+with open(SCRIPT_DIR / "config.json", "r", encoding="utf-8") as f:
     config = json.load(f)
 
 symbol = config['symbol']

@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+
 from ib_insync import *
 import numpy as np
 
@@ -8,12 +10,8 @@ import numpy as np
 #duration_year = 1
 
 # Read config from IV.json using relative path
-with open('IV.json', 'r') as f:
+with open(Path(__file__).resolve().parent / "IV.json", "r", encoding="utf-8") as f:
     config = json.load(f)
-    
-# Read config from IV.json
-# with open(r'C:\Repo\IBKR\TWS API\source\pythonclient\program\IV.json', 'r') as f:
-#     config = json.load(f)
 
 symbol = config['symbol']
 duration_year = config['duration_year']

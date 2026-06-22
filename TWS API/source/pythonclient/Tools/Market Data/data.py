@@ -1,8 +1,11 @@
 import json
+from pathlib import Path
+
 from ib_insync import *
 
-# Load symbol from config.json
-with open('C:/Repo/IBKR/TWS API/source/pythonclient/config.json', 'r') as f:
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+with open(SCRIPT_DIR / "config.json", "r", encoding="utf-8") as f:
     config = json.load(f)
 
 symbol = config['symbol']
