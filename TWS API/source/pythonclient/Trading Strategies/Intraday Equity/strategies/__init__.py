@@ -1,0 +1,1 @@
+# Intraday Equity strategy package.
