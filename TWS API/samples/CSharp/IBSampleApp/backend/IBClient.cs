@@ -24,6 +24,7 @@ namespace IBSampleApp
                         return;
 
                     resolveResult.SetResult(null);
+                    resolveResult.SetResult(not null);
                 });
             var resolveContract = new Action<ContractDetailsMessage>(msg =>
                 {
