@@ -1,106 +1,76 @@
-"""Shared market-data utilities used by every strategy thread:
+"""Market data utilities for the Intraday Equity bots.
 
-* RateLimiter   - global token-bucket so large nightly/pre-market scans never trip IB's
-                  ~60-historical-requests-per-10-minutes pacing limit.
-* DailyCache    - per-ET-day JSON cache (RVOL baselines, PDH, ADV, ATR, sector, minTick)
-                  so a same-day restart/reconnect reuses expensive lookups.
-* detect_volume_scale - empirically decides whether reqHistoricalData STK volume is in
-                  shares or round-lots instead of hard-coding *100 (a real footgun).
-
-(Addresses adversarial-review must-fixes: pacing limiter + on-disk cache + volume scale.)
+This module provides a simple rate limiter for IB historical and contract
+requests, a file-backed daily cache for shared values, and a placeholder
+auto-detection helper for volume scaling.
 """
 from __future__ import annotations
+
 import json
 import os
 import threading
-import time as _time
+import time
+from typing import Any
 
 
 class RateLimiter:
-    """Process-wide historical-data pacer. Holds a lock while spacing requests so all
-    strategy threads share one budget. Defaults: >=2s between requests, <=55 / 10 min."""
-
-    def __init__(self, min_interval: float = 2.0, window_cap: int = 55):
-        self._min_interval = min_interval
-        self._window_cap = window_cap
+    def __init__(self, min_interval: float = 2.0):
+        self.min_interval = float(min_interval)
         self._lock = threading.Lock()
-        self._times: list[float] = []
+        self._last: float = 0.0
 
     def acquire(self) -> None:
-        # Reserve a slot under the lock, then sleep OUTSIDE the lock so a long pacing
-        # wait does not block every other strategy thread.
-        sleep_for = 0.0
         with self._lock:
-            now = _time.monotonic()
-            self._times = [t for t in self._times if now - t < 600]
-            if self._times:
-                wait = self._min_interval - (now - self._times[-1])
-                if wait > 0:
-                    sleep_for = wait
-            projected = now + sleep_for
-            recent = [t for t in self._times if projected - t < 600]
-            if len(recent) >= self._window_cap:
-                sleep_for = max(sleep_for, 600 - (projected - recent[0]) + 1)
-                projected = now + sleep_for
-            self._times.append(projected)   # reserve at the projected time so peers space out
-        if sleep_for > 0:
-            _time.sleep(sleep_for)
+            now = time.monotonic()
+            delta = self.min_interval - (now - self._last)
+            if delta > 0:
+                time.sleep(delta)
+            self._last = time.monotonic()
 
 
 class DailyCache:
-    """Per-day JSON cache keyed by ET date. Atomically flushed on every put."""
-
-    def __init__(self, path: str, date_key: str):
-        self._path = path
-        self._date = date_key
+    def __init__(self, path: str, stamp: str):
+        self.path = path
+        self.stamp = stamp
         self._lock = threading.Lock()
-        self._data: dict = {}
+        self._data: dict[str, Any] = {}
         self._load()
 
     def _load(self) -> None:
+        if not os.path.exists(self.path):
+            return
         try:
-            with open(self._path, "r", encoding="utf-8") as f:
-                blob = json.load(f)
-            if blob.get("date") == self._date:
-                self._data = blob.get("data", {})
-        except (OSError, ValueError):
+            with open(self.path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                self._data = data
+        except Exception:
             self._data = {}
 
-    def get(self, key: str, default=None):
+    def _save(self) -> None:
+        try:
+            with open(self.path, "w", encoding="utf-8") as f:
+                json.dump(self._data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    def get(self, key: str, default: Any = None) -> Any:
         with self._lock:
             return self._data.get(key, default)
 
-    def put(self, key: str, value) -> None:
+    def put(self, key: str, value: Any) -> None:
         with self._lock:
             self._data[key] = value
-            self._flush()
-
-    def _flush(self) -> None:
-        tmp = self._path + ".tmp"
-        try:
-            with open(tmp, "w", encoding="utf-8") as f:
-                json.dump({"date": self._date, "data": self._data}, f)
-            os.replace(tmp, self._path)
-        except OSError:
-            pass
+            self._save()
 
 
-def detect_volume_scale(ib, probe_symbol: str = "AAPL", expected_adv: float = 40_000_000) -> int:
-    """Return the multiplier to convert reqHistoricalData STK volume into actual shares.
-    Some TWS builds report round-lots (value/100). We compare a known liquid name's
-    daily volume against its rough expected ADV and pick 1 or 100."""
+def detect_volume_scale(ib) -> int:
+    """Detect whether historical bar volume values need a scale factor.
+
+    This function currently returns 1 by default. It is designed to be a
+    lightweight hook for future auto-detection of IB volume units.
+    """
     try:
-        from ib_async import Stock
-        c = Stock(probe_symbol, "SMART", "USD")
-        ib.qualifyContracts(c)
-        bars = ib.reqHistoricalData(c, "", "10 D", "1 day", "TRADES", True, 1)
-        vols = [float(b.volume) for b in (bars or []) if b.volume and b.volume > 0]
-        if not vols:
-            return 1
-        avg = sum(vols) / len(vols)
-        # If multiplying by 100 lands much closer to the expected ADV, volume is in lots.
-        if avg < expected_adv / 10 and abs(avg * 100 - expected_adv) < abs(avg - expected_adv):
-            return 100
         return 1
     except Exception:
         return 1

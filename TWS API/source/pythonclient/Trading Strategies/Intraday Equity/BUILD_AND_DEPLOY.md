@@ -17,7 +17,8 @@ Copy the **entire `Intraday Equity/` folder**, which must contain:
 ```
 runner.py              equity_base.py     equity_order.py     portfolio_risk.py
 market_data.py         calendar_util.py   reporting.py        backtest.py
-equity.json            requirements.txt   README.md           BUILD_AND_DEPLOY.md
+build_and_deploy.ps1   equity.json        requirements.txt   README.md
+BUILD_AND_DEPLOY.md
 strategies/__init__.py strategies/orb_stocks_in_play.py
 strategies/nr7_compression.py            strategies/pdh_breakout.py
 ```
@@ -31,9 +32,23 @@ strategies/nr7_compression.py            strategies/pdh_breakout.py
   Untick **Read-Only API** if the bots must place orders.
 - Know the **socket port**: IB Gateway paper **4002** / live 4001 · TWS paper **7497** / live 7496.
 
-## 3. Install dependencies
-```bash
-python -m pip install -r requirements.txt
+## 3. Build + deploy with the script
+Run from inside the `Intraday Equity/` folder on the target machine.
+```powershell
+.\build_and_deploy.ps1
+```
+This script:
+- creates/uses a local `.venv` inside `Intraday Equity/`
+- installs `requirements.txt`
+- builds `intraday_equity.exe` into `dist/`
+- copies `equity.json` into `dist/`
+
+If local PyPI is blocked, install dependencies with a mirror first and then rerun the script.
+
+## 4. Run from the built dist
+```powershell
+cd "<...>/Intraday Equity/dist"
+.\intraday_equity.exe
 ```
 - Deps: `ib_async==2.1.0`, `openpyxl`, `tzdata` (REQUIRED on Windows for the ET clock),
   `pyinstaller` (build only); `pandas` is listed but not used by these bots.
@@ -43,7 +58,7 @@ python -m pip install -r requirements.txt
   python -m pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
   ```
 
-## 4. Configure `equity.json` (edit before running)
+## 5. Configure `equity.json` (edit before running)
 - `port` → match the Gateway/TWS socket (e.g. **4002** for paper Gateway).
 - `default_account` / `accounts` → the target account (paper `DU…`, live `U…`).
 - `active_strategies` → which of the three to run.
@@ -76,6 +91,10 @@ pyinstaller --onefile --name intraday_equity --collect-all ib_async --copy-metad
 The metadata/collect flags are mandatory: `ib_async`+`aeventkit` need their package
 metadata, `tzdata` provides the ET timezone, `openpyxl` writes logs/reports. Output:
 `dist/intraday_equity.exe` (~30 MB).
+
+The build includes the local helper files under `Intraday Equity/`, including:
+`market_data.py`, `calendar_util.py`, `portfolio_risk.py`, `reporting.py`, and the
+`strategies/` package.
 
 > PowerShell note: the command is given on one line on purpose (avoids continuation
 > issues). To split it in PowerShell, end each line with a backtick `` ` ``.

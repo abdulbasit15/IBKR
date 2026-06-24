@@ -32,6 +32,14 @@ python -m pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/sim
 # start TWS / IB Gateway (paper, port 7497, API enabled), then:
 python runner.py
 ```
+
+## Build and deploy
+If you want a single-folder Windows deployment, run the local PowerShell script from this folder:
+```powershell
+.\build_and_deploy.ps1
+```
+This creates a local `.venv`, installs `requirements.txt`, builds `intraday_equity.exe` into `dist/`, and copies `equity.json` into the same folder.
+
 PyInstaller one-file build (mirror the Iron Condor `.spec` pattern):
 ```bash
 pyinstaller --onefile --name intraday_equity runner.py \
