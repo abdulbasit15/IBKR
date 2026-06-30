@@ -73,6 +73,12 @@ def place_protected_entry(ib, contract, qty: int, entry_limit: float, take_profi
     assert qty > 0, "qty must be positive"
     base = round_to_tick(entry_limit, tick)
     cap = round_to_tick(base * (1 + max_chase_pct), tick) if max_chase_pct > 0 else base
+    # Walk base->cap in a few sizable steps (not one tick at a time), waiting only a few
+    # seconds per level, so a marketable price is reached quickly on a breakout. With
+    # max_chase_pct=0 this degrades to a single passive limit at base for the full timeout.
+    n_levels = 5
+    step = max(tick, round_to_tick((cap - base) / n_levels, tick)) if cap > base else tick
+    per_level = max(2, int(entry_timeout_sec) // n_levels) if cap > base else int(entry_timeout_sec)
     px = base
 
     while True:
@@ -86,7 +92,7 @@ def place_protected_entry(ib, contract, qty: int, entry_limit: float, take_profi
         log(f"[{order_ref}] entry BUY {qty} {contract.symbol} lmt {px} tp {tp.lmtPrice} stop {stop_trigger}")
 
         waited = 0
-        while waited < entry_timeout_sec:
+        while waited < per_level:
             ib.sleep(1)
             waited += 1
             if pt.orderStatus.status == "Filled":
@@ -120,7 +126,7 @@ def place_protected_entry(ib, contract, qty: int, entry_limit: float, take_profi
         if px >= cap:
             log(f"[{order_ref}] no fill within walk for {contract.symbol} -> SKIP (no market fallback)")
             return None, None, None
-        px = round_to_tick(min(px + tick, cap), tick)
+        px = round_to_tick(min(px + step, cap), tick)
 
 
 def resize_children(ib, contract, tp_trade, stop_trade, new_qty: int, log) -> bool:
@@ -133,9 +139,13 @@ def resize_children(ib, contract, tp_trade, stop_trade, new_qty: int, log) -> bo
             o = trade.order
             o.totalQuantity = new_qty
             o.transmit = True
-            ib.placeOrder(contract, o)
+            t2 = ib.placeOrder(contract, o)
             ib.sleep(1)
-            if int(getattr(o, "totalQuantity", new_qty)) != int(new_qty):
+            # Verify against the SERVER trade state, not the local object we just mutated:
+            # a rejected/terminal modify means protection was NOT actually resized.
+            status = t2.orderStatus.status if (t2 and t2.orderStatus) else ""
+            if status in ("Rejected", "Cancelled", "ApiCancelled", "Inactive"):
+                log(f"resize_children: resize to {new_qty} rejected (status {status})")
                 return False
         except Exception as e:  # pragma: no cover
             log(f"resize_children error: {e}")

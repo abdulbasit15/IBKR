@@ -1,2 +1,14 @@
-TWS API/source/pythonclient/Trading Strategies/Intraday Equity/build*.txt
-TWS API/source/pythonclient/Trading Strategies/Intraday Equity/build_pi/*
+# Trading Strategies — generated / local runtime (do not commit)
+TWS API/source/pythonclient/Trading Strategies/**/.venv/
+TWS API/source/pythonclient/Trading Strategies/**/__pycache__/
+TWS API/source/pythonclient/Trading Strategies/**/build_pi/
+TWS API/source/pythonclient/Trading Strategies/**/dist/
+TWS API/source/pythonclient/Trading Strategies/**/logs/
+TWS API/source/pythonclient/Trading Strategies/**/reports/
+TWS API/source/pythonclient/Trading Strategies/**/cache_*.json
+TWS API/source/pythonclient/Trading Strategies/**/risk_*.json
+TWS API/source/pythonclient/Trading Strategies/**/*_journal_*.xlsx
+TWS API/source/pythonclient/Trading Strategies/**/supertrend_trades.csv
+TWS API/source/pythonclient/Trading Strategies/**/equity.json.bkp
+TWS API/source/pythonclient/Trading Strategies/**/build*.txt
+TWS API/source/pythonclient/Trading Strategies.zip

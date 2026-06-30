@@ -32,12 +32,14 @@ class NR7Compression(EquityStrategyBase):
         sma_n = int(self.cfg.get("sma_period", 20))
         nr7_n = int(self.cfg.get("nr7_lookback", 7))
         kept = []
-        for sym in self.cfg.get("universe_symbols", []):
+        for sym in self.scanner_universe():
             c = self.qualify(sym)
             bars = self.hist(c, f"{max(sma_n, nr7_n, 25) + 5} D", "1 day", "TRADES", True)
+            # only COMPLETED prior sessions (drop today's forming daily bar during RTH)
+            bars = [b for b in bars if b.date.strftime("%Y%m%d") < cal.now_et().strftime("%Y%m%d")]
             if len(bars) < max(sma_n, nr7_n) + 1:
                 continue
-            ref = bars[-1]  # most recent completed daily bar (the compression day)
+            ref = bars[-1]  # most recent COMPLETED session (the compression day)
             if not ref.close or ref.close < price_min or ref.close > price_max:
                 continue
             ranges = [(b.high - b.low) for b in bars[-nr7_n:]]
@@ -70,17 +72,20 @@ class NR7Compression(EquityStrategyBase):
         orec = None
         if bars:
             b = bars[0]
-            orec = {"high": b.high, "low": b.low, "height": b.high - b.low}
+            high, low = b.high, b.low
+            height = high - low
+            hp = (height / high) if high else 0
+            hmax = float(self.cfg.get("orb_height_max_pct", 0.05))
+            hmin = float(self.cfg.get("orb_height_min_pct", 0.003))
+            if high > 0 and hmin <= hp <= hmax:   # reject trivial/halted-open or glitch bars
+                orec = {"high": high, "low": low, "height": height}
         self._or[symbol] = orec
         return orec
 
     # -------------------------------------------------- entry
     def check_entry_signal(self, symbol, contract):
+        # trade-window gating is handled centrally by the base run loop (self.windows)
         now = cal.now_et()
-        if now < cal.at_et("09:35"):
-            return None
-        if now > cal.at_et(self.cfg.get("entry_cutoff_time", "11:00")):
-            return None
         orec = self._opening_range(symbol, contract)
         if not orec:
             return None
@@ -100,10 +105,8 @@ class NR7Compression(EquityStrategyBase):
         tk = self.get_ticker(symbol, contract)
         vw = self.vwap(tk)
         price = self.last_price(tk) or bar.close
-        if vw is not None and price <= vw:
-            return None
-        if vw is None and self.require_vwap:
-            return None
+        if self.require_vwap and (vw is None or price <= vw):
+            return None  # VWAP filter; set require_vwap False to disable it entirely
 
         tick = self.min_tick(symbol, contract)
         atr5 = self.atr(contract, int(self.cfg.get("atr_period", 14)), "5 mins")

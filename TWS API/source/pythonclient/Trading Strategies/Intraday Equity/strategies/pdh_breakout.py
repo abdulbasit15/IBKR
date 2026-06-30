@@ -20,7 +20,7 @@ class PDHBreakout(EquityStrategyBase):
         self._pdh: dict[str, float] = {}
         self._tickers: dict[str, object] = {}
         self.require_vwap = bool(self.cfg.get("require_vwap", True))
-        self.windows = self.cfg.get("windows", [["09:35", "11:30"], ["14:00", "15:30"]])
+        # trade windows are owned by the base (self.windows, parsed from equity.json)
 
     def build_watchlist(self):
         u = self.cfg.get("universe", {})
@@ -30,39 +30,32 @@ class PDHBreakout(EquityStrategyBase):
         rvol_min = u.get("min_premarket_rvol", self.cfg.get("premarket_rvol_min", 1.5))
         excl = set(self.cfg.get("exclude_symbols", []))
         kept = []
-        for sym in self.cfg.get("universe_symbols", []):
+        for sym in self.scanner_universe():
             if sym in excl:
                 continue
             c = self.qualify(sym)
             day = self.hist(c, "6 D", "1 day", "TRADES", True)
-            if len(day) < 2 or not day[-1].close:
+            # prior SESSION pinned by DATE (exclude today's forming daily bar during RTH)
+            prior = [b for b in day if b.date.strftime("%Y%m%d") < cal.now_et().strftime("%Y%m%d")]
+            if not prior or not prior[-1].close:
                 continue
-            last_close = day[-1].close
-            if last_close < price_min or last_close > price_max:
+            ref = prior[-1]
+            if ref.close < price_min or ref.close > price_max:
                 continue
             if self.dollar_adv(sym, c) < dadv_min:
                 continue
             pmr = self.rvol(c, cal.session_open(), premarket=True)
             if pmr is not None and pmr < rvol_min:   # None = no premarket history -> keep
                 continue
-            # prior session high = high of the most recent COMPLETED daily bar
-            self._pdh[sym] = day[-1].high
+            self._pdh[sym] = ref.high   # prior session high
             kept.append(sym)
         line_cap = int(self.shared.get("shared_risk", {}).get("market_data_line_cap", 90))
         for sym in kept[:line_cap]:
             self.get_ticker(sym, self.qualify(sym))
         return kept
 
-    def _in_any_window(self):
-        now = cal.now_et()
-        for start, end in self.windows:
-            if cal.at_et(start) <= now <= cal.at_et(end):
-                return True
-        return False
-
     def check_entry_signal(self, symbol, contract):
-        if not self._in_any_window():
-            return None
+        # trade-window gating is handled centrally by the base run loop (self.windows)
         pdh = self._pdh.get(symbol)
         if not pdh:
             return None
@@ -82,10 +75,8 @@ class PDHBreakout(EquityStrategyBase):
         tk = self.get_ticker(symbol, contract)
         vw = self.vwap(tk)
         price = self.last_price(tk) or bar.close
-        if vw is not None and price <= vw:
-            return None
-        if vw is None and self.require_vwap:
-            return None
+        if self.require_vwap and (vw is None or price <= vw):
+            return None  # VWAP filter; set require_vwap False to disable it entirely
 
         tick = self.min_tick(symbol, contract)
         entry = trigger + float(self.cfg.get("entry_offset_pct", 0.0005)) * pdh

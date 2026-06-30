@@ -21,7 +21,7 @@ import os
 import threading
 from dataclasses import dataclass, field
 
-from ib_async import IB, Stock, Index
+from ib_async import IB, Stock, Index, ScannerSubscription, TagValue
 
 import calendar_util as cal
 import equity_order as eo
@@ -88,6 +88,15 @@ class EquityStrategyBase:
         self.min_rr = float(cfg.get("min_rr", sr.get("min_rr", 1.5)))
         self.eod_flatten = sr.get("eod_flatten_time", cfg.get("eod_flatten_time", "15:55"))
         self.poll = int(cfg.get("poll_interval_sec", 5))
+        # Configurable trade window(s): a list of [start, end] ET pairs in equity.json;
+        # falls back to trade_start_time/trade_end_time (single window) for back-compat.
+        w = cfg.get("windows")
+        if not w:
+            w = [[cfg.get("trade_start_time", cfg.get("entry_start", "09:35")),
+                  cfg.get("trade_end_time", cfg.get("entry_end", "11:00"))]]
+        self.windows = [[str(p[0]), str(p[1])] for p in w]
+        self.window_start = min(p[0] for p in self.windows)
+        self.window_end = max(p[1] for p in self.windows)
         self.positions: dict[str, Position] = {}
         self._md: dict[str, object] = {}   # base-owned market-data tickers (subscribe once, reuse)
         self._start_equity = float(shared.get("start_equity", 0) or 0)
@@ -102,7 +111,18 @@ class EquityStrategyBase:
         self.ib = IB()
         try:
             self.ib.connect(self.host, self.port, clientId=self.client_id, account=self.account or "")
-            self.log(f"connected clientId={self.client_id} account={self.account}")
+            # 1=live, 2=frozen, 3=delayed, 4=delayed-frozen. Config-driven so an
+            # unentitled paper account can still receive (delayed) data instead of NaNs.
+            try:
+                self.ib.reqMarketDataType(int(self.shared.get("market_data_type", 1)))
+            except Exception as e:
+                self.log(f"reqMarketDataType failed (continuing): {e}")
+            try:
+                self.ib.disconnectedEvent += self._on_disconnected
+            except Exception:
+                pass
+            self.log(f"connected clientId={self.client_id} account={self.account} "
+                     f"mktDataType={self.shared.get('market_data_type', 1)}")
             return True
         except Exception as e:
             self.log(f"CONNECT FAILED: {e}")
@@ -114,6 +134,57 @@ class EquityStrategyBase:
                 self.ib.disconnect()
         except Exception:
             pass
+
+    def _on_disconnected(self):
+        self.log("WARNING: TWS/Gateway connection dropped")
+
+    def ensure_connected(self, max_tries=5, backoff=5):
+        """True if connected (reconnecting with backoff if needed). On a successful
+        reconnect, refresh server orders + market-data subscriptions so manage_open keeps
+        tracking the LIVE OCA brackets rather than stale objects."""
+        if self.ib and self.ib.isConnected():
+            return True
+        self.log("connection lost; attempting reconnect...")
+        for i in range(max_tries):
+            try:
+                self.ib.connect(self.host, self.port, clientId=self.client_id, account=self.account or "")
+                try:
+                    self.ib.reqMarketDataType(int(self.shared.get("market_data_type", 1)))
+                except Exception:
+                    pass
+                self.log(f"reconnected (attempt {i + 1})")
+                self._rebind_after_reconnect()
+                return True
+            except Exception as e:
+                self.log(f"reconnect attempt {i + 1}/{max_tries} failed: {e}")
+                try:
+                    self.ib.sleep(backoff)
+                except Exception:
+                    import time as _t
+                    _t.sleep(backoff)
+        return False
+
+    def _rebind_after_reconnect(self):
+        """Re-link our Position order legs to the refreshed server Trades (by orderId) and
+        re-subscribe market data, since the prior session's Trade/Ticker objects are stale."""
+        try:
+            self.ib.reqAllOpenOrders()
+            self.ib.sleep(1)
+            open_by_id = {}
+            for t in self.ib.openTrades():
+                oid = getattr(getattr(t, "order", None), "orderId", None)
+                if oid is not None:
+                    open_by_id[oid] = t
+            for p in self.positions.values():
+                for attr in ("pt", "tp", "st"):
+                    tr = getattr(p, attr, None)
+                    oid = getattr(getattr(tr, "order", None), "orderId", None)
+                    if oid in open_by_id:
+                        setattr(p, attr, open_by_id[oid])
+                self._md.pop(p.symbol, None)
+                p.ticker = self.get_ticker(p.symbol, p.contract)
+        except Exception as e:
+            self.log(f"rebind after reconnect error: {e}")
 
     def log(self, msg):
         self._log(f"[{self.name}] {msg}")
@@ -239,6 +310,84 @@ class EquityStrategyBase:
                 return float(v)
         return None
 
+    # ----------------------------------------------------------------- scanner
+    def scan(self, scan_code, tag_filters=None, rows=50, instrument="STK",
+             location="STK.US.MAJOR", stock_type="ALL",
+             above_price=None, below_price=None, above_volume=None):
+        """One-shot IBKR market scanner snapshot -> list[str] of symbols (rate-limited,
+        50-row capped). Price/volume bounds use the ScannerSubscription's BUILT-IN numeric
+        fields (abovePrice/belowPrice/aboveVolume) which work WITHOUT a market-data
+        subscription. The TagValue `tag_filters` (changePercAbove, avgVolumeAbove, ...) are
+        OPTIONAL and require data entitlement -- they trigger error 162 otherwise -- so they
+        default to none. Returns [] on error so callers fall back to the configured list."""
+        try:
+            sub = ScannerSubscription(instrument=instrument, locationCode=location,
+                                      scanCode=scan_code, numberOfRows=min(int(rows), 50))
+            if above_price is not None:
+                sub.abovePrice = float(above_price)
+            if below_price is not None:
+                sub.belowPrice = float(below_price)
+            if above_volume is not None:
+                sub.aboveVolume = int(above_volume)
+            if stock_type:
+                try:
+                    sub.stockTypeFilter = stock_type
+                except Exception:
+                    pass
+            tvs = [TagValue(str(k), str(v)) for k, v in (tag_filters or {}).items()]
+            self.rate.acquire()
+            out = self.ib.reqScannerData(sub, [], tvs) or []
+        except Exception as e:
+            self.log(f"scan {scan_code} error: {e}")
+            return []
+        syms = []
+        for r in out:
+            try:
+                syms.append(r.contractDetails.contract.symbol)
+            except Exception:
+                pass
+        return syms
+
+    def scanner_universe(self):
+        """Resolve the candidate universe from cfg['scanner']; ALWAYS degrade to
+        universe_symbols on empty/error so a missing data entitlement never zeroes the
+        watchlist. Multiple scan_codes with intersect=true => names present in ALL scans."""
+        sc = self.cfg.get("scanner", {})
+        fixed = self.cfg.get("universe_symbols", [])
+        if not sc.get("use_scanner"):
+            return fixed
+        codes = sc.get("scan_codes", [])
+        sets = [self.scan(code, sc.get("tag_filters"), sc.get("scanner_rows", 50),
+                          sc.get("instrument", "STK"), sc.get("location_code", "STK.US.MAJOR"),
+                          sc.get("stock_type_filter", "ALL"),
+                          sc.get("above_price"), sc.get("below_price"), sc.get("above_volume"))
+                for code in codes]
+        sets = [s for s in sets if s]
+        if not sets:
+            self.log("scanner returned nothing (entitlement/empty) -> using universe_symbols")
+            return fixed if sc.get("fallback_to_universe", True) else []
+        if sc.get("intersect") and len(sets) > 1:
+            common = set(sets[0])
+            for s in sets[1:]:
+                common &= set(s)
+            syms = [x for x in sets[0] if x in common]   # preserve first-scan ranking
+        else:
+            seen, syms = set(), []
+            for s in sets:
+                for x in s:
+                    if x not in seen:
+                        seen.add(x)
+                        syms.append(x)
+        if sc.get("mode") == "augment":
+            for x in fixed:
+                if x not in syms:
+                    syms.append(x)
+        if not syms and sc.get("fallback_to_universe", True):
+            self.log("scanner intersect empty -> using universe_symbols")
+            return fixed
+        self.log(f"scanner universe ({len(syms)}): {syms[:25]}")
+        return syms
+
     # ----------------------------------------------------------------- RVOL
     def rvol(self, contract, ref_dt, premarket=False):
         """Relative volume vs a 20-day same-time-of-day baseline. Uses ONLY completed
@@ -323,8 +472,14 @@ class EquityStrategyBase:
                     return False
             # optional VIX band (delayed-data tolerant)
             if sr.get("vix_max"):
-                vix = self.shared.get("_vix") or Index("VIX", "CBOE")
-                self.shared["_vix"] = vix
+                vix = self.shared.get("_vix")
+                if vix is None:
+                    vix = Index("VIX", "CBOE")
+                    try:
+                        self.ib.qualifyContracts(vix)   # unqualified Index -> hist errors silently
+                    except Exception:
+                        pass
+                    self.shared["_vix"] = vix
                 vb = self.hist(vix, "1 D", "5 mins", "TRADES", True)
                 if vb and vb[-1].close and vb[-1].close > float(sr["vix_max"]):
                     return False
@@ -473,18 +628,23 @@ class EquityStrategyBase:
             "Exit": exit_px, "PnL": round(pnl, 2), "R_Multiple": round(rmult, 2), "Result": reason,
         })
 
+    def in_trade_window(self, now=None):
+        """True if `now` (ET) is inside ANY configured trade window (self.windows)."""
+        now = now or cal.now_et()
+        return any(cal.at_et(s) <= now <= cal.at_et(e) for s, e in self.windows)
+
     # ----------------------------------------------------------------- template loop
     def run(self):
         if not self.connect():
             return
         try:
-            start = self.cfg.get("trade_start_time", self.cfg.get("entry_start", "09:35"))
-            end = self.cfg.get("trade_end_time", self.cfg.get("entry_end", "11:00"))
+            start = self.window_start
             if not cal.is_trading_day():
                 self.log("not a trading day; exiting")
                 return
             self.before_open()
-            # wait until the entry window opens (short ticks so we can bail/flatten)
+            self.log(f"trade window(s): {self.windows}")
+            # wait until the FIRST window opens (short ticks so we can bail/flatten)
             while cal.now_et() < cal.at_et(start):
                 self.ib.sleep(2)
                 if cal.now_et() >= cal.effective_flatten_time(self.eod_flatten):
@@ -495,6 +655,10 @@ class EquityStrategyBase:
 
             flat_time = cal.effective_flatten_time(self.eod_flatten)
             while True:
+                # detect/repair a dropped connection before acting this tick
+                if not self.ensure_connected():
+                    self.log("CRITICAL: cannot reconnect; positions may be unmanaged. Exiting loop.")
+                    break
                 now = cal.now_et()
                 # --- dedicated EOD check on EVERY tick (never buried behind long sleeps)
                 if now >= flat_time:
@@ -503,7 +667,7 @@ class EquityStrategyBase:
                         self.flatten_all("EOD")
                     break
                 self.manage_open()
-                entries_open = now <= cal.at_et(end)
+                entries_open = self.in_trade_window(now)
                 if entries_open and not self.risk.is_halted() and self.regime_ok():
                     for sym in watchlist:
                         ref = f"{self.strategy_type}.{self.client_id}.{sym}"

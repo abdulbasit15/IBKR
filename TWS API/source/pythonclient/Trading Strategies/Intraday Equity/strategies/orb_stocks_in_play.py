@@ -28,21 +28,22 @@ class ORBStocksInPlay(EquityStrategyBase):
         gap_min = u.get("min_gap_pct", self.cfg.get("gap_min", 0.02))
         rvol_min = u.get("min_premarket_rvol", self.cfg.get("rvol_min", 1.5))
         excl = set(u.get("exclude_symbols", [])) | {"SPY", "QQQ"}
-        universe = [s for s in self.cfg.get("universe_symbols", []) if s not in excl]
+        universe = [s for s in self.scanner_universe() if s not in excl]
         line_cap = int(self.shared.get("shared_risk", {}).get("market_data_line_cap", 90))
 
         kept = []
         for sym in universe:
             c = self.qualify(sym)
-            day = self.hist(c, "2 D", "1 day", "TRADES", True)
-            if len(day) < 2 or not day[-1].close:
+            day = self.hist(c, "3 D", "1 day", "TRADES", True)
+            # prior SESSION pinned by DATE (exclude today's forming daily bar during RTH)
+            prior = [b for b in day if b.date.strftime("%Y%m%d") < cal.now_et().strftime("%Y%m%d")]
+            if not prior or not prior[-1].close:
                 continue
-            last_close = day[-1].close
-            prior_close = day[-2].close
-            if last_close < price_min:
+            prior_close = prior[-1].close
+            if prior_close < price_min:
                 continue
             # $-ADV in shares terms
-            adv_sh = (self.dollar_adv(sym, c) / last_close) if last_close else 0
+            adv_sh = (self.dollar_adv(sym, c) / prior_close) if prior_close else 0
             if adv_sh < adv_min:
                 continue
             # opening gap from prior close (uses today's 5-min open)
@@ -102,10 +103,8 @@ class ORBStocksInPlay(EquityStrategyBase):
         tk = self.get_ticker(symbol, contract)
         vw = self.vwap(tk)
         price = self.last_price(tk) or bar.close
-        if vw is not None and price <= vw:
-            return None
-        if vw is None and self.require_vwap:
-            return None  # no live VWAP -> do not trade (set require_vwap False for paper/delayed)
+        if self.require_vwap and (vw is None or price <= vw):
+            return None  # VWAP filter; set require_vwap False to disable it entirely
 
         tick = self.min_tick(symbol, contract)
         atr_d = self.atr(contract, 14, "1 day")

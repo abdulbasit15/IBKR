@@ -97,6 +97,10 @@ def bootstrap(cfg, log):
     try:
         ib.connect(cfg.get("host", "127.0.0.1"), int(cfg.get("port", 7497)),
                    clientId=int(cfg.get("client_id_base", 30)) + 90, account=account)
+        try:
+            ib.reqMarketDataType(int(cfg.get("market_data_type", 1)))
+        except Exception:
+            pass
         for v in ib.accountValues(account):
             if v.tag == "NetLiquidation" and (not v.currency or v.currency == "USD"):
                 equity = float(v.value)
@@ -140,6 +144,7 @@ def main():
         "host": cfg.get("host", "127.0.0.1"),
         "port": int(cfg.get("port", 7497)),
         "default_account": cfg.get("default_account"),
+        "market_data_type": int(cfg.get("market_data_type", 1)),  # 1=live 2=frozen 3=delayed 4=delayed-frozen
         "shared_risk": shared_risk,
         "sector_map": cfg.get("sector_map", {}),
         "rate_limiter": RateLimiter(min_interval=float(cfg.get("hist_min_interval_sec", 2.0))),

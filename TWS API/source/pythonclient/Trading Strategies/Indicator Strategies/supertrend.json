@@ -1,0 +1,40 @@
+{
+  "_comment": "Supertrend bot. Edit freely: any symbols, any bar_size, any ST(atr_period, multiplier). Example below = long_only ST(10,3) on 15-min bars, SWING mode (holds overnight, GTC stop), paper account DU672616 on IB Gateway port 4002.",
+  "_direction_options": "long_only = long when bullish, cash when bearish, never short (e.g. buy & hold SOXL, sell when bearish, re-buy when bullish). short_only = short when bearish, cash when bullish, never long. long_short = always in the market: long when bullish, flip to short when bearish.",
+  "direction": "long_only",
+
+  "host": "127.0.0.1",
+  "port": 4002,
+  "client_id": 40,
+  "account": "DU672616",
+  "market_data_type": 3,
+  "hist_min_interval_sec": 2.0,
+
+  "symbols": ["AAPL", "NVDA", "AMD", "MSFT", "META"],
+  "bar_size": "15 mins",
+  "supertrend": { "atr_period": 10, "multiplier": 3.0 },
+  "_dema_filter_comment": "DEMA trend filter. enabled=true => longs only when close > DEMA(period) (and shorts only when close < DEMA(period)), evaluated on the last completed bar. This is the core entry gate: buy only when Supertrend is bullish AND price is above DEMA(200). hist_duration must provide enough bars for the period (allow ~2x warmup, so >=30 D for DEMA(200) on 15-min RTH bars).",
+  "dema_filter": { "enabled": true, "period": 200 },
+  "hist_duration": "30 D",
+  "use_rth": true,
+
+  "intraday_mode": false,
+  "eod_flatten_time": "15:55",
+  "entry_window": ["09:35", "15:45"],
+  "entry_on_flip_only": false,
+  "poll_interval_sec": 30,
+
+  "sizing": {
+    "strategy_capital": 100000,
+    "fixed_stocks": 1,
+    "risk_per_trade_pct": 0.01,
+    "min_stop_pct": 0.005,
+    "max_position_notional": 100000
+  },
+  "max_concurrent_positions": 5,
+  "entry_offset_pct": 0.0005,
+  "entry_timeout_sec": 60,
+
+  "log_dir": "logs",
+  "trade_log_csv": "supertrend_trades.csv"
+}
