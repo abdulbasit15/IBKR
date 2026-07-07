@@ -17,7 +17,6 @@ class ORBStocksInPlay(EquityStrategyBase):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
         self._or: dict[str, dict | None] = {}
-        self._tickers: dict[str, object] = {}
         self.require_vwap = bool(self.cfg.get("require_vwap", True))
 
     # -------------------------------------------------- watchlist (pre-market scan)
@@ -99,9 +98,10 @@ class ORBStocksInPlay(EquityStrategyBase):
         vol_mult = float(self.cfg.get("signal", {}).get("vol_mult", self.cfg.get("breakout_vol_mult", 1.5)))
         if avg1 and bar.volume < vol_mult * avg1:
             return None
-        # VWAP gate
+        # VWAP gate — session VWAP from the intraday bars (delayed-safe; the RTVolume tick
+        # ticker.vwap is NaN on delayed/unentitled feeds, which otherwise blocks every entry).
         tk = self.get_ticker(symbol, contract)
-        vw = self.vwap(tk)
+        vw = self.session_vwap_from_bars(bars1, len(bars1) - 2)
         price = self.last_price(tk) or bar.close
         if self.require_vwap and (vw is None or price <= vw):
             return None  # VWAP filter; set require_vwap False to disable it entirely
@@ -111,8 +111,15 @@ class ORBStocksInPlay(EquityStrategyBase):
         entry = orec["high"] + float(self.cfg.get("atr_entry_buffer_mult", 0.05)) * atr_d
         mid_pct = float(self.cfg.get("stop", {}).get("min_or_height_pct",
                         self.cfg.get("orb_mid_stop_pct", 0.01)))
-        stop = orec["mid"] if (orec["height"] / orec["high"] < mid_pct) else orec["low"]
+        structural = orec["mid"] if (orec["height"] / orec["high"] < mid_pct) else orec["low"]
+        # floor the stop (matches base) and set the target off the FLOORED stop distance so
+        # R:R is honest/consistent with NR7 & PDH. (~equals the old range-based target when
+        # stop==OR_low; diverges only once the stop is floored on a narrow range.)
+        floored = min(structural, entry * (1 - self.min_stop_pct))
+        r_unit = entry - floored
+        if r_unit <= 0:
+            return None
         mult = float(self.cfg.get("target", {}).get("mult", self.cfg.get("target_mult", 2.0)))
-        target = entry + mult * orec["height"]
-        return Signal(entry=entry, stop=stop, target=target, tick=tick,
+        target = entry + mult * r_unit
+        return Signal(entry=entry, stop=floored, target=target, tick=tick,
                       note=f"ORB H{orec['high']:.2f} L{orec['low']:.2f}")

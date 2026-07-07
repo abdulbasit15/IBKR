@@ -66,8 +66,8 @@ for _p in (_SHARED_ROOT, _BOT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from Indicators.supertrend import supertrend_value  # noqa: E402
-from Indicators.dema import dema_value              # noqa: E402
+from Indicators.trend.supertrend import supertrend_value  # noqa: E402
+from Indicators.dema import dema_value                     # noqa: E402
 
 ET = ZoneInfo("America/New_York")
 LONG, SHORT, FLAT = "LONG", "SHORT", "FLAT"

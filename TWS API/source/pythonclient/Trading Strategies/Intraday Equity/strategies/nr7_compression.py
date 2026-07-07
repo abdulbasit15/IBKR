@@ -19,8 +19,6 @@ class NR7Compression(EquityStrategyBase):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
         self._or: dict[str, dict | None] = {}
-        self._tickers: dict[str, object] = {}
-        self._vwap_at_entry: dict[str, float] = {}
         self.require_vwap = bool(self.cfg.get("require_vwap", True))
 
     # -------------------------------------------------- nightly/at-open scan
@@ -103,7 +101,7 @@ class NR7Compression(EquityStrategyBase):
         elif rv < rvol_min:
             return None
         tk = self.get_ticker(symbol, contract)
-        vw = self.vwap(tk)
+        vw = self.session_vwap_from_bars(bars5, len(bars5) - 2)  # session VWAP from bars (delayed-safe)
         price = self.last_price(tk) or bar.close
         if self.require_vwap and (vw is None or price <= vw):
             return None  # VWAP filter; set require_vwap False to disable it entirely

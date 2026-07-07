@@ -1,0 +1,153 @@
+// This Pine Script™ is subject to the terms of the Mozilla Public License 2.0
+// © AB
+// Includes: EMA1, EMA2, DEMA, RSI+, Supertrend
+
+//@version=5
+indicator(title="MultiIndicator by AB", shorttitle="MI-AB", overlay=false)
+
+// ═══════════════════════════════════════════════════════════════
+// TOGGLE INPUTS
+// ═══════════════════════════════════════════════════════════════
+showEMA1    = input.bool(true, title="Show EMA 1", group="Toggle Indicators")
+showEMA2    = input.bool(true, title="Show EMA 2", group="Toggle Indicators")
+showDEMA    = input.bool(true, title="Show DEMA", group="Toggle Indicators")
+showRSI     = input.bool(true, title="Show RSI+", group="Toggle Indicators")
+showST      = input.bool(true, title="Show Supertrend", group="Toggle Indicators")
+
+// ═══════════════════════════════════════════════════════════════
+// EMA 1 SETTINGS
+// ═══════════════════════════════════════════════════════════════
+ema1Period = input.int(21, title="EMA 1 Period", minval=1, group="EMA 1")
+ema1Color  = input.color(color.green, title="EMA 1 Color", group="EMA 1")
+
+// ═══════════════════════════════════════════════════════════════
+// EMA 2 SETTINGS
+// ═══════════════════════════════════════════════════════════════
+ema2Period = input.int(50, title="EMA 2 Period", minval=1, group="EMA 2")
+ema2Color  = input.color(color.yellow, title="EMA 2 Color", group="EMA 2")
+
+// ═══════════════════════════════════════════════════════════════
+// DEMA SETTINGS
+// ═══════════════════════════════════════════════════════════════
+demaPeriod = input.int(200, title="DEMA Period", minval=1, group="DEMA")
+demaColor  = input.color(color.blue, title="DEMA Color", group="DEMA")
+
+// ═══════════════════════════════════════════════════════════════
+// RSI+ SETTINGS
+// ═══════════════════════════════════════════════════════════════
+rsiSource       = input.source(close, title="RSI Source", group="RSI+")
+rsiPeriod       = input.int(14, title="RSI Period", minval=1, group="RSI+")
+rsiMAType       = input.string("EMA", title="MA Type", options=["SMA", "EMA"], group="RSI+")
+rsiMALength     = input.int(14, title="RSI MA Length", minval=1, group="RSI+")
+rsiOverbought   = input.int(70, title="Overbought Level", group="RSI+")
+rsiOversold     = input.int(30, title="Oversold Level", group="RSI+")
+rsiUpperBand    = input.int(75, title="Upper Band", group="RSI+")
+rsiLowerBand    = input.int(25, title="Lower Band", group="RSI+")
+rsiBullColor    = input.color(color.teal, title="Bullish Color", group="RSI+")
+rsiBearColor    = input.color(color.red, title="Bearish Color", group="RSI+")
+rsiShowBgHighlights = input.bool(true, title="Show Momentum Background", group="RSI+")
+
+// ═══════════════════════════════════════════════════════════════
+// SUPERTREND SETTINGS
+// ═══════════════════════════════════════════════════════════════
+stPeriod      = input.int(10, title="ATR Period", minval=1, group="Supertrend")
+stSource      = input.source(hl2, title="Source", group="Supertrend")
+stMultiplier  = input.float(3.0, title="ATR Multiplier", step=0.1, group="Supertrend")
+stChangeATR   = input.bool(true, title="Change ATR Calculation Method", group="Supertrend")
+stShowSignals = input.bool(true, title="Show Buy/Sell Signals", group="Supertrend")
+stHighlight   = input.bool(true, title="Highlighter On/Off", group="Supertrend")
+
+// ═══════════════════════════════════════════════════════════════
+// EMA 1 CALCULATION
+// ═══════════════════════════════════════════════════════════════
+ema1Value = ta.ema(close, ema1Period)
+plot(showEMA1 ? ema1Value : na, title="EMA 1", color=ema1Color, linewidth=2, force_overlay=true)
+
+// ═══════════════════════════════════════════════════════════════
+// EMA 2 CALCULATION
+// ═══════════════════════════════════════════════════════════════
+ema2Value = ta.ema(close, ema2Period)
+plot(showEMA2 ? ema2Value : na, title="EMA 2", color=ema2Color, linewidth=2, force_overlay=true)
+
+// ═══════════════════════════════════════════════════════════════
+// DEMA CALCULATION (Double Exponential Moving Average)
+// ═══════════════════════════════════════════════════════════════
+ema_of_close = ta.ema(close, demaPeriod)
+ema_of_ema   = ta.ema(ema_of_close, demaPeriod)
+demaValue    = 2 * ema_of_close - ema_of_ema
+plot(showDEMA ? demaValue : na, title="DEMA", color=demaColor, linewidth=2, force_overlay=true)
+
+// ═══════════════════════════════════════════════════════════════
+// RSI+ CALCULATION
+// ═══════════════════════════════════════════════════════════════
+rsiValue = ta.rsi(rsiSource, rsiPeriod)
+rsiMA    = rsiMAType == "EMA" ? ta.ema(rsiValue, rsiMALength) : ta.sma(rsiValue, rsiMALength)
+
+// RSI+ colors based on RSI vs MA crossover
+rsiFillColor = rsiValue >= rsiMA ? color.new(rsiBullColor, 75) : color.new(rsiBearColor, 75)
+rsiLineColor = rsiValue >= rsiMA ? rsiBullColor : rsiBearColor
+rsiMALineColor = rsiValue >= rsiMA ? color.new(rsiBearColor, 40) : color.new(rsiBullColor, 40)
+
+// RSI+ plots
+rsiPlot   = plot(showRSI ? rsiValue : na, title="RSI", color=rsiLineColor, linewidth=2)
+rsiMAPlot = plot(showRSI ? rsiMA : na, title="RSI MA", color=rsiMALineColor, linewidth=2)
+fill(rsiPlot, rsiMAPlot, title="RSI+ Cloud", color=showRSI ? rsiFillColor : na)
+
+// RSI+ levels
+rsiBandOB = hline(rsiOverbought, title="Overbought", color=color.new(color.red, 50), linestyle=hline.style_dashed)
+rsiBandOS = hline(rsiOversold, title="Oversold", color=color.new(color.green, 50), linestyle=hline.style_dashed)
+rsiBandUpper = hline(rsiUpperBand, title="Upper Band", color=color.new(color.red, 80), linestyle=hline.style_dotted)
+rsiBandLower = hline(rsiLowerBand, title="Lower Band", color=color.new(color.green, 80), linestyle=hline.style_dotted)
+hline(50, title="Midline", color=color.new(color.gray, 70), linestyle=hline.style_dotted)
+
+// RSI+ Momentum Background Highlights (full-pane vertical coloring)
+rsiBgColor = showRSI and rsiShowBgHighlights and rsiValue > rsiOverbought ? color.new(rsiBearColor, 85) : showRSI and rsiShowBgHighlights and rsiValue < rsiOversold ? color.new(rsiBullColor, 85) : na
+bgcolor(rsiBgColor, title="Momentum Background")
+
+// RSI+ Cloud Cross Alerts
+rsiBullCross = ta.crossover(rsiValue, rsiMA)
+rsiBearCross = ta.crossunder(rsiValue, rsiMA)
+alertcondition(rsiBullCross, title="RSI+ Bullish Cross", message="RSI+ Bullish: RSI crossed above MA!")
+alertcondition(rsiBearCross, title="RSI+ Bearish Cross", message="RSI+ Bearish: RSI crossed below MA!")
+alertcondition(rsiBullCross or rsiBearCross, title="RSI+ Cloud Cross", message="RSI+ Cloud Cross detected!")
+
+// ═══════════════════════════════════════════════════════════════
+// SUPERTREND CALCULATION
+// ═══════════════════════════════════════════════════════════════
+stAtr2 = ta.sma(ta.tr, stPeriod)
+stAtr  = stChangeATR ? ta.atr(stPeriod) : stAtr2
+
+stUp  = stSource - (stMultiplier * stAtr)
+stUp1 = nz(stUp[1], stUp)
+stUp  := close[1] > stUp1 ? math.max(stUp, stUp1) : stUp
+
+stDn  = stSource + (stMultiplier * stAtr)
+stDn1 = nz(stDn[1], stDn)
+stDn  := close[1] < stDn1 ? math.min(stDn, stDn1) : stDn
+
+var int stTrend = 1
+stTrend := stTrend == -1 and close > stDn1 ? 1 : stTrend == 1 and close < stUp1 ? -1 : stTrend
+
+stBuySignal  = stTrend == 1 and stTrend[1] == -1
+stSellSignal = stTrend == -1 and stTrend[1] == 1
+
+// Supertrend plots (on price chart)
+stUpPlot = plot(showST and stTrend == 1 ? stUp : na, title="ST Up Trend", style=plot.style_linebr, linewidth=2, color=color.green, force_overlay=true)
+stDnPlot = plot(showST and stTrend == 1 ? na : showST ? stDn : na, title="ST Down Trend", style=plot.style_linebr, linewidth=2, color=color.red, force_overlay=true)
+
+plotshape(showST and stBuySignal ? stUp : na, title="UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.green, force_overlay=true)
+plotshape(showST and stBuySignal and stShowSignals ? stUp : na, title="Buy", text="Buy", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.green, textcolor=color.white, force_overlay=true)
+plotshape(showST and stSellSignal ? stDn : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.red, force_overlay=true)
+plotshape(showST and stSellSignal and stShowSignals ? stDn : na, title="Sell", text="Sell", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.red, textcolor=color.white, force_overlay=true)
+
+// Supertrend highlighting
+stMidPlot = plot(showST ? ohlc4 : na, title="ST Mid", style=plot.style_circles, linewidth=0, display=display.none, force_overlay=true)
+stLongFill  = showST and stHighlight and stTrend == 1 ? color.new(color.green, 90) : color.new(color.white, 100)
+stShortFill = showST and stHighlight and stTrend == -1 ? color.new(color.red, 90) : color.new(color.white, 100)
+fill(stMidPlot, stUpPlot, title="UpTrend Highlighter", color=stLongFill)
+fill(stMidPlot, stDnPlot, title="DownTrend Highlighter", color=stShortFill)
+
+// Supertrend alerts
+alertcondition(stBuySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
+alertcondition(stSellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
+alertcondition(stTrend != stTrend[1], title="SuperTrend Direction Change", message="SuperTrend has changed direction!")

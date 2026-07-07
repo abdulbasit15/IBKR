@@ -279,6 +279,23 @@ class EquityStrategyBase:
             return None
         return float(v)
 
+    def session_vwap_from_bars(self, bars, end_idx=None):
+        """Session VWAP = cumulative(typical_price * volume) / cumulative(volume) over the
+        RTH session bars up to end_idx (default last). Computed FROM BARS so it works on
+        delayed/unentitled data, where the RTVolume tick (ticker.vwap) is NaN. `bars` should
+        be the current session's intraday bars (hist('1 D', ..., use_rth=True))."""
+        if not bars:
+            return None
+        if end_idx is None:
+            end_idx = len(bars) - 1
+        pv = vv = 0.0
+        for i in range(0, min(end_idx, len(bars) - 1) + 1):
+            b = bars[i]
+            vol = b.volume or 0
+            pv += ((b.high + b.low + b.close) / 3.0) * vol
+            vv += vol
+        return (pv / vv) if vv > 0 else None
+
     def subscribe(self, contract):
         """reqMktData with RTVolume generic tick (233 -> ticker.vwap)."""
         try:
