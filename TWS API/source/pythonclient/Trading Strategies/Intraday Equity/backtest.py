@@ -50,9 +50,19 @@ def connect():
     return None
 
 
+import calendar_util as cal                      # noqa: E402
+TODAY = cal.now_et().date()
+def sessions(day_map):
+    """The last N_DAYS COMPLETED trading sessions in a {date: bars} map (today's still-forming
+    session is excluded so partial intraday data can't skew the backtest)."""
+    return [d for d in sorted(day_map) if d < TODAY][-N_DAYS:]
+
+
 _cache = {}
-def get_data(ib, sym):
-    if sym in _cache:
+def get_data(ib, sym, need_m1=True):
+    # only ORB needs 1-min bars; skipping the heavy 30 D 1-min pull for NR7/PDH keeps the
+    # request count under IBKR's ~60/10min historical pacing cap.
+    if sym in _cache and (_cache[sym] is None or not need_m1 or _cache[sym].get("m1")):
         return _cache[sym]
     c = Stock(sym, "SMART", "USD")
     def _hist(dur, bar, retries=1):
@@ -69,9 +79,11 @@ def get_data(ib, sym):
         ib.qualifyContracts(c)
     except Exception as e:
         print(f"  {sym}: qualify error {e}"); _cache[sym] = None; return None
-    daily = _hist("40 D", "1 day", retries=1)
-    m5 = _hist(f"{N_DAYS+4} D", "5 mins", retries=1)
-    m1 = _hist(f"{min(N_DAYS,10)+2} D", "1 min", retries=1)
+    # generous fixed durations (cover a full month + the daily lookback NR7's SMA20 needs on
+    # the earliest backtest session); N_DAYS just controls the final slice of sessions.
+    daily = _hist("3 M", "1 day", retries=1)
+    m5 = _hist("2 M", "5 mins", retries=1)
+    m1 = _hist("30 D", "1 min", retries=1) if need_m1 else []
     def by_day(bars):
         d = defaultdict(list)
         for b in (bars or []):
@@ -149,18 +161,33 @@ def record(sym, d, entry, stop, target, exit_px, reason, r_unit):
 
 # ---------------- per-strategy replays ----------------
 def bt_orb(sym, data, cfg):
+    """ORB "Stocks in Play" (research #1). The edge lives in the pre-market universe
+    selection (gap + RVOL); replaying that faithfully means applying the GAP gate (computable
+    from bars) + the research ORB_HEIGHT>=0.8% floor + range-based stop(=ORB_LOW)/target
+    (=entry+2xORB_HEIGHT). Without these it degrades to naive ORB (Sharpe ~0.48, whipsaw).
+    Env overrides: BT_ORB_GAP_MIN, BT_ORB_HEIGHT_MIN, BT_ORB_NAIVE=1 (old naive behaviour)."""
+    naive = os.environ.get("BT_ORB_NAIVE") == "1"
     wins = parse_windows(cfg["windows"]); trades = []
-    hmin = float(cfg.get("orb_height_min_pct", 0.003)); hmax = float(cfg.get("orb_height_max_pct", 0.05))
+    gap_min = 0.0 if naive else float(os.environ.get("BT_ORB_GAP_MIN",
+                cfg.get("universe", {}).get("min_gap_pct", 0.02)))
+    hmin = float(cfg.get("orb_height_min_pct", 0.003))
+    if not naive:
+        hmin = max(hmin, float(os.environ.get("BT_ORB_HEIGHT_MIN", 0.008)))  # research >=0.8%
+    hmax = float(cfg.get("orb_height_max_pct", 0.05))
     vol_mult = float(cfg.get("signal", {}).get("vol_mult", 1.5))
     mid_pct = float(cfg.get("stop", {}).get("min_or_height_pct", 0.01))
     tmult = float(cfg.get("target", {}).get("mult", 2.0))
     buf = float(cfg.get("atr_entry_buffer_mult", 0.05))
     be = float(cfg.get("breakeven_mult", 1.0)); ts = float(cfg.get("trail_start_mult", 1.5)); tl = float(cfg.get("trail_lock_mult", 0.5))
     daily = data["daily"]
-    for d in sorted(data["m1"])[-N_DAYS:]:
+    for d in sessions(data["m1"]):
         bars = data["m1"][d]
         if len(bars) < 12: continue
         db_before = [b for b in daily if (b.date.date() if hasattr(b.date, "date") else b.date) < d]
+        if not db_before or not db_before[-1].close: continue
+        prior_close = db_before[-1].close
+        gap = (bars[0].open - prior_close) / prior_close if prior_close else 0.0
+        if gap < gap_min: continue        # Stocks-in-Play gate: only opening-gap names
         oh = max(b.high for b in bars[:5]); ol = min(b.low for b in bars[:5]); height = oh - ol
         if not oh or not (hmin <= height / oh <= hmax): continue
         atr_d = atr_daily(db_before)
@@ -175,11 +202,16 @@ def bt_orb(sym, data, cfg):
             vw = vwap_upto(bars, i)
             if vw is not None and b.close <= vw: continue
             entry = b.close + buf * atr_d
-            structural = (oh + ol) / 2 if (height / oh < mid_pct) else ol
-            stop = min(structural, entry * (1 - MIN_STOP)); r = entry - stop
-            if r <= 0: continue
-            target = entry + tmult * r
-            if (target - entry) / r < MIN_RR: break
+            structural = (oh + ol) / 2 if (height / oh < mid_pct) else ol   # ORB_MID on tiny range, else ORB_LOW
+            if naive:
+                stop = min(structural, entry * (1 - MIN_STOP)); r = entry - stop
+                if r <= 0: continue
+                target = entry + tmult * r
+                if (target - entry) / r < MIN_RR: break
+            else:
+                stop = structural; r = entry - stop           # research: stop = ORB_LOW, never widened
+                if r <= 0: continue
+                target = entry + tmult * height                # research: entry + 2 x ORB_HEIGHT (range)
             ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl)
             t = record(sym, d, entry, stop, target, ex, why, r)
             if t: trades.append(t)
@@ -194,7 +226,7 @@ def bt_pdh(sym, data, cfg):
     t1 = float(cfg.get("target1_R", 2.0))
     be = float(cfg.get("breakeven_mult", 1.0)); ts = float(cfg.get("trail_start_mult", 1.5)); tl = float(cfg.get("trail_lock_mult", 0.5))
     daily = data["daily"]
-    for d in sorted(data["m5"])[-N_DAYS:]:
+    for d in sessions(data["m5"]):
         bars = data["m5"][d]
         if len(bars) < 4: continue
         db_before = [b for b in daily if (b.date.date() if hasattr(b.date, "date") else b.date) < d]
@@ -231,7 +263,7 @@ def bt_nr7(sym, data, cfg):
     eoff = float(cfg.get("entry_offset_atr_mult", 0.05)); vbuf = float(cfg.get("vwap_stop_buffer_pct", 0.001))
     be = float(cfg.get("breakeven_at_R", 1.0)); ts = float(cfg.get("trail_start_mult", 1.5)); tl = float(cfg.get("trail_lock_mult", 0.5))
     daily = data["daily"]
-    for d in sorted(data["m5"])[-N_DAYS:]:
+    for d in sessions(data["m5"]):
         bars = data["m5"][d]
         if len(bars) < 4: continue
         db = [b for b in daily if (b.date.date() if hasattr(b.date, "date") else b.date) < d]
@@ -295,9 +327,10 @@ def main():
             safe = "".join(ch if ch.isalnum() else "_" for ch in name)
             rep = TradeReporter(os.path.join(BASE, "reports", f"bt_faithful_{safe}.xlsx"), name)
             print(f"\n--- {name} ({block['strategy_type']}) | {N_DAYS} sessions | windows {block.get('windows')} ---")
+            need_m1 = block.get("strategy_type") == "orb_stocks_in_play"
             allt = []
             for sym in universe:
-                data = get_data(ib, sym)
+                data = get_data(ib, sym, need_m1=need_m1)
                 if not data or not data.get("m5"): print(f"  {sym}: no data"); continue
                 tr = run(sym, data, block)
                 for t in tr: t["Strategy"] = name; rep.record_trade(t)

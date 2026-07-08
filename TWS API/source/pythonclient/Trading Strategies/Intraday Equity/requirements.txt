@@ -1,7 +1,8 @@
 # Intraday Equity bots - runtime dependencies (install via the Aliyun mirror on this box):
 #   python -m pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 ib_async==2.1.0
-pandas
+# (pandas intentionally omitted: not imported anywhere; only ib_async's optional util.df()
+#  needs it, which these bots don't call. numpy still comes in transitively via aeventkit.)
 openpyxl
 tzdata        # REQUIRED on Windows: zoneinfo("America/New_York") needs it (ET clock)
 # Optional: TA-Lib (C extension). NOT required - ATR/ADR/SMA use a stdlib fallback.

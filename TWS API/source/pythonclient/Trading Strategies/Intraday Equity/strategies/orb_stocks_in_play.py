@@ -90,6 +90,8 @@ class ORBStocksInPlay(EquityStrategyBase):
         if len(bars1) < 6:
             return None
         bar = bars1[-2]  # last COMPLETED 1-min bar (avoid the forming bar)
+        if not self.is_new_bar(symbol, bars1):
+            return None  # only act at a new-bar-open boundary, never mid-bar
         if bar.close <= orec["high"]:
             return None
         # breakout-bar volume confirmation vs recent same-session 1-min average

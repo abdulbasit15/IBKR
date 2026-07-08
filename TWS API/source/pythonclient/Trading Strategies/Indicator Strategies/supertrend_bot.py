@@ -164,6 +164,7 @@ class SupertrendBot:
         self.positions: dict[str, dict] = {}     # symbol -> live position state
         self._ticks: dict[str, float] = {}
         self._entry_bar: dict[str, object] = {}   # one entry per completed bar per symbol
+        self._seen_bar: dict[str, object] = {}    # last completed bar time observed per symbol
 
         stamp = now_et().strftime("%Y%m%d")
         log_dir = os.path.join(self.base, cfg.get("log_dir", "logs"))
@@ -221,27 +222,49 @@ class SupertrendBot:
             self.log(f"CONNECT FAILED: {e}")
             return False
 
-    def ensure_connected(self, tries=5, backoff=5) -> bool:
+    def ensure_connected(self) -> bool:
+        """True if connected. If the socket dropped -- e.g. you logged into TWS or the IBKR
+        app with the SAME account, which bumps the bot's API client -- keep retrying until
+        reconnected: fast at first (the clientId usually frees within a few seconds of an
+        app-bump), then settling to roughly every `reconnect_backoff_sec` (default 60s).
+        In intraday mode it stops trying once past the EOD flatten time (nothing left to do
+        today); in swing mode it retries indefinitely, since that loop has no daily exit. On
+        a successful reconnect it re-runs sync_existing() to re-adopt the live server
+        position + protective stop, so the stale in-memory Trade objects are refreshed."""
         if self.ib and self.ib.isConnected():
             return True
-        self.log("connection lost; reconnecting...")
-        for i in range(tries):
+        steady = int(self.cfg.get("reconnect_backoff_sec", 60))
+        flat_dt = at_et(self.eod_flatten_time)
+        self.log(f"connection lost (TWS/IBKR app may have bumped the API client); retrying "
+                 f"until reconnected{' or EOD' if self.intraday_mode else ''} -- fast, "
+                 f"then every {steady}s...")
+        attempt = 0
+        while True:
+            # intraday: give up once past EOD flatten (positions rest on server-side stops)
+            if self.intraday_mode and now_et() >= flat_dt:
+                self.log("reached EOD flatten time while still disconnected; stopping reconnect.")
+                return False
+            attempt += 1
             try:
                 self.ib.connect(self.host, self.port, clientId=self.client_id, account=self.account or "")
                 try:
                     self.ib.reqMarketDataType(self.market_data_type)
                 except Exception:
                     pass
-                self.log(f"reconnected (attempt {i + 1})")
+                self.log(f"reconnected (attempt {attempt})")
+                try:
+                    self.sync_existing()   # re-adopt live position + stop; refresh stale Trades
+                except Exception as e:
+                    self.log(f"post-reconnect sync_existing error: {e}")
                 return True
             except Exception as e:
-                self.log(f"reconnect {i + 1}/{tries} failed: {e}")
+                wait = 5 if attempt <= 3 else steady   # quick retries first, then ~every minute
+                self.log(f"reconnect attempt {attempt} failed: {e}; retrying in {wait}s")
                 try:
-                    self.ib.sleep(backoff)
+                    self.ib.sleep(wait)
                 except Exception:
                     import time as _t
-                    _t.sleep(backoff)
-        return False
+                    _t.sleep(wait)
 
     def disconnect(self):
         try:
@@ -617,6 +640,12 @@ class SupertrendBot:
         if state is None:
             return
         bull, bull_prev, line, close, bar_time = state
+        # Track bar-close transitions on EVERY poll (even while holding), so an entry can only
+        # fire at a new-bar-open boundary -- never in the middle of a bar (e.g. on a mid-bar
+        # restart). Seeds silently on first sight: the first entry waits for the next close.
+        prev_seen = self._seen_bar.get(symbol)
+        self._seen_bar[symbol] = bar_time
+        fresh_bar = prev_seen is not None and bar_time > prev_seen
         tick = self.min_tick(symbol, contract)
         desired = self.desired_side(bull)
         p = self.positions.get(symbol)
@@ -647,6 +676,8 @@ class SupertrendBot:
         if len(self.positions) >= self.max_positions:
             return
         if bar_time == self._entry_bar.get(symbol):   # already acted on this completed bar
+            return
+        if not fresh_bar:                              # only open at a new-bar-open boundary
             return
         if self.entry_on_flip_only:
             fresh = (bull and not bull_prev) if desired == LONG else ((not bull) and bull_prev)

@@ -19,9 +19,10 @@ import asyncio
 import math
 import os
 import threading
+from datetime import timedelta
 from dataclasses import dataclass, field
 
-from ib_async import IB, Stock, Index, ScannerSubscription, TagValue
+from ib_async import IB, Stock, Index, ScannerSubscription, TagValue, StopOrder
 
 import calendar_util as cal
 import equity_order as eo
@@ -138,30 +139,42 @@ class EquityStrategyBase:
     def _on_disconnected(self):
         self.log("WARNING: TWS/Gateway connection dropped")
 
-    def ensure_connected(self, max_tries=5, backoff=5):
-        """True if connected (reconnecting with backoff if needed). On a successful
+    def ensure_connected(self):
+        """True if connected. If the socket dropped -- e.g. you logged into TWS or the IBKR
+        app with the SAME account, which bumps the bot's API client -- keep retrying until
+        reconnected: fast at first (the clientId usually frees within a few seconds of an
+        app-bump), then settling to roughly every `reconnect_backoff_sec` (default 60s). Never
+        gives up before the EOD flatten time, so the bot survives an app-induced disconnect
+        and resumes managing the open position instead of shutting down. On a successful
         reconnect, refresh server orders + market-data subscriptions so manage_open keeps
         tracking the LIVE OCA brackets rather than stale objects."""
         if self.ib and self.ib.isConnected():
             return True
-        self.log("connection lost; attempting reconnect...")
-        for i in range(max_tries):
+        steady = int(self.shared.get("reconnect_backoff_sec", 60))
+        flat_time = cal.effective_flatten_time(self.eod_flatten)
+        self.log(f"connection lost (TWS/IBKR app may have bumped the API client); retrying "
+                 f"until reconnected or EOD -- fast, then every {steady}s...")
+        attempt = 0
+        while cal.now_et() < flat_time:
+            attempt += 1
             try:
                 self.ib.connect(self.host, self.port, clientId=self.client_id, account=self.account or "")
                 try:
                     self.ib.reqMarketDataType(int(self.shared.get("market_data_type", 1)))
                 except Exception:
                     pass
-                self.log(f"reconnected (attempt {i + 1})")
+                self.log(f"reconnected (attempt {attempt})")
                 self._rebind_after_reconnect()
                 return True
             except Exception as e:
-                self.log(f"reconnect attempt {i + 1}/{max_tries} failed: {e}")
+                wait = 5 if attempt <= 3 else steady   # quick retries first, then ~every minute
+                self.log(f"reconnect attempt {attempt} failed: {e}; retrying in {wait}s")
                 try:
-                    self.ib.sleep(backoff)
+                    self.ib.sleep(wait)
                 except Exception:
                     import time as _t
-                    _t.sleep(backoff)
+                    _t.sleep(wait)
+        self.log("reached EOD flatten time while still disconnected; stopping reconnect.")
         return False
 
     def _rebind_after_reconnect(self):
@@ -185,6 +198,85 @@ class EquityStrategyBase:
                 p.ticker = self.get_ticker(p.symbol, p.contract)
         except Exception as e:
             self.log(f"rebind after reconnect error: {e}")
+
+    def adopt_existing_positions(self):
+        """Startup reconciliation. Adopt any long position THIS strategy already has open on
+        the server -- matched by the orderRef's `strategy_type` + `symbol` only (the client_id
+        segment is IGNORED), so adoption survives a changed client_id_base or a reordered
+        active_strategies list -- together with its resting take-profit + stop legs. A
+        mid-session restart then keeps managing the LIVE bracket (breakeven / trail / EOD
+        flatten) instead of ignoring the position or opening a duplicate on the same symbol.
+        If a position is found with NO protective stop resting on the book, a fresh stop is
+        placed at the floored min-stop level so it is never left naked. Registers with the
+        risk manager so the entry loop won't re-open it. NOTE: matching on strategy_type alone
+        means running two instances of the SAME strategy_type would cross-adopt; the runner
+        gives each active strategy a distinct strategy_type, so this is safe here."""
+        if not self.ib or not self.ib.isConnected():
+            return
+        try:
+            self.ib.reqAllOpenOrders()
+            self.ib.sleep(1)
+            open_trades = list(self.ib.openTrades())
+            held = [p for p in self.ib.positions() if p.position]
+        except Exception as e:
+            self.log(f"adopt_existing_positions error: {e}")
+            return
+        adopted = 0
+        for pos in held:
+            if pos.position <= 0:                    # long-only engine: ignore any short
+                continue
+            symbol = getattr(pos.contract, "symbol", None)
+            if not symbol:
+                continue
+            ref = f"{self.strategy_type}.{self.client_id}.{symbol}"  # our in-memory key this run
+            if ref in self.positions:                # already tracked in memory
+                continue
+            # match legs by strategy_type + symbol ONLY (ignore the client_id segment).
+            # orderRef layout is "<strategy_type>.<client_id>.<symbol>" -> exactly 3 parts.
+            legs = []
+            for t in open_trades:
+                parts = getattr(t.order, "orderRef", "").split(".")
+                if (len(parts) == 3 and parts[0] == self.strategy_type
+                        and parts[2] == symbol and getattr(t.order, "action", "") == "SELL"):
+                    legs.append(t)
+            if not legs:                             # not this strategy's (or bare) -> leave it
+                continue
+            tp = next((t for t in legs if t.order.orderType == "LMT"), None)
+            st = next((t for t in legs if t.order.orderType in ("STP", "STP LMT")), None)
+            contract = self.qualify(symbol)
+            tick = self.min_tick(symbol, contract)
+            mult = int(getattr(contract, "multiplier", 1) or 1)
+            qty = int(abs(pos.position))
+            entry = float(pos.avgCost or 0) / (mult or 1)
+            if st is not None:
+                stop = eo.round_to_tick(float(st.order.auxPrice), tick)
+            else:
+                # position with no resting stop -> protect it NOW at the floored min-stop level
+                stop = eo.round_to_tick(entry * (1 - self.min_stop_pct), tick)
+                so = StopOrder("SELL", qty, stop)
+                so.orderRef = ref
+                so.tif = "DAY"
+                if self.account:
+                    so.account = self.account
+                try:
+                    st = self.ib.placeOrder(contract, so)
+                    self.log(f"adopt {symbol}: no resting stop found -> placed protective stop {stop}")
+                except Exception as e:
+                    self.log(f"adopt {symbol}: FAILED to place protective stop: {e}")
+            target = eo.round_to_tick(float(tp.order.lmtPrice), tick) if tp is not None else entry
+            r_unit = (entry - stop) if entry > stop else entry * self.min_stop_pct
+            sector = self.sector_of(symbol, contract)
+            tk = self.get_ticker(symbol, contract)
+            self.positions[ref] = Position(ref, symbol, sector, contract, qty, entry, stop,
+                                           target, r_unit, pt=st, tp=tp, st=st,
+                                           ticker=tk, high_water=entry)
+            self.risk.register_open(ref, symbol, sector, qty * r_unit, qty, entry, stop)
+            adopted += 1
+            self.log(f"ADOPTED {symbol} qty {qty} entry {entry:.2f} stop {stop:.2f} "
+                     f"target {target if tp is not None else 'n/a'} "
+                     f"(breakeven/trail/EOD will manage from here)")
+        if adopted:
+            self.log(f"startup reconciliation: adopted {adopted} existing position(s)")
 
     def log(self, msg):
         self._log(f"[{self.name}] {msg}")
@@ -504,6 +596,28 @@ class EquityStrategyBase:
             self.log(f"regime check error (allowing): {e}")
         return True
 
+    def is_new_bar(self, symbol, bars) -> bool:
+        """Gate entries to the new-bar-OPEN boundary. `bars` is the intraday series; the
+        signal bar is the last COMPLETED one (bars[-2]). Returns True only during the short
+        window right AFTER that bar closes -- so an entry fires at the bar open, never deep
+        inside a bar and never on a stale bar after a mid-bar (re)start. The bar length is
+        inferred from the spacing to the forming bar (bars[-1]); the accept window is a
+        couple of poll cycles. No per-bar dedup is needed: a re-entry after a fill is already
+        blocked by the risk book's traded_today gate, and each poll re-checks the same fixed
+        completed-bar signal, giving a few chances to clear a transient live-price gate."""
+        if len(bars) < 2:
+            return False
+        bar = bars[-2]
+        ts = getattr(bar, "date", None)
+        if ts is None:
+            return False
+        try:
+            bar_seconds = (bars[-1].date - ts).total_seconds() or 60.0
+            lag = (cal.now_et() - (ts + timedelta(seconds=bar_seconds))).total_seconds()
+        except Exception:
+            return True   # if the timing math can't be done, don't block the entry
+        return -5 <= lag <= max(self.poll * 2, 15)
+
     # ----------------------------------------------------------------- trade mgmt
     def _enter(self, symbol, contract, sig: Signal):
         stop = self.resolve_stop(sig.entry, sig.stop)
@@ -525,12 +639,14 @@ class EquityStrategyBase:
         order_ref = f"{self.strategy_type}.{self.client_id}.{symbol}"
         # stop-LIMIT band tracks the FLOORED trigger (keeps limit <= trigger for a SELL stop)
         stop_lmt = round(stop * (1 - sig.stop_limit_band), 4) if sig.use_stop_limit else None
+        market_entry = str(self.cfg.get("entry_order_type", "MKT")).upper() == "MKT"
         pt, tp, st = eo.place_protected_entry(
             self.ib, contract, qty, sig.entry, sig.target, stop,
             stop_limit_price=stop_lmt, order_ref=order_ref,
             account=self.account or "", log=self.log, tick=sig.tick,
             entry_timeout_sec=int(self.cfg.get("entry_timeout_sec", 120)),
             max_chase_pct=float(self.cfg.get("max_chase_pct", 0.0)),
+            market=market_entry,
         )
         if not pt:
             return
@@ -548,12 +664,12 @@ class EquityStrategyBase:
     def manage_open(self):
         total_unreal = 0.0
         for ref, p in list(self.positions.items()):
-            # closed by stop?
-            if p.st.orderStatus.status == "Filled":
+            # closed by stop?  (st/tp may be None on an adopted position missing a leg)
+            if p.st is not None and p.st.orderStatus.status == "Filled":
                 exit_px = float(p.st.orderStatus.avgFillPrice or p.stop)
                 self._close(p, exit_px, "STOP")
                 continue
-            if p.tp.orderStatus.status == "Filled":
+            if p.tp is not None and p.tp.orderStatus.status == "Filled":
                 exit_px = float(p.tp.orderStatus.avgFillPrice or p.target)
                 self._close(p, exit_px, "TARGET")
                 continue
@@ -564,13 +680,14 @@ class EquityStrategyBase:
             p.high_water = max(p.high_water, last)
             be_mult = float(self.cfg.get("breakeven_mult", self.cfg.get("breakeven_at_R", 1.0)))
             trail_start = float(self.cfg.get("trail_start_mult", be_mult + 0.5))
-            if not p.breakeven_done and last >= p.entry + be_mult * p.r_unit and p.stop < p.entry:
+            if (p.st is not None and not p.breakeven_done
+                    and last >= p.entry + be_mult * p.r_unit and p.stop < p.entry):
                 new_stop = max(p.stop, p.entry)
                 eo.modify_stop(self.ib, p.contract, p.st, new_stop, p.qty, tick=self._tick(p), log=self.log)
                 p.stop = new_stop
                 p.breakeven_done = True
                 self.log(f"{p.symbol} stop -> breakeven {new_stop}")
-            elif last >= p.entry + trail_start * p.r_unit:
+            elif p.st is not None and last >= p.entry + trail_start * p.r_unit:
                 trail_dist = float(self.cfg.get("trail_lock_mult", 0.5)) * p.r_unit
                 new_stop = round(p.high_water - trail_dist, 4)
                 if new_stop > p.stop:
@@ -587,6 +704,8 @@ class EquityStrategyBase:
         rmult = (exit_px - p.entry) / p.r_unit if p.r_unit else 0
         # cancel the surviving sibling
         for sib in (p.tp, p.st):
+            if sib is None:
+                continue
             try:
                 if sib.orderStatus.status not in ("Filled", "Cancelled", "ApiCancelled",
                                                    "PendingCancel", "Inactive"):
@@ -615,6 +734,8 @@ class EquityStrategyBase:
         for ref, p in list(self.positions.items()):
             # cancel resting protective legs first so the stop can't race the market exit
             for sib in (p.tp, p.st):
+                if sib is None:
+                    continue
                 try:
                     if sib.orderStatus.status not in ("Filled", "Cancelled", "ApiCancelled",
                                                        "PendingCancel", "Inactive"):
@@ -660,6 +781,9 @@ class EquityStrategyBase:
                 self.log("not a trading day; exiting")
                 return
             self.before_open()
+            # adopt any position this bot already has open (restart / crash recovery) so its
+            # live bracket keeps being managed and the entry loop won't duplicate it
+            self.adopt_existing_positions()
             self.log(f"trade window(s): {self.windows}")
             # wait until the FIRST window opens (short ticks so we can bail/flatten)
             while cal.now_et() < cal.at_et(start):

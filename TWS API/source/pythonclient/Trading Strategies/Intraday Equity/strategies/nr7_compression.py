@@ -91,6 +91,8 @@ class NR7Compression(EquityStrategyBase):
         if len(bars5) < 3:
             return None
         bar = bars5[-2]              # last COMPLETED 5-min bar (avoid the forming bar)
+        if not self.is_new_bar(symbol, bars5):
+            return None  # only act at a new-bar-open boundary, never mid-bar
         if bar.close <= orec["high"]:
             return None
         rv = self.rvol(contract, now, premarket=False)

@@ -30,6 +30,7 @@
   "strategies": {
     "ORB SIP - 9.35": {
       "strategy_type": "orb_stocks_in_play",
+      "entry_order_type": "LMT",
       "strategy_capital": 100000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 1,
@@ -72,6 +73,7 @@
 
     "NR7 - 9.35": {
       "strategy_type": "nr7_compression",
+      "entry_order_type": "MKT",
       "strategy_capital": 100000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 1,
@@ -119,6 +121,7 @@
 
     "PDH - 9.35": {
       "strategy_type": "pdh_breakout",
+      "entry_order_type": "MKT",
       "strategy_capital": 100000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 1,

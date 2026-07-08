@@ -62,6 +62,8 @@ class PDHBreakout(EquityStrategyBase):
         if len(bars5) < 3:
             return None
         bar = bars5[-2]              # last COMPLETED 5-min bar (avoid the forming bar)
+        if not self.is_new_bar(symbol, bars5):
+            return None  # only act at a new-bar-open boundary, never mid-bar
         buf = float(self.cfg.get("breakout_buffer_pct", self.cfg.get("breakout_mult_minus_1", 0.001)))
         trigger = pdh * (1 + buf)
         if bar.close <= trigger:

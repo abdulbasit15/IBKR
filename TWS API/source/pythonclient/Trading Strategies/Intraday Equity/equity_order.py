@@ -25,10 +25,13 @@ def round_to_tick(price: float, tick: float = 0.01) -> float:
 
 def build_bracket(ib, qty: int, entry_limit: float, take_profit: float, stop_trigger: float,
                   *, stop_limit_price: float | None = None, order_ref: str = "",
-                  account: str = "", tick: float = 0.01, tif: str = "DAY"):
-    """Build a long bracket: BUY-limit parent + SELL take-profit + SELL stop child.
+                  account: str = "", tick: float = 0.01, tif: str = "DAY",
+                  market: bool = False):
+    """Build a long bracket: BUY parent + SELL take-profit + SELL stop child.
     Children are attached to the parent (parentId) and OCA-grouped; the stop is a
-    stop-market unless stop_limit_price is given (then stop-limit).
+    stop-market unless stop_limit_price is given (then stop-limit). The parent is a
+    BUY-LIMIT at entry_limit, or a BUY-MARKET when market=True (entry_limit then only
+    seeds the TP/stop math; the fill is at market).
     Returns (parent, take_profit_order, stop_order) - not yet placed."""
     entry_limit = round_to_tick(entry_limit, tick)
     take_profit = round_to_tick(take_profit, tick)
@@ -36,6 +39,9 @@ def build_bracket(ib, qty: int, entry_limit: float, take_profit: float, stop_tri
 
     bracket = ib.bracketOrder("BUY", qty, entry_limit, take_profit, stop_trigger)
     parent, tp, stop = bracket.parent, bracket.takeProfit, bracket.stopLoss
+    if market:
+        parent.orderType = "MKT"
+        parent.lmtPrice = 0.0          # ignored for a market order
 
     if stop_limit_price is not None:
         sl = StopLimitOrder("SELL", qty, round_to_tick(stop_limit_price, tick), stop_trigger)
@@ -63,14 +69,57 @@ def build_bracket(ib, qty: int, entry_limit: float, take_profit: float, stop_tri
 def place_protected_entry(ib, contract, qty: int, entry_limit: float, take_profit: float,
                           stop_trigger: float, *, order_ref: str, account: str, log,
                           stop_limit_price: float | None = None, tick: float = 0.01,
-                          entry_timeout_sec: int = 120, max_chase_pct: float = 0.0):
-    """Submit a marketable-limit BUY with TP+stop attached. Limit-only walk: if unfilled
-    within entry_timeout_sec, cancel and (optionally) re-submit up to max_chase_pct higher.
-    NEVER uses a market order. Returns (parent_trade, tp_trade, stop_trade) or (None,)*3.
+                          entry_timeout_sec: int = 120, max_chase_pct: float = 0.0,
+                          market: bool = False):
+    """Submit a BUY with TP+stop attached. market=True -> BUY MARKET (fills immediately at
+    the market, the requested behaviour for a new-bar-open entry). market=False -> the
+    legacy marketable-limit walk: if unfilled within entry_timeout_sec, cancel and
+    (optionally) re-submit up to max_chase_pct higher (never a market order).
+    Returns (parent_trade, tp_trade, stop_trade) or (None,)*3.
 
-    Partial fills: if the parent partially fills at timeout we KEEP the filled qty, cancel
-    the remainder, and resize the protective children to the filled qty."""
+    Partial fills: if the parent partially fills we KEEP the filled qty, cancel the
+    remainder, and resize the protective children to the filled qty (long-only invariant:
+    the SELL children must never exceed the shares actually held)."""
     assert qty > 0, "qty must be positive"
+
+    if market:
+        parent, tp, stop = build_bracket(
+            ib, qty, entry_limit, take_profit, stop_trigger,
+            stop_limit_price=stop_limit_price, order_ref=order_ref, account=account,
+            tick=tick, market=True,
+        )
+        pt = ib.placeOrder(contract, parent)
+        tt = ib.placeOrder(contract, tp)
+        st = ib.placeOrder(contract, stop)
+        log(f"[{order_ref}] entry MKT BUY {qty} {contract.symbol} tp {tp.lmtPrice} stop {stop_trigger}")
+        waited, limit = 0, max(5, int(entry_timeout_sec))
+        while waited < limit:
+            ib.sleep(1); waited += 1
+            if pt.orderStatus.status == "Filled":
+                log(f"[{order_ref}] FILLED {contract.symbol} @ {pt.orderStatus.avgFillPrice}")
+                return pt, tt, st
+            if pt.orderStatus.status in ("Cancelled", "ApiCancelled", "Inactive"):
+                break
+        # market order didn't fully fill in time (halt / illiquid). Keep+protect any partial,
+        # otherwise cancel everything so we never carry an unprotected/naked order.
+        filled = int(float(pt.orderStatus.filled or 0))
+        if filled > 0:
+            if resize_children(ib, contract, tt, st, filled, log):
+                log(f"[{order_ref}] PARTIAL market fill {filled}/{qty} {contract.symbol}; children resized")
+                return pt, tt, st
+            for ch in (tt, st):
+                try: ib.cancelOrder(ch.order)
+                except Exception: pass
+            ib.sleep(1)
+            flatten_position(ib, contract, filled, order_ref=order_ref, account=account, log=log)
+            log(f"[{order_ref}] PARTIAL protection failed -> flattened {filled} {contract.symbol}")
+            return None, None, None
+        for o in (parent, tp, stop):
+            try: ib.cancelOrder(o)
+            except Exception: pass
+        log(f"[{order_ref}] market entry not filled in {limit}s for {contract.symbol} -> SKIP")
+        return None, None, None
+
     base = round_to_tick(entry_limit, tick)
     cap = round_to_tick(base * (1 + max_chase_pct), tick) if max_chase_pct > 0 else base
     # Walk base->cap in a few sizable steps (not one tick at a time), waiting only a few
