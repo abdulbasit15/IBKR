@@ -57,7 +57,7 @@
                    "min_premarket_rvol": 1.5, "exclude_symbols": ["SPY", "QQQ"]},
       "max_watchlist": 30,
       "orb_height_max_pct": 0.05,
-      "orb_height_min_pct": 0.003,
+      "orb_height_min_pct": 0.008,
       "atr_entry_buffer_mult": 0.05,
       "signal": {"vol_mult": 1.5},
       "stop": {"min_or_height_pct": 0.01},

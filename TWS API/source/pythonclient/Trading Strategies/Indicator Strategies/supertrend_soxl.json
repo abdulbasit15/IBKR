@@ -17,38 +17,22 @@
   "market_data_type": 3,
   "hist_min_interval_sec": 2.0,
 
-  "symbols": ["AAPL", "NVDA", "AMD", "MSFT", "META"],
+  "symbols": ["SOXL"],
   "bar_size": "15 mins",
   "supertrend": { "atr_period": 10, "multiplier": 3.0 },
-  "strategies": [
-    {
-      "name": "DU672616_15m",
-      "account": "DU672616",
-      "symbols": ["SOXL"],
-      "bar_size": "5 mins",
-      "use_rth": true,
-      "supertrend": { "atr_period": 10, "multiplier": 3.0 },
-      "dema_filter": { "enabled": true, "period": 200 },
-      "sizing": {
-        "strategy_capital": 100000,
-        "fixed_stocks": 1,
-        "risk_per_trade_pct": 0.01,
-        "min_stop_pct": 0.005,
-        "max_position_notional": 100000
-      }
-    },
+  "strategies": [   
     {
       "name": "U20181485_15m",
       "account": "U20181485",
       "symbols": ["SOXL"],
-      "bar_size": "5 mins",
+      "bar_size": "15 mins",
       "use_rth": true,
-      "supertrend": { "atr_period": 7, "multiplier": 2.5 },
-      "dema_filter": { "enabled": true, "period": 100 },
-      "hist_duration": "10 D",
+      "supertrend": { "atr_period": 10, "multiplier": 3 },
+      "dema_filter": { "enabled": true, "period": 200 },
+      "hist_duration": "30 D",
       "sizing": {
         "strategy_capital": 100000,
-        "fixed_stocks": 1000,
+        "fixed_stocks": 1940,
         "risk_per_trade_pct": 0.01,
         "min_stop_pct": 0.005,
         "max_position_notional": 100000
@@ -58,11 +42,11 @@
       "name": "U21953487_15m",
       "account": "U21953487",
       "symbols": ["SOXL"],
-      "bar_size": "5 mins",
-      "use_rth": true,
-      "supertrend": { "atr_period": 12, "multiplier": 2.0 },
-      "dema_filter": { "enabled": true, "period": 150 },
-      "hist_duration": "60 D",
+      "bar_size": "15 mins",
+      "use_rth": false,
+      "supertrend": { "atr_period": 10, "multiplier": 3 },
+      "dema_filter": { "enabled": true, "period": 200 },
+      "hist_duration": "30 D",
       "sizing": {
         "strategy_capital": 100000,
         "fixed_stocks": 2110,
@@ -77,8 +61,9 @@
       "symbols": ["GOOG", "AMZN"],
       "bar_size": "15 mins",
       "use_rth": true,
-      "supertrend": { "atr_period": 10, "multiplier": 3.0 },
-      "dema_filter": { "enabled": false },
+      "supertrend": { "atr_period": 10, "multiplier": 3 },
+      "dema_filter": { "enabled": true, "period": 200 },
+      "hist_duration": "30 D",
       "sizing": {
         "strategy_capital": 100000,
         "fixed_stocks": 360,

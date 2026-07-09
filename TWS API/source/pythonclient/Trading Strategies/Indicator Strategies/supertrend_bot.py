@@ -51,6 +51,7 @@ import json
 import math
 import os
 import sys
+import threading
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -118,7 +119,14 @@ class SupertrendBot:
         self.host = cfg.get("host", "127.0.0.1")
         self.port = int(cfg.get("port", 4002))
         self.client_id = int(cfg.get("client_id", 40))
-        self.account = cfg.get("account", "")
+        self.name = str(cfg.get("name", cfg.get("account", "supertrend"))).strip() or "supertrend"
+        self.safe_name = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in self.name)
+        self.accounts = [str(a).strip() for a in cfg.get("accounts", []) if a is not None]
+        self.default_account = str(cfg.get("default_account", "")).strip()
+        self.account = str(cfg.get("account", "")).strip() or self.default_account
+        if self.accounts:
+            if self.account not in self.accounts:
+                self.account = self.default_account if self.default_account in self.accounts else self.accounts[0]
         self.market_data_type = int(cfg.get("market_data_type", 3))
 
         # direction: long_only (default) | short_only | long_short
@@ -169,8 +177,8 @@ class SupertrendBot:
         stamp = now_et().strftime("%Y%m%d")
         log_dir = os.path.join(self.base, cfg.get("log_dir", "logs"))
         os.makedirs(log_dir, exist_ok=True)
-        self._log_path = os.path.join(log_dir, f"supertrend_{stamp}.log")
-        self._csv_path = os.path.join(self.base, cfg.get("trade_log_csv", "supertrend_trades.csv"))
+        self._log_path = os.path.join(log_dir, f"supertrend_{self.safe_name}_{stamp}.log")
+        self._csv_path = os.path.join(self.base, cfg.get("trade_log_csv", f"supertrend_trades_{self.safe_name}.csv"))
 
     @staticmethod
     def _default_duration(bar_size: str) -> str:
@@ -584,6 +592,29 @@ class SupertrendBot:
                 floor = (1 - self.min_stop_pct) if side == LONG else (1 + self.min_stop_pct)
                 stop = round_to_tick(entry * floor, tick)
 
+            if self.fixed_stocks > 0 and qty < self.fixed_stocks:
+                top_up_qty = self.fixed_stocks - qty
+                self.log(f"sync {symbol}: under-sized {side} qty {qty} < fixed_stocks {self.fixed_stocks}; topping up {top_up_qty}")
+                top_up_action = "BUY" if side == LONG else "SELL"
+                top_up_order = MarketOrder(top_up_action, top_up_qty)
+                if self.account:
+                    top_up_order.account = self.account
+                top_up_trade = self.ib.placeOrder(contract, top_up_order)
+                waited = 0
+                while waited < self.entry_timeout_sec:
+                    self.ib.sleep(1)
+                    waited += 1
+                    if top_up_trade.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
+                        break
+                filled = int(top_up_trade.orderStatus.filled or 0)
+                if filled > 0:
+                    fill_price = float(top_up_trade.orderStatus.avgFillPrice or entry)
+                    entry = ((entry * qty) + (fill_price * filled)) / (qty + filled) if qty else fill_price
+                    qty += filled
+                    self.log(f"sync {symbol}: topped up {filled} -> qty {qty} entry avg {entry:.2f}")
+                else:
+                    self.log(f"sync {symbol}: topping up {top_up_qty} failed or no fill; keeping qty {qty}")
+
             if st_trade is not None:
                 old = float(st_trade.order.auxPrice)
                 st_trade = self.modify_stop(contract, st_trade, stop, qty, tick)
@@ -739,7 +770,36 @@ def main():
         cfg_path = os.path.join(base, cfg_path)
     with open(cfg_path, "r", encoding="utf-8") as f:
         cfg = json.load(f)
-    SupertrendBot(cfg, base).run()
+
+    strategies = cfg.get("strategies")
+    if strategies:
+        threads = []
+        allowed_accounts = [str(a).strip() for a in cfg.get("accounts", []) if a is not None]
+        default_account = str(cfg.get("default_account", "")).strip()
+        client_id_base = int(cfg.get("client_id_base", cfg.get("client_id", 40)))
+        for i, strat in enumerate(strategies):
+            merged = {**cfg, **strat}
+            merged.pop("strategies", None)
+            merged["accounts"] = allowed_accounts
+            merged["default_account"] = default_account
+            # Per-strategy account (fall back to default)
+            merged["account"] = str(merged.get("account", "")).strip() or default_account
+            if allowed_accounts and merged["account"] and merged["account"] not in allowed_accounts:
+                print(f"Skipping strategy {merged.get('name', merged['account'])}: invalid account {merged['account']}")
+                continue
+            # assign a unique client id for each thread: prefer per-strat override,
+            # otherwise use client_id_base + index to ensure uniqueness across threads
+            merged["client_id"] = int(strat.get("client_id", int(client_id_base) + int(i)))
+            name = merged.get("name") or merged.get("account") or f"supertrend_{i}"
+            print(f"Starting strategy {name} account={merged['account']} clientId={merged['client_id']}")
+            thread = threading.Thread(target=lambda cfg=merged: SupertrendBot(cfg, base).run(),
+                                       name=name, daemon=True)
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+    else:
+        SupertrendBot(cfg, base).run()
 
 
 if __name__ == "__main__":

@@ -113,15 +113,15 @@ class ORBStocksInPlay(EquityStrategyBase):
         entry = orec["high"] + float(self.cfg.get("atr_entry_buffer_mult", 0.05)) * atr_d
         mid_pct = float(self.cfg.get("stop", {}).get("min_or_height_pct",
                         self.cfg.get("orb_mid_stop_pct", 0.01)))
-        structural = orec["mid"] if (orec["height"] / orec["high"] < mid_pct) else orec["low"]
-        # floor the stop (matches base) and set the target off the FLOORED stop distance so
-        # R:R is honest/consistent with NR7 & PDH. (~equals the old range-based target when
-        # stop==OR_low; diverges only once the stop is floored on a narrow range.)
-        floored = min(structural, entry * (1 - self.min_stop_pct))
-        r_unit = entry - floored
-        if r_unit <= 0:
+        # RANGE-BASED (research "Stocks in Play"): stop = ORB_LOW (or ORB_MID on a narrow
+        # range), NEVER widened by the strategy; target = entry + mult x ORB_HEIGHT. This
+        # matches the faithful backtest. The base resolve_stop() still applies a min_stop_pct
+        # SAFETY floor for a degenerate tiny range so position sizing can't blow up (with
+        # orb_height_min_pct >= 0.8% the floor effectively never binds).
+        stop = orec["mid"] if (orec["height"] / orec["high"] < mid_pct) else orec["low"]
+        if entry - stop <= 0:
             return None
         mult = float(self.cfg.get("target", {}).get("mult", self.cfg.get("target_mult", 2.0)))
-        target = entry + mult * r_unit
-        return Signal(entry=entry, stop=floored, target=target, tick=tick,
+        target = entry + mult * orec["height"]
+        return Signal(entry=entry, stop=stop, target=target, tick=tick,
                       note=f"ORB H{orec['high']:.2f} L{orec['low']:.2f}")

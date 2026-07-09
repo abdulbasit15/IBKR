@@ -65,15 +65,15 @@ def get_data(ib, sym, need_m1=True):
     if sym in _cache and (_cache[sym] is None or not need_m1 or _cache[sym].get("m1")):
         return _cache[sym]
     c = Stock(sym, "SMART", "USD")
-    def _hist(dur, bar, retries=1):
+    def _hist(dur, bar, retries=1, use_rth=True):
         # isolate each request: a 1-min pacing failure must NOT null out daily/5-min
         for _ in range(retries + 1):
             try:
-                b = ib.reqHistoricalData(c, "", dur, bar, "TRADES", True, 1); ib.sleep(0.3)
+                b = ib.reqHistoricalData(c, "", dur, bar, "TRADES", use_rth, 1); ib.sleep(0.3)
                 if b:
                     return b
             except Exception as e:
-                print(f"  {sym} {dur}/{bar}: {e}"); ib.sleep(0.5)
+                print(f"  {sym} {dur}/{bar}{'/pm' if not use_rth else ''}: {e}"); ib.sleep(0.5)
         return []
     try:
         ib.qualifyContracts(c)
@@ -84,14 +84,82 @@ def get_data(ib, sym, need_m1=True):
     daily = _hist("3 M", "1 day", retries=1)
     m5 = _hist("2 M", "5 mins", retries=1)
     m1 = _hist("30 D", "1 min", retries=1) if need_m1 else []
+    # pre-market volume by day (useRTH=False) -> feeds the ORB pre-market RVOL filter.
+    # Only for ORB symbols (need_m1) to stay under IBKR's request-pacing cap.
+    pmvol = {}
+    if need_m1:
+        for b in (_hist("30 D", "5 mins", retries=1, use_rth=False) or []):
+            t = getattr(b, "date", None)
+            if t is None or not hasattr(t, "hour"):
+                continue
+            if t.hour * 60 + t.minute < 9 * 60 + 30:      # pre-market portion only (< 09:30 ET)
+                dkey = t.date() if hasattr(t, "date") else t
+                pmvol[dkey] = pmvol.get(dkey, 0.0) + float(b.volume or 0)
     def by_day(bars):
         d = defaultdict(list)
         for b in (bars or []):
             d[b.date.date() if hasattr(b.date, "date") else b.date].append(b)
         for k in d: d[k].sort(key=lambda b: b.date)
         return d
-    _cache[sym] = {"daily": daily or [], "m5": by_day(m5), "m1": by_day(m1)}
+    _cache[sym] = {"daily": daily or [], "m5": by_day(m5), "m1": by_day(m1), "pmvol": pmvol}
     return _cache[sym]
+
+
+def premarket_rvol(pmvol, day, lookback=20):
+    """Pre-market RVOL = today's pre-market volume / mean of the prior `lookback` sessions'
+    pre-market volume. None when there's no baseline (mirrors the live rvol() 'missing history
+    -> keep' behaviour). No look-ahead: only prior sessions form the baseline."""
+    if not pmvol or day not in pmvol:
+        return None
+    prior = [pmvol[d] for d in sorted(pmvol) if d < day and pmvol[d] > 0][-lookback:]
+    if not prior:
+        return None
+    base = sum(prior) / len(prior)
+    return (pmvol[day] / base) if base > 0 else None
+
+
+def scanner_symbols(ib, block, cap):
+    """Build the ORB universe from the IBKR scanner (mirrors the live scanner_universe):
+    intersect the configured scan_codes. NOTE: reqScannerData only returns TODAY's snapshot,
+    so a historical backtest of these names carries selection bias vs a true point-in-time
+    daily scan -- documented limitation. Falls back to universe_symbols on empty/error."""
+    from ib_async import ScannerSubscription
+    sc = block.get("scanner", {}); fixed = block.get("universe_symbols", [])
+    if not sc.get("use_scanner"):
+        return fixed[:cap]
+    sets = []
+    for code in sc.get("scan_codes", []):
+        try:
+            sub = ScannerSubscription(instrument=sc.get("instrument", "STK"),
+                    locationCode=sc.get("location_code", "STK.US.MAJOR"),
+                    scanCode=code, numberOfRows=min(int(sc.get("scanner_rows", 50)), 50))
+            if sc.get("above_price") is not None: sub.abovePrice = float(sc["above_price"])
+            if sc.get("below_price") is not None: sub.belowPrice = float(sc["below_price"])
+            if sc.get("stock_type_filter"):
+                try: sub.stockTypeFilter = sc["stock_type_filter"]
+                except Exception: pass
+            out = ib.reqScannerData(sub, [], []) or []; ib.sleep(0.5)
+            syms = [r.contractDetails.contract.symbol for r in out
+                    if getattr(getattr(r, "contractDetails", None), "contract", None)]
+            if syms: sets.append(syms)
+            print(f"  scan {code}: {len(syms)} hits")
+        except Exception as e:
+            print(f"  scan {code} error: {e}")
+    if not sets:
+        print("  scanner empty -> universe_symbols"); return fixed[:cap]
+    if sc.get("intersect") and len(sets) > 1:
+        common = set(sets[0])
+        for s in sets[1:]: common &= set(s)
+        syms = [x for x in sets[0] if x in common]
+    else:
+        seen, syms = set(), []
+        for s in sets:
+            for x in s:
+                if x not in seen: seen.add(x); syms.append(x)
+    if not syms:
+        print("  scanner intersect empty -> universe_symbols"); return fixed[:cap]
+    print(f"  scanner universe ({len(syms)} -> cap {cap}): {syms[:cap]}")
+    return syms[:cap]
 
 
 def _min(t): return t.hour * 60 + t.minute
@@ -178,6 +246,9 @@ def bt_orb(sym, data, cfg):
     mid_pct = float(cfg.get("stop", {}).get("min_or_height_pct", 0.01))
     tmult = float(cfg.get("target", {}).get("mult", 2.0))
     buf = float(cfg.get("atr_entry_buffer_mult", 0.05))
+    rvol_min = 0.0 if naive else float(os.environ.get("BT_ORB_RVOL_MIN",
+                cfg.get("universe", {}).get("min_premarket_rvol", 1.5)))
+    pmvol = data.get("pmvol", {})
     be = float(cfg.get("breakeven_mult", 1.0)); ts = float(cfg.get("trail_start_mult", 1.5)); tl = float(cfg.get("trail_lock_mult", 0.5))
     daily = data["daily"]
     for d in sessions(data["m1"]):
@@ -188,6 +259,8 @@ def bt_orb(sym, data, cfg):
         prior_close = db_before[-1].close
         gap = (bars[0].open - prior_close) / prior_close if prior_close else 0.0
         if gap < gap_min: continue        # Stocks-in-Play gate: only opening-gap names
+        rv = premarket_rvol(pmvol, d)     # pre-market RVOL gate (keep if no baseline, like live)
+        if rvol_min and rv is not None and rv < rvol_min: continue
         oh = max(b.high for b in bars[:5]); ol = min(b.low for b in bars[:5]); height = oh - ol
         if not oh or not (hmin <= height / oh <= hmax): continue
         atr_d = atr_daily(db_before)
@@ -328,6 +401,10 @@ def main():
             rep = TradeReporter(os.path.join(BASE, "reports", f"bt_faithful_{safe}.xlsx"), name)
             print(f"\n--- {name} ({block['strategy_type']}) | {N_DAYS} sessions | windows {block.get('windows')} ---")
             need_m1 = block.get("strategy_type") == "orb_stocks_in_play"
+            if need_m1 and os.environ.get("BT_ORB_USE_SCANNER", "0") == "1":
+                # scanner only returns TODAY's snapshot (unrepresentative + often data-starved
+                # for a historical replay) -> opt-in; default uses the liquid fixed universe.
+                universe = scanner_symbols(ib, block, int(os.environ.get("BT_ORB_UNIVERSE_CAP", 12)))
             allt = []
             for sym in universe:
                 data = get_data(ib, sym, need_m1=need_m1)
