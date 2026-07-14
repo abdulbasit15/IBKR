@@ -141,7 +141,16 @@ class SupertrendBot:
         self.atr_period = int(st.get("atr_period", 10))
         self.mult = float(st.get("multiplier", 3.0))
         self.hist_duration = cfg.get("hist_duration", self._default_duration(self.bar_size))
-        self.use_rth = bool(cfg.get("use_rth", True))
+        # market_hours: RTH (regular 09:30-16:00), ETH (extended 04:00-20:00), or 24H (all).
+        # The Supertrend + DEMA are computed on the bars of the chosen session (RTH pulls RTH
+        # only; ETH/24H pull all hours and ETH is then filtered to 04:00-20:00). ETH/24H also
+        # flag orders/stops outsideRth so they can execute/trigger outside regular hours.
+        mh = str(cfg.get("market_hours", "")).upper().strip()
+        if mh not in ("RTH", "ETH", "24H"):
+            mh = "RTH" if bool(cfg.get("use_rth", True)) else "ETH"   # back-compat from use_rth
+        self.market_hours = mh
+        self.use_rth = (mh == "RTH")
+        self.outside_rth = (mh != "RTH")
 
         # Optional DEMA trend filter (Indicators/dema.py). When enabled, longs are only
         # taken when close > DEMA and shorts only when close < DEMA; otherwise the entry is
@@ -168,6 +177,16 @@ class SupertrendBot:
 
         self.rate = RateLimiter(float(cfg.get("hist_min_interval_sec", 2.0)))
         self.ib: IB | None = None
+        self._conn_ok = True          # False between IB error 1100 (lost) and 1102 (restored)
+        self._farm_wake_needed = False  # set on 1102 -> re-wake the data farm on next manage tick
+        self._cycle_data_ok = False   # any symbol returned bars this poll cycle (watchdog input)
+        self._data_fail = 0           # consecutive no-data poll cycles
+        self.hist_timeout_sec = int(cfg.get("hist_timeout_sec", 20))
+        # after this many consecutive no-data cycles WHILE the socket looks connected, force a
+        # full session reset (disconnect -> fresh reconnect). Covers the case a competing login
+        # steals the data line WITHOUT dropping the socket or sending 1100 (Error 162 timeouts),
+        # which is exactly the "bot doesn't resume after phone interruption" symptom.
+        self.data_fail_reconnect_cycles = int(cfg.get("data_fail_reconnect_cycles", 4))
         self.contracts: dict[str, object] = {}
         self.positions: dict[str, dict] = {}     # symbol -> live position state
         self._ticks: dict[str, float] = {}
@@ -178,7 +197,11 @@ class SupertrendBot:
         log_dir = os.path.join(self.base, cfg.get("log_dir", "logs"))
         os.makedirs(log_dir, exist_ok=True)
         self._log_path = os.path.join(log_dir, f"supertrend_{self.safe_name}_{stamp}.log")
-        self._csv_path = os.path.join(self.base, cfg.get("trade_log_csv", f"supertrend_trades_{self.safe_name}.csv"))
+        # per-strategy trade CSV: insert this strategy's safe_name so concurrent multi-account
+        # threads never append to (and corrupt) the SAME file. The configured trade_log_csv is
+        # treated as a BASE name; e.g. "supertrend_trades.csv" -> "supertrend_trades_<name>.csv".
+        _csv_base, _csv_ext = os.path.splitext(cfg.get("trade_log_csv", "supertrend_trades.csv"))
+        self._csv_path = os.path.join(self.base, f"{_csv_base}_{self.safe_name}{_csv_ext or '.csv'}")
 
     @staticmethod
     def _default_duration(bar_size: str) -> str:
@@ -200,8 +223,9 @@ class SupertrendBot:
             pass
 
     def record_trade(self, row: dict):
-        header = ["time", "symbol", "side", "qty", "entry", "exit", "stop",
-                  "pnl", "ret_pct", "reason", "hold"]
+        header = ["time", "strategy", "account", "symbol", "side", "qty", "entry", "exit",
+                  "stop", "pnl", "ret_pct", "reason", "hold"]
+        row = {**row, "strategy": self.name, "account": self.account}
         new = not os.path.exists(self._csv_path)
         try:
             with open(self._csv_path, "a", newline="", encoding="utf-8") as f:
@@ -213,22 +237,96 @@ class SupertrendBot:
             self.log(f"trade-log write error: {e}")
 
     # ----------------------------------------------------------------- connect
+    def _wire_events(self):
+        # errorEvent carries IB 1100/1101/1102 connectivity notices even while the local API
+        # socket stays up (the usual "logged in elsewhere" case bumps the Gateway's UPSTREAM
+        # link, not the socket). disconnectedEvent fires on a real socket drop.
+        try:
+            self.ib.errorEvent += self._on_error
+        except Exception:
+            pass
+        try:
+            self.ib.disconnectedEvent += self._on_disconnected
+        except Exception:
+            pass
+
+    def _on_error(self, *args):
+        code = args[1] if len(args) > 1 else None
+        if code == 1100:                       # connectivity between IB and TWS/Gateway lost
+            self._conn_ok = False
+            self.log("IB error 1100: connectivity to IB LOST — data/orders will fail until restored")
+        elif code in (1101, 1102):             # restored (1101 = with data loss, 1102 = maintained)
+            self._conn_ok = True
+            self._farm_wake_needed = True
+            self.log(f"IB error {code}: connectivity RESTORED — resuming")
+
+    def _on_disconnected(self):
+        self.log("API socket disconnected — will reconnect on next tick")
+
+    def _connect_once(self) -> bool:
+        """(Re)open a FRESH IB client and connect. A new IB() per attempt is deliberate:
+        reconnecting on the object whose socket was just dropped often fails with
+        clientId-in-use / dead-transport errors, which is the reconnect-doesn't-work bug."""
+        try:
+            if self.ib is not None and self.ib.isConnected():
+                self.ib.disconnect()
+        except Exception:
+            pass
+        self.ib = IB()                          # fresh client, bound to this thread's loop
+        self._wire_events()
+        self.ib.connect(self.host, self.port, clientId=self.client_id, account=self.account or "")
+        try:
+            self.ib.reqMarketDataType(self.market_data_type)
+        except Exception as e:
+            self.log(f"reqMarketDataType failed (continuing): {e}")
+        # Resolve the EFFECTIVE account to what this login actually manages. If the configured
+        # account isn't managed (e.g. a live-account config pointed at the paper gateway, which
+        # only manages DU672616) and there's exactly one managed account, adopt it. Otherwise
+        # held_qty / stop filters / order routing all silently mismatch -> the bot reads held=0
+        # (buys the full target instead of the shortfall) and can't find the stops to cancel.
+        try:
+            mgd = list(self.ib.managedAccounts() or [])
+        except Exception:
+            mgd = []
+        if mgd and self.account not in mgd:
+            if len(mgd) == 1:
+                self.log(f"configured account '{self.account or '(none)'}' is not managed by this "
+                         f"login; using the only managed account {mgd[0]}")
+                self.account = mgd[0]
+            else:
+                self.log(f"WARNING: account '{self.account}' not in managed accounts {mgd}; "
+                         f"held/stop reconciliation and orders will mismatch — fix the config account")
+        try:
+            self.ib.reqPositions()   # subscribe once so positions() cache stays populated
+        except Exception:
+            pass
+        self._conn_ok = True
+        return True
+
     def connect(self) -> bool:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        self.ib = IB()
+        self.ib = None
         try:
-            self.ib.connect(self.host, self.port, clientId=self.client_id, account=self.account or "")
-            try:
-                self.ib.reqMarketDataType(self.market_data_type)
-            except Exception as e:
-                self.log(f"reqMarketDataType failed (continuing): {e}")
+            self._connect_once()
             self.log(f"connected clientId={self.client_id} account={self.account} "
                      f"port={self.port} mktDataType={self.market_data_type}")
             return True
         except Exception as e:
             self.log(f"CONNECT FAILED: {e}")
             return False
+
+    def _post_restore_wake(self):
+        """After connectivity is restored (1102), the HMDS data farm often needs one throwaway
+        request to wake; then re-adopt the live position/stop in case anything changed."""
+        self._farm_wake_needed = False
+        try:
+            if self.contracts:
+                self.hist(next(iter(self.contracts.values())))   # throwaway pull to wake HMDS
+            self.sync_existing()
+            self.log("connectivity restored: data farm re-woken and state re-synced")
+        except Exception as e:
+            self.log(f"post-restore wake error: {e}")
 
     def ensure_connected(self) -> bool:
         """True if connected. If the socket dropped -- e.g. you logged into TWS or the IBKR
@@ -240,10 +338,29 @@ class SupertrendBot:
         a successful reconnect it re-runs sync_existing() to re-adopt the live server
         position + protective stop, so the stale in-memory Trade objects are refreshed."""
         if self.ib and self.ib.isConnected():
-            return True
+            # Socket is up. If IB signalled 1100 (connectivity lost) and hasn't restored yet,
+            # the link is unusable even though the socket is alive -> WAIT for 1102 rather than
+            # tearing down a healthy socket (a competing login bumps the Gateway's UPSTREAM,
+            # not our socket). Never return False here in swing mode (that would exit the bot);
+            # only intraday-past-EOD returns False (handled by the caller as a clean stop).
+            if not self._conn_ok:
+                self.log("IB connectivity lost (1100); socket alive, waiting for restore (1102)...")
+                while self.ib.isConnected() and not self._conn_ok:
+                    if self.intraday_mode and now_et() >= at_et(self.eod_flatten_time):
+                        return False
+                    self.ib.sleep(2)          # let errorEvent(1102) fire
+                if not self.ib.isConnected():
+                    pass                       # socket dropped during blackout -> reconnect below
+                else:
+                    self._post_restore_wake()
+                    return True
+            elif self._farm_wake_needed:
+                self._post_restore_wake()
+            if self.ib.isConnected():
+                return True
         steady = int(self.cfg.get("reconnect_backoff_sec", 60))
         flat_dt = at_et(self.eod_flatten_time)
-        self.log(f"connection lost (TWS/IBKR app may have bumped the API client); retrying "
+        self.log(f"socket down (TWS/IBKR app may have bumped the session); retrying "
                  f"until reconnected{' or EOD' if self.intraday_mode else ''} -- fast, "
                  f"then every {steady}s...")
         attempt = 0
@@ -254,20 +371,19 @@ class SupertrendBot:
                 return False
             attempt += 1
             try:
-                self.ib.connect(self.host, self.port, clientId=self.client_id, account=self.account or "")
-                try:
-                    self.ib.reqMarketDataType(self.market_data_type)
-                except Exception:
-                    pass
+                self._connect_once()          # FRESH IB() each attempt (see _connect_once)
                 self.log(f"reconnected (attempt {attempt})")
                 try:
-                    self.sync_existing()   # re-adopt live position + stop; refresh stale Trades
+                    self.contracts = {s: self.qualify(s) for s in self.symbols}  # rebind on fresh client
+                    self.sync_existing()       # re-adopt live position + stop; refresh stale Trades
                 except Exception as e:
                     self.log(f"post-reconnect sync_existing error: {e}")
                 return True
             except Exception as e:
                 wait = 5 if attempt <= 3 else steady   # quick retries first, then ~every minute
-                self.log(f"reconnect attempt {attempt} failed: {e}; retrying in {wait}s")
+                self.log(f"reconnect attempt {attempt} failed: {e}; retrying in {wait}s "
+                         f"(is IB Gateway logged in? a competing login can log it OUT — "
+                         f"enable Gateway auto-restart so it relogs in)")
                 try:
                     self.ib.sleep(wait)
                 except Exception:
@@ -307,11 +423,35 @@ class SupertrendBot:
     def hist(self, contract):
         self.rate.acquire(self.ib)
         try:
-            return self.ib.reqHistoricalData(contract, "", self.hist_duration, self.bar_size,
-                                             "TRADES", self.use_rth, 1) or []
+            # bounded timeout: a stuck request (data-line contention / farm down) fails fast
+            # instead of blocking ~60s, so the data watchdog in run() can react promptly.
+            bars = self.ib.reqHistoricalData(contract, "", self.hist_duration, self.bar_size,
+                                             "TRADES", self.use_rth, 1,
+                                             timeout=self.hist_timeout_sec) or []
         except Exception as e:
             self.log(f"hist error {getattr(contract, 'symbol', '?')}: {e}")
             return []
+        bars = self._filter_session(bars)   # keep only bars in the chosen market_hours session
+        if bars:
+            self._cycle_data_ok = True   # signal to the run-loop data watchdog
+        return bars
+
+    def _filter_session(self, bars):
+        """Restrict intraday bars to the configured market_hours session so the Supertrend/DEMA
+        are computed on those hours: RTH 09:30-16:00, ETH 04:00-20:00, 24H no filter. Daily+
+        bars (no intraday time) pass through unchanged."""
+        if self.market_hours == "24H" or not bars:
+            return bars
+        lo, hi = (9 * 60 + 30, 16 * 60) if self.market_hours == "RTH" else (4 * 60, 20 * 60)
+        out = []
+        for b in bars:
+            t = getattr(b, "date", None)
+            if t is None or not hasattr(t, "hour"):
+                out.append(b); continue          # daily bar -> not session-filtered
+            m = t.hour * 60 + t.minute
+            if lo <= m < hi:
+                out.append(b)
+        return out
 
     def st_state(self, symbol, bars):
         """Supertrend on the last completed bar via the shared indicator, called with this
@@ -352,16 +492,68 @@ class SupertrendBot:
         return max(structural_stop, entry * (1 + self.min_stop_pct))       # above entry (short)
 
     def size_position(self, entry, stop) -> int:
+        """Desired TOTAL position size (a target, not a per-order size). In fixed_stocks mode
+        the configured share count is AUTHORITATIVE — the max_position_notional cap does NOT
+        shrink it (that would silently defeat "hold exactly N shares"); we only warn if the
+        target exceeds the cap. The notional cap still bounds %-risk sizing."""
+        if self.fixed_stocks > 0:
+            if self.max_notional and self.fixed_stocks * entry > self.max_notional and entry > 0:
+                self.log(f"WARNING: fixed_stocks {self.fixed_stocks} (~${self.fixed_stocks*entry:,.0f}) "
+                         f"exceeds max_position_notional ${self.max_notional:,.0f} — honoring "
+                         f"fixed_stocks. Raise/remove the cap or lower fixed_stocks if unintended.")
+            return int(self.fixed_stocks)
         rps = abs(entry - stop)
         if rps <= 0:
             return 0
-        if self.fixed_stocks > 0:
-            qty = self.fixed_stocks
-        else:
-            qty = math.floor((self.strategy_capital * self.risk_pct) / rps)
+        qty = math.floor((self.strategy_capital * self.risk_pct) / rps)
         if self.max_notional and qty * entry > self.max_notional:
             qty = math.floor(self.max_notional / entry)
         return max(int(qty), 0)
+
+    def held_qty(self, symbol) -> int:
+        """Signed shares currently held for `symbol` on THIS account, from a LIVE snapshot
+        (reqPositions blocks until positionEnd). Using reqPositions rather than the cached
+        ib.positions() is essential right after a reconnect, when the cache hasn't repopulated
+        yet -- reading it empty is what made the bot re-enter a fresh position every reconnect
+        instead of topping up the one it already held."""
+        try:
+            poslist = self.ib.reqPositions()
+        except Exception:
+            poslist = self.ib.positions()
+        return sum(int(p.position) for p in (poslist or [])
+                   if getattr(p.contract, "symbol", "") == symbol
+                   and (not self.account or getattr(p, "account", "") == self.account))
+
+    def reconcile_stops(self, symbol, contract, side, total_qty, stop_trigger, tick):
+        """Cancel EVERY resting protective stop for this symbol on this account, then place ONE
+        consolidated stop covering the full position. Guarantees a single stop for the whole
+        holding instead of a pile of per-entry stops."""
+        stop_action = "SELL" if side == LONG else "BUY"
+        try:
+            self.ib.reqAllOpenOrders(); self.ib.sleep(1)
+            for t in list(self.ib.openTrades()):
+                o = getattr(t, "order", None)
+                if (o is not None and getattr(t.contract, "symbol", "") == symbol
+                        and getattr(o, "action", "") == stop_action
+                        and getattr(o, "orderType", "") in ("STP", "STP LMT")
+                        and (not self.account or getattr(o, "account", "") in ("", self.account))
+                        and t.orderStatus.status not in ("Filled", "Cancelled", "ApiCancelled", "Inactive")):
+                    self.cancel(t)
+        except Exception as e:
+            self.log(f"reconcile_stops cancel error: {e}")
+        self.ib.sleep(1)
+        if total_qty <= 0:
+            return None
+        o = StopOrder(stop_action, int(total_qty), round_to_tick(stop_trigger, tick))
+        o.orderRef = self._ref(symbol)
+        o.tif = "DAY" if self.intraday_mode else "GTC"
+        o.outsideRth = self.outside_rth        # ETH/24H: let the stop trigger outside RTH
+        if self.account:
+            o.account = self.account
+        st = self.ib.placeOrder(contract, o)
+        self.log(f"[{self._ref(symbol)}] consolidated STOP {stop_action} {int(total_qty)} "
+                 f"{symbol} @ {round_to_tick(stop_trigger, tick)}")
+        return st
 
     # ----------------------------------------------------------------- orders
     def place_entry_with_stop(self, contract, side, qty, entry_ref, stop_trigger, ref, tick):
@@ -378,12 +570,14 @@ class SupertrendBot:
         parent.transmit = False
         parent.orderRef = ref
         parent.tif = "DAY"
+        parent.outsideRth = self.outside_rth
         stop = StopOrder(stop_action, qty, stop_trigger)
         stop.orderId = self.ib.client.getReqId()
         stop.parentId = parent.orderId
         stop.transmit = True                       # transmits parent+stop atomically
         stop.orderRef = ref
         stop.tif = "DAY" if self.intraday_mode else "GTC"
+        stop.outsideRth = self.outside_rth         # ETH/24H: stop can trigger outside RTH
         if self.account:
             parent.account = stop.account = self.account
         assert parent.action == entry_action and stop.action == stop_action, "side invariant"
@@ -434,6 +628,7 @@ class SupertrendBot:
         action = "SELL" if side == LONG else "BUY"
         o = MarketOrder(action, qty)
         o.orderRef = ref + "_FLAT"
+        o.outsideRth = self.outside_rth
         if self.account:
             o.account = self.account
         tr = self.ib.placeOrder(contract, o)
@@ -471,13 +666,29 @@ class SupertrendBot:
             if stop <= entry_ref:
                 self.log(f"{symbol} skip SHORT: stop {stop:.2f} not above price {entry_ref:.2f}")
                 return
-        qty = self.size_position(entry_ref, stop)
-        if qty <= 0:
-            self.log(f"{symbol} skip: qty 0 (stop too tight / capital too small)")
+        target = self.size_position(entry_ref, stop)   # desired TOTAL position (not order size)
+        if target <= 0:
+            self.log(f"{symbol} skip: target qty 0 (stop too tight / capital too small)")
             return
         ref = self._ref(symbol)
-        pt, st = self.place_entry_with_stop(contract, side, qty, entry_ref, stop, ref, tick)
+        held = abs(self.held_qty(symbol))               # shares already held (live snapshot)
+        top_up = target - held
+        if top_up <= 0:
+            # already at/above target -> don't buy more; just consolidate the stop for the whole
+            # position (this is also what stops the "re-enter a fresh position every reconnect").
+            st = self.reconcile_stops(symbol, contract, side, held, stop, tick)
+            prev = self.positions.get(symbol, {})
+            self.positions[symbol] = {
+                "contract": contract, "side": side, "qty": held,
+                "entry": prev.get("entry", entry_ref), "stop": stop, "st": st, "ref": ref,
+                "opened": prev.get("opened", now_et()),
+            }
+            self._entry_bar[symbol] = bar_time
+            self.log(f"{symbol} already at target: held {held} >= target {target}; stop reconciled for {held}")
+            return
 
+        # buy only the SHORTFALL; atomic bracket protects the new shares instantly
+        pt, st_child = self.place_entry_with_stop(contract, side, top_up, entry_ref, stop, ref, tick)
         waited = 0
         while waited < self.entry_timeout_sec:
             self.ib.sleep(1)
@@ -488,27 +699,24 @@ class SupertrendBot:
                 break
         filled = int(pt.orderStatus.filled or 0)
         if pt.orderStatus.status != "Filled":
-            self.cancel(pt)
+            self.cancel(pt)          # keep any partial fill; cancel the remainder
             self.ib.sleep(1)
-            if filled > 0:
-                if not self.resize_stop(contract, st, filled):
-                    self.cancel(st)
-                    self.ib.sleep(1)
-                    self.flatten(contract, side, filled, ref)
-                    self.log(f"{symbol} partial protection failed -> flattened {filled}")
-                    return
-            else:
-                self.cancel(st)
-                self.log(f"{symbol} no fill within {self.entry_timeout_sec}s -> skip")
-                return
-        qty_final = int(pt.orderStatus.filled or filled or qty)
+        if filled <= 0 and held <= 0:
+            self.cancel(st_child)
+            self.log(f"{symbol} top-up no fill within {self.entry_timeout_sec}s and nothing held -> skip")
+            return
+        total = held + filled
+        # ONE consolidated stop for the full position (cancels st_child + any prior/stacked stops)
+        st = self.reconcile_stops(symbol, contract, side, total, stop, tick)
         fill = float(pt.orderStatus.avgFillPrice or entry_ref)
         self.positions[symbol] = {
-            "contract": contract, "side": side, "qty": qty_final, "entry": fill, "stop": stop,
+            "contract": contract, "side": side, "qty": total, "entry": fill, "stop": stop,
             "st": st, "ref": ref, "opened": now_et(),
         }
         self._entry_bar[symbol] = bar_time     # one entry per completed bar
-        self.log(f"OPENED {side} {symbol} qty {qty_final} entry {fill:.2f} stop {stop:.2f}")
+        verb = "OPENED" if held == 0 else "TOPPED UP"
+        self.log(f"{verb} {side} {symbol}: held {held} + bought {filled} = {total} "
+                 f"(target {target}) entry {fill:.2f} stop {stop:.2f} for {total}")
 
     def close_position(self, symbol, exit_px, reason):
         p = self.positions.pop(symbol, None)
@@ -540,8 +748,14 @@ class SupertrendBot:
         try:
             self.ib.reqAllOpenOrders()
             self.ib.sleep(1)
-            open_trades = self.ib.openTrades()
-            held = {p.contract.symbol: p for p in self.ib.positions() if p.position}
+            acct = self.account
+            # LIVE snapshot via reqPositions (blocks until positionEnd). The cached ib.positions()
+            # is often EMPTY right after a reconnect -> reading it empty is what made the bot fail
+            # to adopt and instead re-enter a fresh position every reconnect. Scope to THIS
+            # account: an FA/advisor login returns every sub-account's positions.
+            poslist = self.ib.reqPositions() or []
+            held = {p.contract.symbol: p for p in poslist
+                    if p.position and (not acct or getattr(p, "account", "") == acct)}
         except Exception as e:
             self.log(f"sync_existing error: {e}")
             return
@@ -556,15 +770,6 @@ class SupertrendBot:
             mult = int(getattr(contract, "multiplier", 1) or 1)
             entry = float(pos.avgCost or 0) / (mult or 1)
             ref = self._ref(symbol)
-            want_action = "SELL" if side == LONG else "BUY"
-            # any protective stop already resting on the book for this symbol/side
-            st_trade = None
-            for t in open_trades:
-                if (getattr(t.contract, "symbol", "") == symbol
-                        and getattr(t.order, "action", "") == want_action
-                        and getattr(t.order, "orderType", "") in ("STP", "STP LMT")):
-                    st_trade = t
-                    break
 
             # recompute the Supertrend for this stock + timeframe at startup
             state = self.st_state(symbol, self.hist(contract))
@@ -572,10 +777,10 @@ class SupertrendBot:
             line = state[2] if state else None
             close = state[3] if state else entry
 
-            # if the Supertrend has already flipped against the held side, the 'sell' level
-            # is hit -> flatten now rather than carry a stale position/stop.
+            # if the Supertrend has already flipped against the held side -> cancel ALL stops
+            # and flatten now (the Supertrend 'sell' level is hit).
             if state is not None and self.desired_side(bull) != side:
-                self.cancel(st_trade)
+                self.reconcile_stops(symbol, contract, side, 0, entry, tick)   # cancel all stops
                 tr = self.flatten(contract, side, qty, ref)
                 exit_px = (float(tr.orderStatus.avgFillPrice)
                            if (tr and tr.orderStatus.avgFillPrice) else (line or entry))
@@ -583,56 +788,48 @@ class SupertrendBot:
                          f"-> exited {qty} @ {exit_px:.2f}")
                 continue
 
-            # otherwise set the stop to the CURRENT Supertrend line (clamped to a valid side)
+            # current Supertrend stop level (clamped to the valid side of price)
             if line is not None:
                 stop = self._st_stop(side, line, close, tick)
-            elif st_trade is not None:
-                stop = round_to_tick(float(st_trade.order.auxPrice), tick)   # no fresh ST -> keep
             else:
                 floor = (1 - self.min_stop_pct) if side == LONG else (1 + self.min_stop_pct)
                 stop = round_to_tick(entry * floor, tick)
 
-            if self.fixed_stocks > 0 and qty < self.fixed_stocks:
-                top_up_qty = self.fixed_stocks - qty
-                self.log(f"sync {symbol}: under-sized {side} qty {qty} < fixed_stocks {self.fixed_stocks}; topping up {top_up_qty}")
-                top_up_action = "BUY" if side == LONG else "SELL"
-                top_up_order = MarketOrder(top_up_action, top_up_qty)
+            # top up to the TARGET total if under-sized (honors fixed_stocks as authoritative)
+            target = self.size_position(entry, stop)
+            if target > qty:
+                top_up_qty = target - qty
+                self.log(f"sync {symbol}: under-sized {side} qty {qty} < target {target}; topping up {top_up_qty}")
+                action = "BUY" if side == LONG else "SELL"
+                o = MarketOrder(action, top_up_qty)
+                o.orderRef = ref
+                o.outsideRth = self.outside_rth
                 if self.account:
-                    top_up_order.account = self.account
-                top_up_trade = self.ib.placeOrder(contract, top_up_order)
+                    o.account = self.account
+                tr = self.ib.placeOrder(contract, o)
                 waited = 0
                 while waited < self.entry_timeout_sec:
                     self.ib.sleep(1)
                     waited += 1
-                    if top_up_trade.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
+                    if tr.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
                         break
-                filled = int(top_up_trade.orderStatus.filled or 0)
-                if filled > 0:
-                    fill_price = float(top_up_trade.orderStatus.avgFillPrice or entry)
-                    entry = ((entry * qty) + (fill_price * filled)) / (qty + filled) if qty else fill_price
-                    qty += filled
-                    self.log(f"sync {symbol}: topped up {filled} -> qty {qty} entry avg {entry:.2f}")
+                f = int(tr.orderStatus.filled or 0)
+                if f > 0:
+                    fp = float(tr.orderStatus.avgFillPrice or entry)
+                    entry = ((entry * qty) + (fp * f)) / (qty + f) if qty else fp
+                    qty += f
+                    self.log(f"sync {symbol}: topped up {f} -> qty {qty} entry avg {entry:.2f}")
                 else:
-                    self.log(f"sync {symbol}: topping up {top_up_qty} failed or no fill; keeping qty {qty}")
+                    self.log(f"sync {symbol}: top-up {top_up_qty} no fill; keeping qty {qty}")
 
-            if st_trade is not None:
-                old = float(st_trade.order.auxPrice)
-                st_trade = self.modify_stop(contract, st_trade, stop, qty, tick)
-                self.log(f"sync {symbol}: updated open stop {old:.2f} -> {stop:.2f} "
-                         f"(Supertrend) on {side} {qty}")
-            else:
-                s = StopOrder(want_action, qty, stop)
-                s.orderRef = ref
-                s.tif = "DAY" if self.intraday_mode else "GTC"
-                if self.account:
-                    s.account = self.account
-                st_trade = self.ib.placeOrder(contract, s)
-                self.log(f"sync {symbol}: placed protective stop {stop:.2f} on adopted {side} {qty}")
+            # ONE consolidated stop for the full held quantity (cancels any stacked stops)
+            st_trade = self.reconcile_stops(symbol, contract, side, qty, stop, tick)
             self.positions[symbol] = {
                 "contract": contract, "side": side, "qty": qty, "entry": entry, "stop": stop,
                 "st": st_trade, "ref": ref, "opened": now_et(),
             }
-            self.log(f"sync {symbol}: adopted {side} qty {qty} entry {entry:.2f} stop {stop:.2f}")
+            self.log(f"sync {symbol}: adopted {side} qty {qty} entry {entry:.2f} "
+                     f"stop {stop:.2f} (single stop for {qty})")
 
     # ----------------------------------------------------------------- main loop
     def entries_allowed(self) -> bool:
@@ -718,6 +915,34 @@ class SupertrendBot:
             return
         self.open_position(symbol, desired, contract, line, close, tick, bar_time)
 
+    def _bar_seconds(self) -> int:
+        """The bar length in seconds, parsed from bar_size ('5 mins' -> 300)."""
+        b = str(self.bar_size).lower().strip()
+        try:
+            n = int(b.split()[0])
+        except Exception:
+            return max(self.poll, 60)
+        if "sec" in b:
+            return max(n, 5)
+        if "min" in b:
+            return n * 60
+        if "hour" in b:
+            return n * 3600
+        if "day" in b:
+            return 24 * 3600
+        if "week" in b:
+            return 7 * 24 * 3600
+        return max(self.poll, 60)
+
+    def _watch_stops(self):
+        """Cheap between-bars check (no history pull): catch a server-side stop that filled so
+        the CSV/state update isn't delayed until the next bar evaluation."""
+        for symbol in list(self.positions):
+            p = self.positions.get(symbol)
+            if p and p.get("st") is not None and p["st"].orderStatus.status == "Filled":
+                exit_px = float(p["st"].orderStatus.avgFillPrice or p["stop"])
+                self.close_position(symbol, exit_px, "STOP")
+
     def run(self):
         if not self.connect():
             return
@@ -734,6 +959,15 @@ class SupertrendBot:
             self.sync_existing()
 
             flat_dt = at_et(self.eod_flatten_time)
+            bar_secs = self._bar_seconds()
+            buf = int(self.cfg.get("bar_ready_buffer_sec", 5))   # wait a few s after close for data
+            # Evaluate PRICE/signal once per bar (e.g. every 5 min for 5-min bars), aligned to
+            # the bar close. Between bars we still wake every poll_interval_sec as a heartbeat to
+            # check connectivity + catch a server-side stop fill. Per-bar gating only applies to
+            # intraday bars longer than the heartbeat; daily+ bars evaluate each heartbeat and
+            # let the fresh-bar gate handle once-per-bar action.
+            gate = 0 < bar_secs < 24 * 3600 and bar_secs > self.poll
+            self._last_eval_bar = None
             while True:
                 if not self.ensure_connected():
                     self.log("CRITICAL: cannot reconnect; positions protected by server-side stops. Exiting.")
@@ -748,12 +982,49 @@ class SupertrendBot:
                         self.close_position(symbol, exit_px, "EOD")
                     self.log("intraday EOD flatten complete; exiting for the day.")
                     break
-                for symbol in self.symbols:
-                    try:
-                        self.manage_symbol(symbol)
-                    except Exception as e:
-                        self.log(f"manage error {symbol}: {e}")
-                self.ib.sleep(self.poll)
+
+                now = now_et()
+                sod = now.hour * 3600 + now.minute * 60 + now.second
+                if gate:
+                    cur_bar = int((sod - buf) // bar_secs)   # bar considered closed & data-ready
+                    do_eval = cur_bar != self._last_eval_bar
+                    if do_eval:
+                        self._last_eval_bar = cur_bar
+                else:
+                    do_eval = True
+
+                if do_eval:
+                    self._cycle_data_ok = False
+                    for symbol in self.symbols:
+                        try:
+                            self.manage_symbol(symbol)
+                        except Exception as e:
+                            self.log(f"manage error {symbol}: {e}")
+                    # DATA WATCHDOG: socket up but no symbol returned data for several bar-evals
+                    # (a competing login stealing the data line sends Error 162 timeouts WITHOUT
+                    # dropping the socket or firing 1100) -> force a full session reset.
+                    if self._cycle_data_ok:
+                        self._data_fail = 0
+                    else:
+                        self._data_fail += 1
+                        if self._data_fail >= self.data_fail_reconnect_cycles:
+                            self.log(f"no market data for {self._data_fail} evals while connected; "
+                                     f"forcing session reset (disconnect -> reconnect)")
+                            try:
+                                self.ib.disconnect()
+                            except Exception:
+                                pass
+                            self._data_fail = 0
+                else:
+                    self._watch_stops()      # heartbeat: catch a stop fill between bars
+
+                # sleep to the next bar boundary, but wake at least every poll for health
+                if gate:
+                    to_next = int((sod - buf) // bar_secs + 1) * bar_secs + buf - sod
+                    nap = max(2, min(self.poll, to_next))
+                else:
+                    nap = self.poll
+                self.ib.sleep(nap)
         finally:
             self.disconnect()
 
