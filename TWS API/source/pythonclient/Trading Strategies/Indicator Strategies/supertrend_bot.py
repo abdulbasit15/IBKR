@@ -55,7 +55,7 @@ import threading
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from ib_async import IB, Stock, MarketOrder, StopOrder
+from ib_async import IB, Stock, MarketOrder, StopOrder, LimitOrder, StopLimitOrder
 
 # Shared indicator library at <Trading Strategies>/Indicators (one level ABOVE this bot's
 # folder), so every strategy family reuses the same indicators. Adding that parent dir to
@@ -161,7 +161,12 @@ class SupertrendBot:
 
         self.intraday_mode = bool(cfg.get("intraday_mode", False))
         self.eod_flatten_time = cfg.get("eod_flatten_time", "15:55")
-        self.entry_window = cfg.get("entry_window", ["09:35", "15:45"])
+        # Entry window defaults to the market_hours session so a 24H/ETH strategy can actually
+        # enter outside RTH (otherwise entries are silently blocked after 15:45). An explicit
+        # entry_window in the config still overrides this.
+        self.entry_window = cfg.get("entry_window") or {
+            "RTH": ["09:35", "15:55"], "ETH": ["04:00", "20:00"], "24H": ["00:00", "23:59"],
+        }[self.market_hours]
         self.entry_on_flip_only = bool(cfg.get("entry_on_flip_only", False))
         self.poll = int(cfg.get("poll_interval_sec", 30))
 
@@ -172,8 +177,20 @@ class SupertrendBot:
         self.min_stop_pct = float(s.get("min_stop_pct", 0.005))
         self.max_notional = float(s.get("max_position_notional", 0) or 0)
         self.max_positions = int(cfg.get("max_concurrent_positions", len(self.symbols) or 1))
-        self.entry_offset_pct = float(cfg.get("entry_offset_pct", 0.0005))
+        self.entry_offset_pct = float(cfg.get("entry_offset_pct", 0.0005))   # initial marketable buffer
         self.entry_timeout_sec = int(cfg.get("entry_timeout_sec", 60))
+        # ETH/24H marketable-limit walk: TOTAL time (default 60s) to keep ONE order working for
+        # the WHOLE quantity to fill, spread across the chase levels. A large order (e.g. 1500
+        # shares in thin extended/overnight liquidity) gets a full minute to complete instead of
+        # being cut off after a few seconds with a partial fill.
+        self.entry_fill_wait_sec = int(cfg.get("entry_fill_wait_sec", 60))
+        # marketable-limit chase: if unfilled, bump the limit buffer up to max_chase_pct over
+        # entry_chase_levels steps until it fills (works outside RTH where market orders reject).
+        self.max_chase_pct = float(cfg.get("max_chase_pct", 0.005))
+        self.entry_chase_levels = max(1, int(cfg.get("entry_chase_levels", 4)))
+        # stop-LIMIT band: the limit sits this far the far side of the trigger so the stop is
+        # marketable when hit (required outside RTH where stop-market orders reject).
+        self.stop_limit_offset_pct = float(cfg.get("stop_limit_offset_pct", 0.003))
 
         self.rate = RateLimiter(float(cfg.get("hist_min_interval_sec", 2.0)))
         self.ib: IB | None = None
@@ -188,10 +205,13 @@ class SupertrendBot:
         # which is exactly the "bot doesn't resume after phone interruption" symptom.
         self.data_fail_reconnect_cycles = int(cfg.get("data_fail_reconnect_cycles", 4))
         self.contracts: dict[str, object] = {}
+        self._on_contracts: dict[str, object] = {}   # OVERNIGHT-venue contracts (24H), cached
         self.positions: dict[str, dict] = {}     # symbol -> live position state
         self._ticks: dict[str, float] = {}
         self._entry_bar: dict[str, object] = {}   # one entry per completed bar per symbol
         self._seen_bar: dict[str, object] = {}    # last completed bar time observed per symbol
+        self._last_log_bar: dict[str, object] = {}   # last bar time we logged a status line for
+        self._last_hb_time: dict[str, object] = {}   # last idle-heartbeat log time per symbol
 
         stamp = now_et().strftime("%Y%m%d")
         log_dir = os.path.join(self.base, cfg.get("log_dir", "logs"))
@@ -202,6 +222,29 @@ class SupertrendBot:
         # treated as a BASE name; e.g. "supertrend_trades.csv" -> "supertrend_trades_<name>.csv".
         _csv_base, _csv_ext = os.path.splitext(cfg.get("trade_log_csv", "supertrend_trades.csv"))
         self._csv_path = os.path.join(self.base, f"{_csv_base}_{self.safe_name}{_csv_ext or '.csv'}")
+
+        # Clamp hist_duration to a safe max for the bar size. IBKR TIMES OUT on over-large
+        # small-bar requests -- e.g. "30 D" of 1-min all-hours (ETH/24H, useRTH=False) is tens
+        # of thousands of bars and gets cancelled (Error 162). The Supertrend/DEMA only need a
+        # few hundred bars, so a smaller window is both safe and sufficient.
+        _bs = self._bar_seconds()
+        _max_days = (10 if _bs <= 60 else 40 if _bs <= 300 else
+                     90 if _bs < 3600 else 365 if _bs < 24 * 3600 else 3650)
+        _req_days = self._duration_days(self.hist_duration)
+        if _req_days is not None and _req_days > _max_days:
+            self.log(f"hist_duration '{self.hist_duration}' too large for {self.bar_size} bars "
+                     f"(IBKR would time out); capping to {_max_days} D")
+            self.hist_duration = f"{_max_days} D"
+
+    @staticmethod
+    def _duration_days(dur) -> float | None:
+        """Parse an IBKR duration string ('30 D', '2 W', '1 M', '1 Y', '3600 S') to days."""
+        try:
+            n, u = str(dur).strip().split()
+            return float(n) * {"S": 1 / 86400.0, "D": 1.0, "W": 7.0,
+                               "M": 30.0, "Y": 365.0}.get(u.upper(), 1.0)
+        except Exception:
+            return None
 
     @staticmethod
     def _default_duration(bar_size: str) -> str:
@@ -420,21 +463,77 @@ class SupertrendBot:
         self._ticks[symbol] = tick
         return tick
 
-    def hist(self, contract):
+    def _hist_one(self, contract):
+        """Single reqHistoricalData pull (bounded timeout so a stall fails fast)."""
         self.rate.acquire(self.ib)
         try:
-            # bounded timeout: a stuck request (data-line contention / farm down) fails fast
-            # instead of blocking ~60s, so the data watchdog in run() can react promptly.
-            bars = self.ib.reqHistoricalData(contract, "", self.hist_duration, self.bar_size,
+            return self.ib.reqHistoricalData(contract, "", self.hist_duration, self.bar_size,
                                              "TRADES", self.use_rth, 1,
                                              timeout=self.hist_timeout_sec) or []
         except Exception as e:
             self.log(f"hist error {getattr(contract, 'symbol', '?')}: {e}")
             return []
-        bars = self._filter_session(bars)   # keep only bars in the chosen market_hours session
+
+    def hist(self, contract):
+        bars = self._hist_one(contract)
+        # 24H: the SMART feed only covers 04:00-20:00; the IBKR OVERNIGHT venue carries the
+        # 20:00-04:00 session. Merge both into one continuous series so the Supertrend/DEMA
+        # (and logging) keep running overnight.
+        if self.market_hours == "24H":
+            onc = self._overnight_contract(contract)
+            if onc is not None:
+                bars = self._merge_bars(bars, self._hist_one(onc))
+        bars = self._filter_session(bars)   # RTH/ETH filter; 24H = no filter (keep all)
         if bars:
             self._cycle_data_ok = True   # signal to the run-loop data watchdog
         return bars
+
+    def _overnight_contract(self, contract):
+        """A qualified OVERNIGHT-venue contract for `contract`'s symbol (cached). Used for both
+        overnight history and overnight order routing. None if it can't be qualified."""
+        sym = getattr(contract, "symbol", "")
+        if sym not in self._on_contracts:
+            oc = None
+            try:
+                oc = Stock(sym, "OVERNIGHT", "USD")
+                self.ib.qualifyContracts(oc)
+            except Exception as e:
+                self.log(f"overnight contract unavailable for {sym}: {e}"); oc = None
+            self._on_contracts[sym] = oc
+        return self._on_contracts.get(sym)
+
+    @staticmethod
+    def _merge_bars(a, b):
+        """Merge two bar lists into one time-sorted, de-duplicated (by bar time) series."""
+        d = {}
+        for bar in (a or []):
+            d[bar.date] = bar
+        for bar in (b or []):
+            d[bar.date] = bar
+        return [d[k] for k in sorted(d)]
+
+    @staticmethod
+    def _in_overnight():
+        """True during the IBKR overnight window (~20:00-04:00 ET)."""
+        m = now_et().hour * 60 + now_et().minute
+        return m >= 20 * 60 or m < 4 * 60
+
+    @staticmethod
+    def _is_overnight(contract) -> bool:
+        """True if `contract` is routed to the IBKR OVERNIGHT venue. That venue accepts ONLY
+        LIMIT/Adaptive orders (no STP/STP LMT/MKT) and does NOT support GTC — so a native
+        server-side protective stop cannot rest there; the bot uses a SYNTHETIC stop instead
+        (monitor price each bar, fire a marketable LIMIT exit when the stop level is breached)."""
+        return getattr(contract, "exchange", "") == "OVERNIGHT"
+
+    def _order_contract(self, contract):
+        """Route orders to the OVERNIGHT venue during the overnight window (24H only); SMART
+        otherwise. Overnight orders must be placed on the OVERNIGHT contract."""
+        if self.market_hours == "24H" and self._in_overnight():
+            onc = self._overnight_contract(contract)
+            if onc is not None:
+                return onc
+        return contract
 
     def _filter_session(self, bars):
         """Restrict intraday bars to the configured market_hours session so the Supertrend/DEMA
@@ -544,53 +643,164 @@ class SupertrendBot:
         self.ib.sleep(1)
         if total_qty <= 0:
             return None
-        o = StopOrder(stop_action, int(total_qty), round_to_tick(stop_trigger, tick))
+        trig = round_to_tick(stop_trigger, tick)
+        if self._is_overnight(contract):
+            # OVERNIGHT venue rejects stop orders (Error 387) and GTC — no native stop can rest
+            # here. Return None so the caller stores a SYNTHETIC stop; manage_symbol enforces it
+            # each bar (marketable LIMIT exit when price breaches `stop_trigger`).
+            self.log(f"[{self._ref(symbol)}] OVERNIGHT venue (LMT-only): protecting "
+                     f"{int(total_qty)} {symbol} with a SYNTHETIC stop @ {trig} (no native stop)")
+            return None
+        if self.outside_rth:
+            # stop-LIMIT (stop-market is rejected outside RTH); limit sits the far side of the
+            # trigger so it's marketable when hit.
+            lim = round_to_tick(trig * (1 - self.stop_limit_offset_pct) if stop_action == "SELL"
+                                else trig * (1 + self.stop_limit_offset_pct), tick)
+            o = StopLimitOrder(stop_action, int(total_qty), lim, trig)
+            desc = f"STP LMT {trig}/{lim}"
+        else:
+            o = StopOrder(stop_action, int(total_qty), trig)
+            desc = f"STP {trig}"
         o.orderRef = self._ref(symbol)
         o.tif = "DAY" if self.intraday_mode else "GTC"
         o.outsideRth = self.outside_rth        # ETH/24H: let the stop trigger outside RTH
         if self.account:
             o.account = self.account
         st = self.ib.placeOrder(contract, o)
-        self.log(f"[{self._ref(symbol)}] consolidated STOP {stop_action} {int(total_qty)} "
-                 f"{symbol} @ {round_to_tick(stop_trigger, tick)}")
+        self.log(f"[{self._ref(symbol)}] consolidated STOP {stop_action} {int(total_qty)} {symbol} @ {desc}")
         return st
 
     # ----------------------------------------------------------------- orders
-    def place_entry_with_stop(self, contract, side, qty, entry_ref, stop_trigger, ref, tick):
-        """Enter with a MARKET order and attach the protective stop as a child. The parent
-        (market) carries transmit=False and the stop child transmit=True, so both are sent
-        together and the stop is server-side the instant the market entry fills — no naked
-        position window. `entry_ref` is only the expected price (for logging/sizing)."""
-        entry_ref = round_to_tick(entry_ref, tick)
-        stop_trigger = round_to_tick(stop_trigger, tick)
-        entry_action = "BUY" if side == LONG else "SELL"
-        stop_action = "SELL" if side == LONG else "BUY"
-        parent = MarketOrder(entry_action, qty)
+    def _build_bracket(self, side, qty, entry_action, stop_action, limit_px, stop_trigger, ref, tick):
+        """Build a parent entry + attached protective-stop child (transmit chained, so the stop
+        is live the instant the entry fills). RTH: MARKET entry + stop-MARKET. ETH/24H: LIMIT
+        entry + stop-LIMIT (market & stop-market are rejected outside regular hours)."""
+        if self.outside_rth:
+            parent = LimitOrder(entry_action, qty, round_to_tick(limit_px, tick))
+            sl = round_to_tick(stop_trigger * (1 - self.stop_limit_offset_pct) if stop_action == "SELL"
+                               else stop_trigger * (1 + self.stop_limit_offset_pct), tick)
+            stop = StopLimitOrder(stop_action, qty, sl, round_to_tick(stop_trigger, tick))
+        else:
+            parent = MarketOrder(entry_action, qty)
+            stop = StopOrder(stop_action, qty, round_to_tick(stop_trigger, tick))
         parent.orderId = self.ib.client.getReqId()
         parent.transmit = False
         parent.orderRef = ref
         parent.tif = "DAY"
         parent.outsideRth = self.outside_rth
-        stop = StopOrder(stop_action, qty, stop_trigger)
         stop.orderId = self.ib.client.getReqId()
         stop.parentId = parent.orderId
         stop.transmit = True                       # transmits parent+stop atomically
         stop.orderRef = ref
         stop.tif = "DAY" if self.intraday_mode else "GTC"
-        stop.outsideRth = self.outside_rth         # ETH/24H: stop can trigger outside RTH
+        stop.outsideRth = self.outside_rth
         if self.account:
             parent.account = stop.account = self.account
         assert parent.action == entry_action and stop.action == stop_action, "side invariant"
-        pt = self.ib.placeOrder(contract, parent)
-        st = self.ib.placeOrder(contract, stop)
-        self.log(f"[{ref}] {entry_action} {qty} {contract.symbol} ({side}) MKT (~{entry_ref}) "
-                 f"stop {stop_trigger} ({'GTC' if not self.intraday_mode else 'DAY'})")
+        return parent, stop
+
+    def _overnight_limit(self, action, qty, px, ref):
+        """A standalone LIMIT for the OVERNIGHT venue (the only supported type there). No stop
+        child — protection is synthetic. outsideRth is left False (it's ignored on OVERNIGHT
+        and otherwise triggers warning 2109); tif DAY behaves as the overnight session order."""
+        o = LimitOrder(action, qty, px)
+        o.orderId = self.ib.client.getReqId()
+        o.transmit = True
+        o.orderRef = ref
+        o.tif = "DAY"
+        o.outsideRth = False
+        if self.account:
+            o.account = self.account
+        return o
+
+    def place_entry_with_stop(self, contract, side, qty, entry_ref, stop_trigger, ref, tick):
+        """Enter + attach a protective stop, waiting for the fill. RTH uses a MARKET entry
+        (immediate). ETH/24H uses a **marketable-LIMIT** entry that starts at
+        entry_offset_pct beyond the reference price and **chases** up to max_chase_pct over
+        entry_chase_levels steps until it fills (market orders are rejected outside RTH); the
+        stop child is a stop-LIMIT. Returns (parent_trade, stop_trade)."""
+        entry_ref = round_to_tick(entry_ref, tick)
+        stop_trigger = round_to_tick(stop_trigger, tick)
+        entry_action = "BUY" if side == LONG else "SELL"
+        stop_action = "SELL" if side == LONG else "BUY"
+
+        if not self.outside_rth:
+            parent, stop = self._build_bracket(side, qty, entry_action, stop_action, None, stop_trigger, ref, tick)
+            pt = self.ib.placeOrder(contract, parent)
+            st = self.ib.placeOrder(contract, stop)
+            self.log(f"[{ref}] {entry_action} {qty} {contract.symbol} ({side}) MKT (~{entry_ref}) "
+                     f"stop {stop_trigger} ({'GTC' if not self.intraday_mode else 'DAY'})")
+            waited = 0
+            while waited < self.entry_timeout_sec:
+                self.ib.sleep(1); waited += 1
+                if pt.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
+                    break
+            return pt, st
+
+        # ETH/24H: marketable-limit walk. Off-RTH the stop child is a stop-LIMIT; on the
+        # OVERNIGHT venue NO stop child is attached (that venue rejects stop orders) — the
+        # position is protected by a SYNTHETIC stop enforced each bar in manage_symbol.
+        #
+        # ONE order is placed and its limit price is BUMPED up each buffer level (rather than
+        # cancel+replace), so partial fills ACCUMULATE on the same order and pt.orderStatus
+        # (filled / avgFillPrice) stays cumulative for the caller. The order is kept working for
+        # a TOTAL of entry_fill_wait_sec (default 60s ≈ "wait 1 min for the whole qty to fill"),
+        # split across the chase levels, and it NEVER bails early on a partial fill.
+        overnight = self._is_overnight(contract)
+        levels = self.entry_chase_levels
+        off, chase = self.entry_offset_pct, max(self.max_chase_pct, self.entry_offset_pct)
+        step = (chase - off) / max(1, levels - 1) if levels > 1 else 0.0
+        per_level = max(2, int(self.entry_fill_wait_sec) // max(1, levels))
+        px0 = round_to_tick(entry_ref * (1 + off) if side == LONG else entry_ref * (1 - off), tick)
+        if overnight:
+            parent = self._overnight_limit(entry_action, qty, px0, ref)
+            stop = None
+            pt = self.ib.placeOrder(contract, parent)
+            st = None
+        else:
+            parent, stop = self._build_bracket(side, qty, entry_action, stop_action, px0, stop_trigger, ref, tick)
+            pt = self.ib.placeOrder(contract, parent)
+            st = self.ib.placeOrder(contract, stop)
+        for i in range(levels):
+            frac = min(off + step * i, chase)
+            px = round_to_tick(entry_ref * (1 + frac) if side == LONG else entry_ref * (1 - frac), tick)
+            if i > 0:                                  # bump the SAME order's limit price
+                parent.lmtPrice = px
+                parent.transmit = True
+                pt = self.ib.placeOrder(contract, parent)
+            if overnight:
+                self.log(f"[{ref}] {entry_action} {qty} {contract.symbol} ({side}) OVERNIGHT LMT {px} "
+                         f"(buffer {frac*100:.2f}%) synthetic-stop @ {stop_trigger}")
+            else:
+                self.log(f"[{ref}] {entry_action} {qty} {contract.symbol} ({side}) LMT {px} "
+                         f"(buffer {frac*100:.2f}%) stop-lmt {round_to_tick(stop_trigger, tick)}")
+            waited = 0
+            while waited < per_level:                  # keep working; ~1 min total for whole qty
+                self.ib.sleep(1); waited += 1
+                if pt.orderStatus.status == "Filled":
+                    return pt, st                      # entire quantity filled
+                if pt.orderStatus.status in ("Cancelled", "ApiCancelled", "Inactive"):
+                    break
+        # exhausted all levels: keep whatever filled (cumulative on pt), cancel the balance
+        filled = int(pt.orderStatus.filled or 0)
+        self.cancel(pt)
+        if filled <= 0:
+            self.log(f"[{ref}] no fill within chase to {chase*100:.2f}% -> skipping this bar")
+        else:
+            self.log(f"[{ref}] chase to {chase*100:.2f}% filled {filled}/{qty}; "
+                     f"cancelling unfilled balance and keeping the partial")
         return pt, st
 
     def modify_stop(self, contract, st_trade, new_trigger, qty, tick):
         o = st_trade.order
         o.totalQuantity = qty
-        o.auxPrice = round_to_tick(new_trigger, tick)
+        trig = round_to_tick(new_trigger, tick)
+        o.auxPrice = trig
+        # for a stop-LIMIT, move the limit with the trigger (keep it the far side so it stays
+        # marketable when hit); otherwise a trailed stop-limit would leave a stale limit.
+        if getattr(o, "orderType", "") == "STP LMT" or getattr(o, "lmtPrice", 0):
+            o.lmtPrice = round_to_tick(trig * (1 - self.stop_limit_offset_pct) if o.action == "SELL"
+                                       else trig * (1 + self.stop_limit_offset_pct), tick)
         o.transmit = True
         try:
             return self.ib.placeOrder(contract, o)
@@ -621,18 +831,42 @@ class SupertrendBot:
         except Exception:
             pass
 
-    def flatten(self, contract, side, qty, ref, wait_sec=20):
-        """Close a position with a market order (BUY to cover a short, SELL to exit a long)."""
+    def flatten(self, contract, side, qty, ref, wait_sec=20, ref_price=None):
+        """Close a position (SELL a long / BUY to cover a short). RTH: market order. ETH/24H:
+        an **aggressively marketable LIMIT** (priced exit_offset_pct THROUGH the market so it
+        fills, since market orders are rejected outside RTH). Falls back to market only if no
+        reference price is available."""
         if qty <= 0:
             return None
         action = "SELL" if side == LONG else "BUY"
-        o = MarketOrder(action, qty)
+        overnight = self._is_overnight(contract)   # OVERNIGHT venue: LIMIT only (no MKT)
+        if self.outside_rth or overnight:
+            if ref_price is None:
+                try:
+                    ref_price = self.hist(contract)[-1].close
+                except Exception:
+                    ref_price = None
+            if ref_price:
+                tick = self.min_tick(getattr(contract, "symbol", ""), contract)
+                off = float(self.cfg.get("exit_offset_pct", 0.01))   # 1% through market -> marketable
+                px = round_to_tick(ref_price * (1 - off) if side == LONG else ref_price * (1 + off), tick)
+                o = LimitOrder(action, qty, px)
+                otxt = f"LMT {px}"
+            elif overnight:
+                # OVERNIGHT rejects market orders; without a price we can't build a limit — bail
+                # rather than fire a MKT that will be discarded, leaving state unchanged to retry.
+                self.log(f"[{ref}] cannot flatten on OVERNIGHT without a reference price -> retry next bar")
+                return None
+            else:
+                o = MarketOrder(action, qty); otxt = "MKT"
+        else:
+            o = MarketOrder(action, qty); otxt = "MKT"
         o.orderRef = ref + "_FLAT"
-        o.outsideRth = self.outside_rth
+        o.outsideRth = self.outside_rth and not overnight   # ignored on OVERNIGHT (warning 2109)
         if self.account:
             o.account = self.account
         tr = self.ib.placeOrder(contract, o)
-        self.log(f"[{ref}] FLATTEN market {action} {qty} {contract.symbol} ({side})")
+        self.log(f"[{ref}] FLATTEN {otxt} {action} {qty} {contract.symbol} ({side})")
         waited = 0
         while waited < wait_sec:
             self.ib.sleep(1)
@@ -672,11 +906,12 @@ class SupertrendBot:
             return
         ref = self._ref(symbol)
         held = abs(self.held_qty(symbol))               # shares already held (live snapshot)
+        oc = self._order_contract(contract)             # OVERNIGHT venue during overnight (24H)
         top_up = target - held
         if top_up <= 0:
             # already at/above target -> don't buy more; just consolidate the stop for the whole
             # position (this is also what stops the "re-enter a fresh position every reconnect").
-            st = self.reconcile_stops(symbol, contract, side, held, stop, tick)
+            st = self.reconcile_stops(symbol, oc, side, held, stop, tick)
             prev = self.positions.get(symbol, {})
             self.positions[symbol] = {
                 "contract": contract, "side": side, "qty": held,
@@ -687,27 +922,19 @@ class SupertrendBot:
             self.log(f"{symbol} already at target: held {held} >= target {target}; stop reconciled for {held}")
             return
 
-        # buy only the SHORTFALL; atomic bracket protects the new shares instantly
-        pt, st_child = self.place_entry_with_stop(contract, side, top_up, entry_ref, stop, ref, tick)
-        waited = 0
-        while waited < self.entry_timeout_sec:
-            self.ib.sleep(1)
-            waited += 1
-            if pt.orderStatus.status == "Filled":
-                break
-            if pt.orderStatus.status in ("Cancelled", "ApiCancelled", "Inactive"):
-                break
-        filled = int(pt.orderStatus.filled or 0)
-        if pt.orderStatus.status != "Filled":
-            self.cancel(pt)          # keep any partial fill; cancel the remainder
-            self.ib.sleep(1)
+        # buy only the SHORTFALL; place_entry_with_stop waits/chases and protects the new
+        # shares (atomic stop child) — RTH: market+stop-market, ETH/24H: marketable-limit walk
+        # + stop-limit. Routed to the OVERNIGHT venue during the overnight window.
+        pt, st_child = self.place_entry_with_stop(oc, side, top_up, entry_ref, stop, ref, tick)
+        filled = int(pt.orderStatus.filled or 0) if pt else 0
         if filled <= 0 and held <= 0:
-            self.cancel(st_child)
-            self.log(f"{symbol} top-up no fill within {self.entry_timeout_sec}s and nothing held -> skip")
+            if st_child is not None:
+                self.cancel(st_child)
+            self.log(f"{symbol} top-up no fill (chased to max) and nothing held -> skip")
             return
         total = held + filled
         # ONE consolidated stop for the full position (cancels st_child + any prior/stacked stops)
-        st = self.reconcile_stops(symbol, contract, side, total, stop, tick)
+        st = self.reconcile_stops(symbol, oc, side, total, stop, tick)
         fill = float(pt.orderStatus.avgFillPrice or entry_ref)
         self.positions[symbol] = {
             "contract": contract, "side": side, "qty": total, "entry": fill, "stop": stop,
@@ -766,6 +993,7 @@ class SupertrendBot:
             side = LONG if pos.position > 0 else SHORT
             qty = abs(int(pos.position))
             contract = self.contracts[symbol]
+            oc = self._order_contract(contract)          # active venue (OVERNIGHT during 20-04)
             tick = self.min_tick(symbol, contract)
             mult = int(getattr(contract, "multiplier", 1) or 1)
             entry = float(pos.avgCost or 0) / (mult or 1)
@@ -780,8 +1008,8 @@ class SupertrendBot:
             # if the Supertrend has already flipped against the held side -> cancel ALL stops
             # and flatten now (the Supertrend 'sell' level is hit).
             if state is not None and self.desired_side(bull) != side:
-                self.reconcile_stops(symbol, contract, side, 0, entry, tick)   # cancel all stops
-                tr = self.flatten(contract, side, qty, ref)
+                self.reconcile_stops(symbol, oc, side, 0, entry, tick)   # cancel all stops
+                tr = self.flatten(oc, side, qty, ref, ref_price=close)
                 exit_px = (float(tr.orderStatus.avgFillPrice)
                            if (tr and tr.orderStatus.avgFillPrice) else (line or entry))
                 self.log(f"sync {symbol}: Supertrend flipped against {side} at startup "
@@ -800,30 +1028,37 @@ class SupertrendBot:
             if target > qty:
                 top_up_qty = target - qty
                 self.log(f"sync {symbol}: under-sized {side} qty {qty} < target {target}; topping up {top_up_qty}")
-                action = "BUY" if side == LONG else "SELL"
-                o = MarketOrder(action, top_up_qty)
-                o.orderRef = ref
-                o.outsideRth = self.outside_rth
-                if self.account:
-                    o.account = self.account
-                tr = self.ib.placeOrder(contract, o)
-                waited = 0
-                while waited < self.entry_timeout_sec:
-                    self.ib.sleep(1)
-                    waited += 1
-                    if tr.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
-                        break
-                f = int(tr.orderStatus.filled or 0)
-                if f > 0:
+                if self._is_overnight(oc):
+                    # OVERNIGHT venue: market orders reject -> marketable-limit walk, no native stop
+                    pt, _ = self.place_entry_with_stop(oc, side, top_up_qty, close, stop, ref, tick)
+                    f = int(pt.orderStatus.filled or 0) if pt else 0
+                    fp = float(pt.orderStatus.avgFillPrice or entry) if pt else entry
+                else:
+                    action = "BUY" if side == LONG else "SELL"
+                    o = MarketOrder(action, top_up_qty)
+                    o.orderRef = ref
+                    o.outsideRth = self.outside_rth
+                    if self.account:
+                        o.account = self.account
+                    tr = self.ib.placeOrder(contract, o)
+                    waited = 0
+                    while waited < self.entry_timeout_sec:
+                        self.ib.sleep(1)
+                        waited += 1
+                        if tr.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
+                            break
+                    f = int(tr.orderStatus.filled or 0)
                     fp = float(tr.orderStatus.avgFillPrice or entry)
+                if f > 0:
                     entry = ((entry * qty) + (fp * f)) / (qty + f) if qty else fp
                     qty += f
                     self.log(f"sync {symbol}: topped up {f} -> qty {qty} entry avg {entry:.2f}")
                 else:
                     self.log(f"sync {symbol}: top-up {top_up_qty} no fill; keeping qty {qty}")
 
-            # ONE consolidated stop for the full held quantity (cancels any stacked stops)
-            st_trade = self.reconcile_stops(symbol, contract, side, qty, stop, tick)
+            # ONE consolidated stop for the full held quantity (cancels any stacked stops). On
+            # the OVERNIGHT venue reconcile_stops returns None -> protection is synthetic.
+            st_trade = self.reconcile_stops(symbol, oc, side, qty, stop, tick)
             self.positions[symbol] = {
                 "contract": contract, "side": side, "qty": qty, "entry": entry, "stop": stop,
                 "st": st_trade, "ref": ref, "opened": now_et(),
@@ -850,15 +1085,22 @@ class SupertrendBot:
         direction). The Supertrend line is the live 'sell' level, so the stop always tracks
         the Supertrend for this stock/timeframe (req: stop loss = Supertrend sell)."""
         new_stop = self._st_stop(p["side"], line, close, tick)
+        oc = self._order_contract(p["contract"])
+        # A synthetic stop (OVERNIGHT venue) has no resting order to modify — only its level is
+        # trailed in state; manage_symbol enforces the level each bar with a marketable LIMIT.
+        synth = p.get("st") is None
+        tag = "Supertrend, synthetic" if synth else "Supertrend"
         if p["side"] == LONG:
             if new_stop > p["stop"] + tick / 2:
-                self.modify_stop(p["contract"], p["st"], new_stop, p["qty"], tick)
-                self.log(f"{symbol} trail LONG stop -> {new_stop:.2f} (Supertrend)")
+                if not synth:
+                    self.modify_stop(oc, p["st"], new_stop, p["qty"], tick)
+                self.log(f"{symbol} trail LONG stop -> {new_stop:.2f} ({tag})")
                 p["stop"] = new_stop
         else:
             if new_stop < p["stop"] - tick / 2:
-                self.modify_stop(p["contract"], p["st"], new_stop, p["qty"], tick)
-                self.log(f"{symbol} trail SHORT stop -> {new_stop:.2f} (Supertrend)")
+                if not synth:
+                    self.modify_stop(oc, p["st"], new_stop, p["qty"], tick)
+                self.log(f"{symbol} trail SHORT stop -> {new_stop:.2f} ({tag})")
                 p["stop"] = new_stop
 
     def manage_symbol(self, symbol):
@@ -878,21 +1120,86 @@ class SupertrendBot:
         desired = self.desired_side(bull)
         p = self.positions.get(symbol)
 
+        # ---- per-bar status line (console + log) so every bar is visible even with no action.
+        # Logged once per NEW completed bar (bar_time), so it fires every bar (e.g. every 5 min
+        # on 5-min bars) without spamming heartbeat/daily re-evals of the same bar.
+        if self._last_log_bar.get(symbol) != bar_time:
+            self._last_log_bar[symbol] = bar_time
+            self._last_hb_time[symbol] = now_et()
+            if self.dema_enabled:
+                dres = dema_value(symbol=symbol, bar_size=self.bar_size,
+                                  period=self.dema_period, bars=bars)
+                dtxt = f"DEMA{self.dema_period} {dres.value:.2f}" if dres else f"DEMA{self.dema_period} n/a"
+            else:
+                dtxt = "DEMA off"
+            postxt = (f"pos {p['side']} {p['qty']}@{p['entry']:.2f} stop {p['stop']:.2f}"
+                      if p else "flat")
+            self.log(f"{symbol} [{self.market_hours}] bar {bar_time} "
+                     f"ST({self.atr_period},{self.mult}) {'BULL' if bull else 'BEAR'} "
+                     f"line {line:.2f} close {close:.2f} | {dtxt} | desired {desired} | {postxt}")
+        else:
+            # No NEW bar (e.g. after 20:00 ET a stock stops printing extended-hours bars, or a
+            # holiday) -> emit a low-frequency heartbeat so it's clear the bot is alive/idle
+            # rather than dead. Throttled to idle_heartbeat_sec (default 300s).
+            hb = int(self.cfg.get("idle_heartbeat_sec", 300))
+            lasthb = self._last_hb_time.get(symbol)
+            if lasthb is None or (now_et() - lasthb).total_seconds() >= hb:
+                self._last_hb_time[symbol] = now_et()
+                postxt = (f"pos {p['side']} {p['qty']}@{p['entry']:.2f} stop {p['stop']:.2f}"
+                          if p else "flat")
+                self.log(f"{symbol} [{self.market_hours}] idle — no new bar since {bar_time} "
+                         f"(symbol not trading this session) | {postxt}")
+
         if p:
-            # 1) stopped out (server-side)?
-            if p["st"] and p["st"].orderStatus.status == "Filled":
-                exit_px = float(p["st"].orderStatus.avgFillPrice or p["stop"])
+            oc = self._order_contract(contract)          # active venue (OVERNIGHT during 20-04)
+            overnight = self._is_overnight(oc)
+            last_px = bars[-1].close if bars else close   # most recent price for synthetic stop
+            st = p.get("st")
+            # 1) protective stop hit? EITHER a native server-side stop filled, OR (on the
+            #    OVERNIGHT venue, which has no native stops) the SYNTHETIC stop level is breached
+            #    -> flatten now with a marketable LIMIT. st is None whenever protection is synthetic.
+            native_filled = st is not None and st.orderStatus.status == "Filled"
+            synth_hit = st is None and (
+                (p["side"] == LONG and last_px <= p["stop"]) or
+                (p["side"] == SHORT and last_px >= p["stop"]))
+            if native_filled or synth_hit:
+                if native_filled:
+                    exit_px = float(st.orderStatus.avgFillPrice or p["stop"])
+                else:
+                    self.log(f"{symbol} SYNTHETIC stop hit: {p['side']} px {last_px:.2f} "
+                             f"vs stop {p['stop']:.2f} -> flattening")
+                    tr = self.flatten(oc, p["side"], p["qty"], p["ref"], ref_price=last_px)
+                    exit_px = (float(tr.orderStatus.avgFillPrice)
+                               if (tr and tr.orderStatus.avgFillPrice) else last_px)
                 self.close_position(symbol, exit_px, "STOP")
                 p = None
             # 2) signal changed -> exit (to cash) or prepare to reverse
             elif desired != p["side"]:
-                self.cancel(p["st"])
-                tr = self.flatten(contract, p["side"], p["qty"], p["ref"])
-                exit_px = float(tr.orderStatus.avgFillPrice) if (tr and tr.orderStatus.avgFillPrice) else close
+                self.cancel(st)
+                tr = self.flatten(oc, p["side"], p["qty"], p["ref"], ref_price=last_px)
+                exit_px = float(tr.orderStatus.avgFillPrice) if (tr and tr.orderStatus.avgFillPrice) else last_px
                 self.close_position(symbol, exit_px, "FLIP")
                 p = None
             else:
-                # 3) same side -> trail the stop toward the Supertrend line
+                # 3) same side -> keep protection correct for the ACTIVE venue, then trail.
+                #    OVERNIGHT: no native stop can rest (LMT-only) -> protection is synthetic
+                #    (enforced above); if a native stop from the prior day session is still
+                #    resting, cancel it (reconcile_stops(OVERNIGHT) drops it and returns None).
+                #    Non-OVERNIGHT: a native stop must be live and on this venue; re-place it if
+                #    it went inactive or the venue just switched (a native order can't be re-routed).
+                if overnight:
+                    if st is not None:
+                        self.log(f"{symbol} entering OVERNIGHT -> switching to synthetic stop")
+                        p["st"] = self.reconcile_stops(symbol, oc, p["side"], p["qty"], p["stop"], tick)
+                else:
+                    alive = st is not None and st.orderStatus.status in (
+                        "PreSubmitted", "Submitted", "PendingSubmit", "ApiPending")
+                    st_exch = getattr(getattr(st, "contract", None), "exchange", None)
+                    same_venue = st_exch == getattr(oc, "exchange", None)
+                    if not alive or not same_venue:
+                        why = "not live" if not alive else f"venue switch -> {getattr(oc, 'exchange', '?')}"
+                        self.log(f"{symbol} protective stop {why} -> re-placing")
+                        p["st"] = self.reconcile_stops(symbol, oc, p["side"], p["qty"], p["stop"], tick)
                 self._trail(symbol, p, line, close, tick)
                 return
 
@@ -976,7 +1283,7 @@ class SupertrendBot:
                     for symbol in list(self.positions):
                         p = self.positions[symbol]
                         self.cancel(p["st"])
-                        tr = self.flatten(p["contract"], p["side"], p["qty"], p["ref"])
+                        tr = self.flatten(self._order_contract(p["contract"]), p["side"], p["qty"], p["ref"])
                         exit_px = (float(tr.orderStatus.avgFillPrice)
                                    if (tr and tr.orderStatus.avgFillPrice) else p["entry"])
                         self.close_position(symbol, exit_px, "EOD")

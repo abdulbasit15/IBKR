@@ -96,7 +96,7 @@
 
   "intraday_mode": false,
   "eod_flatten_time": "15:55",
-  "entry_window": ["09:35", "15:45"],
+  "_entry_window_comment": "Omitted on purpose -> each strategy's entry_window defaults to its market_hours session (RTH 09:35-15:55, ETH 04:00-20:00, 24H 00:00-23:59). Set entry_window here or per-strategy to override.",
   "entry_on_flip_only": false,
   "poll_interval_sec": 30,
 
@@ -108,8 +108,13 @@
     "max_position_notional": 100000
   },
   "max_concurrent_positions": 5,
+  "_order_type_comment": "RTH strategies enter with MARKET + stop-market. ETH/24H strategies enter with a marketable-LIMIT that chases (market orders are rejected outside RTH) + a stop-LIMIT protective stop, and exit with an aggressively marketable limit.",
   "entry_offset_pct": 0.0005,
   "entry_timeout_sec": 60,
+  "max_chase_pct": 0.005,
+  "entry_chase_levels": 4,
+  "stop_limit_offset_pct": 0.003,
+  "exit_offset_pct": 0.01,
 
   "log_dir": "logs",
   "trade_log_csv": "supertrend_trades.csv"
