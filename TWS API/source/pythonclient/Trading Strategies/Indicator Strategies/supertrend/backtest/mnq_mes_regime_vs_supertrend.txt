@@ -1,0 +1,107 @@
+ONLY-SUPERTREND vs REGIME-ADAPTIVE — period with BOTH choppy & trending phases
+long_short, continuous futures, 1 contract. ONLY_ST=raw ST | REGIME=ST+regime stand-aside | LIVE=ST+DEMA+regime
+Regime: TREND when CHOP<38 & ADX>25; CHOP when CHOP>61. MNQ $2/pt, MES $5/pt.
+
+==========================================================================================
+MNQ 15m   (23,586 bars)
+  phase                 strategy   Trades   Win%    PF    NetP/L$    MaxDD$  %TREND
+  CHOPPY  Nov25-Mar26   ONLY_ST       436   28.7  1.27     +9,145    -5,612     35%
+  CHOPPY  Nov25-Mar26   REGIME        214   29.4  1.33     +5,596    -3,891     35%
+  CHOPPY  Nov25-Mar26   LIVE          174   33.3  1.42     +5,917    -2,693     35%
+
+  TREND   Apr-Jul26     ONLY_ST       366   24.6  0.79     -9,128   -13,850     36%
+  TREND   Apr-Jul26     REGIME        161   31.7  1.12     +2,095    -2,455     36%
+  TREND   Apr-Jul26     LIVE          132   32.6  1.21     +2,963    -2,068     36%
+
+  COMBINED Nov25-Jul26  ONLY_ST       801   26.7  1.00        +78   -13,850     35%
+  COMBINED Nov25-Jul26  REGIME        374   30.5  1.23     +7,904    -3,891     35%
+  COMBINED Nov25-Jul26  LIVE          305   33.1  1.32     +9,094    -2,693     35%
+
+
+==========================================================================================
+MNQ 30m   (23,571 bars)
+  phase                 strategy   Trades   Win%    PF    NetP/L$    MaxDD$  %TREND
+  CHOPPY  Nov25-Mar26   ONLY_ST       235   26.0  1.06     +1,742    -6,568     38%
+  CHOPPY  Nov25-Mar26   REGIME        135   25.9  0.95       -913    -7,110     38%
+  CHOPPY  Nov25-Mar26   LIVE          109   27.5  0.93     -1,079    -6,197     38%
+
+  TREND   Apr-Jul26     ONLY_ST       182   26.9  0.95     -1,320   -10,171     39%
+  TREND   Apr-Jul26     REGIME         76   31.6  0.88     -1,537    -4,844     39%
+  TREND   Apr-Jul26     LIVE           64   31.2  0.92       -803    -3,850     39%
+
+  COMBINED Nov25-Jul26  ONLY_ST       416   26.2  1.01       +505   -10,735     38%
+  COMBINED Nov25-Jul26  REGIME        210   27.6  0.93     -2,367    -7,110     38%
+  COMBINED Nov25-Jul26  LIVE          172   28.5  0.93     -1,800    -6,197     38%
+
+
+==========================================================================================
+MNQ 1h   (14,701 bars)
+  phase                 strategy   Trades   Win%    PF    NetP/L$    MaxDD$  %TREND
+  CHOPPY  Nov25-Mar26   ONLY_ST       114   31.6  1.14     +2,456    -5,972     48%
+  CHOPPY  Nov25-Mar26   REGIME         68   30.9  1.13     +1,475    -4,626     48%
+  CHOPPY  Nov25-Mar26   LIVE           61   31.1  0.86     -1,517    -4,846     48%
+
+  TREND   Apr-Jul26     ONLY_ST       101   24.8  0.81     -3,879    -7,372     50%
+  TREND   Apr-Jul26     REGIME         65   21.5  0.74     -3,929    -6,930     50%
+  TREND   Apr-Jul26     LIVE           50   26.0  0.79     -2,761    -6,268     50%
+
+  COMBINED Nov25-Jul26  ONLY_ST       214   28.5  0.96     -1,364    -7,372     49%
+  COMBINED Nov25-Jul26  REGIME        132   26.5  0.91     -2,396    -6,930     49%
+  COMBINED Nov25-Jul26  LIVE          110   29.1  0.83     -4,219    -6,556     49%
+
+
+==========================================================================================
+MES 15m   (23,585 bars)
+  phase                 strategy   Trades   Win%    PF    NetP/L$    MaxDD$  %TREND
+  CHOPPY  Nov25-Mar26   ONLY_ST       437   28.1  1.09     +1,645    -3,385     31%
+  CHOPPY  Nov25-Mar26   REGIME        185   34.6  1.40     +3,244    -1,075     31%
+  CHOPPY  Nov25-Mar26   LIVE          156   35.9  1.47     +3,220      -828     31%
+
+  TREND   Apr-Jul26     ONLY_ST       367   23.2  0.72     -4,727    -6,216     33%
+  TREND   Apr-Jul26     REGIME        164   27.4  0.78     -1,815    -2,164     33%
+  TREND   Apr-Jul26     LIVE          143   23.8  0.73     -2,205    -3,121     33%
+
+  COMBINED Nov25-Jul26  ONLY_ST       803   25.8  0.91     -3,046    -6,216     32%
+  COMBINED Nov25-Jul26  REGIME        348   31.3  1.09     +1,553    -2,164     32%
+  COMBINED Nov25-Jul26  LIVE          298   30.2  1.08     +1,139    -3,121     32%
+
+
+==========================================================================================
+MES 30m   (23,571 bars)
+  phase                 strategy   Trades   Win%    PF    NetP/L$    MaxDD$  %TREND
+  CHOPPY  Nov25-Mar26   ONLY_ST       243   25.5  1.08     +1,098    -2,947     38%
+  CHOPPY  Nov25-Mar26   REGIME        135   26.7  0.79     -1,869    -3,691     38%
+  CHOPPY  Nov25-Mar26   LIVE          105   31.4  0.93       -467    -2,385     38%
+
+  TREND   Apr-Jul26     ONLY_ST       170   24.1  0.66     -4,312    -5,923     32%
+  TREND   Apr-Jul26     REGIME         65   30.8  0.69     -1,723    -2,890     32%
+  TREND   Apr-Jul26     LIVE           56   26.8  0.60     -2,003    -2,784     32%
+
+  COMBINED Nov25-Jul26  ONLY_ST       412   24.8  0.88     -3,169    -5,923     35%
+  COMBINED Nov25-Jul26  REGIME        199   27.6  0.75     -3,547    -4,428     35%
+  COMBINED Nov25-Jul26  LIVE          160   29.4  0.79     -2,425    -3,337     35%
+
+
+==========================================================================================
+MES 1h   (14,643 bars)
+  phase                 strategy   Trades   Win%    PF    NetP/L$    MaxDD$  %TREND
+  CHOPPY  Nov25-Mar26   ONLY_ST       105   36.2  1.62     +3,853    -1,175     45%
+  CHOPPY  Nov25-Mar26   REGIME         55   41.8  1.50     +2,081      -933     45%
+  CHOPPY  Nov25-Mar26   LIVE           50   40.0  1.23       +913      -812     45%
+
+  TREND   Apr-Jul26     ONLY_ST        94   24.5  0.93       -535    -1,632     30%
+  TREND   Apr-Jul26     REGIME         30   43.3  1.03        +76    -1,141     30%
+  TREND   Apr-Jul26     LIVE           26   50.0  1.52     +1,025    -1,141     30%
+
+  COMBINED Nov25-Jul26  ONLY_ST       198   30.8  1.25     +3,355    -1,632     39%
+  COMBINED Nov25-Jul26  REGIME         84   42.9  1.31     +2,194    -1,141     39%
+  COMBINED Nov25-Jul26  LIVE           75   44.0  1.33     +1,976    -1,141     39%
+
+==========================================================================================
+COMBINED-window totals across all 6 series (Net P/L $):
+  ONLY_ST          -3,641
+  REGIME           +3,341
+  LIVE             +3,766
+==========================================================================================
+REGIME/LIVE stand aside in chop (fewer trades, smaller DD); ONLY_ST trades everything.
+Stops modeled filling at the trailed Supertrend level (no slippage/gaps).

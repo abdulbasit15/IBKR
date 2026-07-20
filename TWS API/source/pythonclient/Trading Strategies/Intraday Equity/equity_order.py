@@ -1,9 +1,14 @@
 """Equity order helpers for the intraday long-only bots.
 
 Key adversarial-review fixes baked in:
-* LIMIT-ONLY ENTRIES: the entry walk NEVER falls back to a MarketOrder (the reused
-  custom_order.py did). On no-fill it cancels and returns None. Market orders are used
-  ONLY for emergency flatten / EOD.
+* TWO ENTRY MODES (entry_order_type in equity.json):
+    - "MKT": a true market order -- fills immediately at the market, no price ceiling.
+      Fast/certain fills; on a stale/gapped signal it CAN fill well past the level (see the
+      2026-07-16 PDH log: an IR signal at ~79.58 filled @ 84.64 on delayed data).
+    - "LMT": the marketable-limit walk -- rests a BUY LIMIT at the intended entry and chases
+      up in a few steps to entry*(1+max_chase_pct), never above it. Bounded fill price; on a
+      runaway move it cancels and returns None (no fill) rather than chasing past the cap.
+  The limit walk NEVER falls back to a MarketOrder. Emergency flatten / EOD always use MKT.
 * ATOMIC PROTECTION: protective TP + stop children are attached to the entry parent
   (parentId + transmit chaining) and OCA-grouped, so the stop is server-side the instant
   the parent fills - no "naked long" window.
@@ -72,9 +77,11 @@ def place_protected_entry(ib, contract, qty: int, entry_limit: float, take_profi
                           entry_timeout_sec: int = 120, max_chase_pct: float = 0.0,
                           market: bool = False):
     """Submit a BUY with TP+stop attached. market=True -> BUY MARKET (fills immediately at
-    the market, the requested behaviour for a new-bar-open entry). market=False -> the
-    legacy marketable-limit walk: if unfilled within entry_timeout_sec, cancel and
-    (optionally) re-submit up to max_chase_pct higher (never a market order).
+    the market, the requested behaviour for a new-bar-open entry; no price ceiling).
+    market=False -> the marketable-limit CHASE walk: rest a BUY LIMIT at entry_limit and, if
+    unfilled, step it up toward entry_limit*(1+max_chase_pct) over entry_timeout_sec to catch
+    a fast-moving breakout, never above that cap (never a market order). On no fill within
+    the walk it cancels and returns None.
     Returns (parent_trade, tp_trade, stop_trade) or (None,)*3.
 
     Partial fills: if the parent partially fills we KEEP the filled qty, cancel the

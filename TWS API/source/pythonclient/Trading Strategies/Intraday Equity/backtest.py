@@ -38,9 +38,10 @@ PORTS = [4002, 7497, 4001]
 def connect():
     loop = asyncio.new_event_loop(); asyncio.set_event_loop(loop)
     ib = IB()
+    cid = int(os.environ.get("BT_CLIENT_ID", 93))   # override if 93 is already in use
     for p in PORTS:
         try:
-            ib.connect("127.0.0.1", p, clientId=93, readonly=True)
+            ib.connect("127.0.0.1", p, clientId=cid, readonly=True)
             ib.reqMarketDataType(3)
             ib.sleep(6)   # let the HMDS data farm wake after (re)login before first hist req
             print(f"connected on port {p}")
@@ -371,7 +372,64 @@ def bt_nr7(sym, data, cfg):
     return trades
 
 
-RUN = {"orb_stocks_in_play": bt_orb, "nr7_compression": bt_nr7, "pdh_breakout": bt_pdh}
+def bt_vwap(sym, data, cfg):
+    """VWAP Pullback / Reclaim continuation (break-and-retest of session VWAP), 5-min bars.
+    Mirrors strategies/vwap_pullback.py: rising VWAP + impulse above VWAP -> controlled
+    pullback that re-tests the VWAP zone on a higher low -> long when the bar reclaims above
+    the pullback high (and VWAP) on volume. Stop below the pullback low, floored to
+    min_stop_pct; target = entry + target_r_mult * R."""
+    wins = parse_windows(cfg["windows"]); trades = []
+    slope_lb = int(cfg.get("vwap_slope_lookback", 3)); lb = int(cfg.get("pullback_lookback", 8))
+    impulse_pct = float(cfg.get("impulse_pct", 0.003)); touch_band = float(cfg.get("pullback_touch_band", 0.003))
+    reclaim_depth = float(cfg.get("reclaim_depth_pct", 0.002)); vmult = float(cfg.get("vol_mult", 1.3))
+    eoff = float(cfg.get("entry_offset_atr_mult", 0.05)); satr = float(cfg.get("stop_atr_mult", 0.5))
+    tmult = float(cfg.get("target_r_mult", 2.0))
+    be = float(cfg.get("breakeven_mult", 1.0)); ts = float(cfg.get("trail_start_mult", 1.5)); tl = float(cfg.get("trail_lock_mult", 0.5))
+    for d in sessions(data["m5"]):
+        bars = data["m5"][d]
+        if len(bars) < max(lb, slope_lb) + 3: continue
+        vw = [vwap_upto(bars, k) for k in range(len(bars))]
+        for i in range(max(lb, slope_lb) + 1, len(bars) - 1):
+            b = bars[i]
+            if not in_windows(b, wins):
+                if _min(b.date) > max(w[1] for w in wins): break
+                continue
+            vw_now = vw[i]
+            if vw_now is None: continue
+            base_vw = vw[i - slope_lb]
+            if base_vw is None or vw_now <= base_vw: continue      # VWAP must be rising
+            if b.close <= vw_now: continue                          # price above VWAP now
+            lo = max(1, i - lb); i_imp = None
+            for k in range(lo, i - 1):
+                if vw[k] is not None and bars[k].high >= vw[k] * (1 + impulse_pct):
+                    i_imp = k; break                                # first impulse above VWAP
+            if i_imp is None: continue
+            seg = range(i_imp + 1, i)
+            if len(list(seg)) < 1: continue
+            pullback_low = min(bars[j].low for j in seg)
+            pullback_high = max(bars[j].high for j in seg)
+            pl_idx = min(seg, key=lambda j: bars[j].low)
+            if not any(vw[j] is not None and bars[j].low <= vw[j] * (1 + touch_band) for j in seg): continue
+            vw_pl = vw[pl_idx]
+            if vw_pl is not None and pullback_low < vw_pl * (1 - reclaim_depth): continue  # held above VWAP
+            if pullback_low <= bars[i_imp].low: continue            # higher low vs impulse base
+            if b.close <= pullback_high: continue                   # reclaim/continuation trigger
+            recent = [x.volume for x in bars[max(0, i-6):i] if x.volume]
+            if recent and b.volume < vmult * (sum(recent)/len(recent)): continue
+            a5 = atr_intraday(bars, i)
+            entry = pullback_high + eoff * a5
+            stop = min(pullback_low - satr * a5, entry * (1 - MIN_STOP)); r = entry - stop
+            if r <= 0: continue
+            target = entry + tmult * r
+            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl)
+            t = record(sym, d, entry, stop, target, ex, why, r)
+            if t: trades.append(t)
+            break
+    return trades
+
+
+RUN = {"orb_stocks_in_play": bt_orb, "nr7_compression": bt_nr7, "pdh_breakout": bt_pdh,
+       "vwap_pullback": bt_vwap}
 
 
 def summarize(name, trades):

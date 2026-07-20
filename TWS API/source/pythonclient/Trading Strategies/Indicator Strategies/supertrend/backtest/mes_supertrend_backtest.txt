@@ -1,0 +1,48 @@
+MES Supertrend-bot backtest  —  long_only ST(10,3) + DEMA(200), 24H, 1 contract ($5/pt)
+Front month contract: MESU6 (Sep 2026).  Start capital $100,000, warmup 400 bars.
+
+======================================================================
+Timeframe : 15 mins   (9,523 bars, 24H)   2026-02-22 -> 2026-07-17
+  Trades          : 180   (STOP 174 / FLIP 6 / END 0)
+  Win rate        : 32.8%
+  Profit factor   : 1.04
+  Net P/L (gross) : $+330   (+0.33% on $100k, 1 contract)
+  Net P/L (comm.) : $+143   (after ~$1.04/RT x 180)
+  Max drawdown    : -2.03%
+  Avg win / loss  : $+149 / $-70   (payoff 2.13)
+  Avg hold (bars) : 20.0
+  Time in market  : 41.4%
+
+======================================================================
+Timeframe : 30 mins   (6,616 bars, 24H)   2025-11-04 -> 2026-07-17
+  Trades          : 126   (STOP 123 / FLIP 3 / END 0)
+  Win rate        : 38.1%
+  Profit factor   : 1.28
+  Net P/L (gross) : $+1,990   (+1.99% on $100k, 1 contract)
+  Net P/L (comm.) : $+1,859   (after ~$1.04/RT x 126)
+  Max drawdown    : -1.69%
+  Avg win / loss  : $+188 / $-90   (payoff 2.09)
+  Avg hold (bars) : 19.1
+  Time in market  : 40.7%
+
+======================================================================
+Timeframe : 1 hour   (3,403 bars, 24H)   2025-07-24 -> 2026-07-17
+  Trades          : 60   (STOP 59 / FLIP 1 / END 0)
+  Win rate        : 40.0%
+  Profit factor   : 1.38
+  Net P/L (gross) : $+1,765   (+1.77% on $100k, 1 contract)
+  Net P/L (comm.) : $+1,703   (after ~$1.04/RT x 60)
+  Max drawdown    : -1.74%
+  Avg win / loss  : $+265 / $-128   (payoff 2.08)
+  Avg hold (bars) : 20.6
+  Time in market  : 43.1%
+
+============================================================================================
+SUMMARY  (long_only ST(10,3)+DEMA200, 24H, 1 MES contract, gross)
+--------------------------------------------------------------------------------------------
+TF        Trades   Win%    PF    NetP/L$    Ret%   MaxDD%      B&H$
+--------------------------------------------------------------------------------------------
+15 mins      180   32.8  1.04       +330   +0.33    -2.03    +2,619
+30 mins      126   38.1  1.28     +1,990   +1.99    -1.69    +2,315
+1 hour        60   40.0  1.38     +1,765   +1.77    -1.74    +1,938
+============================================================================================

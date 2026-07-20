@@ -138,8 +138,9 @@ if (Test-Path $buildDir) {
 Write-Info 'Building supertrend_bot.exe with PyInstaller...'
 # tzdata is REQUIRED on Windows for the ET (zoneinfo) clock. ib_async + aeventkit need their
 # package metadata. No openpyxl: this bot writes the trade log as CSV, not Excel.
-# The shared indicator package lives one level up at <Trading Strategies>\Indicators, so add
-# the parent dir to PyInstaller's search path and pull in all of its submodules.
+# The shared indicator package lives at <Trading Strategies>\Indicators, which is TWO levels up
+# from this folder (Indicator Strategies\supertrend\), so add that dir to PyInstaller's search
+# path and pull in all of its submodules.
 $pyInstallerArgs = @(
     '--clean',
     '--onefile',
@@ -148,7 +149,7 @@ $pyInstallerArgs = @(
     '--copy-metadata', 'ib_async',
     '--copy-metadata', 'aeventkit',
     '--collect-all', 'tzdata',
-    '--paths', '..',
+    '--paths', '..\..',
     '--collect-submodules', 'Indicators',
     '--distpath', '.\dist',
     '--workpath', '.\build_pi',

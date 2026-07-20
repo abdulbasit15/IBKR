@@ -1,0 +1,107 @@
+Supertrend-bot backtest — long_short: DEMA(200) ON vs OFF  (ST(10,3), 24H, 1 contract)
+Start $100,000, warmup 400 bars. MNQ $2/pt, MES $5/pt. Windows end 2026-07-17.
+
+==============================================================================
+MNQ 15 mins   (9,545 bars, 24H)   trading 2026-02-27->2026-07-17
+                           DEMA ON        DEMA OFF
+  Trades                       387             532
+    long / short           190/197         274/258
+  Win rate                   34.6%           32.3%
+  Profit factor               0.97            0.96
+  Net P/L $                 -1,447          -1,886
+  Return %                  -1.45%          -1.89%
+  Net after comm            -1,849          -2,439
+  Max drawdown              -8.75%         -10.84%
+  Time in mkt                80.4%          100.0%
+  P/L split ON : long $-927 / short $-519
+  P/L split OFF: long $+567 / short $-2,453
+
+==============================================================================
+MNQ 30 mins   (6,624 bars, 24H)   trading 2025-12-30->2026-07-17
+                           DEMA ON        DEMA OFF
+  Trades                       276             357
+    long / short           137/139         189/168
+  Win rate                   39.5%           38.1%
+  Profit factor               1.46            1.48
+  Net P/L $                +14,829         +18,840
+  Return %                 +14.83%         +18.84%
+  Net after comm           +14,542         +18,469
+  Max drawdown              -4.93%          -5.78%
+  Time in mkt                81.2%          100.0%
+  P/L split ON : long $+10,461 / short $+4,369
+  P/L split OFF: long $+12,506 / short $+6,335
+
+==============================================================================
+MNQ 1 hour   (3,379 bars, 24H)   trading 2026-01-13->2026-07-17
+                           DEMA ON        DEMA OFF
+  Trades                       157             197
+    long / short             79/78          101/96
+  Win rate                   33.8%           31.5%
+  Profit factor               0.95            1.05
+  Net P/L $                 -1,605          +1,537
+  Return %                  -1.60%          +1.54%
+  Net after comm            -1,768          +1,333
+  Max drawdown              -7.00%          -5.83%
+  Time in mkt                83.3%           99.9%
+  P/L split ON : long $+1,294 / short $-2,898
+  P/L split OFF: long $+4,149 / short $-2,612
+
+==============================================================================
+MES 15 mins   (9,523 bars, 24H)   trading 2026-02-27->2026-07-17
+                           DEMA ON        DEMA OFF
+  Trades                       409             545
+    long / short           196/213         279/266
+  Win rate                   30.8%           31.2%
+  Profit factor               0.88            0.95
+  Net P/L $                 -2,390          -1,172
+  Return %                  -2.39%          -1.17%
+  Net after comm            -2,816          -1,739
+  Max drawdown              -5.95%          -6.21%
+  Time in mkt                81.2%          100.0%
+  P/L split ON : long $-135 / short $-2,255
+  P/L split OFF: long $+427 / short $-1,599
+
+==============================================================================
+MES 30 mins   (6,616 bars, 24H)   trading 2026-01-02->2026-07-17
+                           DEMA ON        DEMA OFF
+  Trades                       276             372
+    long / short           131/145         186/186
+  Win rate                   36.6%           37.4%
+  Profit factor               1.18            1.22
+  Net P/L $                 +2,775          +4,281
+  Return %                  +2.77%          +4.28%
+  Net after comm            +2,488          +3,894
+  Max drawdown              -4.46%          -5.10%
+  Time in mkt                78.7%          100.0%
+  P/L split ON : long $+2,128 / short $+647
+  P/L split OFF: long $+2,886 / short $+1,395
+
+==============================================================================
+MES 1 hour   (3,403 bars, 24H)   trading 2026-01-13->2026-07-17
+                           DEMA ON        DEMA OFF
+  Trades                       137             187
+    long / short             65/72           98/89
+  Win rate                   37.2%           33.2%
+  Profit factor               1.18            1.14
+  Net P/L $                 +1,798          +1,860
+  Return %                  +1.80%          +1.86%
+  Net after comm            +1,655          +1,665
+  Max drawdown              -1.74%          -2.42%
+  Time in mkt                80.2%           99.9%
+  P/L split ON : long $+1,703 / short $+95
+  P/L split OFF: long $+1,966 / short $-106
+
+====================================================================================================
+SUMMARY — long_short  (gross Net P/L $ | PF | Win% | Trades)
+----------------------------------------------------------------------------------------------------
+Series          DEMA ON P/L    PF   Win%   Tr      DEMA OFF P/L    PF   Win%   Tr
+----------------------------------------------------------------------------------------------------
+MNQ 15 mins          -1,447  0.97   34.6  387            -1,886  0.96   32.3  532
+MNQ 30 mins         +14,829  1.46   39.5  276           +18,840  1.48   38.1  357
+MNQ 1 hour           -1,605  0.95   33.8  157            +1,537  1.05   31.5  197
+MES 15 mins          -2,390  0.88   30.8  409            -1,172  0.95   31.2  545
+MES 30 mins          +2,775  1.18   36.6  276            +4,281  1.22   37.4  372
+MES 1 hour           +1,798  1.18   37.2  137            +1,860  1.14   33.2  187
+====================================================================================================
+DEMA OFF = pure Supertrend long_short (always in market, reverse on every flip).
+Stops modeled as filling exactly at the trailed Supertrend level (no slippage/gaps).

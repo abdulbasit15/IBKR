@@ -1,0 +1,142 @@
+STRICTER MEAN-REVERT FADE in CHOP — salvage test (long_short, continuous futures, 1 contract)
+Gates: deep chop (CHOP>=min), low ADX, flat bands (bw<=rolling median), extreme %B/RSI, wider stop.
+Baseline = stand-aside (deployed). Period Nov25-Jul26. MNQ $2/pt, MES $5/pt.
+
+====================================================================================================
+MNQ 15m
+  phase               strategy        Trd   Win%    PF    NetP/L$    MaxDD$   mr-exits
+  CHOPPY Nov25-Mar26  ST+DEMA+REG     174   33.3  1.42     +5,917    -2,693   
+  CHOPPY Nov25-Mar26  +MR(orig)       269   35.3  1.10     +2,258    -4,782   regime:51 stop:16 target:15 time:13
+  CHOPPY Nov25-Mar26  +MR(chop45)     200   34.0  1.26     +4,343    -4,004   regime:3 stop:8 target:9 time:6
+  CHOPPY Nov25-Mar26  +MR(chop50)     184   34.8  1.41     +6,008    -3,133   stop:1 target:5 time:4
+  CHOPPY Nov25-Mar26  +MR(chop55w)    177   33.9  1.43     +6,037    -2,693   target:2 time:1
+
+  TREND  Apr-Jul26    ST+DEMA+REG     132   32.6  1.21     +2,963    -2,068   
+  TREND  Apr-Jul26    +MR(orig)       193   36.8  1.18     +3,455    -2,383   regime:27 stop:6 target:17 time:11
+  TREND  Apr-Jul26    +MR(chop45)     156   34.6  1.16     +2,710    -2,510   regime:10 stop:2 target:7 time:5
+  TREND  Apr-Jul26    +MR(chop50)     135   32.6  1.19     +2,737    -2,068   stop:1 target:1 time:1
+  TREND  Apr-Jul26    +MR(chop55w)    132   32.6  1.21     +2,963    -2,068   
+
+  BOTH   Nov25-Jul26  ST+DEMA+REG     305   33.1  1.32     +9,094    -2,693   
+  BOTH   Nov25-Jul26  +MR(orig)       460   36.1  1.15     +6,179    -4,782   regime:77 stop:22 target:32 time:24
+  BOTH   Nov25-Jul26  +MR(chop45)     354   34.5  1.23     +7,519    -4,004   regime:12 stop:10 target:16 time:11
+  BOTH   Nov25-Jul26  +MR(chop50)     318   34.0  1.31     +8,959    -3,133   stop:2 target:6 time:5
+  BOTH   Nov25-Jul26  +MR(chop55w)    308   33.4  1.33     +9,215    -2,693   target:2 time:1
+
+
+====================================================================================================
+MNQ 30m
+  phase               strategy        Trd   Win%    PF    NetP/L$    MaxDD$   mr-exits
+  CHOPPY Nov25-Mar26  ST+DEMA+REG     109   27.5  0.93     -1,079    -6,197   
+  CHOPPY Nov25-Mar26  +MR(orig)       147   32.7  0.92     -1,718    -7,231   regime:12 stop:11 target:7 time:8
+  CHOPPY Nov25-Mar26  +MR(chop45)     116   28.4  0.90     -1,718    -6,417   regime:1 stop:3 target:1 time:2
+  CHOPPY Nov25-Mar26  +MR(chop50)     110   27.3  0.91     -1,417    -6,197   stop:1
+  CHOPPY Nov25-Mar26  +MR(chop55w)    109   27.5  0.93     -1,079    -6,197   
+
+  TREND  Apr-Jul26    ST+DEMA+REG      64   31.2  0.92       -803    -3,850   
+  TREND  Apr-Jul26    +MR(orig)       102   37.3  0.96       -554    -3,438   regime:9 stop:13 target:14 time:3
+  TREND  Apr-Jul26    +MR(chop45)      76   36.8  1.07       +869    -3,624   regime:1 stop:3 target:8
+  TREND  Apr-Jul26    +MR(chop50)      67   34.3  1.01       +155    -3,332   target:3
+  TREND  Apr-Jul26    +MR(chop55w)     64   31.2  0.92       -803    -3,850   
+
+  BOTH   Nov25-Jul26  ST+DEMA+REG     172   28.5  0.93     -1,800    -6,197   
+  BOTH   Nov25-Jul26  +MR(orig)       248   34.3  0.94     -2,190    -7,231   regime:21 stop:24 target:21 time:11
+  BOTH   Nov25-Jul26  +MR(chop45)     191   31.4  0.97       -767    -6,417   regime:2 stop:6 target:9 time:2
+  BOTH   Nov25-Jul26  +MR(chop50)     176   29.5  0.96     -1,179    -6,197   stop:1 target:3
+  BOTH   Nov25-Jul26  +MR(chop55w)    172   28.5  0.93     -1,800    -6,197   
+
+
+====================================================================================================
+MNQ 1h
+  phase               strategy        Trd   Win%    PF    NetP/L$    MaxDD$   mr-exits
+  CHOPPY Nov25-Mar26  ST+DEMA+REG      61   31.1  0.86     -1,517    -4,846   
+  CHOPPY Nov25-Mar26  +MR(orig)        83   30.1  0.76     -3,404    -5,406   regime:7 stop:8 target:2 time:5
+  CHOPPY Nov25-Mar26  +MR(chop45)      64   31.2  0.83     -1,961    -5,036   stop:2 time:1
+  CHOPPY Nov25-Mar26  +MR(chop50)      62   30.6  0.85     -1,771    -4,846   stop:1
+  CHOPPY Nov25-Mar26  +MR(chop55w)     63   30.2  0.84     -1,874    -4,947   stop:1 time:1
+
+  TREND  Apr-Jul26    ST+DEMA+REG      50   26.0  0.79     -2,761    -6,268   
+  TREND  Apr-Jul26    +MR(orig)        66   25.8  0.89     -1,661    -5,865   regime:6 stop:5 target:3 time:3
+  TREND  Apr-Jul26    +MR(chop45)      54   27.8  0.88     -1,589    -5,874   regime:2 stop:1 target:2
+  TREND  Apr-Jul26    +MR(chop50)      51   27.5  0.82     -2,375    -6,268   target:1
+  TREND  Apr-Jul26    +MR(chop55w)     50   26.0  0.79     -2,761    -6,268   
+
+  BOTH   Nov25-Jul26  ST+DEMA+REG     110   29.1  0.83     -4,219    -6,556   
+  BOTH   Nov25-Jul26  +MR(orig)       148   28.4  0.83     -5,006    -7,287   regime:13 stop:13 target:5 time:8
+  BOTH   Nov25-Jul26  +MR(chop45)     117   29.9  0.86     -3,491    -6,214   regime:2 stop:3 target:2 time:1
+  BOTH   Nov25-Jul26  +MR(chop50)     112   29.5  0.83     -4,088    -6,811   stop:1 target:1
+  BOTH   Nov25-Jul26  +MR(chop55w)    112   28.6  0.81     -4,576    -6,914   stop:1 time:1
+
+
+====================================================================================================
+MES 15m
+  phase               strategy        Trd   Win%    PF    NetP/L$    MaxDD$   mr-exits
+  CHOPPY Nov25-Mar26  ST+DEMA+REG     156   35.9  1.47     +3,220      -828   
+  CHOPPY Nov25-Mar26  +MR(orig)       248   39.9  1.31     +3,230    -1,772   regime:47 stop:7 target:24 time:14
+  CHOPPY Nov25-Mar26  +MR(chop45)     180   36.7  1.37     +2,931    -1,133   regime:5 stop:2 target:9 time:8
+  CHOPPY Nov25-Mar26  +MR(chop50)     164   36.6  1.45     +3,227      -866   regime:2 stop:1 target:4 time:1
+  CHOPPY Nov25-Mar26  +MR(chop55w)    159   35.8  1.44     +3,114      -829   stop:1 target:1 time:1
+
+  TREND  Apr-Jul26    ST+DEMA+REG     143   23.8  0.73     -2,205    -3,121   
+  TREND  Apr-Jul26    +MR(orig)       205   32.7  0.87     -1,220    -2,087   regime:31 stop:1 target:19 time:12
+  TREND  Apr-Jul26    +MR(chop45)     165   27.9  0.79     -1,813    -2,502   regime:6 target:10 time:6
+  TREND  Apr-Jul26    +MR(chop50)     146   24.7  0.76     -1,942    -2,858   target:2 time:1
+  TREND  Apr-Jul26    +MR(chop55w)    144   24.3  0.73     -2,161    -3,077   target:1
+
+  BOTH   Nov25-Jul26  ST+DEMA+REG     298   30.2  1.08     +1,139    -3,121   
+  BOTH   Nov25-Jul26  +MR(orig)       451   36.8  1.12     +2,265    -2,087   regime:77 stop:8 target:43 time:26
+  BOTH   Nov25-Jul26  +MR(chop45)     344   32.6  1.07     +1,241    -2,502   regime:11 stop:2 target:19 time:14
+  BOTH   Nov25-Jul26  +MR(chop50)     309   31.1  1.09     +1,409    -2,858   regime:2 stop:1 target:6 time:2
+  BOTH   Nov25-Jul26  +MR(chop55w)    302   30.5  1.07     +1,077    -3,077   stop:1 target:2 time:1
+
+
+====================================================================================================
+MES 30m
+  phase               strategy        Trd   Win%    PF    NetP/L$    MaxDD$   mr-exits
+  CHOPPY Nov25-Mar26  ST+DEMA+REG     105   31.4  0.93       -467    -2,385   
+  CHOPPY Nov25-Mar26  +MR(orig)       149   32.2  0.84     -1,361    -3,065   regime:19 stop:7 target:8 time:11
+  CHOPPY Nov25-Mar26  +MR(chop45)     119   34.5  0.96       -270    -2,016   regime:3 stop:3 target:7 time:1
+  CHOPPY Nov25-Mar26  +MR(chop50)     107   31.8  0.93       -458    -2,376   regime:1 target:1
+  CHOPPY Nov25-Mar26  +MR(chop55w)    106   31.1  0.90       -640    -2,385   stop:1
+
+  TREND  Apr-Jul26    ST+DEMA+REG      56   26.8  0.60     -2,003    -2,784   
+  TREND  Apr-Jul26    +MR(orig)        98   38.8  0.79     -1,417    -2,072   regime:13 stop:5 target:13 time:11
+  TREND  Apr-Jul26    +MR(chop45)      72   31.9  0.75     -1,421    -2,103   regime:2 stop:1 target:7 time:6
+  TREND  Apr-Jul26    +MR(chop50)      61   27.9  0.61     -2,008    -2,794   target:1 time:4
+  TREND  Apr-Jul26    +MR(chop55w)     59   27.1  0.59     -2,173    -2,954   time:3
+
+  BOTH   Nov25-Jul26  ST+DEMA+REG     160   29.4  0.79     -2,425    -3,337   
+  BOTH   Nov25-Jul26  +MR(orig)       246   34.6  0.83     -2,733    -3,314   regime:32 stop:12 target:21 time:22
+  BOTH   Nov25-Jul26  +MR(chop45)     190   33.2  0.87     -1,646    -2,385   regime:5 stop:4 target:14 time:7
+  BOTH   Nov25-Jul26  +MR(chop50)     167   29.9  0.80     -2,421    -3,338   regime:1 target:2 time:4
+  BOTH   Nov25-Jul26  +MR(chop55w)    164   29.3  0.77     -2,768    -3,507   stop:1 time:3
+
+
+====================================================================================================
+MES 1h
+  phase               strategy        Trd   Win%    PF    NetP/L$    MaxDD$   mr-exits
+  CHOPPY Nov25-Mar26  ST+DEMA+REG      50   40.0  1.23       +913      -812   
+  CHOPPY Nov25-Mar26  +MR(orig)        77   42.9  1.04       +210    -1,252   regime:11 stop:7 target:5 time:4
+  CHOPPY Nov25-Mar26  +MR(chop45)      56   41.1  1.19       +822      -942   regime:1 stop:1 target:2 time:2
+  CHOPPY Nov25-Mar26  +MR(chop50)      51   39.2  1.22       +878      -822   time:1
+  CHOPPY Nov25-Mar26  +MR(chop55w)     51   39.2  1.22       +881      -812   time:1
+
+  TREND  Apr-Jul26    ST+DEMA+REG      26   50.0  1.52     +1,025    -1,141   
+  TREND  Apr-Jul26    +MR(orig)        43   48.8  1.42     +1,137    -1,285   regime:8 stop:2 target:7
+  TREND  Apr-Jul26    +MR(chop45)      30   50.0  1.51     +1,082    -1,114   regime:2 target:2
+  TREND  Apr-Jul26    +MR(chop50)      27   51.9  1.56     +1,109    -1,057   target:1
+  TREND  Apr-Jul26    +MR(chop55w)     26   50.0  1.52     +1,025    -1,141   
+
+  BOTH   Nov25-Jul26  ST+DEMA+REG      75   44.0  1.33     +1,976    -1,141   
+  BOTH   Nov25-Jul26  +MR(orig)       119   45.4  1.17     +1,384    -1,285   regime:19 stop:9 target:12 time:4
+  BOTH   Nov25-Jul26  +MR(chop45)      85   44.7  1.31     +1,941    -1,114   regime:3 stop:1 target:4 time:2
+  BOTH   Nov25-Jul26  +MR(chop50)      77   44.2  1.34     +2,025    -1,057   target:1 time:1
+  BOTH   Nov25-Jul26  +MR(chop55w)     76   43.4  1.33     +1,944    -1,141   time:1
+
+====================================================================================================
+TOTALS across all 6 series - Net P/L $ (chop-fade trade count in parens for the +MR columns):
+  phase                    ST+DEMA+REG       +MR(orig)     +MR(chop45)     +MR(chop50)    +MR(chop55w)
+  CHOPPY Nov25-Mar26            +6,987            -786          +4,146          +6,467          +6,440
+  TREND  Apr-Jul26              -3,783            -260            -162          -2,324          -3,909
+  BOTH   Nov25-Jul26            +3,766            -101          +4,797          +4,704          +3,092
+====================================================================================================

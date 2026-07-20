@@ -18,8 +18,9 @@ bar (bars[-2]), atomic MARKET entry + server-side protective stop (parent transm
 stop child True, so there is never an unprotected position), side-correct order asserts,
 1%-risk-at-stop sizing with a min-stop floor (or fixed shares).
 
-Indicators live in the shared `Indicators/` package one level up, at
-`Trading Strategies/Indicators` (so EVERY strategy family can reuse them). They are
+Indicators live in the shared `Indicators/` package at `Trading Strategies/Indicators`
+(resolved by walking up from this file to the ancestor that contains it, so the bot can sit at
+any depth, e.g. `Indicator Strategies/supertrend/`; EVERY strategy family reuses them). They are
 config-driven: this bot asks for a value by passing a symbol + timeframe + params, e.g.
 `supertrend_value(symbol="SOXL", bar_size="15 mins", atr_period=10, multiplier=3.0, ...)`
 and `dema_value(symbol=..., bar_size=..., period=200, ...)`. Here we pass the already-fetched
@@ -29,6 +30,23 @@ Core entry gate (config `dema_filter`, enabled by default): BUY only when the Su
 bullish AND price is above the DEMA (default 200) — longs only when close > DEMA, shorts only
 when close < DEMA. The protective stop loss is the Supertrend line itself for that stock and
 timeframe (the live 'sell' level), trailed as the Supertrend advances.
+
+Optional stacked entry filters (all off by default, evaluated on the last completed bar on TOP
+of the Supertrend signal + DEMA gate): `adx_filter` (trend STRENGTH: ADX>=threshold),
+`rsi_filter` (MOMENTUM: LONG only when RSI>long_min, SHORT only when RSI<short_max — default
+straddles the 50 midline), and `macd_filter` (MOMENTUM: LONG only when the MACD histogram>0,
+SHORT only when <0). The RSI/MACD momentum filters must AGREE with the Supertrend direction and
+filter out low-conviction flips — backtests show RSI>50/<50 improves win rate and drawdown on
+30m/1h. A filter that can't be evaluated (too little history) blocks the entry.
+
+REGIME-ADAPTIVE gate (`regime_filter`, off by default): classifies the tape TREND vs CHOP each
+bar via the Choppiness Index + ADX with hysteresis, and adapts entries — a trend-follower earns
+its edge in trends and bleeds in chop. When enabled it SUPERSEDES the always-on rsi/macd gates:
+in a TREND regime it enters on the Supertrend signal (optionally requiring rsi+macd if
+`trend_momentum`); in a CHOP regime it either stands aside (`chop_action:"stand_aside"`, default
+— take no new entries, only manage/exit existing) or requires rsi+macd momentum agreement
+(`"momentum"`). Backtests over full multi-regime history favour stand_aside (~halves drawdown,
+beats always-on rsi+macd in 5/6 series). Exits/stops/flip-exits are never gated — only NEW entries.
 
 On startup the bot reconciles existing state: it checks current positions + open orders, and
 for each held symbol recomputes the Supertrend and updates the resting stop to the current
@@ -55,20 +73,33 @@ import threading
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from ib_async import IB, Stock, MarketOrder, StopOrder, LimitOrder, StopLimitOrder
+from ib_async import IB, Stock, Future, MarketOrder, StopOrder, LimitOrder, StopLimitOrder
 
-# Shared indicator library at <Trading Strategies>/Indicators (one level ABOVE this bot's
-# folder), so every strategy family reuses the same indicators. Adding that parent dir to
-# sys.path keeps `from Indicators...` working from source; when frozen the package is bundled
-# into the exe (the build passes --paths .. / --collect-submodules Indicators).
+# Shared indicator library at <Trading Strategies>/Indicators, reused by every strategy family.
+# The bot may sit at any depth below <Trading Strategies> (e.g. Indicator Strategies/supertrend/),
+# so walk UP from this file until we find the ancestor that contains the Indicators package and
+# add it to sys.path. Keeps `from Indicators...` working from source regardless of nesting; when
+# frozen the package is bundled into the exe (build passes --paths <root> / --collect-submodules).
 _BOT_DIR = os.path.dirname(os.path.abspath(__file__))
-_SHARED_ROOT = os.path.dirname(_BOT_DIR)          # ...\Trading Strategies
+_SHARED_ROOT = os.path.dirname(_BOT_DIR)          # default: parent (back-compat)
+_d = _BOT_DIR
+for _ in range(8):
+    _d = os.path.dirname(_d)
+    if not _d or _d == os.path.dirname(_d):       # reached filesystem root
+        break
+    if os.path.isdir(os.path.join(_d, "Indicators")):
+        _SHARED_ROOT = _d
+        break
 for _p in (_SHARED_ROOT, _BOT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
 from Indicators.trend.supertrend import supertrend_value  # noqa: E402
 from Indicators.dema import dema_value                     # noqa: E402
+from Indicators.trend.adx import adx_value                 # noqa: E402
+from Indicators.trend.choppiness import choppiness_value   # noqa: E402
+from Indicators.momentum.rsi import rsi_value              # noqa: E402
+from Indicators.momentum.macd import macd_value            # noqa: E402
 
 ET = ZoneInfo("America/New_York")
 LONG, SHORT, FLAT = "LONG", "SHORT", "FLAT"
@@ -136,11 +167,18 @@ class SupertrendBot:
         self.allow_short = self.direction in ("short_only", "long_short")
 
         self.symbols = [s.upper() for s in cfg.get("symbols", [])]
+        # Instrument type: STK (default, equities on SMART) or FUT (CME/GLOBEX futures such as
+        # MNQ/MES). Futures qualify to the nearest (front-month) expiry automatically, trade
+        # their native ~24h session (no OVERNIGHT venue), and size by contract multiplier.
+        self.sec_type = str(cfg.get("sec_type", "STK")).upper().strip() or "STK"
+        self.is_future = self.sec_type in ("FUT", "FUTURE", "CONTFUT")
+        self.exchange = str(cfg.get("exchange", "")).strip() or ("CME" if self.is_future else "SMART")
+        self.currency = str(cfg.get("currency", "USD")).strip() or "USD"
         self.bar_size = cfg.get("bar_size", "15 mins")
         st = cfg.get("supertrend", {})
         self.atr_period = int(st.get("atr_period", 10))
         self.mult = float(st.get("multiplier", 3.0))
-        self.hist_duration = cfg.get("hist_duration", self._default_duration(self.bar_size))
+        # hist_duration is DERIVED below (after DEMA/ADX are known) unless explicitly configured.
         # market_hours: RTH (regular 09:30-16:00), ETH (extended 04:00-20:00), or 24H (all).
         # The Supertrend + DEMA are computed on the bars of the chosen session (RTH pulls RTH
         # only; ETH/24H pull all hours and ETH is then filtered to 04:00-20:00). ETH/24H also
@@ -158,6 +196,91 @@ class SupertrendBot:
         dema_cfg = cfg.get("dema_filter", {})
         self.dema_enabled = bool(dema_cfg.get("enabled", False))
         self.dema_period = int(dema_cfg.get("period", 200))
+
+        # Optional ADX trend-STRENGTH filter (Indicators/trend/adx.py). When enabled, an entry
+        # is only taken when ADX(period) >= threshold on the last completed bar — i.e. the market
+        # is trending strongly enough — on TOP of the Supertrend signal and the DEMA filter.
+        # Two config forms (both optional):
+        #   "adx_filter": { "enabled": true, "period": 14, "threshold": 20 }
+        #   "adx": 20                      # shorthand -> enabled, threshold 20, period 14
+        adx_cfg = cfg.get("adx_filter", {})
+        if not isinstance(adx_cfg, dict):
+            adx_cfg = {}
+        adx_short = cfg.get("adx")
+        self.adx_period = int(adx_cfg.get("period", 14))
+        if adx_cfg:
+            self.adx_enabled = bool(adx_cfg.get("enabled", False))
+            self.adx_threshold = float(adx_cfg.get("threshold", adx_cfg.get("level", 20.0)))
+        elif adx_short is not None:
+            self.adx_threshold = float(adx_short)
+            self.adx_enabled = self.adx_threshold > 0
+        else:
+            self.adx_enabled = False
+            self.adx_threshold = 20.0
+
+        # Optional RSI momentum filter (Indicators/momentum/rsi.py). Momentum must AGREE with
+        # the Supertrend direction: a LONG is only taken when RSI(period) > long_min and a SHORT
+        # only when RSI(period) < short_max, on the last completed bar — filtering out the
+        # low-conviction flips that whipsaw the raw Supertrend. Defaults straddle the 50 midline.
+        # Two config forms (both optional):
+        #   "rsi_filter": { "enabled": true, "period": 14, "long_min": 50, "short_max": 50 }
+        #   "rsi": 50                      # shorthand -> enabled, midline 50 (long>50 / short<50)
+        rsi_cfg = cfg.get("rsi_filter", {})
+        if not isinstance(rsi_cfg, dict):
+            rsi_cfg = {}
+        rsi_short = cfg.get("rsi")
+        self.rsi_period = int(rsi_cfg.get("period", 14))
+        if rsi_cfg:
+            self.rsi_enabled = bool(rsi_cfg.get("enabled", False))
+            self.rsi_long_min = float(rsi_cfg.get("long_min", rsi_cfg.get("midline", 50.0)))
+            self.rsi_short_max = float(rsi_cfg.get("short_max", rsi_cfg.get("midline", 50.0)))
+        elif rsi_short is not None:
+            mid = float(rsi_short)
+            self.rsi_enabled = True
+            self.rsi_long_min = self.rsi_short_max = mid
+        else:
+            self.rsi_enabled = False
+            self.rsi_long_min = self.rsi_short_max = 50.0
+
+        # Optional MACD momentum filter (Indicators/momentum/macd.py). The MACD histogram sign
+        # must AGREE with the Supertrend direction: a LONG is only taken when the histogram > 0
+        # (macd line above signal) and a SHORT only when histogram < 0, on the last completed bar.
+        #   "macd_filter": { "enabled": true, "fast": 12, "slow": 26, "signal": 9 }
+        macd_cfg = cfg.get("macd_filter", {})
+        if not isinstance(macd_cfg, dict):
+            macd_cfg = {}
+        self.macd_enabled = bool(macd_cfg.get("enabled", False))
+        self.macd_fast = int(macd_cfg.get("fast", 12))
+        self.macd_slow = int(macd_cfg.get("slow", 26))
+        self.macd_signal = int(macd_cfg.get("signal", 9))
+
+        # Optional REGIME FILTER (Indicators/trend/choppiness.py + adx.py). Classifies the tape as
+        # TREND vs CHOP (Choppiness Index + ADX, with hysteresis) and adapts how entries are taken —
+        # a trend-follower earns its edge in trends and bleeds in chop, so this gates WHEN/HOW it
+        # trades. When enabled it SUPERSEDES the always-on rsi/macd gates and applies momentum by
+        # regime instead. Hysteresis: flip to TREND when CHOP < chop_trend AND ADX > adx_trend; flip
+        # to CHOP when CHOP > chop_range; otherwise hold the current regime (no flip-flop at the edge).
+        #   TREND regime: enter on the Supertrend signal; require rsi+macd momentum only if trend_momentum.
+        #   CHOP  regime: chop_action = "stand_aside" (default -> take NO new entries, only manage/exit
+        #                 existing) OR "momentum" (require rsi+macd momentum agreement to enter).
+        # Backtests (MNQ/MES, full multi-regime history) favour "stand_aside": ~halves drawdown and
+        # beats the always-on rsi+macd config in 5/6 series. Config:
+        #   "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14,
+        #                       "adx_trend": 25, "chop_trend": 38, "chop_range": 61,
+        #                       "chop_action": "stand_aside", "trend_momentum": false }
+        rgm = cfg.get("regime_filter", {})
+        if not isinstance(rgm, dict):
+            rgm = {}
+        self.regime_enabled = bool(rgm.get("enabled", False))
+        self.regime_adx_period = int(rgm.get("adx_period", 14))
+        self.regime_chop_period = int(rgm.get("chop_period", 14))
+        self.regime_adx_trend = float(rgm.get("adx_trend", 25.0))
+        self.regime_chop_trend = float(rgm.get("chop_trend", 38.0))
+        self.regime_chop_range = float(rgm.get("chop_range", 61.0))
+        ca = str(rgm.get("chop_action", "stand_aside")).lower().strip()
+        self.regime_chop_action = ca if ca in ("stand_aside", "momentum") else "stand_aside"
+        self.regime_trend_momentum = bool(rgm.get("trend_momentum", False))
+        self._regime: dict[str, str] = {}   # symbol -> "TREND"/"CHOP" (hysteresis state)
 
         self.intraday_mode = bool(cfg.get("intraday_mode", False))
         self.eod_flatten_time = cfg.get("eod_flatten_time", "15:55")
@@ -223,10 +346,12 @@ class SupertrendBot:
         _csv_base, _csv_ext = os.path.splitext(cfg.get("trade_log_csv", "supertrend_trades.csv"))
         self._csv_path = os.path.join(self.base, f"{_csv_base}_{self.safe_name}{_csv_ext or '.csv'}")
 
-        # Clamp hist_duration to a safe max for the bar size. IBKR TIMES OUT on over-large
-        # small-bar requests -- e.g. "30 D" of 1-min all-hours (ETH/24H, useRTH=False) is tens
-        # of thousands of bars and gets cancelled (Error 162). The Supertrend/DEMA only need a
-        # few hundred bars, so a smaller window is both safe and sufficient.
+        # hist_duration: use the configured value, else DERIVE one that covers the indicators'
+        # warmup at this bar size (so it need not be configured — e.g. 15-min + DEMA(200) -> ~30D).
+        self.hist_duration = cfg.get("hist_duration") or self._derive_hist_duration()
+        # Then clamp to a safe max for the bar size. IBKR TIMES OUT on over-large small-bar
+        # requests -- e.g. "30 D" of 1-min all-hours (ETH/24H) is tens of thousands of bars and
+        # gets cancelled (Error 162).
         _bs = self._bar_seconds()
         _max_days = (10 if _bs <= 60 else 40 if _bs <= 300 else
                      90 if _bs < 3600 else 365 if _bs < 24 * 3600 else 3650)
@@ -246,14 +371,22 @@ class SupertrendBot:
         except Exception:
             return None
 
-    @staticmethod
-    def _default_duration(bar_size: str) -> str:
-        b = bar_size.lower()
-        if "day" in b:
-            return "1 Y"
-        if "hour" in b:
-            return "30 D"
-        return "10 D"   # minute bars
+    def _derive_hist_duration(self) -> str:
+        """History window sized to comfortably cover the indicators' warmup — ~2x the largest
+        lookback (DEMA / ADX / ATR) in bars — at this bar size, so hist_duration need not be
+        configured. Uses a conservative RTH bars/day estimate (never under-fetches; ETH/24H
+        have MORE bars/day so they're covered too) and pads a little. The caller clamps it to
+        the per-bar-size max. Example: 15-min + DEMA(200) -> ~450 bars / ~26 RTH bars-per-day
+        -> ~19-30 D."""
+        bs = self._bar_seconds()
+        needed = max(self.atr_period,
+                     self.dema_period if self.dema_enabled else 0,
+                     self.adx_period if self.adx_enabled else 0)
+        target_bars = max(int(needed) * 2 + 100, 250)
+        if bs >= 24 * 3600:                              # daily+ bars
+            return f"{min(int(target_bars * 1.5), 3650)} D"
+        bars_per_day = max(1.0, 6.5 * 3600 / bs)         # RTH hours (conservative)
+        return f"{max(5, math.ceil(target_bars / bars_per_day) + 3)} D"
 
     # ----------------------------------------------------------------- logging
     def log(self, msg: str):
@@ -442,11 +575,49 @@ class SupertrendBot:
 
     # ----------------------------------------------------------------- data
     def qualify(self, symbol: str):
-        c = Stock(symbol, "SMART", "USD")
+        if self.is_future:
+            return self._qualify_future(symbol)
+        c = Stock(symbol, self.exchange or "SMART", self.currency or "USD")
         try:
             self.ib.qualifyContracts(c)
         except Exception as e:
             self.log(f"qualify error {symbol}: {e}")
+        return c
+
+    def _qualify_future(self, symbol: str):
+        """Resolve a futures symbol (e.g. MNQ, MES) to the CLOSEST (front-month) live contract.
+        Asks IBKR for every listed expiry on the exchange and picks the nearest one that has not
+        yet expired, so specifying just "MNQ" auto-selects the front month. Caches the min tick
+        from the same lookup (saves a reqContractDetails round-trip)."""
+        exch = self.exchange or "CME"
+        base = Future(symbol=symbol, exchange=exch, currency=self.currency or "USD")
+        try:
+            self.rate.acquire(self.ib)
+            cds = list(self.ib.reqContractDetails(base) or [])
+        except Exception as e:
+            self.log(f"future lookup error {symbol} on {exch}: {e}")
+            cds = []
+        if not cds:
+            self.log(f"no futures contracts found for {symbol} on {exch} — check symbol/exchange")
+            return base
+        today = now_et().strftime("%Y%m%d")
+
+        def expkey(cd):
+            e = str(getattr(cd.contract, "lastTradeDateOrContractMonth", "") or "")
+            return e if len(e) >= 8 else (e + "31")[:8]   # month-only -> treat as month-end
+
+        live = [cd for cd in cds if expkey(cd) >= today]      # not yet expired
+        chosen = min(live or cds, key=expkey)                 # nearest expiry
+        c = chosen.contract
+        try:
+            mt = float(getattr(chosen, "minTick", 0) or 0)
+            if mt > 0:
+                self._ticks[symbol] = mt
+        except Exception:
+            pass
+        self.log(f"{symbol} front-month future: {getattr(c, 'localSymbol', '') or symbol} "
+                 f"expiry {expkey(chosen)} on {c.exchange} x{getattr(c, 'multiplier', '?')} "
+                 f"tick {self._ticks.get(symbol, '?')}")
         return c
 
     def min_tick(self, symbol: str, contract) -> float:
@@ -490,7 +661,11 @@ class SupertrendBot:
 
     def _overnight_contract(self, contract):
         """A qualified OVERNIGHT-venue contract for `contract`'s symbol (cached). Used for both
-        overnight history and overnight order routing. None if it can't be qualified."""
+        overnight history and overnight order routing. None if it can't be qualified. The
+        OVERNIGHT venue is an EQUITIES venue — futures trade their own ~24h session, so this is
+        never used for futures."""
+        if self.is_future:
+            return None
         sym = getattr(contract, "symbol", "")
         if sym not in self._on_contracts:
             oc = None
@@ -582,6 +757,111 @@ class SupertrendBot:
                      f"close {close:.2f} vs DEMA {d:.2f}")
         return ok
 
+    def adx_filter_ok(self, symbol, bars, side) -> bool:
+        """True if the ADX trend-strength filter permits an entry on `side` (or if it's
+        disabled). Requires ADX(period) >= threshold on the last completed bar — the market is
+        trending strongly enough. A missing ADX (not enough history) blocks the entry so we
+        never trade a filter we cannot evaluate — widen hist_duration if you see this."""
+        if not self.adx_enabled or side == FLAT:
+            return True
+        res = adx_value(symbol=symbol, bar_size=self.bar_size, period=self.adx_period,
+                        trend_level=self.adx_threshold, bars=bars)
+        if res is None:
+            self.log(f"{symbol} ADX{self.adx_period} filter: insufficient bars "
+                     f"(have {len(bars)}); blocking {side} entry — increase hist_duration")
+            return False
+        ok = res.value >= self.adx_threshold
+        if not ok:
+            self.log(f"{symbol} ADX{self.adx_period} filter blocks {side}: "
+                     f"ADX {res.value:.1f} < {self.adx_threshold:.0f}")
+        return ok
+
+    def rsi_filter_ok(self, symbol, bars, side) -> bool:
+        """True if the RSI momentum filter permits an entry on `side` (or if it's disabled).
+        Momentum must agree with the Supertrend direction: LONG requires RSI(period) > long_min
+        and SHORT requires RSI(period) < short_max on the last completed bar — filtering out the
+        low-conviction flips that whipsaw the raw Supertrend. A missing RSI (not enough history)
+        blocks the entry so we never trade a filter we cannot evaluate."""
+        if not self.rsi_enabled or side == FLAT:
+            return True
+        res = rsi_value(symbol=symbol, bar_size=self.bar_size, period=self.rsi_period, bars=bars)
+        if res is None:
+            self.log(f"{symbol} RSI{self.rsi_period} filter: insufficient bars "
+                     f"(have {len(bars)}); blocking {side} entry — increase hist_duration")
+            return False
+        ok = res.value > self.rsi_long_min if side == LONG else res.value < self.rsi_short_max
+        if not ok:
+            lvl = self.rsi_long_min if side == LONG else self.rsi_short_max
+            rel = ">" if side == LONG else "<"
+            self.log(f"{symbol} RSI{self.rsi_period} filter blocks {side}: "
+                     f"RSI {res.value:.1f} not {rel} {lvl:.0f}")
+        return ok
+
+    def macd_filter_ok(self, symbol, bars, side) -> bool:
+        """True if the MACD momentum filter permits an entry on `side` (or if it's disabled).
+        The MACD histogram sign must agree with the Supertrend direction: LONG requires
+        histogram > 0 (macd above signal) and SHORT requires histogram < 0, on the last
+        completed bar. A missing MACD (not enough history) blocks the entry."""
+        if not self.macd_enabled or side == FLAT:
+            return True
+        res = macd_value(symbol=symbol, bar_size=self.bar_size, fast=self.macd_fast,
+                         slow=self.macd_slow, signal=self.macd_signal, bars=bars)
+        if res is None:
+            self.log(f"{symbol} MACD({self.macd_fast},{self.macd_slow},{self.macd_signal}) filter: "
+                     f"insufficient bars (have {len(bars)}); blocking {side} entry")
+            return False
+        ok = res.hist > 0 if side == LONG else res.hist < 0
+        if not ok:
+            self.log(f"{symbol} MACD filter blocks {side}: hist {res.hist:+.3f} "
+                     f"({'not >0' if side == LONG else 'not <0'})")
+        return ok
+
+    def current_regime(self, symbol, bars):
+        """Classify TREND vs CHOP for `symbol` on the last completed bar via Choppiness Index +
+        ADX, with HYSTERESIS (persisted per symbol in self._regime) so it doesn't flip-flop at
+        the boundary: flip to TREND only when CHOP < chop_trend AND ADX > adx_trend; flip to CHOP
+        only when CHOP > chop_range; otherwise hold the current regime. Returns
+        (regime, chop_value, adx_value) where regime is 'TREND' or 'CHOP'; chop/adx may be None
+        if there is not enough history (the regime then just holds its prior state)."""
+        prev = self._regime.get(symbol, "CHOP")   # start conservative (assume chop until proven)
+        cres = choppiness_value(symbol=symbol, bar_size=self.bar_size,
+                                period=self.regime_chop_period, bars=bars)
+        ares = adx_value(symbol=symbol, bar_size=self.bar_size, period=self.regime_adx_period,
+                         trend_level=self.regime_adx_trend, bars=bars)
+        chop = cres.value if cres else None
+        adx = ares.value if ares else None
+        regime = prev
+        if chop is not None and adx is not None:
+            if chop < self.regime_chop_trend and adx > self.regime_adx_trend:
+                regime = "TREND"
+            elif chop > self.regime_chop_range:
+                regime = "CHOP"
+        self._regime[symbol] = regime
+        return regime, chop, adx
+
+    def regime_gate_ok(self, symbol, bars, side) -> bool:
+        """Regime-adaptive entry gate (only consulted when regime_filter is enabled; it then
+        REPLACES the always-on rsi/macd gates). In a TREND regime, enter on the Supertrend signal
+        (optionally requiring rsi+macd momentum if trend_momentum). In a CHOP regime, either stand
+        aside (no new entries) or require rsi+macd momentum agreement, per chop_action."""
+        if not self.regime_enabled or side == FLAT:
+            return True
+        regime, chop, adx = self.current_regime(symbol, bars)
+        ctxt = f"CHOP {chop:.0f}" if chop is not None else "CHOP n/a"
+        atxt = f"ADX {adx:.0f}" if adx is not None else "ADX n/a"
+        if regime == "CHOP":
+            if self.regime_chop_action == "stand_aside":
+                self.log(f"{symbol} regime CHOP ({ctxt}/{atxt}) -> stand aside, no {side} entry")
+                return False
+            ok = self.rsi_filter_ok(symbol, bars, side) and self.macd_filter_ok(symbol, bars, side)
+            if not ok:
+                self.log(f"{symbol} regime CHOP ({ctxt}/{atxt}) -> momentum gate blocks {side}")
+            return ok
+        # TREND regime
+        if self.regime_trend_momentum:
+            return self.rsi_filter_ok(symbol, bars, side) and self.macd_filter_ok(symbol, bars, side)
+        return True
+
     # ----------------------------------------------------------------- sizing
     def resolve_stop(self, side, entry, structural_stop):
         """Floor the stop distance to min_stop_pct so a too-tight Supertrend line can't
@@ -590,23 +870,35 @@ class SupertrendBot:
             return min(structural_stop, entry * (1 - self.min_stop_pct))   # below entry
         return max(structural_stop, entry * (1 + self.min_stop_pct))       # above entry (short)
 
-    def size_position(self, entry, stop) -> int:
-        """Desired TOTAL position size (a target, not a per-order size). In fixed_stocks mode
-        the configured share count is AUTHORITATIVE — the max_position_notional cap does NOT
-        shrink it (that would silently defeat "hold exactly N shares"); we only warn if the
-        target exceeds the cap. The notional cap still bounds %-risk sizing."""
+    @staticmethod
+    def _contract_mult(contract) -> float:
+        """Contract multiplier: 1 for equities, e.g. 2 for MNQ / 5 for MES. Notional and
+        %-risk sizing scale by this ($ per point = price * multiplier)."""
+        try:
+            return float(getattr(contract, "multiplier", 1) or 1)
+        except Exception:
+            return 1.0
+
+    def size_position(self, entry, stop, mult=1.0) -> int:
+        """Desired TOTAL position size (a target, not a per-order size) in shares/contracts. In
+        fixed_stocks mode the configured count is AUTHORITATIVE — the max_position_notional cap
+        does NOT shrink it (that would silently defeat "hold exactly N"); we only warn if the
+        target exceeds the cap. `mult` is the contract multiplier (1 for stocks, 2 for MNQ, 5
+        for MES) so notional (price*mult*qty) and 1%-risk-at-stop sizing are correct for futures."""
+        mult = float(mult or 1.0)
         if self.fixed_stocks > 0:
-            if self.max_notional and self.fixed_stocks * entry > self.max_notional and entry > 0:
-                self.log(f"WARNING: fixed_stocks {self.fixed_stocks} (~${self.fixed_stocks*entry:,.0f}) "
+            notional = self.fixed_stocks * entry * mult
+            if self.max_notional and notional > self.max_notional and entry > 0:
+                self.log(f"WARNING: fixed_stocks {self.fixed_stocks} (~${notional:,.0f}) "
                          f"exceeds max_position_notional ${self.max_notional:,.0f} — honoring "
                          f"fixed_stocks. Raise/remove the cap or lower fixed_stocks if unintended.")
             return int(self.fixed_stocks)
-        rps = abs(entry - stop)
+        rps = abs(entry - stop) * mult                       # $ risk per contract at the stop
         if rps <= 0:
             return 0
         qty = math.floor((self.strategy_capital * self.risk_pct) / rps)
-        if self.max_notional and qty * entry > self.max_notional:
-            qty = math.floor(self.max_notional / entry)
+        if self.max_notional and qty * entry * mult > self.max_notional:
+            qty = math.floor(self.max_notional / (entry * mult))
         return max(int(qty), 0)
 
     def held_qty(self, symbol) -> int:
@@ -797,8 +1089,10 @@ class SupertrendBot:
         trig = round_to_tick(new_trigger, tick)
         o.auxPrice = trig
         # for a stop-LIMIT, move the limit with the trigger (keep it the far side so it stays
-        # marketable when hit); otherwise a trailed stop-limit would leave a stale limit.
-        if getattr(o, "orderType", "") == "STP LMT" or getattr(o, "lmtPrice", 0):
+        # marketable when hit); otherwise a trailed stop-limit would leave a stale limit. NOTE:
+        # test orderType ONLY — a plain STP order's lmtPrice defaults to UNSET_DOUBLE (a huge,
+        # truthy value), so `or o.lmtPrice` would wrongly set a limit on a stop-MARKET order.
+        if getattr(o, "orderType", "") == "STP LMT":
             o.lmtPrice = round_to_tick(trig * (1 - self.stop_limit_offset_pct) if o.action == "SELL"
                                        else trig * (1 + self.stop_limit_offset_pct), tick)
         o.transmit = True
@@ -831,48 +1125,87 @@ class SupertrendBot:
         except Exception:
             pass
 
+    @staticmethod
+    def _flatten_complete(tr, qty) -> bool:
+        """True only if a flatten order FULLY filled `qty` — so the caller closes state only on
+        a real exit (an off-RTH marketable limit can under-fill in thin liquidity)."""
+        return tr is not None and int(tr.orderStatus.filled or 0) >= int(qty)
+
+    def _shrink_to_fill(self, p, tr):
+        """A flatten that only partially filled -> reduce the tracked qty by what DID exit so the
+        remaining (still-held) shares are retried on the next bar instead of being lost."""
+        filled = int(tr.orderStatus.filled or 0) if tr else 0
+        if filled > 0:
+            p["qty"] = max(0, int(p["qty"]) - filled)
+            self.log(f"[{p['ref']}] flatten partial {filled} filled -> remaining held {p['qty']}; retry next bar")
+
     def flatten(self, contract, side, qty, ref, wait_sec=20, ref_price=None):
-        """Close a position (SELL a long / BUY to cover a short). RTH: market order. ETH/24H:
-        an **aggressively marketable LIMIT** (priced exit_offset_pct THROUGH the market so it
-        fills, since market orders are rejected outside RTH). Falls back to market only if no
-        reference price is available."""
+        """Close a position (SELL a long / BUY to cover a short). RTH: a MARKET order (fills
+        immediately). ETH/24H/OVERNIGHT: a marketable LIMIT priced THROUGH the market, whose
+        price is ESCALATED (1x -> 2x -> 3x exit_offset_pct) on the SAME order until it fills,
+        then any unfilled balance is cancelled (never leaves a stray working exit order). The
+        caller must check the returned trade's `filled` vs qty and only treat the position as
+        closed on a full fill — a partial/none means the position is still (partly) live."""
         if qty <= 0:
             return None
         action = "SELL" if side == LONG else "BUY"
         overnight = self._is_overnight(contract)   # OVERNIGHT venue: LIMIT only (no MKT)
-        if self.outside_rth or overnight:
-            if ref_price is None:
-                try:
-                    ref_price = self.hist(contract)[-1].close
-                except Exception:
-                    ref_price = None
-            if ref_price:
-                tick = self.min_tick(getattr(contract, "symbol", ""), contract)
-                off = float(self.cfg.get("exit_offset_pct", 0.01))   # 1% through market -> marketable
-                px = round_to_tick(ref_price * (1 - off) if side == LONG else ref_price * (1 + off), tick)
-                o = LimitOrder(action, qty, px)
-                otxt = f"LMT {px}"
-            elif overnight:
-                # OVERNIGHT rejects market orders; without a price we can't build a limit — bail
-                # rather than fire a MKT that will be discarded, leaving state unchanged to retry.
-                self.log(f"[{ref}] cannot flatten on OVERNIGHT without a reference price -> retry next bar")
-                return None
-            else:
-                o = MarketOrder(action, qty); otxt = "MKT"
-        else:
-            o = MarketOrder(action, qty); otxt = "MKT"
+
+        if not (self.outside_rth or overnight):
+            o = MarketOrder(action, qty)
+            o.orderRef = ref + "_FLAT"
+            if self.account:
+                o.account = self.account
+            tr = self.ib.placeOrder(contract, o)
+            self.log(f"[{ref}] FLATTEN MKT {action} {qty} {contract.symbol} ({side})")
+            waited = 0
+            while waited < wait_sec:
+                self.ib.sleep(1); waited += 1
+                if tr.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
+                    break
+            return tr
+
+        # ETH/24H/OVERNIGHT: marketable LIMIT, escalated until filled
+        if ref_price is None:
+            try:
+                ref_price = self.hist(contract)[-1].close
+            except Exception:
+                ref_price = None
+        if not ref_price:
+            self.log(f"[{ref}] cannot flatten off-RTH without a reference price -> retry next bar")
+            return None
+        tick = self.min_tick(getattr(contract, "symbol", ""), contract)
+        base_off = float(self.cfg.get("exit_offset_pct", 0.01))
+        o = LimitOrder(action, qty, round_to_tick(
+            ref_price * (1 - base_off) if side == LONG else ref_price * (1 + base_off), tick))
+        o.orderId = self.ib.client.getReqId()
         o.orderRef = ref + "_FLAT"
+        o.tif = "DAY"
+        o.transmit = True
         o.outsideRth = self.outside_rth and not overnight   # ignored on OVERNIGHT (warning 2109)
         if self.account:
             o.account = self.account
         tr = self.ib.placeOrder(contract, o)
-        self.log(f"[{ref}] FLATTEN {otxt} {action} {qty} {contract.symbol} ({side})")
-        waited = 0
-        while waited < wait_sec:
-            self.ib.sleep(1)
-            waited += 1
-            if tr.orderStatus.status in ("Filled", "Cancelled", "ApiCancelled", "Inactive"):
-                break
+        per = max(4, int(wait_sec) // 3)
+        for i in range(3):                              # escalate 1x -> 2x -> 3x through market
+            off = base_off * (i + 1)
+            px = round_to_tick(ref_price * (1 - off) if side == LONG else ref_price * (1 + off), tick)
+            if i > 0:
+                o.lmtPrice = px; o.transmit = True
+                tr = self.ib.placeOrder(contract, o)
+            self.log(f"[{ref}] FLATTEN LMT {px} ({off*100:.1f}% through) {action} {qty} {contract.symbol} ({side})")
+            waited = 0
+            while waited < per:
+                self.ib.sleep(1); waited += 1
+                if tr.orderStatus.status == "Filled":
+                    return tr
+                if tr.orderStatus.status in ("Cancelled", "ApiCancelled", "Inactive"):
+                    break
+        filled = int(tr.orderStatus.filled or 0) if tr else 0
+        if filled < qty:
+            self.cancel(tr)   # don't leave a working exit order behind
+            self.log(f"[{ref}] FLATTEN filled only {filled}/{qty} after escalation -> cancelled "
+                     f"remainder; position still (partly) live, will retry next bar")
         return tr
 
     # ----------------------------------------------------------------- entry / exit
@@ -900,7 +1233,7 @@ class SupertrendBot:
             if stop <= entry_ref:
                 self.log(f"{symbol} skip SHORT: stop {stop:.2f} not above price {entry_ref:.2f}")
                 return
-        target = self.size_position(entry_ref, stop)   # desired TOTAL position (not order size)
+        target = self.size_position(entry_ref, stop, self._contract_mult(contract))   # desired TOTAL (not order size)
         if target <= 0:
             self.log(f"{symbol} skip: target qty 0 (stop too tight / capital too small)")
             return
@@ -1024,7 +1357,7 @@ class SupertrendBot:
                 stop = round_to_tick(entry * floor, tick)
 
             # top up to the TARGET total if under-sized (honors fixed_stocks as authoritative)
-            target = self.size_position(entry, stop)
+            target = self.size_position(entry, stop, self._contract_mult(contract))
             if target > qty:
                 top_up_qty = target - qty
                 self.log(f"sync {symbol}: under-sized {side} qty {qty} < target {target}; topping up {top_up_qty}")
@@ -1067,8 +1400,21 @@ class SupertrendBot:
                      f"stop {stop:.2f} (single stop for {qty})")
 
     # ----------------------------------------------------------------- main loop
+    def _trading_now(self) -> bool:
+        """Weekly session guard. RTH/ETH equities trade Mon-Fri only. 24H equities (IBKR
+        overnight) and futures (Globex) also trade the Sunday-evening -> Friday window, so they
+        are NOT blocked on Sunday night. Closed Saturday and Sunday before the ~18:00 ET open."""
+        now = now_et(); wd = now.weekday()          # Mon=0 .. Sat=5, Sun=6
+        if not (self.is_future or self.market_hours == "24H"):
+            return wd < 5                            # RTH/ETH: weekday only
+        if wd == 5:                                  # Saturday: fully closed
+            return False
+        if wd == 6:                                  # Sunday: only the evening session onward
+            return (now.hour * 60 + now.minute) >= 18 * 60
+        return True                                  # Mon-Fri (venue handles the daily halt)
+
     def entries_allowed(self) -> bool:
-        if not is_weekday():
+        if not self._trading_now():
             return False
         s, e = self.entry_window
         return at_et(s) <= now_et() <= at_et(e)
@@ -1132,11 +1478,37 @@ class SupertrendBot:
                 dtxt = f"DEMA{self.dema_period} {dres.value:.2f}" if dres else f"DEMA{self.dema_period} n/a"
             else:
                 dtxt = "DEMA off"
+            if self.adx_enabled:
+                ares = adx_value(symbol=symbol, bar_size=self.bar_size,
+                                 period=self.adx_period, trend_level=self.adx_threshold, bars=bars)
+                atxt = (f"ADX{self.adx_period} {ares.value:.1f}/{self.adx_threshold:.0f}"
+                        if ares else f"ADX{self.adx_period} n/a")
+            else:
+                atxt = "ADX off"
+            if self.rsi_enabled:
+                rres = rsi_value(symbol=symbol, bar_size=self.bar_size, period=self.rsi_period, bars=bars)
+                rtxt = f"RSI{self.rsi_period} {rres.value:.1f}" if rres else f"RSI{self.rsi_period} n/a"
+            else:
+                rtxt = "RSI off"
+            if self.macd_enabled:
+                mres = macd_value(symbol=symbol, bar_size=self.bar_size, fast=self.macd_fast,
+                                  slow=self.macd_slow, signal=self.macd_signal, bars=bars)
+                mtxt = f"MACD {mres.hist:+.2f}" if mres else "MACD n/a"
+            else:
+                mtxt = "MACD off"
+            if self.regime_enabled:
+                regime, chop, adx = self.current_regime(symbol, bars)
+                gtxt = (f"REGIME {regime} (CHOP {chop:.0f}"
+                        + (f"/ADX {adx:.0f}" if adx is not None else "") + ")") \
+                    if chop is not None else f"REGIME {regime}"
+            else:
+                gtxt = "REGIME off"
             postxt = (f"pos {p['side']} {p['qty']}@{p['entry']:.2f} stop {p['stop']:.2f}"
                       if p else "flat")
             self.log(f"{symbol} [{self.market_hours}] bar {bar_time} "
                      f"ST({self.atr_period},{self.mult}) {'BULL' if bull else 'BEAR'} "
-                     f"line {line:.2f} close {close:.2f} | {dtxt} | desired {desired} | {postxt}")
+                     f"line {line:.2f} close {close:.2f} | {dtxt} | {atxt} | {rtxt} | {mtxt} | "
+                     f"{gtxt} | desired {desired} | {postxt}")
         else:
             # No NEW bar (e.g. after 20:00 ET a stock stops printing extended-hours bars, or a
             # holiday) -> emit a low-frequency heartbeat so it's clear the bot is alive/idle
@@ -1164,22 +1536,31 @@ class SupertrendBot:
                 (p["side"] == SHORT and last_px >= p["stop"]))
             if native_filled or synth_hit:
                 if native_filled:
-                    exit_px = float(st.orderStatus.avgFillPrice or p["stop"])
+                    self.close_position(symbol, float(st.orderStatus.avgFillPrice or p["stop"]), "STOP")
+                    p = None
                 else:
                     self.log(f"{symbol} SYNTHETIC stop hit: {p['side']} px {last_px:.2f} "
                              f"vs stop {p['stop']:.2f} -> flattening")
                     tr = self.flatten(oc, p["side"], p["qty"], p["ref"], ref_price=last_px)
-                    exit_px = (float(tr.orderStatus.avgFillPrice)
-                               if (tr and tr.orderStatus.avgFillPrice) else last_px)
-                self.close_position(symbol, exit_px, "STOP")
-                p = None
+                    if self._flatten_complete(tr, p["qty"]):
+                        exit_px = float(tr.orderStatus.avgFillPrice or last_px)
+                        self.close_position(symbol, exit_px, "STOP")
+                        p = None
+                    else:
+                        self._shrink_to_fill(p, tr)   # keep the (partial) position; retry next bar
+                        return
             # 2) signal changed -> exit (to cash) or prepare to reverse
             elif desired != p["side"]:
                 self.cancel(st)
                 tr = self.flatten(oc, p["side"], p["qty"], p["ref"], ref_price=last_px)
-                exit_px = float(tr.orderStatus.avgFillPrice) if (tr and tr.orderStatus.avgFillPrice) else last_px
-                self.close_position(symbol, exit_px, "FLIP")
-                p = None
+                if self._flatten_complete(tr, p["qty"]):
+                    exit_px = float(tr.orderStatus.avgFillPrice) if (tr and tr.orderStatus.avgFillPrice) else last_px
+                    self.close_position(symbol, exit_px, "FLIP")
+                    p = None
+                else:
+                    # exit didn't fully fill -> stay in the (reduced) position, DON'T reverse yet
+                    self._shrink_to_fill(p, tr)
+                    return
             else:
                 # 3) same side -> keep protection correct for the ACTIVE venue, then trail.
                 #    OVERNIGHT: no native stop can rest (LMT-only) -> protection is synthetic
@@ -1220,6 +1601,18 @@ class SupertrendBot:
                 return
         if not self.dema_filter_ok(symbol, bars, desired):
             return
+        if not self.adx_filter_ok(symbol, bars, desired):
+            return
+        if self.regime_enabled:
+            # regime gate supersedes the always-on momentum gates: it applies rsi/macd (or stands
+            # aside) according to the TREND/CHOP classification instead of unconditionally.
+            if not self.regime_gate_ok(symbol, bars, desired):
+                return
+        else:
+            if not self.rsi_filter_ok(symbol, bars, desired):
+                return
+            if not self.macd_filter_ok(symbol, bars, desired):
+                return
         self.open_position(symbol, desired, contract, line, close, tick, bar_time)
 
     def _bar_seconds(self) -> int:
@@ -1254,13 +1647,16 @@ class SupertrendBot:
         if not self.connect():
             return
         try:
-            if not is_weekday():
-                self.log("weekend (ET); exiting. (Holiday calendar not modelled — see README.)")
+            if not self._trading_now():
+                self.log("market closed for this strategy's session (ET); exiting. "
+                         "(24H/futures trade Sun evening–Fri; RTH/ETH Mon–Fri. No holiday calendar.)")
                 return
             self.contracts = {s: self.qualify(s) for s in self.symbols}
-            self.log(f"direction={self.direction} symbols={self.symbols} bar={self.bar_size} "
-                     f"ST({self.atr_period},{self.mult}) "
+            self.log(f"direction={self.direction} symbols={self.symbols} "
+                     f"sec_type={self.sec_type}{'@' + self.exchange if self.is_future else ''} "
+                     f"bar={self.bar_size} ST({self.atr_period},{self.mult}) "
                      f"DEMA={'on(' + str(self.dema_period) + ')' if self.dema_enabled else 'off'} "
+                     f"ADX={'on(' + str(self.adx_period) + '>=' + str(int(self.adx_threshold)) + ')' if self.adx_enabled else 'off'} "
                      f"mode={'INTRADAY' if self.intraday_mode else 'SWING'} "
                      f"sizing={'fixed ' + str(self.fixed_stocks) if self.fixed_stocks else f'{self.risk_pct:.1%} risk'}")
             self.sync_existing()
@@ -1346,10 +1742,23 @@ def main():
     cfg_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(base, "supertrend.json")
     if not os.path.isabs(cfg_path):
         cfg_path = os.path.join(base, cfg_path)
-    with open(cfg_path, "r", encoding="utf-8") as f:
+    # utf-8-sig transparently strips a leading UTF-8 BOM if present (editors like Notepad or a
+    # PowerShell `>` redirect add one), which plain utf-8 would choke on ("Unexpected UTF-8 BOM").
+    with open(cfg_path, "r", encoding="utf-8-sig") as f:
         cfg = json.load(f)
 
     strategies = cfg.get("strategies")
+    # `strategies` may be either a flat LIST (legacy) or an OBJECT with "stocks" and "futures"
+    # sections. For the object form, futures strategies are tagged sec_type=FUT unless they
+    # already set it, so a futures block only needs symbols/exchange (e.g. MNQ on CME).
+    if isinstance(strategies, dict):
+        stock_strats = list(strategies.get("stocks", []) or [])
+        fut_strats = []
+        for s in (strategies.get("futures", []) or []):
+            s = {**s}
+            s.setdefault("sec_type", "FUT")
+            fut_strats.append(s)
+        strategies = stock_strats + fut_strats
     if strategies:
         threads = []
         allowed_accounts = [str(a).strip() for a in cfg.get("accounts", []) if a is not None]

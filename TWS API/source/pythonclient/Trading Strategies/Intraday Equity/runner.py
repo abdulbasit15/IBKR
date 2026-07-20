@@ -37,11 +37,13 @@ from reporting import TradeReporter  # noqa: E402
 from strategies.orb_stocks_in_play import ORBStocksInPlay  # noqa: E402
 from strategies.nr7_compression import NR7Compression      # noqa: E402
 from strategies.pdh_breakout import PDHBreakout            # noqa: E402
+from strategies.vwap_pullback import VWAPPullback          # noqa: E402
 
 REGISTRY = {
     "orb_stocks_in_play": ORBStocksInPlay,
     "nr7_compression": NR7Compression,
     "pdh_breakout": PDHBreakout,
+    "vwap_pullback": VWAPPullback,
 }
 
 JOURNAL_HEADERS = ["Event", "Symbol", "Sector", "Strategy", "Shares", "Entry", "Stop",

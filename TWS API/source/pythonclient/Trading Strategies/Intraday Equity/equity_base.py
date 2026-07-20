@@ -122,8 +122,16 @@ class EquityStrategyBase:
                 self.ib.disconnectedEvent += self._on_disconnected
             except Exception:
                 pass
+            mdt = int(self.shared.get("market_data_type", 1))
             self.log(f"connected clientId={self.client_id} account={self.account} "
-                     f"mktDataType={self.shared.get('market_data_type', 1)}")
+                     f"mktDataType={mdt}")
+            if mdt in (3, 4):
+                self.log("WARNING: delayed market data (type 3/4). Intraday breakout signals "
+                         "are computed on ~15-min-old bars, so the live price is often well "
+                         "past the level by the time an order is sent. With entry_order_type "
+                         "MKT this can fill far above the level (see 2026-07-16 PDH log); with "
+                         "LMT it will usually no-fill. Switch to live data (market_data_type=1) "
+                         "for the strategy to trade the levels reliably.")
             return True
         except Exception as e:
             self.log(f"CONNECT FAILED: {e}")

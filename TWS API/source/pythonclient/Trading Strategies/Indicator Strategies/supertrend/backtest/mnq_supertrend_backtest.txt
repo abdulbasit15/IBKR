@@ -1,0 +1,78 @@
+MNQ Supertrend-bot backtest  —  long_only ST(10,3) + DEMA(200), 24H, 1 contract ($2/pt)
+Front month contract: MNQU6 (Sep 2026).  Start capital $100,000, warmup 400 bars.
+
+======================================================================
+Timeframe : 1 min   (21,840 bars, 24H)   2026-06-25 -> 2026-07-17
+  Trades          : 334   (STOP 321 / FLIP 12 / END 1)
+  Win rate        : 33.5%
+  Profit factor   : 0.97
+  Net P/L (gross) : $-307   (-0.31% on $100k, 1 contract)
+  Net P/L (comm.) : $-654   (after ~$1.04/RT x 334)
+  Max drawdown    : -2.57%   (on closed-trade equity)
+  Avg win / loss  : $+104 / $-54   (payoff 1.93)
+  Avg hold (bars) : 26.1
+  Time in market  : 42.3%
+
+======================================================================
+Timeframe : 5 mins   (12,552 bars, 24H)   2026-05-14 -> 2026-07-17
+  Trades          : 208   (STOP 200 / FLIP 8 / END 0)
+  Win rate        : 36.5%
+  Profit factor   : 0.85
+  Net P/L (gross) : $-2,409   (-2.41% on $100k, 1 contract)
+  Net P/L (comm.) : $-2,625   (after ~$1.04/RT x 208)
+  Max drawdown    : -4.36%   (on closed-trade equity)
+  Avg win / loss  : $+178 / $-120   (payoff 1.47)
+  Avg hold (bars) : 24.6
+  Time in market  : 43.8%
+
+======================================================================
+Timeframe : 15 mins   (9,545 bars, 24H)   2026-02-22 -> 2026-07-17
+  Trades          : 177   (STOP 174 / FLIP 3 / END 0)
+  Win rate        : 37.3%
+  Profit factor   : 0.98
+  Net P/L (gross) : $-327   (-0.33% on $100k, 1 contract)
+  Net P/L (comm.) : $-511   (after ~$1.04/RT x 177)
+  Max drawdown    : -4.57%   (on closed-trade equity)
+  Avg win / loss  : $+302 / $-182   (payoff 1.65)
+  Avg hold (bars) : 20.5
+  Time in market  : 41.7%
+
+======================================================================
+Timeframe : 30 mins   (6,624 bars, 24H)   2025-11-04 -> 2026-07-17
+  Trades          : 130   (STOP 125 / FLIP 5 / END 0)
+  Win rate        : 45.4%
+  Profit factor   : 1.57
+  Net P/L (gross) : $+8,787   (+8.79% on $100k, 1 contract)
+  Net P/L (comm.) : $+8,652   (after ~$1.04/RT x 130)
+  Max drawdown    : -2.48%   (on closed-trade equity)
+  Avg win / loss  : $+409 / $-216   (payoff 1.89)
+  Avg hold (bars) : 20.0
+  Time in market  : 43.8%
+
+======================================================================
+Timeframe : 1 hour   (3,379 bars, 24H)   2025-06-24 -> 2026-07-17
+  Trades          : 70   (STOP 67 / FLIP 3 / END 0)
+  Win rate        : 41.4%
+  Profit factor   : 1.22
+  Net P/L (gross) : $+2,780   (+2.78% on $100k, 1 contract)
+  Net P/L (comm.) : $+2,708   (after ~$1.04/RT x 70)
+  Max drawdown    : -3.06%   (on closed-trade equity)
+  Avg win / loss  : $+524 / $-303   (payoff 1.73)
+  Avg hold (bars) : 17.6
+  Time in market  : 43.7%
+
+============================================================================================
+SUMMARY  (long_only ST(10,3)+DEMA200, 24H, 1 MNQ contract, gross)
+--------------------------------------------------------------------------------------------
+TF        Trades   Win%    PF    NetP/L$    Ret%   MaxDD%      B&H$
+--------------------------------------------------------------------------------------------
+1 min        334   33.5  0.97       -307   -0.31    -2.57    -1,034
+5 mins       208   36.5  0.85     -2,409   -2.41    -4.36    -1,334
+15 mins      177   37.3  0.98       -327   -0.33    -4.57    +6,480
+30 mins      130   45.4  1.57     +8,787   +8.79    -2.48    +5,168
+1 hour        70   41.4  1.22     +2,780   +2.78    -3.06    +4,854
+============================================================================================
+Notes: B&H = buy 1 contract at first bar, hold to last (same window). Stops modeled as
+filling exactly at the trailed Supertrend level (no slippage/gap-through). Single-contract
+futures history thins out in older months (contract not yet active), so longer-TF windows
+carry less liquid early data — treat 1h/30m results as shorter effective samples.
