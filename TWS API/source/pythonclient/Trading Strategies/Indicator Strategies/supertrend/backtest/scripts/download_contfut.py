@@ -45,9 +45,19 @@ def save(bars, sym, slug):
 
 def main():
     ib = IB(); ib.connect(HOST, PORT, clientId=CLIENT_ID); ib.reqMarketDataType(3)
+    # Wait for the HMDS (historical data) farm to connect, else the first requests return empty.
+    print("waiting for HMDS data farm...")
+    for _ in range(15):
+        ib.sleep(1)
     for sym, exch in SYMS:
         c = ContFuture(symbol=sym, exchange=exch, currency="USD")
         ib.qualifyContracts(c)
+        # throwaway warm-up pull so the farm is definitely serving before the big requests
+        try:
+            ib.reqHistoricalData(c, endDateTime="", durationStr="2 D", barSizeSetting="15 mins",
+                                 whatToShow="TRADES", useRTH=False, formatDate=1, timeout=30)
+        except Exception:
+            pass
         print(f"\n### {sym} continuous: {getattr(c,'localSymbol','') or sym} conId={c.conId}")
         for bar_size, (durations, slug) in PLAN.items():
             print(f"\n=== {sym} {bar_size} (try {durations}) ===")

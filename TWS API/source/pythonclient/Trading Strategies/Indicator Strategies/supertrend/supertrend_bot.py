@@ -282,6 +282,31 @@ class SupertrendBot:
         self.regime_trend_momentum = bool(rgm.get("trend_momentum", False))
         self._regime: dict[str, str] = {}   # symbol -> "TREND"/"CHOP" (hysteresis state)
 
+        # Optional PARTIAL TAKE-PROFIT (scale-out). R = |entry - initial stop|. Each tranche books
+        # a fraction of the position with a marketable exit when price reaches entry +/- r_multiple*R
+        # (a profit-take LADDER). Once the FIRST trim at >= tighten_after_r fires, the REMAINDER
+        # switches from the Supertrend trailing stop to a `trail_r`-R trailing stop (locks profit),
+        # still exiting on a Supertrend flip. Any leftover fraction (runner) rides that trail.
+        # Backtests: trim 50% at 2R + trail the rest 1R beats the plain exit; laddering into smaller
+        # 1R trims does NOT help (trimming at 2R+ and keeping a runner is the edge). Needs qty>=2
+        # (half of 1 contract = 0 -> no-op). Config:
+        #   "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0,
+        #                   "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] }
+        ptp = cfg.get("partial_tp", {})
+        if not isinstance(ptp, dict):
+            ptp = {}
+        self.ptp_enabled = bool(ptp.get("enabled", False))
+        self.ptp_trail_r = float(ptp.get("trail_r", 1.0))
+        self.ptp_tighten_after_r = float(ptp.get("tighten_after_r", 2.0))
+        _tr = ptp.get("tranches") or [{"fraction": 0.5, "r_multiple": 2}]
+        self.ptp_tranches = []
+        for _t in _tr:
+            try:
+                self.ptp_tranches.append((float(_t["fraction"]), float(_t["r_multiple"])))
+            except (KeyError, TypeError, ValueError):
+                continue
+        self.ptp_tranches.sort(key=lambda fr: fr[1])   # ascending by R multiple
+
         self.intraday_mode = bool(cfg.get("intraday_mode", False))
         self.eod_flatten_time = cfg.get("eod_flatten_time", "15:55")
         # Entry window defaults to the market_hours session so a 24H/ETH strategy can actually
@@ -524,7 +549,7 @@ class SupertrendBot:
                 while self.ib.isConnected() and not self._conn_ok:
                     if self.intraday_mode and now_et() >= at_et(self.eod_flatten_time):
                         return False
-                    self.ib.sleep(2)          # let errorEvent(1102) fire
+                    self._safe_sleep(2)       # let errorEvent(1102) fire (never raises)
                 if not self.ib.isConnected():
                     pass                       # socket dropped during blackout -> reconnect below
                 else:
@@ -560,11 +585,7 @@ class SupertrendBot:
                 self.log(f"reconnect attempt {attempt} failed: {e}; retrying in {wait}s "
                          f"(is IB Gateway logged in? a competing login can log it OUT — "
                          f"enable Gateway auto-restart so it relogs in)")
-                try:
-                    self.ib.sleep(wait)
-                except Exception:
-                    import time as _t
-                    _t.sleep(wait)
+                self._safe_sleep(wait)
 
     def disconnect(self):
         try:
@@ -572,6 +593,24 @@ class SupertrendBot:
                 self.ib.disconnect()
         except Exception:
             pass
+
+    def _safe_sleep(self, secs):
+        """Sleep `secs` WITHOUT letting a dropped-socket error escape. `ib.sleep()` pumps the
+        asyncio event loop, which raises ConnectionError / asyncio.CancelledError the moment the
+        peer closes the connection (e.g. IB Gateway's scheduled daily restart). If that exception
+        propagates out of the run loop the whole strategy thread dies and never reconnects — the
+        "bot doesn't come back after Gateway restart" bug. So: pump events with ib.sleep while the
+        socket is up (needed to process fills/errors), else fall back to a plain thread sleep; and
+        on ANY error (incl. the BaseException CancelledError) fall back to a plain sleep. The next
+        ensure_connected() then does a fresh reconnect."""
+        import time as _t
+        try:
+            if self.ib is not None and self.ib.isConnected():
+                self.ib.sleep(secs)
+            else:
+                _t.sleep(secs)
+        except (asyncio.CancelledError, Exception):
+            _t.sleep(secs)
 
     # ----------------------------------------------------------------- data
     def qualify(self, symbol: str):
@@ -816,6 +855,209 @@ class SupertrendBot:
                      f"({'not >0' if side == LONG else 'not <0'})")
         return ok
 
+    # ----------------------------------------------------------------- partial take-profit
+    def _setup_tranches(self, side, entry, stop, qty, tick):
+        """Build the scale-out ladder for a freshly opened position. R = |entry - initial stop|.
+        Returns (R, tranches) where each tranche is {qty, rmult, target, done}. Empty if partial_tp
+        is disabled, R<=0, or qty<2 (can't trim half of 1). Tranche quantities are rounded and
+        capped so their sum never exceeds qty; whatever is left over is the runner."""
+        R = abs(entry - stop)
+        if not self.ptp_enabled or R <= 0 or qty < 2 or not self.ptp_tranches:
+            return R, []
+        tranches = []
+        used = 0
+        for frac, rmult in self.ptp_tranches:
+            q = int(round(frac * qty))
+            q = max(0, min(q, qty - used))
+            if q <= 0:
+                continue
+            target = entry + rmult * R if side == LONG else entry - rmult * R
+            tranches.append({"qty": q, "rmult": float(rmult),
+                             "target": round_to_tick(target, tick), "done": False})
+            used += q
+        return R, tranches
+
+    def check_partial_tp(self, symbol, p, last_px, tick) -> bool:
+        """Fire any scale-out tranches reached by `last_px` (tranches are ascending in R, so stop
+        at the first not-yet-reached one). Each fired tranche sells its qty (marketable), reduces
+        the position, and is logged to the trade CSV as a PARTIAL_<n>R leg. After a trim at
+        >= tighten_after_r the remainder switches to a `trail_r`-R trailing stop (locking profit);
+        the protective stop is reconciled to the reduced qty each time. Returns False if the
+        position is now fully scaled out (caller should treat it as closed), else True."""
+        if not self.ptp_enabled:
+            return True
+        tranches = p.get("tranches") or []
+        if not tranches:
+            return True
+        side, entry, R = p["side"], p["entry"], p.get("R", 0.0)
+        oc = self._order_contract(p["contract"])
+        fired_rmult = None
+        for t in tranches:
+            if t["done"]:
+                continue
+            reached = (last_px >= t["target"]) if side == LONG else (last_px <= t["target"])
+            if not reached:
+                break                                  # ascending -> nothing higher reached either
+            qty = min(int(t["qty"]), int(p["qty"]))
+            if qty <= 0:
+                t["done"] = True
+                continue
+            self.log(f"[{p['ref']}] PARTIAL TP {t['rmult']:.0f}R: trimming {qty} {symbol} @~{t['target']:.2f}")
+            tr = self.flatten(oc, side, qty, p["ref"], ref_price=last_px)
+            f = int(tr.orderStatus.filled or 0) if tr else 0
+            if f <= 0:
+                self.log(f"[{p['ref']}] partial TP no fill -> retry next bar")
+                break
+            fill = float(tr.orderStatus.avgFillPrice or t["target"])
+            pnl = (fill - entry) * f if side == LONG else (entry - fill) * f
+            ret = ((fill / entry - 1) if side == LONG else (entry / fill - 1)) * 100 if entry else 0.0
+            self.record_trade({
+                "time": now_et().strftime("%Y-%m-%d %H:%M:%S"), "symbol": symbol, "side": side,
+                "qty": f, "entry": round(entry, 4), "exit": round(fill, 4),
+                "stop": round(p["stop"], 4), "pnl": round(pnl, 2), "ret_pct": round(ret, 2),
+                "reason": f"PARTIAL_{t['rmult']:.0f}R", "hold": "",
+            })
+            p["qty"] -= f
+            t["done"] = True
+            p["trimmed"] = True
+            fired_rmult = t["rmult"]
+            if p["qty"] <= 0:
+                break
+        if fired_rmult is None:
+            return True                                 # nothing fired this tick
+        if p["qty"] <= 0:
+            # fully scaled out (no runner) -> cancel the resting stop and close the position out
+            self.cancel(p.get("st"))
+            self.log(f"[{p['ref']}] fully scaled out via partial TP -> flat")
+            self.positions.pop(symbol, None)
+            return False
+        # tighten the runner's stop once we've taken a >= tighten_after_r piece
+        if fired_rmult >= self.ptp_tighten_after_r and p.get("trail_mode") != "oneR":
+            p["trail_mode"] = "oneR"
+            lock = (entry + (fired_rmult - self.ptp_trail_r) * R) if side == LONG \
+                else (entry - (fired_rmult - self.ptp_trail_r) * R)
+            if side == LONG:
+                p["stop"] = max(p["stop"], round_to_tick(lock, tick))
+            else:
+                p["stop"] = min(p["stop"], round_to_tick(lock, tick))
+            self.log(f"[{p['ref']}] runner ({p['qty']}) -> {self.ptp_trail_r:.0f}R trail; stop locked {p['stop']:.2f}")
+        # resize the protective stop to the reduced quantity (at the possibly-tightened level)
+        p["st"] = self.reconcile_stops(symbol, oc, side, p["qty"], p["stop"], tick)
+        return True
+
+    # ---- RESTING take-profit orders (visible in TWS): a LIMIT per tranche for HALF the qty ----
+    def place_take_profits(self, symbol, contract, side, tranches, ref, tick):
+        """Place a RESTING LIMIT take-profit for each scale-out tranche (qty at its R target), so
+        the profit target is a real working order visible in TWS — not a synthetic in-code check.
+        TP side is opposite the position (SELL a long / BUY a short). Returns a list of
+        {trade, rmult, qty, target, filled}. GTC (or DAY intraday). Empty if no tranches."""
+        if not tranches:
+            return []
+        tp_action = "SELL" if side == LONG else "BUY"
+        out = []
+        for t in tranches:
+            px = round_to_tick(t["target"], tick)
+            o = LimitOrder(tp_action, int(t["qty"]), px)
+            o.orderRef = ref + "_TP"
+            o.tif = "DAY" if self.intraday_mode else "GTC"
+            o.outsideRth = self.outside_rth
+            if self.account:
+                o.account = self.account
+            try:
+                tr = self.ib.placeOrder(contract, o)
+                out.append({"trade": tr, "rmult": float(t["rmult"]), "qty": int(t["qty"]),
+                            "target": px, "filled": 0})
+                self.log(f"[{ref}] TAKE-PROFIT {tp_action} {int(t['qty'])} {symbol} LMT {px} "
+                         f"({t['rmult']:.0f}R) — resting")
+            except Exception as e:
+                self.log(f"[{ref}] take-profit place error: {e}")
+        return out
+
+    def _cancel_tps(self, p):
+        """Cancel every resting take-profit order tracked on this position (call on any exit so a
+        half-qty TP can't survive as an orphan and open a new position after a full stop/flip)."""
+        for tp in list(p.get("tp_orders") or []):
+            self.cancel(tp.get("trade"))
+        p["tp_orders"] = []
+
+    def _cancel_stray_tps(self, symbol):
+        """Cancel any resting TP LIMIT orders for `symbol` on this account (orderRef '*_TP'). Used
+        on startup/reconnect to clear stale targets before re-arming from the adopted position."""
+        try:
+            self.ib.reqAllOpenOrders(); self.ib.sleep(1)
+            for t in list(self.ib.openTrades()):
+                o = getattr(t, "order", None)
+                if (o is not None and getattr(t.contract, "symbol", "") == symbol
+                        and str(getattr(o, "orderRef", "")).endswith("_TP")
+                        and getattr(o, "orderType", "") in ("LMT", "LIMIT")
+                        and (not self.account or getattr(o, "account", "") in ("", self.account))
+                        and t.orderStatus.status not in ("Filled", "Cancelled", "ApiCancelled", "Inactive")):
+                    self.cancel(t)
+        except Exception as e:
+            self.log(f"cancel stray TPs error {symbol}: {e}")
+
+    def check_take_profits(self, symbol, p, tick) -> bool:
+        """Detect fills of the RESTING take-profit LIMIT orders, book them, shrink the position,
+        and once a tranche at >= tighten_after_r fills switch the runner to a `trail_r`-R trailing
+        stop (locking profit) and resize the protective stop to the reduced qty. Returns False if
+        the position is now fully scaled out (caller treats it as closed), else True. Replaces the
+        old synthetic price-cross check with real order-fill detection."""
+        if not self.ptp_enabled:
+            return True
+        tps = p.get("tp_orders") or []
+        if not tps:
+            return True
+        side, entry, R = p["side"], p["entry"], p.get("R", 0.0)
+        oc = self._order_contract(p["contract"])
+        fired_rmult = None
+        still_resting = []
+        for tp in tps:
+            tr = tp.get("trade")
+            os_ = getattr(tr, "orderStatus", None)
+            status = getattr(os_, "status", "") if os_ else ""
+            filled = int(getattr(os_, "filled", 0) or 0) if os_ else 0
+            new_fill = filled - int(tp.get("filled", 0))
+            if new_fill > 0:
+                fill_px = float(getattr(os_, "avgFillPrice", 0) or tp["target"])
+                pnl = (fill_px - entry) * new_fill if side == LONG else (entry - fill_px) * new_fill
+                ret = ((fill_px / entry - 1) if side == LONG else (entry / fill_px - 1)) * 100 if entry else 0.0
+                self.record_trade({
+                    "time": now_et().strftime("%Y-%m-%d %H:%M:%S"), "symbol": symbol, "side": side,
+                    "qty": new_fill, "entry": round(entry, 4), "exit": round(fill_px, 4),
+                    "stop": round(p["stop"], 4), "pnl": round(pnl, 2), "ret_pct": round(ret, 2),
+                    "reason": f"PARTIAL_{tp['rmult']:.0f}R", "hold": "",
+                })
+                p["qty"] -= new_fill
+                p["trimmed"] = True
+                tp["filled"] = filled
+                fired_rmult = tp["rmult"] if (fired_rmult is None or tp["rmult"] > fired_rmult) else fired_rmult
+                self.log(f"[{p['ref']}] TAKE-PROFIT filled {new_fill} {symbol} @ {fill_px:.2f} "
+                         f"({tp['rmult']:.0f}R); remaining {p['qty']}")
+            if status not in ("Filled", "Cancelled", "ApiCancelled", "Inactive") and filled < tp["qty"]:
+                still_resting.append(tp)          # keep partially/unfilled TPs working
+        p["tp_orders"] = still_resting
+        if fired_rmult is None:
+            return True                            # nothing filled this tick
+        if p["qty"] <= 0:
+            # fully scaled out -> cancel the resting stop + any leftover TPs, close the position
+            self.cancel(p.get("st"))
+            self._cancel_tps(p)
+            self.log(f"[{p['ref']}] fully scaled out via take-profit -> flat")
+            self.positions.pop(symbol, None)
+            return False
+        # tighten the runner's stop once we've taken a >= tighten_after_r piece (lock profit)
+        if fired_rmult >= self.ptp_tighten_after_r and p.get("trail_mode") != "oneR":
+            p["trail_mode"] = "oneR"
+            lock = (entry + (fired_rmult - self.ptp_trail_r) * R) if side == LONG \
+                else (entry - (fired_rmult - self.ptp_trail_r) * R)
+            p["stop"] = max(p["stop"], round_to_tick(lock, tick)) if side == LONG \
+                else min(p["stop"], round_to_tick(lock, tick))
+            self.log(f"[{p['ref']}] runner ({p['qty']}) -> {self.ptp_trail_r:.0f}R trail; "
+                     f"stop locked {p['stop']:.2f}")
+        # resize the protective stop to the reduced quantity (at the possibly-tightened level)
+        p["st"] = self.reconcile_stops(symbol, oc, side, p["qty"], p["stop"], tick)
+        return True
+
     def current_regime(self, symbol, bars):
         """Classify TREND vs CHOP for `symbol` on the last completed bar via Choppiness Index +
         ADX, with HYSTERESIS (persisted per symbol in self._regime) so it doesn't flip-flop at
@@ -943,14 +1185,17 @@ class SupertrendBot:
             self.log(f"[{self._ref(symbol)}] OVERNIGHT venue (LMT-only): protecting "
                      f"{int(total_qty)} {symbol} with a SYNTHETIC stop @ {trig} (no native stop)")
             return None
-        if self.outside_rth:
-            # stop-LIMIT (stop-market is rejected outside RTH); limit sits the far side of the
-            # trigger so it's marketable when hit.
+        if self.outside_rth and not self.is_future:
+            # outside-RTH EQUITIES: stop-market is rejected, so use a stop-LIMIT with the limit
+            # the far side of the trigger so it's marketable when hit.
             lim = round_to_tick(trig * (1 - self.stop_limit_offset_pct) if stop_action == "SELL"
                                 else trig * (1 + self.stop_limit_offset_pct), tick)
             o = StopLimitOrder(stop_action, int(total_qty), lim, trig)
             desc = f"STP LMT {trig}/{lim}"
         else:
+            # RTH equities OR FUTURES: CME Globex accepts a native stop-MARKET 24h, which is the
+            # most reliable resting protective stop (a stop-limit can fail to fill on a gap and,
+            # for futures, was the reason no stop appeared). Use a plain STP.
             o = StopOrder(stop_action, int(total_qty), trig)
             desc = f"STP {trig}"
         o.orderRef = self._ref(symbol)
@@ -1269,19 +1514,30 @@ class SupertrendBot:
         # ONE consolidated stop for the full position (cancels st_child + any prior/stacked stops)
         st = self.reconcile_stops(symbol, oc, side, total, stop, tick)
         fill = float(pt.orderStatus.avgFillPrice or entry_ref)
+        R, tranches = self._setup_tranches(side, fill, stop, total, tick)
+        # RESTING take-profit LIMIT order(s) for the tranche qty (half), visible in TWS. The full
+        # position is protected by the stop above; each tranche is a working limit at its R target.
+        tp_orders = self.place_take_profits(symbol, oc, side, tranches, ref, tick)
         self.positions[symbol] = {
             "contract": contract, "side": side, "qty": total, "entry": fill, "stop": stop,
             "st": st, "ref": ref, "opened": now_et(),
+            "R": R, "tranches": tranches, "tp_orders": tp_orders,
+            "trimmed": False, "trail_mode": "supertrend",
         }
         self._entry_bar[symbol] = bar_time     # one entry per completed bar
         verb = "OPENED" if held == 0 else "TOPPED UP"
         self.log(f"{verb} {side} {symbol}: held {held} + bought {filled} = {total} "
                  f"(target {target}) entry {fill:.2f} stop {stop:.2f} for {total}")
+        if tranches:
+            self.log(f"{symbol} partial_tp armed: R={R:.2f}, " + ", ".join(
+                f"{t['qty']}@{t['rmult']:.0f}R({t['target']:.2f})" for t in tranches)
+                + f", runner={total - sum(t['qty'] for t in tranches)}")
 
     def close_position(self, symbol, exit_px, reason):
         p = self.positions.pop(symbol, None)
         if not p:
             return
+        self._cancel_tps(p)   # kill any resting take-profit so it can't orphan into a new position
         if p["side"] == LONG:
             pnl = (exit_px - p["entry"]) * p["qty"]
             ret = (exit_px / p["entry"] - 1) * 100 if p["entry"] else 0.0
@@ -1331,6 +1587,7 @@ class SupertrendBot:
             mult = int(getattr(contract, "multiplier", 1) or 1)
             entry = float(pos.avgCost or 0) / (mult or 1)
             ref = self._ref(symbol)
+            self._cancel_stray_tps(symbol)   # clear any stale resting take-profits before re-arming
 
             # recompute the Supertrend for this stock + timeframe at startup
             state = self.st_state(symbol, self.hist(contract))
@@ -1392,12 +1649,27 @@ class SupertrendBot:
             # ONE consolidated stop for the full held quantity (cancels any stacked stops). On
             # the OVERNIGHT venue reconcile_stops returns None -> protection is synthetic.
             st_trade = self.reconcile_stops(symbol, oc, side, qty, stop, tick)
+            # Re-arm the scale-out after a restart/reconnect. If the adopted qty is a FULL fresh
+            # position (>= target) set up tranches + place resting take-profit orders; if it is
+            # SMALLER than target it is most likely a runner that already scaled out -> just trail
+            # it at 1R with no new take-profit (avoids re-trimming an already-trimmed position).
+            R = abs(entry - stop); tranches = []; tp_orders = []; trail_mode = "supertrend"
+            if self.ptp_enabled and qty >= 2:
+                if qty >= target:
+                    R, tranches = self._setup_tranches(side, entry, stop, qty, tick)
+                    tp_orders = self.place_take_profits(symbol, oc, side, tranches, ref, tick)
+                else:
+                    trail_mode = "oneR"   # reduced position -> treat as a post-trim runner
             self.positions[symbol] = {
                 "contract": contract, "side": side, "qty": qty, "entry": entry, "stop": stop,
                 "st": st_trade, "ref": ref, "opened": now_et(),
+                "R": R, "tranches": tranches, "tp_orders": tp_orders,
+                "trimmed": (trail_mode == "oneR"), "trail_mode": trail_mode,
             }
             self.log(f"sync {symbol}: adopted {side} qty {qty} entry {entry:.2f} "
-                     f"stop {stop:.2f} (single stop for {qty})")
+                     f"stop {stop:.2f} (single stop for {qty})"
+                     + (f"; re-armed TP {tranches[0]['qty']}@{tranches[0]['rmult']:.0f}R "
+                        f"({tranches[0]['target']:.2f})" if tranches else ""))
 
     # ----------------------------------------------------------------- main loop
     def _trading_now(self) -> bool:
@@ -1427,15 +1699,23 @@ class SupertrendBot:
         return max(round_to_tick(line, tick), round_to_tick(ref_price * (1 + 1e-4), tick))
 
     def _trail(self, symbol, p, line, close, tick):
-        """Move the stop to the current Supertrend line (only ever in the favorable
-        direction). The Supertrend line is the live 'sell' level, so the stop always tracks
-        the Supertrend for this stock/timeframe (req: stop loss = Supertrend sell)."""
-        new_stop = self._st_stop(p["side"], line, close, tick)
+        """Move the stop only in the favorable direction. Normally the stop tracks the Supertrend
+        line (the live 'sell' level). But after a partial_tp trim has switched the runner to the
+        1R trail (`trail_mode`=='oneR'), the stop instead tracks `trail_r`*R behind the close —
+        a tighter profit-locking trail on the remaining runner."""
+        if p.get("trail_mode") == "oneR" and p.get("R"):
+            trr = self.ptp_trail_r * p["R"]
+            level = (close - trr) if p["side"] == LONG else (close + trr)
+            new_stop = self._st_stop(p["side"], level, close, tick)
+            trail_tag = f"{self.ptp_trail_r:.0f}R trail"
+        else:
+            new_stop = self._st_stop(p["side"], line, close, tick)
+            trail_tag = "Supertrend"
         oc = self._order_contract(p["contract"])
         # A synthetic stop (OVERNIGHT venue) has no resting order to modify — only its level is
         # trailed in state; manage_symbol enforces the level each bar with a marketable LIMIT.
         synth = p.get("st") is None
-        tag = "Supertrend, synthetic" if synth else "Supertrend"
+        tag = trail_tag + (", synthetic" if synth else "")
         if p["side"] == LONG:
             if new_stop > p["stop"] + tick / 2:
                 if not synth:
@@ -1562,7 +1842,14 @@ class SupertrendBot:
                     self._shrink_to_fill(p, tr)
                     return
             else:
-                # 3) same side -> keep protection correct for the ACTIVE venue, then trail.
+                # 3) same side -> take any partial-TP tranches reached, keep protection correct
+                #    for the ACTIVE venue, then trail.
+                # 3a) partial take-profit: detect fills of the RESTING take-profit LIMIT orders,
+                #     book them, shrink the position + stop, and switch the runner to a 1R trail.
+                #     Returns False if fully scaled out (no runner) -> nothing left to manage.
+                if not self.check_take_profits(symbol, p, tick):
+                    return
+                st = p.get("st")     # check_take_profits may have re-placed the resting stop
                 #    OVERNIGHT: no native stop can rest (LMT-only) -> protection is synthetic
                 #    (enforced above); if a native stop from the prior day session is still
                 #    resting, cancel it (reconcile_stops(OVERNIGHT) drops it and returns None).
@@ -1672,62 +1959,78 @@ class SupertrendBot:
             gate = 0 < bar_secs < 24 * 3600 and bar_secs > self.poll
             self._last_eval_bar = None
             while True:
-                if not self.ensure_connected():
-                    self.log("CRITICAL: cannot reconnect; positions protected by server-side stops. Exiting.")
-                    break
-                if self.intraday_mode and now_et() >= flat_dt:
-                    for symbol in list(self.positions):
-                        p = self.positions[symbol]
-                        self.cancel(p["st"])
-                        tr = self.flatten(self._order_contract(p["contract"]), p["side"], p["qty"], p["ref"])
-                        exit_px = (float(tr.orderStatus.avgFillPrice)
-                                   if (tr and tr.orderStatus.avgFillPrice) else p["entry"])
-                        self.close_position(symbol, exit_px, "EOD")
-                    self.log("intraday EOD flatten complete; exiting for the day.")
-                    break
+                try:
+                    if not self.ensure_connected():
+                        self.log("CRITICAL: cannot reconnect; positions protected by server-side stops. Exiting.")
+                        break
+                    if self.intraday_mode and now_et() >= flat_dt:
+                        for symbol in list(self.positions):
+                            p = self.positions[symbol]
+                            self.cancel(p["st"])
+                            tr = self.flatten(self._order_contract(p["contract"]), p["side"], p["qty"], p["ref"])
+                            exit_px = (float(tr.orderStatus.avgFillPrice)
+                                       if (tr and tr.orderStatus.avgFillPrice) else p["entry"])
+                            self.close_position(symbol, exit_px, "EOD")
+                        self.log("intraday EOD flatten complete; exiting for the day.")
+                        break
 
-                now = now_et()
-                sod = now.hour * 3600 + now.minute * 60 + now.second
-                if gate:
-                    cur_bar = int((sod - buf) // bar_secs)   # bar considered closed & data-ready
-                    do_eval = cur_bar != self._last_eval_bar
-                    if do_eval:
-                        self._last_eval_bar = cur_bar
-                else:
-                    do_eval = True
-
-                if do_eval:
-                    self._cycle_data_ok = False
-                    for symbol in self.symbols:
-                        try:
-                            self.manage_symbol(symbol)
-                        except Exception as e:
-                            self.log(f"manage error {symbol}: {e}")
-                    # DATA WATCHDOG: socket up but no symbol returned data for several bar-evals
-                    # (a competing login stealing the data line sends Error 162 timeouts WITHOUT
-                    # dropping the socket or firing 1100) -> force a full session reset.
-                    if self._cycle_data_ok:
-                        self._data_fail = 0
+                    now = now_et()
+                    sod = now.hour * 3600 + now.minute * 60 + now.second
+                    if gate:
+                        cur_bar = int((sod - buf) // bar_secs)   # bar considered closed & data-ready
+                        do_eval = cur_bar != self._last_eval_bar
+                        if do_eval:
+                            self._last_eval_bar = cur_bar
                     else:
-                        self._data_fail += 1
-                        if self._data_fail >= self.data_fail_reconnect_cycles:
-                            self.log(f"no market data for {self._data_fail} evals while connected; "
-                                     f"forcing session reset (disconnect -> reconnect)")
-                            try:
-                                self.ib.disconnect()
-                            except Exception:
-                                pass
-                            self._data_fail = 0
-                else:
-                    self._watch_stops()      # heartbeat: catch a stop fill between bars
+                        do_eval = True
 
-                # sleep to the next bar boundary, but wake at least every poll for health
-                if gate:
-                    to_next = int((sod - buf) // bar_secs + 1) * bar_secs + buf - sod
-                    nap = max(2, min(self.poll, to_next))
-                else:
-                    nap = self.poll
-                self.ib.sleep(nap)
+                    if do_eval:
+                        self._cycle_data_ok = False
+                        for symbol in self.symbols:
+                            try:
+                                self.manage_symbol(symbol)
+                            except Exception as e:
+                                self.log(f"manage error {symbol}: {e}")
+                        # DATA WATCHDOG: socket up but no symbol returned data for several bar-evals
+                        # (a competing login stealing the data line sends Error 162 timeouts WITHOUT
+                        # dropping the socket or firing 1100) -> force a full session reset.
+                        if self._cycle_data_ok:
+                            self._data_fail = 0
+                        else:
+                            self._data_fail += 1
+                            if self._data_fail >= self.data_fail_reconnect_cycles:
+                                self.log(f"no market data for {self._data_fail} evals while connected; "
+                                         f"forcing session reset (disconnect -> reconnect)")
+                                try:
+                                    self.ib.disconnect()
+                                except Exception:
+                                    pass
+                                self._data_fail = 0
+                    else:
+                        self._watch_stops()      # heartbeat: catch a stop fill between bars
+
+                    # sleep to the next bar boundary, but wake at least every poll for health
+                    if gate:
+                        to_next = int((sod - buf) // bar_secs + 1) * bar_secs + buf - sod
+                        nap = max(2, min(self.poll, to_next))
+                    else:
+                        nap = self.poll
+                    self._safe_sleep(nap)
+                except (asyncio.CancelledError, Exception) as e:
+                    # A Gateway restart / socket drop surfaces HERE (ConnectionError "Socket
+                    # disconnect", or asyncio.CancelledError — a BaseException that `except
+                    # Exception` misses) via any ib.sleep/request. Previously it escaped the loop
+                    # and KILLED the strategy thread, so the bot never reconnected. Now: log it,
+                    # tear down the dead client, pause briefly, and let the next iteration's
+                    # ensure_connected() perform a FRESH reconnect (which also re-syncs positions
+                    # + stops). This is what makes the bot survive the daily Gateway restart.
+                    self.log(f"main loop: {type(e).__name__}: {e} — tearing down client, "
+                             f"reconnecting on next tick")
+                    try:
+                        self.ib.disconnect()
+                    except Exception:
+                        pass
+                    self._safe_sleep(3)
         finally:
             self.disconnect()
 

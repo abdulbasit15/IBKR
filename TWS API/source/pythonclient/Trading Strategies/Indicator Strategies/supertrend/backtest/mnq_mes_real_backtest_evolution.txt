@@ -1,0 +1,65 @@
+REAL BACKTEST (fresh IB data thru 2026-07-20) — bot evolution, long_short, Q=4
+PLAIN_ST | PREVIOUS(ST+DEMA+regime) | CURRENT(+partial_tp 50%@2R). MNQ $2/pt, MES $5/pt.
+
+==================================================================================
+MNQ 15m   FULL history 2025-07-28..2026-07-20  (23,613 bars)
+  mode       Entries    PF     NetP/L$     MaxDD$  trims
+  PLAIN_ST       930  1.09     +30,660    -47,201      0
+  PREVIOUS       372  1.32     +45,536    -11,184      0
+  CURRENT        384  1.35     +49,953     -9,800     52
+  choppy Nov25-Mar26 PLAI +40,574 | PREV +21,262 | CURR +21,909
+  trend  Apr-Jul26   PLAI -23,182 | PREV +5,825 | CURR +9,628
+
+==================================================================================
+MNQ 30m   FULL history 2024-08-05..2026-07-20  (23,552 bars)
+  mode       Entries    PF     NetP/L$     MaxDD$  trims
+  PLAIN_ST       968  1.03     +14,628    -37,514      0
+  PREVIOUS       437  1.00        -442    -35,321      0
+  CURRENT        443  0.97      -6,940    -39,954     53
+  choppy Nov25-Mar26 PLAI +13,514 | PREV -3,209 | CURR -7,467
+  trend  Apr-Jul26   PLAI -8,412 | PREV -5,800 | CURR -3,720
+
+==================================================================================
+MNQ 1h   FULL history 2024-02-14..2026-07-20  (14,727 bars)
+  mode       Entries    PF     NetP/L$     MaxDD$  trims
+  PLAIN_ST       602  1.10     +39,658    -26,605      0
+  PREVIOUS       304  1.27     +56,509    -19,044      0
+  CURRENT        321  1.29     +65,035    -17,971     66
+  choppy Nov25-Mar26 PLAI +9,998 | PREV -2,661 | CURR +1,701
+  trend  Apr-Jul26   PLAI -4,787 | PREV -5,367 | CURR -2,194
+
+==================================================================================
+MES 15m   FULL history 2025-07-28..2026-07-20  (23,612 bars)
+  mode       Entries    PF     NetP/L$     MaxDD$  trims
+  PLAIN_ST       941  1.03      +4,781    -21,752      0
+  PREVIOUS       371  1.12      +8,920    -12,473      0
+  CURRENT        373  1.17     +12,072    -11,098     34
+  choppy Nov25-Mar26 PLAI +14,462 | PREV +13,843 | CURR +15,119
+  trend  Apr-Jul26   PLAI -15,351 | PREV -9,280 | CURR -7,965
+
+==================================================================================
+MES 30m   FULL history 2024-08-05..2026-07-20  (23,552 bars)
+  mode       Entries    PF     NetP/L$     MaxDD$  trims
+  PLAIN_ST       995  0.91     -23,249    -33,762      0
+  PREVIOUS       423  0.89     -14,101    -25,088      0
+  CURRENT        433  0.89     -14,046    -24,663     40
+  choppy Nov25-Mar26 PLAI +1,898 | PREV -720 | CURR +945
+  trend  Apr-Jul26   PLAI -15,136 | PREV -9,875 | CURR -10,391
+
+==================================================================================
+MES 1h   FULL history 2024-02-16..2026-07-20  (14,672 bars)
+  mode       Entries    PF     NetP/L$     MaxDD$  trims
+  PLAIN_ST       597  1.05      +9,288    -16,017      0
+  PREVIOUS       314  1.11     +11,761    -16,762      0
+  CURRENT        334  1.12     +14,431    -18,149     59
+  choppy Nov25-Mar26 PLAI +8,207 | PREV +2,145 | CURR +4,198
+  trend  Apr-Jul26   PLAI -5,590 | PREV +3,410 | CURR +4,865
+
+==================================================================================
+DEPLOYED 15m TOTALS (MNQ+MES, Q=4), Net P/L $:
+  PLAIN_ST         +35,440
+  PREVIOUS         +54,456
+  CURRENT          +62,025
+  CURRENT vs PREVIOUS: +7,569
+  PREVIOUS vs PLAIN_ST: +19,016
+==================================================================================

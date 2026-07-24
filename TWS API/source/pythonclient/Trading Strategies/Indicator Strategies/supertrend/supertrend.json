@@ -1,6 +1,7 @@
 {
   "_comment": "Supertrend bot. Per strategy set: name, account, direction, symbols, bar_size, market_hours (RTH|ETH|24H), supertrend(atr_period,multiplier), dema_filter, optional adx_filter/rsi_filter/macd_filter, sizing.fixed_stocks. Futures: add sec_type=FUT, exchange, currency. Everything else (hist_duration, entry_window, order/exec params, poll, logs) is derived or defaulted in code.",
   "_momentum_filters_comment": "Optional momentum filters gate entries so momentum agrees with the Supertrend direction (on TOP of dema/adx). rsi_filter: LONG only when RSI(period)>long_min, SHORT only when RSI<short_max (shorthand \"rsi\":50). macd_filter: LONG only when MACD hist>0, SHORT only when hist<0. Backtests show RSI>50/<50 improves win rate + drawdown on 30m/1h. Example: \"rsi_filter\": {\"enabled\": true, \"period\": 14, \"long_min\": 50, \"short_max\": 50}, \"macd_filter\": {\"enabled\": true, \"fast\": 12, \"slow\": 26, \"signal\": 9}",
+  "_regime_and_partial_comment": "regime_filter = TREND/CHOP adaptive gate (Choppiness+ADX, hysteresis); chop_action 'stand_aside' trades only trends. partial_tp = scale-out: trim tranches at r_multiple*R (R=entry-to-stop), runner trails trail_r*R after first trim >= tighten_after_r. partial_tp needs fixed_stocks>=2 (half of 1 = 0 = no-op). MNQ/MES 15m below run regime stand_aside + partial_tp 50%@2R with fixed_stocks 4.",
   "_direction_options": "long_only = long when bullish, cash when bearish (never short). short_only = short when bearish, cash when bullish (never long). long_short = always in the market: long when bullish, flip to short when bearish. (Shorting equities needs a borrowable/shortable symbol + margin; futures short natively.)",
 
   "host": "127.0.0.1",
@@ -52,7 +53,8 @@
         "rsi_filter": { "enabled": false, "period": 14, "long_min": 50, "short_max": 50 },
         "macd_filter": { "enabled": false, "fast": 12, "slow": 26, "signal": 9 },
         "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
-        "sizing": { "strategy_capital": 100000, "fixed_stocks": 1, "risk_per_trade_pct": 0.01, "max_position_notional": 200000 }
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
       },
       {
         "name": "DU672616_MES_15m", "account": "DU672616", "direction": "long_short",
@@ -63,7 +65,8 @@
         "rsi_filter": { "enabled": false, "period": 14, "long_min": 50, "short_max": 50 },
         "macd_filter": { "enabled": false, "fast": 12, "slow": 26, "signal": 9 },
         "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
-        "sizing": { "strategy_capital": 100000, "fixed_stocks": 1, "risk_per_trade_pct": 0.01, "max_position_notional": 200000 }
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
       }
     ]
   }

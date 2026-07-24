@@ -15,6 +15,7 @@ run rebuilds fresh ones inside this `supertrend/` folder.
 - **Live config** (`supertrend.json`), paper account `DU672616`, IB Gateway port 4002:
   - `DU672616_MNQ_15m` and `DU672616_MES_15m` — futures, **15-min**, `long_short`, 24H.
   - Filters: **DEMA(200) ON + regime gate ON (stand_aside)**; RSI/MACD present but **off** (regime supersedes them).
+  - **partial_tp ON (50%@2R, runner trails 1R)**; `fixed_stocks: 4` (so half=2 actually trims), `max_position_notional: 500000`.
   - `hist_duration: 30 D` (warms DEMA200/ADX/Choppiness on 15m).
 - **Not yet rebuilt/redeployed.** The regime logic is new *code*, so the running `dist/` exe must be
   rebuilt: `.\supertrend.ps1` then restart the exe. (Config-only changes don't need a rebuild, but the
@@ -35,6 +36,18 @@ Supertrend direction; a filter that can't be evaluated blocks the entry (same co
   RSI<short_max. Shorthand `"rsi": 50`. Method `rsi_filter_ok`.
 - `macd_filter`: `{enabled, fast=12, slow=26, signal=9}` — LONG needs hist>0, SHORT needs hist<0. Method
   `macd_filter_ok`.
+
+### 3b. Partial take-profit / scale-out (`supertrend_bot.py`)
+- Config `partial_tp`: `{enabled, trail_r=1.0, tighten_after_r=2.0, tranches:[{fraction, r_multiple}]}`.
+  Default ladder = `[{0.5, 2}]` (trim 50% at 2R).
+- `_setup_tranches()` builds the ladder on entry (R = |entry−initial stop|; tranche qty = round(frac*Q),
+  capped; remainder = runner). No-op if Q<2. `check_partial_tp()` fires reached tranches (marketable
+  exit via `flatten`), logs each as a `PARTIAL_<n>R` CSV leg, resizes the protective stop to the
+  reduced qty, and after a trim at ≥`tighten_after_r` switches the runner to a `trail_r`-R trailing
+  stop (via `trail_mode="oneR"` handled in `_trail`). Wired into `manage_symbol`'s same-side branch
+  before the trail; exits/stops/flips still apply to the remainder.
+- Backtest verdict (see `backtest/mnq_mes_tranche_scaleout.txt`): 50%@2R (or 33/33@2,3) beats plain
+  exit; laddering into smaller/earlier 1R trims does NOT help. Needs `fixed_stocks ≥ 2`.
 
 ### 3. Regime-adaptive gate (`supertrend_bot.py`) — the main new feature
 - Config `regime_filter`: `{enabled, adx_period=14, chop_period=14, adx_trend=25, chop_trend=38,
@@ -88,6 +101,32 @@ Supertrend direction; a filter that can't be evaluated blocks the entry (same co
   (single-contract). Need IB Gateway running on 4002.
 - Key reports: `mnq_mes_regime_gate.txt` (regime validation), `mnq_mes_st_dema_regime.txt` (3-way
   ST vs ST+DEMA vs Regime), `mnq_mes_regime_dema_vs_nodema.txt` (DEMA's value on top of regime).
+
+## Gateway-restart reconnect fix (2026-07-21)
+**Bug:** on IB Gateway's daily restart the socket peer-closed and `ib.sleep()` in the `run()` loop
+raised `ConnectionError: Socket disconnect` / `asyncio.CancelledError`. It was UNCAUGHT (and
+`CancelledError` is a BaseException, so `except Exception` missed it), so each strategy thread
+died and never reconnected. **Fix:** added `_safe_sleep()` (pumps events via ib.sleep while
+connected, else plain sleep; swallows both error types) used for all loop/reconnect waits, and
+wrapped the entire `while True` body in `except (asyncio.CancelledError, Exception)` that tears
+down the client and lets the next `ensure_connected()` do a fresh reconnect + re-sync. Net effect:
+a Gateway restart now just logs `main loop: ... — reconnecting on next tick` and the bot resumes
+(the existing reconnect loop already retries through the Gateway-down window with backoff).
+Recommend enabling Gateway auto-restart/auto-relogin so it comes back on its own. NEEDS REBUILD.
+
+## Partial-TP now uses RESTING orders (2026-07-21)
+**Was:** the profit target was SYNTHETIC — `check_partial_tp` fired a marketable order when price
+crossed the level, so no target order was visible in TWS; and the futures stop was a STP-LMT that
+could be fragile/hidden. **Now:** on fill the bot places (1) a native **stop-MARKET (STP) for the
+FULL qty** — `reconcile_stops` uses STP for futures (CME Globex accepts it 24h; STP-LMT kept only
+for outside-RTH *equities*), and (2) a **resting LIMIT take-profit for HALF the qty** at the 2R
+target via `place_take_profits`. `check_take_profits` detects the TP *order fill* (not a price
+cross), books the partial, shrinks the position, tightens the runner to a 1R trail, and resizes
+the stop to the remaining qty. `_cancel_tps` (in `close_position`) kills the resting TP on any
+stop/flip/EOD exit so it can't orphan into a new position; `_cancel_stray_tps` + re-arm logic in
+`sync_existing` restore the stop+TP after a restart/reconnect (full qty >= target ⇒ arm TP; a
+reduced qty ⇒ treat as a runner, trail 1R, no new TP). Verified offline (fake IB): STP full-qty
+stop, LIMIT half-qty target, TP-fill → qty↓ + 1R lock + stop resized. NEEDS REBUILD.
 
 ## Open items / next steps (not done)
 - **Deploy**: rebuild with `.\supertrend.ps1` + restart the `dist/` exe to activate the regime code.

@@ -1,0 +1,90 @@
+PARTIAL take-profit (trim half @2R, runner trails 1R) vs EXISTING exit — regime-adaptive strategy
+long_short, ST(10,3)+DEMA200+regime stand-aside. Q=10 contracts (half=5). Window Nov25-Jul26.
+MNQ $2/pt, MES $5/pt. Continuous futures (vol>0).
+
+====================================================================================
+MNQ 15m
+  phase               mode       Entries    PF     NetP/L$     MaxDD$  trims
+  CHOPPY Nov25-Mar26  EXISTING       159  1.37     +53,154    -27,960      0
+  CHOPPY Nov25-Mar26  PARTIAL        166  1.38     +54,773    -24,500     24
+
+  TREND  Apr-Jul26    EXISTING       120  1.16     +22,289    -19,820      0
+  TREND  Apr-Jul26    PARTIAL        124  1.22     +31,796    -15,942     17
+
+  BOTH   Nov25-Jul26  EXISTING       278  1.28     +77,583    -27,960      0
+  BOTH   Nov25-Jul26  PARTIAL        289  1.31     +88,709    -24,500     41
+
+
+====================================================================================
+MNQ 30m
+  phase               mode       Entries    PF     NetP/L$     MaxDD$  trims
+  CHOPPY Nov25-Mar26  EXISTING        98  0.95      -8,021    -57,397      0
+  CHOPPY Nov25-Mar26  PARTIAL        104  0.89     -18,667    -70,964     13
+
+  TREND  Apr-Jul26    EXISTING        61  0.86     -14,500    -41,257      0
+  TREND  Apr-Jul26    PARTIAL         59  0.91      -9,301    -29,851      8
+
+  BOTH   Nov25-Jul26  EXISTING       158  0.92     -21,697    -57,397      0
+  BOTH   Nov25-Jul26  PARTIAL        162  0.89     -28,805    -70,964     22
+
+
+====================================================================================
+MNQ 1h
+  phase               mode       Entries    PF     NetP/L$     MaxDD$  trims
+  CHOPPY Nov25-Mar26  EXISTING        51  0.93      -6,652    -45,899      0
+  CHOPPY Nov25-Mar26  PARTIAL         56  1.04      +4,252    -44,927     11
+
+  TREND  Apr-Jul26    EXISTING        43  0.88     -13,418    -47,610      0
+  TREND  Apr-Jul26    PARTIAL         46  0.96      -5,486    -43,099     10
+
+  BOTH   Nov25-Jul26  EXISTING        93  0.91     -19,485    -47,610      0
+  BOTH   Nov25-Jul26  PARTIAL        101  1.00        -649    -44,927     21
+
+
+====================================================================================
+MES 15m
+  phase               mode       Entries    PF     NetP/L$     MaxDD$  trims
+  CHOPPY Nov25-Mar26  EXISTING       144  1.55     +34,608     -8,896      0
+  CHOPPY Nov25-Mar26  PARTIAL        149  1.59     +37,796     -8,896     18
+
+  TREND  Apr-Jul26    EXISTING       128  0.71     -23,201    -31,183      0
+  TREND  Apr-Jul26    PARTIAL        127  0.75     -19,912    -27,746      9
+
+  BOTH   Nov25-Jul26  EXISTING       271  1.09     +12,645    -31,183      0
+  BOTH   Nov25-Jul26  PARTIAL        275  1.13     +18,745    -27,746     27
+
+
+====================================================================================
+MES 30m
+  phase               mode       Entries    PF     NetP/L$     MaxDD$  trims
+  CHOPPY Nov25-Mar26  EXISTING        96  0.97      -1,800    -22,407      0
+  CHOPPY Nov25-Mar26  PARTIAL         99  1.04      +2,363    -19,073      8
+
+  TREND  Apr-Jul26    EXISTING        53  0.58     -20,426    -26,985      0
+  TREND  Apr-Jul26    PARTIAL         53  0.57     -21,716    -25,899      4
+
+  BOTH   Nov25-Jul26  EXISTING       148  0.80     -21,777    -30,677      0
+  BOTH   Nov25-Jul26  PARTIAL        151  0.83     -19,231    -30,307     13
+
+
+====================================================================================
+MES 1h
+  phase               mode       Entries    PF     NetP/L$     MaxDD$  trims
+  CHOPPY Nov25-Mar26  EXISTING        46  1.12      +5,362     -9,978      0
+  CHOPPY Nov25-Mar26  PARTIAL         50  1.21     +10,495     -9,978      9
+
+  TREND  Apr-Jul26    EXISTING        24  1.62     +11,183    -10,153      0
+  TREND  Apr-Jul26    PARTIAL         27  1.61     +14,820    -12,738      7
+
+  BOTH   Nov25-Jul26  EXISTING        69  1.28     +16,921    -10,153      0
+  BOTH   Nov25-Jul26  PARTIAL         76  1.36     +26,632    -12,738     17
+
+====================================================================================
+TOTALS across all 6 series, Q=10 (Net P/L $):
+  phase                     EXISTING       PARTIAL        diff
+  CHOPPY Nov25-Mar26         +76,651       +91,013     +14,362
+  TREND  Apr-Jul26           -38,073        -9,799     +28,273
+  BOTH   Nov25-Jul26         +44,191       +85,400     +41,210
+====================================================================================
+PF here is leg-level (partial TP counts as a winning leg). Entries = number of positions opened.
+trims = how many positions reached +2R and scaled out. Stops/TP modeled as exact fills (no slippage).

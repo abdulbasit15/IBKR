@@ -1,0 +1,75 @@
+{
+  "_comment": "Supertrend bot. Edit freely: any symbols, any bar_size, any ST(atr_period, multiplier). Example below = long_only ST(10,3) on 15-min bars, SWING mode (holds overnight, GTC stop), paper account DU672616 on IB Gateway port 4002.",
+  "_direction_options": "long_only = long when bullish, cash when bearish, never short (e.g. buy & hold SOXL, sell when bearish, re-buy when bullish). short_only = short when bearish, cash when bullish, never long. long_short = always in the market: long when bullish, flip to short when bearish.",
+  "direction": "long_only",
+
+  "host": "127.0.0.1",
+  "port": 4002,
+  "client_id": 40,
+  "accounts": [
+    "U20181485",
+    "U21953487",
+    "U22736412",
+    "DU672616"
+  ],
+  "default_account": "DU672616",
+  "account": "DU672616",
+  "market_data_type": 3,
+  "hist_min_interval_sec": 2.0,
+
+  "symbols": ["SOXL"],
+  "supertrend": { "atr_period": 10, "multiplier": 3.0 },
+  "_strategies_comment": "strategies has TWO sections. 'stocks' = equities on SMART (existing config, unchanged). 'futures' = CME/GLOBEX futures (e.g. MNQ, MES): set sec_type=FUT (added automatically) and exchange; specifying just the root symbol (MNQ) auto-selects the CLOSEST/front-month expiry at connect time. Futures trade their native ~24h session (no OVERNIGHT venue) with NATIVE stops, and size by contract multiplier (MNQ x$2, MES x$5) — prefer fixed_stocks (= number of contracts).",
+  "strategies": {
+    "stocks": [      
+      {
+        "name": "U21953487_15m",
+        "account": "U21953487",
+        "symbols": ["SOXL"],
+        "bar_size": "15 mins",
+        "market_hours": "24H",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "hist_duration": "30 D",
+        "sizing": {
+          "strategy_capital": 100000,
+          "fixed_stocks": 2000,
+          "risk_per_trade_pct": 0.01,
+          "min_stop_pct": 0.005,
+          "max_position_notional": 100000
+        }
+      }
+    ]    
+  },
+  "_dema_filter_comment": "DEMA trend filter. enabled=true => longs only when close > DEMA(period) (and shorts only when close < DEMA(period)), evaluated on the last completed bar. This is the core entry gate: buy only when Supertrend is bullish AND price is above DEMA(200). hist_duration must provide enough bars for the period (allow ~2x warmup, so >=30 D for DEMA(200) on 15-min RTH bars).",
+  "dema_filter": { "enabled": true, "period": 200 },
+  "_adx_filter_comment": "Optional ADX trend-STRENGTH filter. enabled=true => only open a position when ADX(period) >= threshold on the last completed bar (market is trending strongly enough), IN ADDITION TO the Supertrend signal and the DEMA filter. Set per-strategy or here for all. Shorthand: \"adx\": 20 == { enabled:true, period:14, threshold:20 }. Disabled by default here.",
+  "adx_filter": { "enabled": false, "period": 14, "threshold": 20 },
+  "hist_duration": "30 D",
+  "use_rth": true,
+
+  "intraday_mode": false,
+  "eod_flatten_time": "15:55",
+  "_entry_window_comment": "Omitted on purpose -> each strategy's entry_window defaults to its market_hours session (RTH 09:35-15:55, ETH 04:00-20:00, 24H 00:00-23:59). Set entry_window here or per-strategy to override.",
+  "entry_on_flip_only": false,
+  "poll_interval_sec": 30,
+
+  "sizing": {
+    "strategy_capital": 100000,
+    "fixed_stocks": 1,
+    "risk_per_trade_pct": 0.01,
+    "min_stop_pct": 0.005,
+    "max_position_notional": 100000
+  },
+  "max_concurrent_positions": 5,
+  "_order_type_comment": "RTH strategies enter with MARKET + stop-market. ETH/24H strategies enter with a marketable-LIMIT that chases (market orders are rejected outside RTH) + a stop-LIMIT protective stop, and exit with an aggressively marketable limit.",
+  "entry_offset_pct": 0.0005,
+  "entry_timeout_sec": 60,
+  "max_chase_pct": 0.005,
+  "entry_chase_levels": 4,
+  "stop_limit_offset_pct": 0.003,
+  "exit_offset_pct": 0.01,
+
+  "log_dir": "logs",
+  "trade_log_csv": "supertrend_trades.csv"
+}
