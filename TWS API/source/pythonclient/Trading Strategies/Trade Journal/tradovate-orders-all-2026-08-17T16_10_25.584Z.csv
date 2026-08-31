@@ -1,0 +1,10 @@
+Symbol,Side,Type,Qty,Remaining Qty,Filled Qty,Limit Price,Stop Price,Take Profit,Stop Loss,Avg Fill Price,Status,Update Time,Order ID,Expiry,Expiry Time
+MNQU6,Buy,Limit,3,0,3,30240.75,,,,30240.75,Filled,8/17/2026 9:55,6.18403E+11,Day,
+MNQU6,Sell,Take Profit,3,,,30280.75,,,,,Cancelled,8/17/2026 9:58,6.18403E+11,Day,
+MNQU6,Sell,Stop Loss,3,0,3,,30220.75,,,30220,Filled,8/17/2026 9:58,6.18403E+11,Day,
+MGCZ6,Buy,Limit,2,0,2,4461.4,,,,4461.4,Filled,8/17/2026 10:09,6.18403E+11,Day,
+MGCZ6,Sell,Take Profit,2,0,2,4473.4,,,,4473.4,Filled,8/17/2026 10:16,6.18403E+11,Day,
+MGCZ6,Sell,Stop Loss,2,,,,4455.4,,,,Cancelled,8/17/2026 10:16,6.18403E+11,Day,
+MNQU6,Sell,Limit,3,0,3,30237.75,,,,30237.75,Filled,8/17/2026 11:51,6.18403E+11,Day,
+MNQU6,Buy,Stop Loss,3,,,,30257.75,,,,Cancelled,8/17/2026 12:03,6.18403E+11,Day,
+MNQU6,Buy,Take Profit,3,0,3,30221.5,,,,30221.5,Filled,8/17/2026 12:03,6.18403E+11,Day,
