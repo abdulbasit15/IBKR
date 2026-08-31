@@ -1,0 +1,73 @@
+{
+  "_comment": "Supertrend bot. Per strategy set: name, account, direction, symbols, bar_size, market_hours (RTH|ETH|24H), supertrend(atr_period,multiplier), dema_filter, optional adx_filter/rsi_filter/macd_filter, sizing.fixed_stocks. Futures: add sec_type=FUT, exchange, currency. Everything else (hist_duration, entry_window, order/exec params, poll, logs) is derived or defaulted in code.",
+  "_momentum_filters_comment": "Optional momentum filters gate entries so momentum agrees with the Supertrend direction (on TOP of dema/adx). rsi_filter: LONG only when RSI(period)>long_min, SHORT only when RSI<short_max (shorthand \"rsi\":50). macd_filter: LONG only when MACD hist>0, SHORT only when hist<0. Backtests show RSI>50/<50 improves win rate + drawdown on 30m/1h. Example: \"rsi_filter\": {\"enabled\": true, \"period\": 14, \"long_min\": 50, \"short_max\": 50}, \"macd_filter\": {\"enabled\": true, \"fast\": 12, \"slow\": 26, \"signal\": 9}",
+  "_direction_options": "long_only = long when bullish, cash when bearish (never short). short_only = short when bearish, cash when bullish (never long). long_short = always in the market: long when bullish, flip to short when bearish. (Shorting equities needs a borrowable/shortable symbol + margin; futures short natively.)",
+  "_regime_filter_comment": "REGIME-ADAPTIVE gate (Choppiness Index + ADX, hysteresis). TREND: enter on Supertrend. CHOP: chop_action = 'stand_aside' (no new entries), 'momentum' (require rsi+macd), or 'mean_revert' (TIER-2, v2 only). Flip TREND when CHOP<chop_trend AND ADX>adx_trend; flip CHOP when CHOP>chop_range; else hold.",
+  "_mean_revert_comment": "TIER-2 mean-reversion (v2). Active ONLY when regime_filter.enabled AND chop_action='mean_revert'. In CHOP it FADES Bollinger-band extremes back to the mean: LONG when percent_b<=entry_pb (at/below lower band) AND (if require_rsi) RSI<=rsi_oversold; SHORT when percent_b>=1-entry_pb AND RSI>=rsi_overbought. Fixed stop = stop_atr_mult*ATR(atr_period) BEYOND the band (never trailed). Take-profit = the Bollinger basis. Also exits on a regime flip back to TREND or after max_hold_bars. Counter-trend (side is independent of the Supertrend) but honours `direction`. Trend entries stand aside in CHOP; normal Supertrend entries resume in TREND. A 'mean_revert' block is INERT unless chop_action is set to 'mean_revert' — the MES strategy below keeps 'stand_aside' for A/B comparison.",
+
+  "host": "127.0.0.1",
+  "port": 4002,
+  "client_id": 40,
+  "accounts": ["U20181485", "U21953487", "U22736412", "DU672616"],
+  "default_account": "DU672616",
+  "market_data_type": 1,
+
+  "strategies": {
+    "stocks": [
+      {
+        "name": "DU672616_5m", "account": "DU672616", "direction": "long_only",
+        "symbols": ["SOXL"], "bar_size": "5 mins", "market_hours": "24H",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "adx_filter": { "enabled": true, "period": 14, "threshold": 20 },
+        "sizing": { "strategy_capital": 1000000, "fixed_stocks": 1500, "risk_per_trade_pct": 0.01, "max_position_notional": 1000000 }
+      },
+      {
+        "name": "U20181485_15m", "account": "U20181485", "direction": "short_only",
+        "symbols": ["SOXL"], "bar_size": "15 mins", "market_hours": "RTH",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 1000, "risk_per_trade_pct": 0.01, "max_position_notional": 100000 }
+      },
+      {
+        "name": "U21953487_15m", "account": "U21953487", "direction": "long_short",
+        "symbols": ["SOXL"], "bar_size": "15 mins", "market_hours": "ETH",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 2000, "risk_per_trade_pct": 0.01, "max_position_notional": 100000 }
+      },
+      {
+        "name": "U22736412_15m", "account": "U22736412", "direction": "long_only",
+        "symbols": ["GOOG", "AMZN"], "bar_size": "15 mins", "market_hours": "24H",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 300, "risk_per_trade_pct": 0.01, "max_position_notional": 100000 }
+      }
+    ],
+    "futures": [
+      {
+        "name": "DU672616_MNQ_15m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MNQ"], "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "rsi_filter": { "enabled": false, "period": 14, "long_min": 50, "short_max": 50 },
+        "macd_filter": { "enabled": false, "fast": 12, "slow": 26, "signal": 9 },
+        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "mean_revert", "trend_momentum": false,
+          "mean_revert": { "bb_length": 20, "bb_mult": 2.0, "entry_pb": 0.05, "require_rsi": true, "rsi_period": 14, "rsi_oversold": 30, "rsi_overbought": 70, "atr_period": 14, "stop_atr_mult": 1.0, "max_hold_bars": 12 } },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 1, "risk_per_trade_pct": 0.01, "max_position_notional": 200000 }
+      },
+      {
+        "name": "DU672616_MES_15m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MES"], "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "rsi_filter": { "enabled": false, "period": 14, "long_min": 50, "short_max": 50 },
+        "macd_filter": { "enabled": false, "fast": 12, "slow": 26, "signal": 9 },
+        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 1, "risk_per_trade_pct": 0.01, "max_position_notional": 200000 }
+      }
+    ]
+  }
+}

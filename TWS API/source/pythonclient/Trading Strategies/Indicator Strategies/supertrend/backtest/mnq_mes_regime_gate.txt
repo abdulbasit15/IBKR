@@ -1,0 +1,71 @@
+Tier-1 REGIME GATE validation — Choppiness+ADX classify TREND/CHOP, switch momentum filters
+long_short, continuous futures, DEMA200 base gate. TREND: CHOP<38&ADX>25; CHOP>61. MNQ $2/pt, MES $5/pt.
+
+======================================================================================
+MNQ 15m   23,586 bars   2025-07-24..2026-07-17   (regime: 35% TREND / 65% CHOP)
+  mode           Trades   Win%    PF     NetP/L$     MaxDD$
+  PURE_ST           823   29.9  1.05      +4,223     -9,986
+  ALL_MOM           621   37.7  1.09      +6,606     -8,160
+  REGIME_FILT       692   34.7  1.10      +7,413     -7,484
+  REGIME_ASIDE      406   33.7  1.38     +13,381     -2,693
+  -> best net: REGIME_ASIDE  ($+13,381, PF 1.38)
+
+======================================================================================
+MNQ 30m   23,571 bars   2024-07-30..2026-07-17   (regime: 41% TREND / 59% CHOP)
+  mode           Trades   Win%    PF     NetP/L$     MaxDD$
+  PURE_ST           871   28.6  1.02      +1,750    -11,283
+  ALL_MOM           660   35.9  1.07      +6,801     -9,439
+  REGIME_FILT       747   32.4  1.04      +4,180    -10,178
+  REGIME_ASIDE      479   30.1  1.05      +3,163     -9,132
+  -> best net: ALL_MOM  ($+6,801, PF 1.07)
+
+======================================================================================
+MNQ 1h   14,701 bars   2024-02-06..2026-07-17   (regime: 53% TREND / 47% CHOP)
+  mode           Trades   Win%    PF     NetP/L$     MaxDD$
+  PURE_ST           572   31.5  1.11      +9,670     -8,565
+  ALL_MOM           429   36.4  1.14     +11,336     -6,626
+  REGIME_FILT       494   34.2  1.11      +9,844     -7,957
+  REGIME_ASIDE      350   34.9  1.21     +12,320     -6,556
+  -> best net: REGIME_ASIDE  ($+12,320, PF 1.21)
+
+======================================================================================
+MES 15m   23,585 bars   2025-07-24..2026-07-17   (regime: 33% TREND / 67% CHOP)
+  mode           Trades   Win%    PF     NetP/L$     MaxDD$
+  PURE_ST           845   27.1  0.95      -1,843     -6,161
+  ALL_MOM           644   34.3  0.96      -1,320     -5,502
+  REGIME_FILT       716   31.0  0.97      -1,259     -5,929
+  REGIME_ASIDE      407   32.4  1.14      +2,667     -3,121
+  -> best net: REGIME_ASIDE  ($+2,667, PF 1.14)
+
+======================================================================================
+MES 30m   23,571 bars   2024-07-30..2026-07-17   (regime: 39% TREND / 61% CHOP)
+  mode           Trades   Win%    PF     NetP/L$     MaxDD$
+  PURE_ST           882   28.7  0.97      -1,924     -6,160
+  ALL_MOM           672   34.7  0.99        -737     -5,768
+  REGIME_FILT       747   32.0  0.99        -526     -5,572
+  REGIME_ASIDE      460   31.1  0.96      -1,168     -5,897
+  -> best net: REGIME_FILT  ($-526, PF 0.99)
+
+======================================================================================
+MES 1h   14,643 bars   2024-02-07..2026-07-17   (regime: 53% TREND / 47% CHOP)
+  mode           Trades   Win%    PF     NetP/L$     MaxDD$
+  PURE_ST           544   32.4  1.11      +4,573     -5,145
+  ALL_MOM           426   34.7  1.05      +1,949     -5,142
+  REGIME_FILT       481   33.1  1.05      +2,008     -6,004
+  REGIME_ASIDE      345   34.2  1.12      +3,545     -4,464
+  -> best net: PURE_ST  ($+4,573, PF 1.11)
+
+======================================================================================
+SUMMARY — Net P/L $ (PF) by mode
+--------------------------------------------------------------------------------------
+Series              PURE_ST           ALL_MOM       REGIME_FILT      REGIME_ASIDE         BEST
+--------------------------------------------------------------------------------------
+MNQ 15m        +4,223(1.05)      +6,606(1.09)      +7,413(1.10)     +13,381(1.38) REGIME_ASIDE
+MNQ 30m        +1,750(1.02)      +6,801(1.07)      +4,180(1.04)      +3,163(1.05)      ALL_MOM
+MNQ 1h         +9,670(1.11)     +11,336(1.14)      +9,844(1.11)     +12,320(1.21) REGIME_ASIDE
+MES 15m        -1,843(0.95)      -1,320(0.96)      -1,259(0.97)      +2,667(1.14) REGIME_ASIDE
+MES 30m        -1,924(0.97)        -737(0.99)        -526(0.99)      -1,168(0.96)  REGIME_FILT
+MES 1h         +4,573(1.11)      +1,949(1.05)      +2,008(1.05)      +3,545(1.12)      PURE_ST
+======================================================================================
+Best-mode tally: PURE_ST:1, ALL_MOM:1, REGIME_FILT:1, REGIME_ASIDE:3
+Regime gate beats current ALL_MOM (always RSI+MACD) in 5/6 series.

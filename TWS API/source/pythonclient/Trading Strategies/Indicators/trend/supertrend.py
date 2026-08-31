@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .market_data import fetch_bars
+from ..market_data import fetch_bars
 
 
 def _rma(values, n):

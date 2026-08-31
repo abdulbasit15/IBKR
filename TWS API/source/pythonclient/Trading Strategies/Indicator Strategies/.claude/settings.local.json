@@ -1,0 +1,27 @@
+{
+  "permissions": {
+	"defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(mkdir -p supertrendv2)",
+      "Bash(cp supertrend_bot.py supertrendv2/supertrendv2_bot.py)",
+      "Bash(cd \"C:/Users/abdbasit/Downloads/Personal/Trade\" && ls *_cont_*.csv *_bt.csv 2>/dev/null | head -40; echo \"=== supertrend.json check ===\"; cd \"IBKR/TWS API/source/pythonclient/Trading Strategies/Indicator Strategies\" && head -5 supertrend.json 2>/dev/null)",
+      "Bash(py -3.12 -c \"import supertrendv2_bot as m; print\\('IMPORT OK'\\); print\\('bollinger_value:', m.bollinger_value\\); print\\('atr_value:', m.atr_value\\)\")",
+      "Bash(py -3.12 -c \"import supertrendv2_bot as m; print\\('IMPORT OK'\\); print\\(m.bollinger_value.__module__, m.atr_value.__module__\\)\")",
+      "Bash(py -3.12 test_mean_revert.py)",
+      "Bash(py -3.12 -c ' *)",
+      "Bash(py -3.12 backtest_meanrevert.py)",
+      "Bash(cp \"C:/Users/abdbasit/Downloads/Personal/Trade/mnq_mes_meanrevert_vs_standaside.txt\" \"C:/Users/abdbasit/Downloads/Personal/Trade/IBKR/TWS API/source/pythonclient/Trading Strategies/Indicator Strategies/supertrend/backtest/\")",
+      "WebSearch",
+      "WebFetch(domain:app.tradingsim.com)",
+      "Bash(py -3.12 backtest_meanrevert_strict.py)",
+      "Bash(cp \"C:/Users/abdbasit/Downloads/Personal/Trade/mnq_mes_meanrevert_strict.txt\" \"C:/Users/abdbasit/Downloads/Personal/Trade/IBKR/TWS API/source/pythonclient/Trading Strategies/Indicator Strategies/supertrend/backtest/\" && echo \"copied\")",
+      "Bash(./.venv/Scripts/python.exe -c \"import json; json.load\\(open\\('equity.json'\\)\\); print\\('equity.json OK'\\)\")",
+      "Bash(./.venv/Scripts/python.exe -m py_compile strategies/vwap_pullback.py runner.py backtest.py)",
+      "Bash(./.venv/Scripts/python.exe -c \"import sys; sys.path.insert\\(0,'.'\\); from strategies.vwap_pullback import VWAPPullback; from runner import REGISTRY; print\\('registry:', list\\(REGISTRY\\)\\); assert REGISTRY['vwap_pullback'] is VWAPPullback; print\\('import + registry OK'\\)\")",
+      "Bash(BT_DAYS=15 ./.venv/Scripts/python.exe backtest.py)",
+      "Bash(tee __TRACKED_VAR__/bt_run.log)",
+      "Bash(BT_DAYS=15 BT_CLIENT_ID=147 ./.venv/Scripts/python.exe backtest.py)",
+      "Bash(BT_DAYS=20 BT_CLIENT_ID=151 ./.venv/Scripts/python.exe -u \"C:\\\\Users\\\\abdbasit\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-abdbasit-Downloads-Personal-Trade-IBKR-TWS-API-source-pythonclient-Trading-Strategies-Indicator-Strategies\\\\f862a6ff-7412-452d-9803-a25f33c415f3\\\\scratchpad\\\\bt_vwap_only.py\")"
+    ]
+  }
+}

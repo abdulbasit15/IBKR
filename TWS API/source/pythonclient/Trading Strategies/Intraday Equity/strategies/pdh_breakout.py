@@ -18,7 +18,6 @@ class PDHBreakout(EquityStrategyBase):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
         self._pdh: dict[str, float] = {}
-        self._tickers: dict[str, object] = {}
         self.require_vwap = bool(self.cfg.get("require_vwap", True))
         # trade windows are owned by the base (self.windows, parsed from equity.json)
 
@@ -63,6 +62,8 @@ class PDHBreakout(EquityStrategyBase):
         if len(bars5) < 3:
             return None
         bar = bars5[-2]              # last COMPLETED 5-min bar (avoid the forming bar)
+        if not self.is_new_bar(symbol, bars5):
+            return None  # only act at a new-bar-open boundary, never mid-bar
         buf = float(self.cfg.get("breakout_buffer_pct", self.cfg.get("breakout_mult_minus_1", 0.001)))
         trigger = pdh * (1 + buf)
         if bar.close <= trigger:
@@ -73,7 +74,7 @@ class PDHBreakout(EquityStrategyBase):
         if avg and bar.volume < vmult * avg:
             return None
         tk = self.get_ticker(symbol, contract)
-        vw = self.vwap(tk)
+        vw = self.session_vwap_from_bars(bars5, len(bars5) - 2)  # session VWAP from bars (delayed-safe)
         price = self.last_price(tk) or bar.close
         if self.require_vwap and (vw is None or price <= vw):
             return None  # VWAP filter; set require_vwap False to disable it entirely

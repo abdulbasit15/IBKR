@@ -1,0 +1,105 @@
+3-WAY: ST vs ST+DEMA vs REGIME  (long_short, continuous futures, 1 contract)
+Period Nov 2025-Jul 2026 = choppy phase (Nov-Mar) + trending/reversal phase (Apr-Jul). MNQ $2/pt, MES $5/pt.
+
+====================================================================================
+MNQ 15m
+  phase               strat      Trd   Win%    PF    NetP/L$    MaxDD$
+  CHOPPY Nov25-Mar26  ST         436   28.7  1.27     +9,145    -5,612
+  CHOPPY Nov25-Mar26  ST+DEMA    322   32.9  1.35     +9,630    -4,650
+  CHOPPY Nov25-Mar26  REGIME     174   33.3  1.42     +5,917    -2,693
+
+  TREND  Apr-Jul26    ST         366   24.6  0.79     -9,128   -13,850
+  TREND  Apr-Jul26    ST+DEMA    270   27.8  0.80     -7,384    -9,986
+  TREND  Apr-Jul26    REGIME     132   32.6  1.21     +2,963    -2,068
+
+  BOTH   Nov25-Jul26  ST         801   26.7  1.00        +78   -13,850
+  BOTH   Nov25-Jul26  ST+DEMA    591   30.5  1.04     +2,307    -9,986
+  BOTH   Nov25-Jul26  REGIME     305   33.1  1.32     +9,094    -2,693
+
+
+====================================================================================
+MNQ 30m
+  phase               strat      Trd   Win%    PF    NetP/L$    MaxDD$
+  CHOPPY Nov25-Mar26  ST         235   26.0  1.06     +1,742    -6,568
+  CHOPPY Nov25-Mar26  ST+DEMA    181   28.7  1.02       +457    -7,106
+  CHOPPY Nov25-Mar26  REGIME     109   27.5  0.93     -1,079    -6,197
+
+  TREND  Apr-Jul26    ST         182   26.9  0.95     -1,320   -10,171
+  TREND  Apr-Jul26    ST+DEMA    142   28.2  1.06     +1,216    -6,805
+  TREND  Apr-Jul26    REGIME      64   31.2  0.92       -803    -3,850
+
+  BOTH   Nov25-Jul26  ST         416   26.2  1.01       +505   -10,735
+  BOTH   Nov25-Jul26  ST+DEMA    322   28.3  1.04     +1,756    -8,414
+  BOTH   Nov25-Jul26  REGIME     172   28.5  0.93     -1,800    -6,197
+
+
+====================================================================================
+MNQ 1h
+  phase               strat      Trd   Win%    PF    NetP/L$    MaxDD$
+  CHOPPY Nov25-Mar26  ST         114   31.6  1.14     +2,456    -5,972
+  CHOPPY Nov25-Mar26  ST+DEMA     93   35.5  1.11     +1,668    -4,460
+  CHOPPY Nov25-Mar26  REGIME      61   31.1  0.86     -1,517    -4,846
+
+  TREND  Apr-Jul26    ST         101   24.8  0.81     -3,879    -7,372
+  TREND  Apr-Jul26    ST+DEMA     78   29.5  0.74     -5,164    -8,565
+  TREND  Apr-Jul26    REGIME      50   26.0  0.79     -2,761    -6,268
+
+  BOTH   Nov25-Jul26  ST         214   28.5  0.96     -1,364    -7,372
+  BOTH   Nov25-Jul26  ST+DEMA    170   32.9  0.90     -3,438    -8,565
+  BOTH   Nov25-Jul26  REGIME     110   29.1  0.83     -4,219    -6,556
+
+
+====================================================================================
+MES 15m
+  phase               strat      Trd   Win%    PF    NetP/L$    MaxDD$
+  CHOPPY Nov25-Mar26  ST         437   28.1  1.09     +1,645    -3,385
+  CHOPPY Nov25-Mar26  ST+DEMA    325   31.7  1.17     +2,592    -2,212
+  CHOPPY Nov25-Mar26  REGIME     156   35.9  1.47     +3,220      -828
+
+  TREND  Apr-Jul26    ST         367   23.2  0.72     -4,727    -6,216
+  TREND  Apr-Jul26    ST+DEMA    286   23.1  0.65     -5,352    -6,161
+  TREND  Apr-Jul26    REGIME     143   23.8  0.73     -2,205    -3,121
+
+  BOTH   Nov25-Jul26  ST         803   25.8  0.91     -3,046    -6,216
+  BOTH   Nov25-Jul26  ST+DEMA    610   27.5  0.91     -2,723    -6,161
+  BOTH   Nov25-Jul26  REGIME     298   30.2  1.08     +1,139    -3,121
+
+
+====================================================================================
+MES 30m
+  phase               strat      Trd   Win%    PF    NetP/L$    MaxDD$
+  CHOPPY Nov25-Mar26  ST         243   25.5  1.08     +1,098    -2,947
+  CHOPPY Nov25-Mar26  ST+DEMA    183   30.6  1.27     +2,736    -2,258
+  CHOPPY Nov25-Mar26  REGIME     105   31.4  0.93       -467    -2,385
+
+  TREND  Apr-Jul26    ST         170   24.1  0.66     -4,312    -5,923
+  TREND  Apr-Jul26    ST+DEMA    123   26.0  0.71     -2,948    -4,507
+  TREND  Apr-Jul26    REGIME      56   26.8  0.60     -2,003    -2,784
+
+  BOTH   Nov25-Jul26  ST         412   24.8  0.88     -3,169    -5,923
+  BOTH   Nov25-Jul26  ST+DEMA    305   28.5  0.99       -174    -4,507
+  BOTH   Nov25-Jul26  REGIME     160   29.4  0.79     -2,425    -3,337
+
+
+====================================================================================
+MES 1h
+  phase               strat      Trd   Win%    PF    NetP/L$    MaxDD$
+  CHOPPY Nov25-Mar26  ST         105   36.2  1.62     +3,853    -1,175
+  CHOPPY Nov25-Mar26  ST+DEMA     90   38.9  1.52     +2,932    -1,275
+  CHOPPY Nov25-Mar26  REGIME      50   40.0  1.23       +913      -812
+
+  TREND  Apr-Jul26    ST          94   24.5  0.93       -535    -1,632
+  TREND  Apr-Jul26    ST+DEMA     64   31.2  1.00         +4    -1,481
+  TREND  Apr-Jul26    REGIME      26   50.0  1.52     +1,025    -1,141
+
+  BOTH   Nov25-Jul26  ST         198   30.8  1.25     +3,355    -1,632
+  BOTH   Nov25-Jul26  ST+DEMA    153   35.9  1.27     +2,973    -1,481
+  BOTH   Nov25-Jul26  REGIME      75   44.0  1.33     +1,976    -1,141
+
+====================================================================================
+TOTALS across all 6 series (Net P/L $):
+  phase                         ST     ST+DEMA      REGIME
+  CHOPPY Nov25-Mar26       +19,938     +20,015      +6,987
+  TREND  Apr-Jul26         -23,901     -19,628      -3,783
+  BOTH   Nov25-Jul26        -3,641        +701      +3,766
+====================================================================================

@@ -57,3 +57,28 @@ Paper account DU672616 has **no live market-data subscription**.
 - **pypi.org blocked (403)** → install via Aliyun mirror `https://mirrors.aliyun.com/pypi/simple/`.
 - Python 3.12 at `C:\Users\abdbasit\AppData\Local\Programs\Python\Python312`.
 - Do not consider SOXL for this work (explicitly excluded by user).
+
+## 10. Indicator library accuracy review (Trading Strategies/Indicators/)
+Separate pure-Python indicator library (~30 indicators; each has math fns + a config-driven
+`xxx_value(ib=..., symbol=..., bar_size=...)`; bundles for PyInstaller). Reviewed for
+**mathematical accuracy vs standard/TradingView** across two sessions (direct + a workflow
+with adversarial verify).
+- **VERIFIED CORRECT (~27):** moving_average (sma/ema/wma/rma=Wilder/hma/stdev=population),
+  dema, rsi, atr, adx (ADX seeded at 2*period-1), macd, stochastic (+StochRSI), bollinger,
+  OBV, CMF, MFI, VWAP, Donchian, Williams Vix Fix, Parabolic SAR, Ichimoku, HalfTrend,
+  Awesome Oscillator, CCI, WaveTrend, **Squeeze Momentum** (independently re-verified incl.
+  linreg/LSMA momentum + the LazyBear multKC-for-BB quirk), FVG, Pivots, Support/Resistance,
+  Order Blocks, Market Structure (BOS/CHoCH), ATR Trailing Stop (UT Bot), Chandelier Exit,
+  ICT Killzones.
+- **3 FINDINGS — fixes NOT yet applied:**
+  1. **SMC confluence filter — `structure/smc.py` (~lines 334-335) — real bug, MED.**
+     Operator-precedence error: `min(closes[i], opens[i] - lows[i])`. Fix: `body_top=max(c,o);
+     body_bottom=min(c,o); upper_wick=high-body_top; lower_wick=body_bottom-low`. ⚠️ confirm the
+     bullish/bearish inequality DIRECTION against LuxAlgo source (reviewers disagreed).
+  2. **Keltner Channels — `volatility/keltner_channels.py` (lines 27,57) — MED.**
+     Default `atr_length=10` should be **20** (TV ta.kc uses one length=20 for basis+range).
+     Fix: `atr_length=20`. (Aside: TV smooths range with EMA not Wilder ATR — variant accepted.)
+  3. **Supertrend — `trend/supertrend.py` (local `_rma`) — LOW, intentional.**
+     Seeds ATR at TR[0] vs SMA-of-first-period; only first ~atr_period bars differ, converges.
+     Matches the validated backtest engine — leave unless exact Pine parity needed.
+- **Open:** apply fix #1 (SMC wick precedence) and #2 (Keltner default); #3 optional.

@@ -1,4 +1,4 @@
-# Intraday Equity Bots (IBKR / ib_async) — PDH · ORB Stocks-in-Play · NR7 Compression
+# Intraday Equity Bots (IBKR / ib_async) — PDH · ORB Stocks-in-Play · NR7 Compression · VWAP Pullback
 
 Long-only, intraday-only, ≤1% risk-at-stop automated equity bots on Interactive Brokers
 (`ib_async`), config-driven like the Iron Condor bot, defaulting to **paper account
@@ -21,6 +21,7 @@ then hardened against an adversarial design review and an adversarial code revie
 | `strategies/orb_stocks_in_play.py` | ORB "stocks in play" (#1) |
 | `strategies/nr7_compression.py` | Volume/Compression NR7 (#2) |
 | `strategies/pdh_breakout.py` | Previous Day High breakout (#5, simplest) |
+| `strategies/vwap_pullback.py` | VWAP Pullback / Reclaim continuation (break-and-retest of session VWAP) |
 | `runner.py` | Entry point: bootstrap equity snapshot + vol-scale, shared risk/cache/journal, one thread per active strategy |
 | `equity.json` | Config (accounts, shared risk block, per-strategy params) |
 | `requirements.txt` | Deps (install via the Aliyun mirror) |

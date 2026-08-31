@@ -6,13 +6,73 @@
   "host": "127.0.0.1",
   "port": 4002,
   "client_id": 40,
+  "accounts": [
+    "U20181485",
+    "U21953487",
+    "U22736412",
+    "DU672616"
+  ],
+  "default_account": "DU672616",
   "account": "DU672616",
   "market_data_type": 3,
   "hist_min_interval_sec": 2.0,
 
-  "symbols": ["AAPL", "NVDA", "AMD", "MSFT", "META"],
+  "symbols": ["SOXL"],
   "bar_size": "15 mins",
   "supertrend": { "atr_period": 10, "multiplier": 3.0 },
+  "strategies": [   
+    {
+      "name": "U20181485_15m",
+      "account": "U20181485",
+      "symbols": ["SOXL"],
+      "bar_size": "15 mins",
+      "use_rth": true,
+      "supertrend": { "atr_period": 10, "multiplier": 3 },
+      "dema_filter": { "enabled": true, "period": 200 },
+      "hist_duration": "30 D",
+      "sizing": {
+        "strategy_capital": 100000,
+        "fixed_stocks": 1940,
+        "risk_per_trade_pct": 0.01,
+        "min_stop_pct": 0.005,
+        "max_position_notional": 100000
+      }
+    },
+    {
+      "name": "U21953487_15m",
+      "account": "U21953487",
+      "symbols": ["SOXL"],
+      "bar_size": "15 mins",
+      "use_rth": false,
+      "supertrend": { "atr_period": 10, "multiplier": 3 },
+      "dema_filter": { "enabled": true, "period": 200 },
+      "hist_duration": "30 D",
+      "sizing": {
+        "strategy_capital": 100000,
+        "fixed_stocks": 2110,
+        "risk_per_trade_pct": 0.01,
+        "min_stop_pct": 0.005,
+        "max_position_notional": 100000
+      }
+    },
+    {
+      "name": "U22736412_15m_nodema",
+      "account": "U22736412",
+      "symbols": ["GOOG", "AMZN"],
+      "bar_size": "15 mins",
+      "use_rth": true,
+      "supertrend": { "atr_period": 10, "multiplier": 3 },
+      "dema_filter": { "enabled": true, "period": 200 },
+      "hist_duration": "30 D",
+      "sizing": {
+        "strategy_capital": 100000,
+        "fixed_stocks": 360,
+        "risk_per_trade_pct": 0.01,
+        "min_stop_pct": 0.005,
+        "max_position_notional": 100000
+      }
+    }
+  ],
   "_dema_filter_comment": "DEMA trend filter. enabled=true => longs only when close > DEMA(period) (and shorts only when close < DEMA(period)), evaluated on the last completed bar. This is the core entry gate: buy only when Supertrend is bullish AND price is above DEMA(200). hist_duration must provide enough bars for the period (allow ~2x warmup, so >=30 D for DEMA(200) on 15-min RTH bars).",
   "dema_filter": { "enabled": true, "period": 200 },
   "hist_duration": "30 D",

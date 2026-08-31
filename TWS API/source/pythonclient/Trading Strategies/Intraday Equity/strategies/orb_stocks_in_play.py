@@ -17,7 +17,6 @@ class ORBStocksInPlay(EquityStrategyBase):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
         self._or: dict[str, dict | None] = {}
-        self._tickers: dict[str, object] = {}
         self.require_vwap = bool(self.cfg.get("require_vwap", True))
 
     # -------------------------------------------------- watchlist (pre-market scan)
@@ -91,6 +90,8 @@ class ORBStocksInPlay(EquityStrategyBase):
         if len(bars1) < 6:
             return None
         bar = bars1[-2]  # last COMPLETED 1-min bar (avoid the forming bar)
+        if not self.is_new_bar(symbol, bars1):
+            return None  # only act at a new-bar-open boundary, never mid-bar
         if bar.close <= orec["high"]:
             return None
         # breakout-bar volume confirmation vs recent same-session 1-min average
@@ -99,9 +100,10 @@ class ORBStocksInPlay(EquityStrategyBase):
         vol_mult = float(self.cfg.get("signal", {}).get("vol_mult", self.cfg.get("breakout_vol_mult", 1.5)))
         if avg1 and bar.volume < vol_mult * avg1:
             return None
-        # VWAP gate
+        # VWAP gate — session VWAP from the intraday bars (delayed-safe; the RTVolume tick
+        # ticker.vwap is NaN on delayed/unentitled feeds, which otherwise blocks every entry).
         tk = self.get_ticker(symbol, contract)
-        vw = self.vwap(tk)
+        vw = self.session_vwap_from_bars(bars1, len(bars1) - 2)
         price = self.last_price(tk) or bar.close
         if self.require_vwap and (vw is None or price <= vw):
             return None  # VWAP filter; set require_vwap False to disable it entirely
@@ -111,7 +113,14 @@ class ORBStocksInPlay(EquityStrategyBase):
         entry = orec["high"] + float(self.cfg.get("atr_entry_buffer_mult", 0.05)) * atr_d
         mid_pct = float(self.cfg.get("stop", {}).get("min_or_height_pct",
                         self.cfg.get("orb_mid_stop_pct", 0.01)))
+        # RANGE-BASED (research "Stocks in Play"): stop = ORB_LOW (or ORB_MID on a narrow
+        # range), NEVER widened by the strategy; target = entry + mult x ORB_HEIGHT. This
+        # matches the faithful backtest. The base resolve_stop() still applies a min_stop_pct
+        # SAFETY floor for a degenerate tiny range so position sizing can't blow up (with
+        # orb_height_min_pct >= 0.8% the floor effectively never binds).
         stop = orec["mid"] if (orec["height"] / orec["high"] < mid_pct) else orec["low"]
+        if entry - stop <= 0:
+            return None
         mult = float(self.cfg.get("target", {}).get("mult", self.cfg.get("target_mult", 2.0)))
         target = entry + mult * orec["height"]
         return Signal(entry=entry, stop=stop, target=target, tick=tick,

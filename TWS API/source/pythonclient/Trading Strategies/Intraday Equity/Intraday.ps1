@@ -92,13 +92,17 @@ if ($IndexUrl) {
 }
 
 Write-Info 'Upgrading pip and installing requirements...'
+# Large wheels (numpy is ~15 MB, pulled in transitively by aeventkit->ib_async) can exceed
+# pip's default 15s socket timeout on a slow mirror. Bump the per-socket timeout and retries
+# so a slow/interrupted download resumes instead of aborting the whole install.
+$pipNetArgs = @('--timeout', '120', '--retries', '5')
 $installed = $false
 foreach ($idx in $indexCandidates) {
     $pipIndexArgs = @()
     if ($idx) { $pipIndexArgs = @('-i', $idx); Write-Info "Trying package index: $idx" }
     else      { Write-Info 'Trying default PyPI (pypi.org)...' }
-    & $venvPython -m pip install --upgrade pip @pipIndexArgs
-    & $venvPython -m pip install -r requirements.txt @pipIndexArgs
+    & $venvPython -m pip install @pipNetArgs --upgrade pip @pipIndexArgs
+    & $venvPython -m pip install @pipNetArgs -r requirements.txt @pipIndexArgs
     if ($LASTEXITCODE -eq 0) { $installed = $true; break }
     Write-Info 'That index failed; trying the next one...'
 }

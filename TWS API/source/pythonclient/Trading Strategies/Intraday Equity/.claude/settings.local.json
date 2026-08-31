@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile equity_order.py equity_base.py strategies/pdh_breakout.py)",
+      "Bash(python -c \"import json; json.load\\(open\\('equity.json'\\)\\); print\\('OK: equity.json valid JSON'\\)\")",
+      "Bash(python -m py_compile equity_order.py equity_base.py)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('equity.json'\\)\\); print\\('JSON OK; slippage keys remaining:', sum\\('max_entry_slippage_pct' in s for s in d['strategies'].values\\(\\)\\)\\)\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\('equity.json'\\)\\); print\\('market_data_type =', d['market_data_type']\\); print\\('PDH entry_order_type =', d['strategies']['PDH - 9.35']['entry_order_type']\\)\")"
+    ]
+  }
+}

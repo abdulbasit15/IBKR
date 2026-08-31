@@ -104,13 +104,17 @@ if ($IndexUrl) {
 }
 
 Write-Info 'Upgrading pip and installing requirements...'
+# Large wheels (numpy is ~12 MB, pulled in transitively by aeventkit->ib_async) can exceed
+# pip's default 15s socket timeout on a slow mirror. Bump the per-socket timeout and retries
+# so a slow/interrupted download resumes instead of aborting the whole install.
+$pipNetArgs = @('--timeout', '120', '--retries', '5')
 $installed = $false
 foreach ($idx in $indexCandidates) {
     $pipIndexArgs = @()
     if ($idx) { $pipIndexArgs = @('-i', $idx); Write-Info "Trying package index: $idx" }
     else      { Write-Info 'Trying default PyPI (pypi.org)...' }
-    & $venvPython -m pip install --upgrade pip @pipIndexArgs
-    & $venvPython -m pip install -r requirements.txt @pipIndexArgs
+    & $venvPython -m pip install @pipNetArgs --upgrade pip @pipIndexArgs
+    & $venvPython -m pip install @pipNetArgs -r requirements.txt @pipIndexArgs
     if ($LASTEXITCODE -eq 0) { $installed = $true; break }
     Write-Info 'That index failed; trying the next one...'
 }
@@ -134,8 +138,9 @@ if (Test-Path $buildDir) {
 Write-Info 'Building supertrend_bot.exe with PyInstaller...'
 # tzdata is REQUIRED on Windows for the ET (zoneinfo) clock. ib_async + aeventkit need their
 # package metadata. No openpyxl: this bot writes the trade log as CSV, not Excel.
-# The shared indicator package lives one level up at <Trading Strategies>\Indicators, so add
-# the parent dir to PyInstaller's search path and pull in all of its submodules.
+# The shared indicator package lives at <Trading Strategies>\Indicators, which is TWO levels up
+# from this folder (Indicator Strategies\supertrend\), so add that dir to PyInstaller's search
+# path and pull in all of its submodules.
 $pyInstallerArgs = @(
     '--clean',
     '--onefile',
@@ -144,7 +149,7 @@ $pyInstallerArgs = @(
     '--copy-metadata', 'ib_async',
     '--copy-metadata', 'aeventkit',
     '--collect-all', 'tzdata',
-    '--paths', '..',
+    '--paths', '..\..',
     '--collect-submodules', 'Indicators',
     '--distpath', '.\dist',
     '--workpath', '.\build_pi',

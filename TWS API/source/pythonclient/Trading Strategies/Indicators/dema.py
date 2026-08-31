@@ -25,23 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .market_data import fetch_bars
-
-
-def ema(values, period):
-    """Exponential moving average, alpha = 2/(period+1), seeded at the first value.
-    Returns a list the same length as `values` (None only for an empty input)."""
-    period = int(period)
-    out = [None] * len(values)
-    if not values or period < 1:
-        return out
-    alpha = 2.0 / (period + 1.0)
-    prev = values[0]
-    out[0] = prev
-    for i in range(1, len(values)):
-        v = values[i] if values[i] is not None else prev
-        prev = prev + alpha * (v - prev)
-        out[i] = prev
-    return out
+from .moving_average import ema   # canonical EMA lives in moving_average.py
 
 
 def dema(values, period):
