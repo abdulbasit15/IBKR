@@ -1,0 +1,132 @@
+//@version=5
+// =====================================================================================
+// Supertrend + DEMA + Regime (Choppiness/ADX) — INDICATOR
+// Faithful port of the deployed supertrend_bot logic (long_short):
+//   * Supertrend ST(10,3), Wilder ATR
+//   * DEMA(200) filter: long only close>DEMA, short only close<DEMA
+//   * Regime gate: TREND when CHOP(14)<38 AND ADX(14)>25; CHOP when CHOP>61; else HOLD
+//     -> new entries ONLY in TREND (stand aside in chop); exits (flip) still fire in chop
+//   * Levels shown: initial stop = Supertrend line (floored 0.5% from price) => R;
+//     2R take-profit target and the 1R runner-trail level (for reference)
+// This is an INDICATOR (plots + signals + alerts). For order/scale-out backtesting use the
+// companion strategy script (supertrend_regime.strategy.pine).
+// =====================================================================================
+indicator("Supertrend + DEMA + Regime [long_short]", overlay=true, max_labels_count=500)
+
+// ---------------- inputs (match the bot config) ----------------
+atrLen   = input.int(10,   "Supertrend ATR length", group="Supertrend")
+stMult   = input.float(3.0,"Supertrend multiplier", step=0.1, group="Supertrend")
+demaLen  = input.int(200,  "DEMA length", group="Filters")
+useDema  = input.bool(true,"Use DEMA filter", group="Filters")
+chopLen  = input.int(14,   "Choppiness length", group="Regime")
+adxLen   = input.int(14,   "ADX length", group="Regime")
+adxTrend = input.float(25, "ADX trend threshold (>)", group="Regime")
+chopTr   = input.float(38, "Choppiness TREND (<)", group="Regime")
+chopRng  = input.float(61, "Choppiness CHOP (>)", group="Regime")
+useReg   = input.bool(true,"Use regime gate (stand aside in chop)", group="Regime")
+minStop  = input.float(0.005,"Min stop % (floor for R)", step=0.001, group="Risk")
+tpR      = input.float(2.0,"Take-profit (R multiple)", step=0.5, group="Risk")
+trailR   = input.float(1.0,"Runner trail (R multiple)", step=0.5, group="Risk")
+
+// ---------------- Supertrend (manual, mirrors the bot) ----------------
+atr   = ta.rma(ta.tr(true), atrLen)               // Wilder ATR
+hl2v  = (high + low) / 2.0
+upB   = hl2v - stMult * atr
+dnB   = hl2v + stMult * atr
+var float up = na
+var float dn = na
+var int   trnd = 1
+up   := na(up[1])  ? upB : ((upB > up[1] or close[1] < up[1]) ? upB : up[1])
+dn   := na(dn[1])  ? dnB : ((dnB < dn[1] or close[1] > dn[1]) ? dnB : dn[1])
+trnd := na(trnd[1]) ? 1  : (trnd[1] == -1 and close > dn ? 1 : (trnd[1] == 1 and close < up ? -1 : trnd[1]))
+stLine = trnd == 1 ? up : dn
+bull   = trnd == 1
+
+// ---------------- DEMA(200) ----------------
+e1   = ta.ema(close, demaLen)
+dema = 2.0 * e1 - ta.ema(e1, demaLen)
+
+// ---------------- Choppiness Index + ADX ----------------
+chopSum = math.sum(ta.tr(true), chopLen)
+chopHiLo = ta.highest(high, chopLen) - ta.lowest(low, chopLen)
+chop = chopHiLo > 0 and chopSum > 0 ? 100.0 * math.log10(chopSum / chopHiLo) / math.log10(chopLen) : na
+[diP, diM, adxv] = ta.dmi(adxLen, adxLen)
+
+// ---------------- Regime with hysteresis (0=CHOP, 1=TREND) ----------------
+var int reg = 0
+trendCond = not na(chop) and not na(adxv) and chop < chopTr and adxv > adxTrend
+chopCond  = not na(chop) and chop > chopRng
+reg := trendCond ? 1 : (chopCond ? 0 : nz(reg[1], 0))
+inTrend = not useReg or reg == 1
+
+// ---------------- entry gates ----------------
+demaLongOk  = not useDema or close > dema
+demaShortOk = not useDema or close < dema
+canLong  = bull and demaLongOk and inTrend
+canShort = (not bull) and demaShortOk and inTrend
+
+// ---------------- position state machine (mirrors the bot: enter in trend, exit on flip) ----------------
+var int   pos     = 0
+var float entryPx = na
+var float stopPx  = na
+var float rr      = na
+var float tpPx    = na
+var bool  trimmed = false
+
+longSig  = false
+shortSig = false
+exitSig  = false
+
+// manage existing position: Supertrend flip => exit (and reverse if the new side is allowed)
+if pos == 1 and not bull
+    exitSig := true
+    pos := 0
+if pos == -1 and bull
+    exitSig := true
+    pos := 0
+// open when flat and the desired side passes DEMA + regime
+if pos == 0
+    if canLong
+        pos := 1
+        entryPx := close
+        stopPx  := math.min(stLine, close * (1.0 - minStop))
+        rr      := entryPx - stopPx
+        tpPx    := entryPx + tpR * rr
+        trimmed := false
+        longSig := true
+    else if canShort
+        pos := -1
+        entryPx := close
+        stopPx  := math.max(stLine, close * (1.0 + minStop))
+        rr      := stopPx - entryPx
+        tpPx    := entryPx - tpR * rr
+        trimmed := false
+        shortSig := true
+
+// trail the stop to the Supertrend line while holding (visual)
+if pos == 1
+    stopPx := math.max(nz(stopPx, stLine), math.min(stLine, close * (1.0 - 0.0001)))
+if pos == -1
+    stopPx := math.min(nz(stopPx, stLine), math.max(stLine, close * (1.0 + 0.0001)))
+
+// ---------------- plots ----------------
+plot(bull ? stLine : na, "ST up",   color=color.new(color.green, 0), style=plot.style_linebr, linewidth=2)
+plot(not bull ? stLine : na, "ST dn", color=color.new(color.red, 0),  style=plot.style_linebr, linewidth=2)
+plot(dema, "DEMA200", color=color.new(color.orange, 0), linewidth=1)
+
+// regime background: green tint = TREND (tradeable), gray = CHOP (stand aside)
+bgcolor(useReg ? (reg == 1 ? color.new(color.green, 90) : color.new(color.gray, 92)) : na, title="Regime")
+
+// stop + target reference lines while in a position
+plot(pos != 0 ? stopPx : na, "Stop",      color=color.new(color.red, 20),   style=plot.style_circles, linewidth=1)
+plot(pos != 0 ? tpPx   : na, "2R Target",  color=color.new(color.teal, 20),  style=plot.style_circles, linewidth=1)
+
+// entry / exit markers
+plotshape(longSig,  "LONG",  shape.triangleup,   location.belowbar, color.new(color.green,0), size=size.small, text="L")
+plotshape(shortSig, "SHORT", shape.triangledown, location.abovebar, color.new(color.red,0),   size=size.small, text="S")
+plotshape(exitSig,  "EXIT",  shape.xcross,       location.absolute, color.new(color.gray,0),  size=size.tiny)
+
+// alerts
+alertcondition(longSig,  "Long entry",  "Supertrend long_short: LONG entry")
+alertcondition(shortSig, "Short entry", "Supertrend long_short: SHORT entry")
+alertcondition(exitSig,  "Exit (flip)", "Supertrend long_short: EXIT on Supertrend flip")

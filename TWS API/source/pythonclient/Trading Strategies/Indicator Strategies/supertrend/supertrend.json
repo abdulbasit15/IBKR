@@ -1,70 +1,50 @@
 {
-  "_comment": "Supertrend bot. Per strategy set: name, account, direction, symbols, bar_size, market_hours (RTH|ETH|24H), supertrend(atr_period,multiplier), dema_filter, optional adx_filter/rsi_filter/macd_filter, sizing.fixed_stocks. Futures: add sec_type=FUT, exchange, currency. Everything else (hist_duration, entry_window, order/exec params, poll, logs) is derived or defaulted in code.",
-  "_momentum_filters_comment": "Optional momentum filters gate entries so momentum agrees with the Supertrend direction (on TOP of dema/adx). rsi_filter: LONG only when RSI(period)>long_min, SHORT only when RSI<short_max (shorthand \"rsi\":50). macd_filter: LONG only when MACD hist>0, SHORT only when hist<0. Backtests show RSI>50/<50 improves win rate + drawdown on 30m/1h. Example: \"rsi_filter\": {\"enabled\": true, \"period\": 14, \"long_min\": 50, \"short_max\": 50}, \"macd_filter\": {\"enabled\": true, \"fast\": 12, \"slow\": 26, \"signal\": 9}",
-  "_regime_and_partial_comment": "regime_filter = TREND/CHOP adaptive gate (Choppiness+ADX, hysteresis); chop_action 'stand_aside' trades only trends. partial_tp = scale-out: trim tranches at r_multiple*R (R=entry-to-stop), runner trails trail_r*R after first trim >= tighten_after_r. partial_tp needs fixed_stocks>=2 (half of 1 = 0 = no-op). MNQ/MES 15m below run regime stand_aside + partial_tp 50%@2R with fixed_stocks 4.",
-  "_direction_options": "long_only = long when bullish, cash when bearish (never short). short_only = short when bearish, cash when bullish (never long). long_short = always in the market: long when bullish, flip to short when bearish. (Shorting equities needs a borrowable/shortable symbol + margin; futures short natively.)",
+  "_comment": "Supertrend bot — PAPER futures (DU672616): MNQ, MES, MGC on 5-min bars, RTH-only (09:30-16:00 ET), long_short. MES + MGC = plain Supertrend (no DEMA, no regime). MNQ = Supertrend + DEMA(200) trend filter (no regime). All keep partial_tp (trim half at 2R, runner trails 1R) to match the backtested strategies. Everything here is config-driven; rebuild with supertrend.ps1 after CODE changes only (JSON is read at startup).",
+  "_indicator_toggles": "dema_filter.enabled and regime_filter.enabled are independent per-strategy switches (both default false). Plain Supertrend = both false. Supertrend+DEMA = dema_filter.enabled true, regime_filter.enabled false. To also gate by regime, set regime_filter.enabled true.",
+  "_partial_tp_comment": "partial_tp trims each tranche at r_multiple*R (R=entry->initial stop) and, after the first trim >= tighten_after_r, trails the runner at trail_r*R. Needs fixed_stocks>=2. Set enabled:false for plain Supertrend-line exits only.",
+  "_contract_selection_comment": "contract_selection: 'active' (default) picks IBKR's ContFuture active/liquid front month; 'quarterly' restricts to Mar/Jun/Sep/Dec (H/M/U/Z) so the instrument rolls on the SAME quarterly cycle as MNQ/MES (used for MGC to keep its expiry month in sync with the index futures); 'nearest' = legacy nearest calendar expiry. roll_buffer_days (0=off) skips any expiry within N days of expiring so it rolls BEFORE the contract thins into expiry. NEEDS REBUILD (code change).",
+  "_expiry_pin_comment": "expiry (optional, HIGHEST priority) hard-pins one contract month: 'YYYYMM' (e.g. '202612'=Dec 2026) or 'YYYYMMDD'. Overrides contract_selection. Leave unset to auto-select/roll. NOTE on 'quarterly' for MGC: gold reliably lists only Jun/Dec among the quarterly months, so MGC matches MNQ/MES EXACTLY on Jun & Dec; in the Mar/Sep index quarters gold has no liquid Mar/Sep contract, so it uses the nearest listed quarterly (e.g. Jun) — always a liquid gold contract, but may lead the index month by one quarter then.",
 
   "host": "127.0.0.1",
   "port": 4002,
   "client_id": 40,
-  "accounts": ["U20181485", "U21953487", "U22736412", "DU672616"],
+  "accounts": ["DU672616"],
   "default_account": "DU672616",
   "market_data_type": 1,
 
   "strategies": {
-    "stocks": [
-      {
-        "name": "DU672616_5m", "account": "DU672616", "direction": "long_only",
-        "symbols": ["SOXL"], "bar_size": "5 mins", "market_hours": "24H",
-        "supertrend": { "atr_period": 10, "multiplier": 3 },
-        "dema_filter": { "enabled": true, "period": 200 },
-        "adx_filter": { "enabled": true, "period": 14, "threshold": 20 },
-        "sizing": { "strategy_capital": 1000000, "fixed_stocks": 1500, "risk_per_trade_pct": 0.01, "max_position_notional": 1000000 }
-      },
-      {
-        "name": "U20181485_15m", "account": "U20181485", "direction": "short_only",
-        "symbols": ["SOXL"], "bar_size": "15 mins", "market_hours": "RTH",
-        "supertrend": { "atr_period": 10, "multiplier": 3 },
-        "dema_filter": { "enabled": true, "period": 200 },
-        "sizing": { "strategy_capital": 100000, "fixed_stocks": 1000, "risk_per_trade_pct": 0.01, "max_position_notional": 100000 }
-      },
-      {
-        "name": "U21953487_15m", "account": "U21953487", "direction": "long_short",
-        "symbols": ["SOXL"], "bar_size": "15 mins", "market_hours": "ETH",
-        "supertrend": { "atr_period": 10, "multiplier": 3 },
-        "dema_filter": { "enabled": true, "period": 200 },
-        "sizing": { "strategy_capital": 100000, "fixed_stocks": 2000, "risk_per_trade_pct": 0.01, "max_position_notional": 100000 }
-      },
-      {
-        "name": "U22736412_15m", "account": "U22736412", "direction": "long_only",
-        "symbols": ["GOOG", "AMZN"], "bar_size": "15 mins", "market_hours": "24H",
-        "supertrend": { "atr_period": 10, "multiplier": 3 },
-        "dema_filter": { "enabled": true, "period": 200 },
-        "sizing": { "strategy_capital": 100000, "fixed_stocks": 300, "risk_per_trade_pct": 0.01, "max_position_notional": 100000 }
-      }
-    ],
+    "stocks": [],
     "futures": [
       {
-        "name": "DU672616_MNQ_15m", "account": "DU672616", "direction": "long_short",
+        "name": "DU672616_MNQ_5m", "account": "DU672616", "direction": "long_short",
         "sec_type": "FUT", "exchange": "CME", "currency": "USD",
-        "symbols": ["MNQ"], "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "symbols": ["MNQ"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "active", "roll_buffer_days": 0,
         "supertrend": { "atr_period": 10, "multiplier": 3 },
         "dema_filter": { "enabled": true, "period": 200 },
-        "rsi_filter": { "enabled": false, "period": 14, "long_min": 50, "short_max": 50 },
-        "macd_filter": { "enabled": false, "fast": 12, "slow": 26, "signal": 9 },
-        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
+        "regime_filter": { "enabled": false },
         "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
         "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
       },
       {
-        "name": "DU672616_MES_15m", "account": "DU672616", "direction": "long_short",
+        "name": "DU672616_MES_5m", "account": "DU672616", "direction": "long_short",
         "sec_type": "FUT", "exchange": "CME", "currency": "USD",
-        "symbols": ["MES"], "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "symbols": ["MES"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "active", "roll_buffer_days": 0,
         "supertrend": { "atr_period": 10, "multiplier": 3 },
-        "dema_filter": { "enabled": true, "period": 200 },
-        "rsi_filter": { "enabled": false, "period": 14, "long_min": 50, "short_max": 50 },
-        "macd_filter": { "enabled": false, "fast": 12, "slow": 26, "signal": 9 },
-        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
+        "dema_filter": { "enabled": false, "period": 200 },
+        "regime_filter": { "enabled": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "DU672616_MGC_5m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "COMEX", "currency": "USD",
+        "symbols": ["MGC"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "quarterly", "roll_buffer_days": 7,
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": false, "period": 200 },
+        "regime_filter": { "enabled": false },
         "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
         "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
       }

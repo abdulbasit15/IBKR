@@ -1,0 +1,506 @@
+// This Pine Script™ is subject to the terms of the Mozilla Public License 2.0
+// © AB
+//
+// ZTH Levels & Setups
+// ───────────────────────────────────────────────────────────────────────────
+// PART 1 — LEVELS (derived from the 1H timeframe, drawn on any chart):
+//   5/5  Color-Flip Candle : first opposite-color 1H candle after a trend leg;
+//                            line plotted at that candle's OPEN.
+//   KEY  5/5 @ 1H Swing     : a 5/5 that lands on a 1H swing (HH/HL/LH/LL) -> bold.
+//   4/5  Opening/Closing    : session Open and Close prints.
+//   Invalidation rule: a level stays live until a 1H candle CLOSES THROUGH it,
+//                      at which point it is removed from the chart.
+//
+// PART 2 — SETUPS (evaluated on the CHART timeframe; intended for 5-min):
+//   Break & Retest, Bounce, Rejection, Pivot, 1-2-3  (from the ZTH cheat sheet).
+//   Setups are tested against the active levels above.
+// ───────────────────────────────────────────────────────────────────────────
+
+//@version=6
+indicator(title="ZTH Levels & Setups", shorttitle="ZTH", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=100)
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — LEVELS (HTF)
+// ═══════════════════════════════════════════════════════════════
+grpLvl      = "Levels (Higher Timeframe)"
+htfTF       = input.timeframe("60", "Levels timeframe", group=grpLvl, tooltip="Timeframe used to detect all levels. The doc specifies 1H (60).")
+flipReqLeg  = input.int(1, "Flip: min trend-leg candles", minval=1, group=grpLvl, tooltip="Require this many same-color 1H candles before the color-flip candle counts as a 5/5.")
+maxLevels   = input.int(100, "Max stored levels", minval=5, maxval=200, group=grpLvl)
+extendRight = input.bool(true, "Extend level lines to the right", group=grpLvl)
+sessMode    = input.string("Auto", "Session for level detection", options=["Auto", "RTH (Regular)", "Electronic (Full)"], group=grpLvl, tooltip="Which session the 1H level candles come from.\nAuto: RTH for index futures (NQ/MNQ, ES/MES, YM/MYM) and Electronic/full session for gold & crude (GC/MGC, CL/MCL); any other symbol uses the chart's own session.\nRTH / Electronic force a specific session regardless of symbol.")
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — TRADING DAY FREEZE (RTH open behaviour)
+// ═══════════════════════════════════════════════════════════════
+grpDay = "Trading Day (RTH)"
+noDelAfterOpen   = input.bool(true,  "Do not delete levels after RTH open (rest of day)", group=grpDay, tooltip="Before the RTH open, levels are removed normally when a 1H candle closes through them (so stale previous-day levels get cleaned up). From the RTH open onward, no levels are deleted for the rest of the day. 5/5 / KEY levels are always created by normal 1H flip logic.")
+addDuringSession = input.bool(false, "Add new 5/5 / KEY levels during RTH session", group=grpDay, tooltip="OFF (default): during the current day's RTH session (RTH open to RTH close) no new 5/5 / KEY levels are created. ON: new 5/5 / KEY levels are created during the session as usual. Only affects the CURRENT day's session; past days always draw their levels.")
+rthOpenH  = input.int(9,  "RTH open hour (0-23)",  minval=0, maxval=23, group=grpDay, inline="o")
+rthOpenM  = input.int(30, "RTH open minute",       minval=0, maxval=59, group=grpDay, inline="o")
+rthCloseH = input.int(16, "RTH close hour (0-23)", minval=0, maxval=23, group=grpDay, inline="c")
+rthCloseM = input.int(0,  "RTH close minute",      minval=0, maxval=59, group=grpDay, inline="c")
+rthTz     = input.string("America/New_York", "RTH timezone", group=grpDay)
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — 4/5 SESSION PRINTS
+// ═══════════════════════════════════════════════════════════════
+grpSess = "4/5 Session Prints"
+en1   = input.bool(true,  "Session 1", group=grpSess, inline="s1")
+sess1 = input.session("0930-1530", "", group=grpSess, inline="s1", tooltip="NY RTH by default. Open print = session start (09:30), Close print = session end. 15:30 end = close of the last full RTH 1H candle (3:30 PM). Use 0930-1600 if you want the 4:00 PM close instead.")
+en2   = input.bool(false, "Session 2", group=grpSess, inline="s2")
+sess2 = input.session("0300-1130", "", group=grpSess, inline="s2", tooltip="London by default.")
+en3   = input.bool(false, "Session 3", group=grpSess, inline="s3")
+sess3 = input.session("2000-0200", "", group=grpSess, inline="s3", tooltip="Asia by default.")
+sessTz= input.string("America/New_York", "Session timezone", group=grpSess)
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — LEVEL STYLE
+// ═══════════════════════════════════════════════════════════════
+grpStyle = "Level Style"
+cKey = input.color(color.new(#f7525f, 0),  "KEY color", group=grpStyle, inline="k")
+wKey = input.int(3, "w", minval=1, maxval=6, group=grpStyle, inline="k")
+c55  = input.color(color.new(#2962ff, 0),  "5/5 color", group=grpStyle, inline="a")
+w55  = input.int(2, "w", minval=1, maxval=6, group=grpStyle, inline="a")
+c45  = input.color(color.new(#00c853, 0),  "4/5 color (Open/Close prints)", group=grpStyle, inline="b")
+w45  = input.int(1, "w", minval=1, maxval=6, group=grpStyle, inline="b")
+showLabels = input.bool(true, "Show level labels", group=grpStyle)
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — SETUPS (chart TF, use 5m)
+// ═══════════════════════════════════════════════════════════════
+grpSetup   = "Setups (chart timeframe — use 5m)"
+showSetups = input.bool(false, "Show setups", group=grpSetup)
+onlyConf   = input.bool(true, "Signal on bar close only (no repaint)", group=grpSetup)
+proxAtr    = input.float(0.5, "Level proximity (x ATR)", minval=0.05, step=0.05, group=grpSetup, tooltip="How close price must be to a level to arm level-based setups.")
+retestWin  = input.int(20, "Break -> Retest window (bars)", minval=1, group=grpSetup)
+useHTFtrend = input.bool(true, "Trade only in 1H trend direction", group=grpSetup, tooltip="ON: longs fire only when the last closed 1H candle is above the 1H trend EMA, shorts only when below. Applies to ALL setups so every trade is with the 1H trend.")
+htfTrendLen = input.int(50, "1H trend EMA length", minval=2, group=grpSetup, tooltip="EMA length on the Levels timeframe (1H) that defines the trend direction.")
+useTrendF  = input.bool(true, "Pivot / 1-2-3 require chart EMA trend", group=grpSetup)
+emaLen     = input.int(50, "Chart trend EMA length", minval=5, group=grpSetup)
+impMult    = input.float(1.2, "1-2-3 impulse body (x ATR)", minval=0.2, step=0.1, group=grpSetup)
+pauseFrac  = input.float(0.6, "1-2-3 pause body fraction", minval=0.1, maxval=1.0, step=0.05, group=grpSetup)
+sBR   = input.bool(true, "Break & Retest", group=grpSetup, inline="x")
+sBo   = input.bool(true, "Bounce",         group=grpSetup, inline="x")
+sRj   = input.bool(true, "Rejection",      group=grpSetup, inline="y")
+sPv   = input.bool(true, "Pivot",          group=grpSetup, inline="y")
+s123  = input.bool(true, "1-2-3",          group=grpSetup, inline="z")
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — DAILY PIVOTS (optional context for the Pivot setup)
+// ═══════════════════════════════════════════════════════════════
+grpPiv = "Daily Pivots (optional)"
+showPP = input.bool(false, "Show daily pivots (PP/R1/S1/R2/S2)", group=grpPiv)
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — PREVIOUS SESSION HIGH / LOW  (all OFF by default)
+// ═══════════════════════════════════════════════════════════════
+grpSHL = "Previous Session High/Low"
+showNY  = input.bool(false, "New York",  group=grpSHL, inline="ny")
+nySess  = input.session("0930-1600", "", group=grpSHL, inline="ny")
+nyTz    = input.string("America/New_York", "", group=grpSHL, inline="ny")
+cNY     = input.color(color.new(#ff6d00, 0), "", group=grpSHL, inline="ny")
+showLDN = input.bool(false, "London",    group=grpSHL, inline="ldn")
+ldnSess = input.session("0800-1630", "", group=grpSHL, inline="ldn")
+ldnTz   = input.string("Europe/London", "", group=grpSHL, inline="ldn")
+cLDN    = input.color(color.new(#ffd600, 0), "", group=grpSHL, inline="ldn")
+showASI = input.bool(false, "Asian",     group=grpSHL, inline="asi")
+asiSess = input.session("0900-1500", "", group=grpSHL, inline="asi")
+asiTz   = input.string("Asia/Tokyo", "", group=grpSHL, inline="asi")
+cASI    = input.color(color.new(#d500f9, 0), "", group=grpSHL, inline="asi")
+shlWidth= input.int(2, "Session H/L line width", minval=1, maxval=6, group=grpSHL)
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS — PREVIOUS WEEK HIGH / LOW  (OFF by default)
+// ═══════════════════════════════════════════════════════════════
+grpWk  = "Previous Week High/Low"
+showWk = input.bool(false, "Show previous week High/Low", group=grpWk)
+cWkH   = input.color(color.new(#00e676, 0), "Prev week HIGH color", group=grpWk)
+cWkL   = input.color(color.new(#e91e63, 0), "Prev week LOW color",  group=grpWk)
+wkWidth= input.int(3, "Prev week line width", minval=1, maxval=8, group=grpWk)
+
+// ═══════════════════════════════════════════════════════════════
+// TYPE — level object
+// ═══════════════════════════════════════════════════════════════
+type Lvl
+    float  price
+    string tier        // "5/5" | "4/5"
+    string tag         // "KEY HH" | "S1 Open" | "" ...
+    line   ln
+    label  lb
+    bool   active
+    int    brokeDir    // for Break & Retest state: 1 up, -1 down, 0 none
+    int    brokeBar
+    int    createdBar
+
+var array<Lvl> levels = array.new<Lvl>()
+
+// ═══════════════════════════════════════════════════════════════
+// STYLE HELPERS
+// ═══════════════════════════════════════════════════════════════
+f_isKey(string tag) => str.startswith(tag, "KEY")
+
+f_tierColor(string tier, string tag) =>
+    tier == "4/5" ? c45 : f_isKey(tag) ? cKey : c55
+
+f_tierWidth(string tier, string tag) =>
+    tier == "4/5" ? w45 : f_isKey(tag) ? wKey : w55
+
+// ═══════════════════════════════════════════════════════════════
+// LEVEL MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+// atTime = the timestamp the level formed at. Lines/labels are anchored by
+// bar_time (not bar_index) so they stay pinned to the exact same spot when you
+// switch the chart timeframe (e.g. from 1H to 5m).
+f_addLevel(float price, string tier, string tag, int atTime) =>
+    col = f_tierColor(tier, tag)
+    Lvl lv = Lvl.new(price, tier, tag, na, na, true, 0, 0, bar_index)
+    int x2 = int(math.max(atTime + 1, time))
+    lv.ln := line.new(atTime, price, x2, price, xloc=xloc.bar_time, extend=(extendRight ? extend.right : extend.none), color=col, width=f_tierWidth(tier, tag), style=line.style_solid)
+    if showLabels
+        lv.lb := label.new(atTime, price, text=tier + (tag == "" ? "" : " " + tag), xloc=xloc.bar_time, style=label.style_none, textcolor=col, size=size.small)
+    array.push(levels, lv)
+    if array.size(levels) > maxLevels
+        old = array.shift(levels)
+        line.delete(old.ln)
+        label.delete(old.lb)
+    lv
+
+// Removes the level once a 1H candle closes through it. Only flags inactive and
+// deletes the drawings (never removes the array element), so it is safe to call
+// while iterating over the levels array. Dead entries are shifted out later.
+f_invalidate(Lvl lv) =>
+    lv.active := false
+    line.delete(lv.ln)
+    label.delete(lv.lb)
+
+// ═══════════════════════════════════════════════════════════════
+// LEVEL-DETECTION SESSION (instrument-specific)
+//   Index futures (NQ/MNQ, ES/MES, YM/MYM) -> Regular Trading Hours (09:30-16:00 ET).
+//   Gold / Crude   (GC/MGC, CL/MCL)        -> Electronic (full) session.
+//   Anything else / manual override falls back to the chart's own session.
+//   NOTE: for US futures, session.regular is the ELECTRONIC (Globex) session, not
+//   RTH. The true 9:30-16:00 RTH data is the NAMED session "us_regular", so we
+//   request that for the index futures. The 1H level candles come from this ticker
+//   so 5/5 and KEY detection use the correct session for the instrument.
+// ═══════════════════════════════════════════════════════════════
+rootSym  = syminfo.root
+isRTHsym = rootSym == "NQ" or rootSym == "MNQ" or rootSym == "ES" or rootSym == "MES" or rootSym == "YM" or rootSym == "MYM"
+isEHsym  = rootSym == "GC" or rootSym == "MGC" or rootSym == "CL" or rootSym == "MCL"
+useRTH   = sessMode == "RTH (Regular)"     or (sessMode == "Auto" and isRTHsym)
+useEH    = sessMode == "Electronic (Full)" or (sessMode == "Auto" and isEHsym)
+lvlTicker = useRTH ? ticker.new(syminfo.prefix, syminfo.ticker, "us_regular") : useEH ? ticker.new(syminfo.prefix, syminfo.ticker, session.extended) : syminfo.tickerid
+
+// ═══════════════════════════════════════════════════════════════
+// HTF DATA (confirmed / non-repainting)
+//   *[1] with lookahead_on = last CLOSED 1H candle; *[2] = the one before it.
+// ═══════════════════════════════════════════════════════════════
+[o1, c1, t1, o2, c2] = request.security(lvlTicker, htfTF, [open[1], close[1], time[1], open[2], close[2]], lookahead=barmerge.lookahead_on)
+isNewHTF = ta.change(t1) != 0
+// 1H trend direction (confirmed, non-repainting): last closed 1H close vs its
+// EMA. Every setup is forced to trade only WITH this direction.
+htfEma = request.security(lvlTicker, htfTF, ta.ema(close, htfTrendLen)[1], lookahead=barmerge.lookahead_on)
+htfUp  = not na(htfEma) and c1 > htfEma
+htfDn  = not na(htfEma) and c1 < htfEma
+
+// ── Guard: intraday levels/setups are only valid when the chart timeframe is
+//    at or below the Levels timeframe. Requesting a LOWER timeframe than the
+//    chart (e.g. 1H levels on a 1D chart) returns no usable history and would
+//    draw garbage (vertical lines), so we silently skip that work on higher TFs.
+//    (Previous-week High/Low is not gated and still shows on any timeframe.)
+chartSec = timeframe.in_seconds(timeframe.period)
+htfSec   = timeframe.in_seconds(htfTF)
+htfOk    = chartSec <= htfSec
+
+// ── Trading-day freeze: the freeze ONLY applies to the current trading day.
+//    On every past day (and before today's RTH open) invalidation runs normally,
+//    so levels a 1H candle closed through are removed. From today's RTH open
+//    (09:30 EST by default) onward, no levels are deleted for the rest of the day.
+nyH         = hour(time, rthTz)
+nyM         = minute(time, rthTz)
+afterOpen   = (nyH > rthOpenH)  or (nyH == rthOpenH  and nyM >= rthOpenM)
+beforeClose = (nyH < rthCloseH) or (nyH == rthCloseH and nyM <  rthCloseM)
+curDayKey   = year(timenow, rthTz) * 10000 + month(timenow, rthTz) * 100 + dayofmonth(timenow, rthTz)
+barDayKey   = year(time,    rthTz) * 10000 + month(time,    rthTz) * 100 + dayofmonth(time,    rthTz)
+isToday     = barDayKey == curDayKey
+freezeDel   = noDelAfterOpen and afterOpen and isToday   // only today's levels are frozen after the open
+// Suppress new 5/5 / KEY creation during today's RTH session (09:30-16:00) unless
+// the user opts in. Past days always draw their levels normally.
+inCurSession = isToday and afterOpen and beforeClose
+canAdd       = addDuringSession or not inCurSession
+
+// ═══════════════════════════════════════════════════════════════
+// HTF PROCESSING (once per closed 1H candle)
+// ═══════════════════════════════════════════════════════════════
+var int   legLen     = 0
+var float lastSupLvl = na    // price of the previous bull-flip (support) 5/5
+var float lastResLvl = na    // price of the previous bear-flip (resistance) 5/5
+
+if isNewHTF and htfOk and not na(c1) and not na(c2)
+    // 1) remove any live 5/5 or 4/5 that this 1H candle CLOSED THROUGH.
+    if array.size(levels) > 0
+        for i = 0 to array.size(levels) - 1
+            lv = array.get(levels, i)
+            if lv.active and lv.createdBar < bar_index and not freezeDel
+                // body of the just-closed 1H candle closed through the level ...
+                bodyUp    = o1 < lv.price and c1 > lv.price
+                bodyDn    = o1 > lv.price and c1 < lv.price
+                // ... or the close crossed the level vs the prior 1H close (gap-through)
+                throughUp = c2 <= lv.price and c1 > lv.price
+                throughDn = c2 >= lv.price and c1 < lv.price
+                if bodyUp or bodyDn or throughUp or throughDn
+                    f_invalidate(lv)
+
+    // 2) color-flip -> 5/5 level at the flip candle's OPEN. The flip candle is the
+    //    first opposite-color 1H candle after a trend leg of >= flipReqLeg candles.
+    dir1 = c1 > o1 ? 1 : c1 < o1 ? -1 : 0
+    dir2 = c2 > o2 ? 1 : c2 < o2 ? -1 : 0
+    priorLegLen = legLen
+    legLen := (dir1 == dir2 and dir1 != 0) ? legLen + 1 : (dir1 == 0 ? 0 : 1)
+    flip = dir1 != 0 and dir2 != 0 and dir1 != dir2 and priorLegLen >= flipReqLeg
+    if flip and canAdd
+        tag = ""
+        // KEY = a 5/5 that coincides with 1H structure:
+        //   bull flip (dir1 == 1)  = support. KEY HL when it is a HIGHER LOW than the
+        //                            previous support 5/5 (uptrend pullback).
+        //   bear flip (dir1 == -1) = resistance. KEY LH when it is a LOWER HIGH than
+        //                            the previous resistance 5/5 (downtrend pullback).
+        if dir1 == 1
+            if not na(lastSupLvl) and o1 > lastSupLvl
+                tag := "KEY HL"
+            lastSupLvl := o1
+        else if dir1 == -1
+            if not na(lastResLvl) and o1 < lastResLvl
+                tag := "KEY LH"
+            lastResLvl := o1
+        f_addLevel(o1, "5/5", tag, t1)
+
+// ═══════════════════════════════════════════════════════════════
+// 4/5 SESSION PRINTS (chart TF)
+// ═══════════════════════════════════════════════════════════════
+// Draws an Open print at every session start and a Close print at every session
+// end. Prints are NOT replaced each day -- previous days' Open/Close levels stay
+// on the chart until a candle CLOSES THROUGH them (normal 4/5 invalidation).
+f_session(bool en, string sessStr, string tzz, string tag) =>
+    if en
+        tin = time(timeframe.period, sessStr, tzz)
+        inS = not na(tin)
+        started = inS and not inS[1]
+        ended   = not inS and inS[1]
+        if started
+            f_addLevel(open, "4/5", tag + " Open", time)
+        if ended
+            f_addLevel(close[1], "4/5", tag + " Close", time[1])
+    int(0)
+
+// GC/MGC and CL/MCL trade in ETH (no meaningful RTH open/close), so their
+// opening / closing 4/5 prints are suppressed. Index futures keep them.
+f_session(en1 and htfOk and not useEH, sess1, sessTz, "S1")
+f_session(en2 and htfOk and not useEH, sess2, sessTz, "S2")
+f_session(en3 and htfOk and not useEH, sess3, sessTz, "S3")
+
+// ═══════════════════════════════════════════════════════════════
+// PREVIOUS SESSION HIGH / LOW
+//   Tracks the running high/low of each session and, when the session closes,
+//   draws its high & low (the "previous session" levels) extending right until
+//   the next session of the same type completes. `var` state is per call-site,
+//   so this one function serves NY / London / Asian independently.
+// ═══════════════════════════════════════════════════════════════
+f_sessionHL(bool en, string sessStr, string tzz, string nm, color col) =>
+    var float sh  = na
+    var float sl  = na
+    var int   aT  = na
+    var line  lnH = na
+    var line  lnL = na
+    var label lbH = na
+    var label lbL = na
+    if en
+        tin = time(timeframe.period, sessStr, tzz)
+        inS = not na(tin)
+        if inS and not inS[1]
+            sh := high
+            sl := low
+            aT := time
+        else if inS
+            sh := math.max(sh, high)
+            sl := math.min(sl, low)
+        if not inS and inS[1] and not na(sh)
+            line.delete(lnH)
+            line.delete(lnL)
+            label.delete(lbH)
+            label.delete(lbL)
+            lnH := line.new(aT, sh, aT + 1, sh, xloc=xloc.bar_time, extend=extend.right, color=col, width=shlWidth, style=line.style_dotted)
+            lnL := line.new(aT, sl, aT + 1, sl, xloc=xloc.bar_time, extend=extend.right, color=col, width=shlWidth, style=line.style_dotted)
+            lbH := label.new(time, sh, text=nm + " H " + str.tostring(math.round_to_mintick(sh)), xloc=xloc.bar_time, style=label.style_label_left, color=col, textcolor=color.white, size=size.small)
+            lbL := label.new(time, sl, text=nm + " L " + str.tostring(math.round_to_mintick(sl)), xloc=xloc.bar_time, style=label.style_label_left, color=col, textcolor=color.white, size=size.small)
+        if not na(lbH)
+            label.set_x(lbH, time)
+            label.set_x(lbL, time)
+    else
+        if not na(lnH)
+            line.delete(lnH)
+            line.delete(lnL)
+            label.delete(lbH)
+            label.delete(lbL)
+            lnH := na
+            lnL := na
+            lbH := na
+            lbL := na
+    int(0)
+
+f_sessionHL(showNY  and htfOk, nySess,  nyTz,  "NY",   cNY)
+f_sessionHL(showLDN and htfOk, ldnSess, ldnTz, "LDN",  cLDN)
+f_sessionHL(showASI and htfOk, asiSess, asiTz, "ASIA", cASI)
+
+// ═══════════════════════════════════════════════════════════════
+// CANDLE FEATURES (chart TF)
+// ═══════════════════════════════════════════════════════════════
+atr   = ta.atr(14)
+ema   = ta.ema(close, emaLen)
+upT   = close > ema
+dnT   = close < ema
+body  = math.abs(close - open)
+upWk  = high - math.max(close, open)
+dnWk  = math.min(close, open) - low
+bull  = close > open
+bear  = close < open
+tol   = atr * proxAtr
+confOk = onlyConf ? barstate.isconfirmed : true
+
+// ═══════════════════════════════════════════════════════════════
+// SIGNAL RENDERER
+// ═══════════════════════════════════════════════════════════════
+f_sig(bool isBull, string txt) =>
+    y = isBull ? low - tol * 0.6 : high + tol * 0.6
+    stl = isBull ? label.style_label_up : label.style_label_down
+    col = isBull ? color.new(color.teal, 0) : color.new(color.red, 0)
+    label.new(bar_index, y, text=txt + (isBull ? " ▲" : " ▼"), style=stl, color=col, textcolor=color.white, size=size.tiny)
+    alert(txt + (isBull ? " long" : " short") + " @ " + str.tostring(math.round_to_mintick(close)), alert.freq_once_per_bar)
+
+// ═══════════════════════════════════════════════════════════════
+// 1-2-3 PATTERN base (impulse -> pause -> continuation). Level-agnostic
+// here; it only FIRES below when the pullback tags an active 1H level.
+// ═══════════════════════════════════════════════════════════════
+imp123      = atr * impMult
+impBull123  = close[2] > open[2] and (close[2] - open[2]) >= imp123
+impBear123  = open[2] > close[2] and (open[2] - close[2]) >= imp123
+pauseB123   = math.abs(close[1] - open[1])
+bull123base = impBull123 and pauseB123 <= (close[2] - open[2]) * pauseFrac and high > high[1] and bull and (not useTrendF or upT)
+bear123base = impBear123 and pauseB123 <= (open[2] - close[2]) * pauseFrac and low  < low[1]  and bear and (not useTrendF or dnT)
+
+// ═══════════════════════════════════════════════════════════════
+// SETUPS — every setup fires ONLY at an active 1H level
+//   (Break & Retest, Bounce, Rejection, Pivot, 1-2-3)
+// ═══════════════════════════════════════════════════════════════
+if showSetups and htfOk and confOk and array.size(levels) > 0
+    bool did123 = false
+    // 1H-trend gate: longs only with 1H uptrend, shorts only with 1H downtrend.
+    longOk  = not useHTFtrend or htfUp
+    shortOk = not useHTFtrend or htfDn
+    for i = 0 to array.size(levels) - 1
+        lv = array.get(levels, i)
+        if lv.active
+            px = lv.price
+            touchLow  = low  <= px + tol and low  >= px - tol
+            touchHigh = high <= px + tol and high >= px - tol
+
+            // ── Break & Retest ────────────────────────────────
+            if sBR
+                if close[1] <= px and close > px
+                    lv.brokeDir := 1
+                    lv.brokeBar := bar_index
+                else if close[1] >= px and close < px
+                    lv.brokeDir := -1
+                    lv.brokeBar := bar_index
+                inWin = bar_index - lv.brokeBar <= retestWin
+                if lv.brokeDir == 1 and inWin and low <= px + tol and close > px and bull and dnWk >= body and longOk
+                    f_sig(true, "B&R")
+                    lv.brokeDir := 0
+                if lv.brokeDir == -1 and inWin and high >= px - tol and close < px and bear and upWk >= body and shortOk
+                    f_sig(false, "B&R")
+                    lv.brokeDir := 0
+
+            // ── Bounce (ALWAYS LONG): level acts as SUPPORT. Price dips to tag
+            //    the level zone (shallow, <= tol below), holds, and closes back
+            //    above with a bullish reversal candle (lower wick). Bounces up.
+            if sBo
+                if touchLow and low >= px - tol and close > px and bull and dnWk >= body and longOk
+                    f_sig(true, "Bounce")
+
+            // ── Rejection (ALWAYS SHORT): level acts as RESISTANCE. Price pushes
+            //    BEYOND the level (> tol above), is strongly rejected, and closes
+            //    back below with a bearish candle leaving a long upper wick.
+            if sRj
+                if high > px + tol and close < px and close >= px - tol * 2 and bear and upWk >= body * 1.5 and shortOk
+                    f_sig(false, "Rej")
+
+            // ── Pivot (signal candle then break candle @ level)
+            if sPv
+                sigNearLow  = low[1]  <= px + tol and low[1]  >= px - tol
+                sigNearHigh = high[1] <= px + tol and high[1] >= px - tol
+                trUpOk = not useTrendF or upT
+                trDnOk = not useTrendF or dnT
+                if sigNearLow and high > high[1] and bull and trUpOk and longOk
+                    f_sig(true, "Pivot")
+                if sigNearHigh and low < low[1] and bear and trDnOk and shortOk
+                    f_sig(false, "Pivot")
+
+            // ── 1-2-3: impulse -> pause -> continuation that LAUNCHES off this
+            //    level. Bull holds support (the pullback low tags the zone),
+            //    bear holds resistance (the pullback high tags the zone). Fires
+            //    at most once per bar, on the first matching level.
+            if s123 and not did123
+                lowPat  = math.min(low[1], low[2])
+                highPat = math.max(high[1], high[2])
+                if bull123base and lowPat <= px + tol and lowPat >= px - tol and longOk
+                    f_sig(true, "1-2-3")
+                    did123 := true
+                else if bear123base and highPat <= px + tol and highPat >= px - tol and shortOk
+                    f_sig(false, "1-2-3")
+                    did123 := true
+
+// ═══════════════════════════════════════════════════════════════
+// DAILY PIVOTS (optional)
+// ═══════════════════════════════════════════════════════════════
+[pdh, pdl, pdc] = request.security(syminfo.tickerid, "D", [high[1], low[1], close[1]], lookahead=barmerge.lookahead_on)
+pp  = (pdh + pdl + pdc) / 3
+pr1 = 2 * pp - pdl
+ps1 = 2 * pp - pdh
+pr2 = pp + (pdh - pdl)
+ps2 = pp - (pdh - pdl)
+plot(showPP ? pp  : na, "PP", color=color.orange,               style=plot.style_stepline)
+plot(showPP ? pr1 : na, "R1", color=color.new(color.red,  30),  style=plot.style_stepline)
+plot(showPP ? ps1 : na, "S1", color=color.new(color.green,30),  style=plot.style_stepline)
+plot(showPP ? pr2 : na, "R2", color=color.new(color.red,  60),  style=plot.style_stepline)
+plot(showPP ? ps2 : na, "S2", color=color.new(color.green,60),  style=plot.style_stepline)
+
+// ═══════════════════════════════════════════════════════════════
+// PREVIOUS WEEK HIGH / LOW  (bold labels, distinct colors)
+// ═══════════════════════════════════════════════════════════════
+[pwh, pwl, wkStart] = request.security(syminfo.tickerid, "W", [high[1], low[1], time], lookahead=barmerge.lookahead_on)
+newWk = ta.change(wkStart) != 0
+var line  wLnH = na
+var line  wLnL = na
+var label wLbH = na
+var label wLbL = na
+if showWk and not na(pwh)
+    if na(wLnH) or newWk
+        line.delete(wLnH)
+        line.delete(wLnL)
+        label.delete(wLbH)
+        label.delete(wLbL)
+        wLnH := line.new(wkStart, pwh, wkStart + 1, pwh, xloc=xloc.bar_time, extend=extend.right, color=cWkH, width=wkWidth, style=line.style_dotted)
+        wLnL := line.new(wkStart, pwl, wkStart + 1, pwl, xloc=xloc.bar_time, extend=extend.right, color=cWkL, width=wkWidth, style=line.style_dotted)
+        wLbH := label.new(time, pwh, text="PW HIGH " + str.tostring(math.round_to_mintick(pwh)), xloc=xloc.bar_time, style=label.style_label_left, color=cWkH, textcolor=color.white, size=size.large)
+        wLbL := label.new(time, pwl, text="PW LOW " + str.tostring(math.round_to_mintick(pwl)),  xloc=xloc.bar_time, style=label.style_label_left, color=cWkL, textcolor=color.white, size=size.large)
+    if not na(wLbH)
+        label.set_x(wLbH, time)
+        label.set_x(wLbL, time)
+else if not na(wLnH)
+    line.delete(wLnH)
+    line.delete(wLnL)
+    label.delete(wLbH)
+    label.delete(wLbL)
+    wLnH := na
+    wLnL := na
+    wLbH := na
+    wLbL := na

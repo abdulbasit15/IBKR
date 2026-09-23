@@ -1,0 +1,5 @@
+strat,symbol,period,trades,legs,win%,pf,net$,avg_win$,avg_loss$,expectancy$,max_dd$,recovery_factor,2R_hits
+EMA 9/21 cross + ADX,MNQ,2025-03-24 -> 2026-09-18,1387,1771,35.5,1.13,49765,877,-427,36,-22219,2.24,384
+EMA 9/21 cross + ADX,MES,2025-03-20 -> 2026-09-18,1407,1798,35.3,1.10,17180,399,-198,12,-9140,1.88,391
+EMA 9/21 cross + ADX,MGC,2025-01-09 -> 2026-09-18,1368,1729,34.4,1.18,62417,870,-387,46,-25730,2.43,361
+EMA 9/21 cross + ADX,TOTAL,,,,,,129362,,,,,,

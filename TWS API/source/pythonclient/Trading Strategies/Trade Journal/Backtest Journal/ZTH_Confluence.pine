@@ -1,0 +1,244 @@
+//@version=6
+// =============================================================================
+//  ZTH Confluence Dashboard  —  mirrors the Trade Journal's indicators
+//  Multi-timeframe (1H / 15m / 5m): Supertrend, RSI, ADX, EMA-trend
+//  5-min: EMA 9/21 cross, MACD 12/26/9, VWAP, VPOC, RVOL, ATR, est. delta
+//  Fibonacci of the last impulse leg + Pullback Entry Score (trend/zone/trigger)
+//  -> Buy / Sell / Hold suggestion from confluence + regime + pullback gates.
+//
+//  APPLY ON A 5-MINUTE CHART.  Every indicator has an on/off toggle that also
+//  includes/excludes it from the confluence count.
+// =============================================================================
+indicator("ZTH Confluence Dashboard", shorttitle="ZTH Conf", overlay=true, max_lines_count=500, max_labels_count=500)
+
+// ---------------------------------------------------------------- INPUTS -----
+grpEN   = "Enable indicators (toggles also affect confluence)"
+enTrend = input.bool(true,  "1H trend (EMA 50/21 filter)", group=grpEN)
+enST1   = input.bool(true,  "1H Supertrend",  group=grpEN)
+enST15  = input.bool(true,  "15m Supertrend", group=grpEN)
+enST5   = input.bool(true,  "5m Supertrend",  group=grpEN)
+enEma   = input.bool(true,  "5m EMA 9/21 cross", group=grpEN)
+enMacd  = input.bool(true,  "5m MACD 12/26/9",   group=grpEN)
+enVwap  = input.bool(true,  "VWAP (side)",       group=grpEN)
+enRsi   = input.bool(true,  "RSI (info)",        group=grpEN)
+enAdx   = input.bool(true,  "ADX regime gate",   group=grpEN)
+enVpoc  = input.bool(true,  "VPOC (info)",       group=grpEN)
+enRvol  = input.bool(true,  "RVOL (info)",       group=grpEN)
+enDelta = input.bool(true,  "Est. delta (info)", group=grpEN)
+enFib   = input.bool(true,  "Fibonacci / golden zone", group=grpEN)
+enPB    = input.bool(true,  "Pullback entry score",    group=grpEN)
+
+grpLOG  = "Signal logic"
+adxMin  = input.float(20.0, "ADX gate (no trade below)", group=grpLOG)
+minConf = input.int(4,      "Min confluence signals for Buy/Sell", minval=1, maxval=7, group=grpLOG)
+reqPB   = input.bool(false, "Require a 'Good+' pullback (score>=2) to fire", group=grpLOG)
+useRTH  = input.bool(true,  "Anchor VWAP/session to RTH 09:30 ET", group=grpLOG)
+
+grpDRAW = "Drawing"
+showEMA = input.bool(true,  "Plot 5m EMA 9/21", group=grpDRAW)
+showVW  = input.bool(true,  "Plot VWAP", group=grpDRAW)
+showST  = input.bool(true,  "Plot 5m Supertrend", group=grpDRAW)
+showFib = input.bool(true,  "Plot Fib levels", group=grpDRAW)
+showSig = input.bool(true,  "Plot Buy/Sell markers", group=grpDRAW)
+fibLen  = input.int(60,     "Fib impulse lookback (bars)", minval=10, group=grpDRAW)
+rvolLen = input.int(20,     "RVOL average length", minval=5, group=grpDRAW)
+tblPos  = input.string("Top Right", "Table position", options=["Top Right","Top Left","Bottom Right","Bottom Left"], group=grpDRAW)
+
+// ------------------------------------------------------ HIGHER TIMEFRAMES ----
+// EMAs are computed INSIDE request.security tuples so each ta.ema runs on every
+// HTF bar (no short-circuit), then the trend comparison is done here.
+[_st60, dir60] = request.security(syminfo.tickerid, "60", ta.supertrend(3, 10), lookahead=barmerge.lookahead_off)
+rsi60 = request.security(syminfo.tickerid, "60", ta.rsi(close, 14), lookahead=barmerge.lookahead_off)
+[_dp60, _dm60, adx60] = request.security(syminfo.tickerid, "60", ta.dmi(14, 14), lookahead=barmerge.lookahead_off)
+[c60, e21_60, e50_60] = request.security(syminfo.tickerid, "60", [close, ta.ema(close, 21), ta.ema(close, 50)], lookahead=barmerge.lookahead_off)
+tu60 = c60 > e50_60 and e21_60 > e50_60
+td60 = c60 < e50_60 and e21_60 < e50_60
+
+[_st15, dir15] = request.security(syminfo.tickerid, "15", ta.supertrend(3, 10), lookahead=barmerge.lookahead_off)
+rsi15 = request.security(syminfo.tickerid, "15", ta.rsi(close, 14), lookahead=barmerge.lookahead_off)
+[_dp15, _dm15, adx15] = request.security(syminfo.tickerid, "15", ta.dmi(14, 14), lookahead=barmerge.lookahead_off)
+[c15, e21_15, e50_15] = request.security(syminfo.tickerid, "15", [close, ta.ema(close, 21), ta.ema(close, 50)], lookahead=barmerge.lookahead_off)
+tu15 = c15 > e50_15 and e21_15 > e50_15
+td15 = c15 < e50_15 and e21_15 < e50_15
+
+// ------------------------------------------------------------ 5-MIN (chart) --
+ema9  = ta.ema(close, 9)
+ema21 = ta.ema(close, 21)
+ema50 = ta.ema(close, 50)
+[st5, dir5] = ta.supertrend(3, 10)
+rsi5  = ta.rsi(close, 14)
+[_dp5, _dm5, adx5] = ta.dmi(14, 14)
+[macdLine, sigLine, histLine] = ta.macd(close, 12, 26, 9)
+atr5  = ta.atr(14)
+tu5   = close > ema50 and ema21 > ema50
+td5   = close < ema50 and ema21 < ema50
+
+st1Up  = dir60 < 0
+st15Up = dir15 < 0
+st5Up  = dir5  < 0
+
+// ------------------------------------------------- SESSION-ANCHORED SERIES ---
+et = "America/New_York"
+rthOpen   = (hour(time, et) == 9 and minute(time, et) == 30)
+dayChange = ta.change(time("D")) != 0
+anchor    = useRTH ? rthOpen : dayChange
+
+var float cumPV = 0.0
+var float cumV  = 0.0
+if anchor
+    cumPV := 0.0
+    cumV  := 0.0
+cumPV := cumPV + hlc3 * volume
+cumV  := cumV + volume
+vwap = cumV > 0 ? cumPV / cumV : hlc3
+
+// Session cumulative estimated delta (close-location proxy, not tick order-flow)
+var float sessDelta = 0.0
+if anchor
+    sessDelta := 0.0
+clv = (high - low) > 0 ? ((close - low) - (high - close)) / (high - low) : 0.0
+sessDelta := sessDelta + clv * volume
+
+// VPOC — price (hlc3) of the highest-volume 5m bar in the session (robust)
+var float vpoc = na
+var float maxBarVol = -1.0
+if anchor
+    maxBarVol := -1.0
+    vpoc := na
+if volume > maxBarVol
+    maxBarVol := volume
+    vpoc := hlc3
+
+// RVOL — current bar vs average volume
+rvol = volume / math.max(ta.sma(volume, rvolLen), 1e-9)
+
+// ---------------------------------------------------------------- FIBONACCI --
+biasLong  = tu60
+biasShort = td60
+biasSet   = biasLong or biasShort
+legHigh = ta.highest(high, fibLen)
+legLow  = ta.lowest(low, fibLen)
+rng     = legHigh - legLow
+fibRetr = rng > 0 ? (biasLong ? (legHigh - close) / rng : biasShort ? (close - legLow) / rng : na) : na
+f382 = biasLong ? legHigh - rng * 0.382 : legLow + rng * 0.382
+f50  = biasLong ? legHigh - rng * 0.5   : legLow + rng * 0.5
+f618 = biasLong ? legHigh - rng * 0.618 : legLow + rng * 0.618
+golden = not na(fibRetr) and fibRetr >= 0.382 and fibRetr <= 0.618
+fibZone = na(fibRetr) ? "n/a" : fibRetr <= 0.15 ? "extended" : fibRetr < 0.382 ? "shallow" : fibRetr <= 0.618 ? "golden" : fibRetr <= 0.786 ? "deep" : "broke leg"
+
+// --------------------------------------------------------- PULLBACK SCORE ----
+nearEma  = math.abs(close - ema21) <= 0.6 * atr5
+nearVwap = math.abs(close - vwap)  <= 0.6 * atr5
+zoneHit  = nearEma or nearVwap or golden
+trendOk  = biasSet and adx5 >= adxMin
+
+emaBars  = nz(ta.barssince(ta.cross(ema9, ema21)), 9999)
+macdBars = nz(ta.barssince(ta.cross(macdLine, sigLine)), 9999)
+emaBull  = ema9 > ema21
+macdBull = macdLine > sigLine
+emaTrig  = emaBars <= 2 and (emaBull == biasLong)
+macdTrig = macdBars <= 2 and (macdBull == biasLong)
+trigOk   = biasSet and (emaTrig or macdTrig)
+
+pbScore  = (trendOk ? 1 : 0) + (zoneHit ? 1 : 0) + (trigOk ? 1 : 0)
+pbGrade  = pbScore == 3 ? "A+" : pbScore == 2 ? "Good" : pbScore == 1 ? "Weak" : "No setup"
+
+// ------------------------------------------------------------- CONFLUENCE ----
+maxc = (enTrend?1:0) + (enST1?1:0) + (enST15?1:0) + (enST5?1:0) + (enEma?1:0) + (enMacd?1:0) + (enVwap?1:0)
+bull = (enTrend and tu60?1:0) + (enST1 and st1Up?1:0) + (enST15 and st15Up?1:0) + (enST5 and st5Up?1:0) + (enEma and emaBull?1:0) + (enMacd and macdBull?1:0) + (enVwap and close>vwap?1:0)
+bear = (enTrend and td60?1:0) + (enST1 and not st1Up?1:0) + (enST15 and not st15Up?1:0) + (enST5 and not st5Up?1:0) + (enEma and not emaBull?1:0) + (enMacd and not macdBull?1:0) + (enVwap and close<vwap?1:0)
+
+adxOk = (not enAdx) or adx5 >= adxMin
+pbOk  = (not reqPB) or pbScore >= 2
+
+strongLong  = biasLong  and adxOk and bull >= minConf and pbOk
+strongShort = biasShort and adxOk and bear >= minConf and pbOk
+recCode = strongLong ? 1 : strongShort ? -1 : 0
+recTxt  = recCode == 1 ? "BUY" : recCode == -1 ? "SELL" : "HOLD"
+
+reasonChop = "Chop: ADX " + str.tostring(math.round(adx5)) + " below " + str.tostring(math.round(adxMin)) + " - stand aside"
+reasonLow  = "Confluence too low (" + str.tostring(math.max(bull, bear)) + "/" + str.tostring(maxc) + ")"
+reasonPB   = "Pullback only " + pbGrade + " - wait for Good+"
+reason = recCode == 1 ? str.tostring(bull) + "/" + str.tostring(maxc) + " bullish, with 1H uptrend, ADX " + str.tostring(math.round(adx5)) : recCode == -1 ? str.tostring(bear) + "/" + str.tostring(maxc) + " bearish, with 1H downtrend, ADX " + str.tostring(math.round(adx5)) : (enAdx and adx5 < adxMin) ? reasonChop : not biasSet ? "1H trend flat - no directional edge" : (reqPB and pbScore < 2) ? reasonPB : reasonLow
+
+// --------------------------------------------------------------- DRAWINGS -----
+plot(showEMA and enEma ? ema9  : na, "EMA 9",  color=color.new(color.aqua, 0), linewidth=1)
+plot(showEMA and enEma ? ema21 : na, "EMA 21", color=color.new(color.orange, 0), linewidth=1)
+plot(showVW  and enVwap ? vwap : na, "VWAP",   color=color.new(color.fuchsia, 0), linewidth=2)
+plot(showST  and enST5 ? st5   : na, "5m Supertrend", color=st5Up ? color.new(color.green,0) : color.new(color.red,0), style=plot.style_linebr, linewidth=2)
+plot(showFib and enFib ? f382 : na, "Fib 38.2%", color=color.new(color.gray, 30), style=plot.style_circles)
+plot(showFib and enFib ? f50  : na, "Fib 50%",   color=color.new(color.yellow, 20), style=plot.style_circles)
+plot(showFib and enFib ? f618 : na, "Fib 61.8%", color=color.new(color.gray, 30), style=plot.style_circles)
+
+buySig  = recCode == 1  and recCode[1] != 1
+sellSig = recCode == -1 and recCode[1] != -1
+plotshape(showSig and buySig,  title="BUY",  style=shape.labelup,   location=location.belowbar, color=color.new(color.green,0), text="BUY",  textcolor=color.white, size=size.small)
+plotshape(showSig and sellSig, title="SELL", style=shape.labeldown, location=location.abovebar, color=color.new(color.red,0),   text="SELL", textcolor=color.white, size=size.small)
+bgcolor(recCode == 1 ? color.new(color.green, 90) : recCode == -1 ? color.new(color.red, 90) : na)
+
+alertcondition(buySig,  "ZTH BUY",  "ZTH Confluence: BUY")
+alertcondition(sellSig, "ZTH SELL", "ZTH Confluence: SELL")
+
+// ------------------------------------------------------------------ TABLE -----
+posMap(p) => p == "Top Right" ? position.top_right : p == "Top Left" ? position.top_left : p == "Bottom Right" ? position.bottom_right : position.bottom_left
+var table t = table.new(posMap(tblPos), 3, 20, border_width=1, frame_width=1, frame_color=color.new(color.gray, 50))
+
+upC = color.new(color.green, 0)
+dnC = color.new(color.red, 0)
+mut = color.new(color.gray, 0)
+sig(b) => b ? "▲ up" : "▼ dn"
+sigc(b) => b ? color.new(color.green, 0) : color.new(color.red, 0)
+
+f_row(row, label, val, valcol) =>
+    table.cell(t, 0, row, label, text_color=color.new(color.silver,0), text_size=size.small, text_halign=text.align_left, bgcolor=color.new(color.black,80))
+    table.cell(t, 1, row, val,   text_color=valcol,                     text_size=size.small, text_halign=text.align_left, bgcolor=color.new(color.black,80))
+
+var int r = 0
+if barstate.islast
+    r := 0
+    table.cell(t, 0, r, "ZTH CONFLUENCE", text_color=color.white, text_size=size.small, bgcolor=color.new(color.blue,50))
+    table.cell(t, 1, r, "5-min · ET",     text_color=color.new(color.silver,0), text_size=size.small, bgcolor=color.new(color.blue,50))
+    r := r + 1
+    if enST1 or enRsi or enAdx
+        f_row(r, "1H",  sig(st1Up)  + "  RSI " + str.tostring(math.round(rsi60)) + "  ADX " + str.tostring(math.round(adx60)) + "  " + (tu60?"up":td60?"dn":"flat"), sigc(st1Up))
+        r := r + 1
+    if enST15 or enRsi or enAdx
+        f_row(r, "15m", sig(st15Up) + "  RSI " + str.tostring(math.round(rsi15)) + "  ADX " + str.tostring(math.round(adx15)) + "  " + (tu15?"up":td15?"dn":"flat"), sigc(st15Up))
+        r := r + 1
+    if enST5 or enRsi or enAdx
+        f_row(r, "5m",  sig(st5Up)  + "  RSI " + str.tostring(math.round(rsi5)) + "  ADX " + str.tostring(math.round(adx5,1)) + "  " + (tu5?"up":td5?"dn":"flat"), sigc(st5Up))
+        r := r + 1
+    if enTrend
+        f_row(r, "1H trend", tu60?"▲ up":td60?"▼ down":"– flat", tu60?upC:td60?dnC:mut)
+        r := r + 1
+    if enEma
+        f_row(r, "EMA 9/21", (emaBull?"▲ bull":"▼ bear") + " · x " + (emaBars>99?">99":str.tostring(emaBars)) + " bars", sigc(emaBull))
+        r := r + 1
+    if enMacd
+        f_row(r, "MACD", (macdBull?"▲ bull":"▼ bear") + " · hist " + str.tostring(math.round(histLine,2)) + " · x " + (macdBars>99?">99":str.tostring(macdBars)), sigc(macdBull))
+        r := r + 1
+    if enVwap
+        f_row(r, "VWAP", str.tostring(math.round(vwap,2)) + "  price " + (close>=vwap?"above ▲":"below ▼"), close>=vwap?upC:dnC)
+        r := r + 1
+    if enVpoc and not na(vpoc)
+        f_row(r, "VPOC", str.tostring(math.round(vpoc,2)) + " (" + str.tostring(math.round(close-vpoc,2)) + " from px)", mut)
+        r := r + 1
+    if enRvol
+        f_row(r, "RVOL", str.tostring(math.round(rvol,2)) + "×  (" + (rvol>=1.5?"high":rvol<0.7?"thin":"normal") + ")", rvol>=1.5?upC:mut)
+        r := r + 1
+    if enAdx
+        f_row(r, "ADX (5m)", str.tostring(math.round(adx5,1)) + " · " + (adx5>=25?"strong trend":adx5>=20?"trend":"chop/range"), adx5>=20?upC:dnC)
+        r := r + 1
+    if enDelta
+        f_row(r, "Est. delta", str.tostring(math.round(sessDelta)) + " (" + (sessDelta>0?"buyers":"sellers") + ", proxy)", sessDelta>0?upC:dnC)
+        r := r + 1
+    if enFib
+        f_row(r, "Fib", (na(fibRetr)?"n/a":str.tostring(math.round(fibRetr*100)) + "% · " + fibZone), golden?upC:mut)
+        r := r + 1
+    if enPB
+        f_row(r, "Pullback", pbGrade + " (" + str.tostring(pbScore) + "/3)  " + (trendOk?"✓":"✗") + "T " + (zoneHit?"✓":"✗") + "Z " + (trigOk?"✓":"✗") + "Tg", pbScore>=2?upC:pbScore==1?color.new(color.orange,0):dnC)
+        r := r + 1
+    table.cell(t, 0, r, "SIGNAL", text_color=color.white, text_size=size.normal, bgcolor=recCode==1?upC:recCode==-1?dnC:color.new(color.gray,30))
+    table.cell(t, 1, r, recTxt,  text_color=color.white, text_size=size.normal, bgcolor=recCode==1?upC:recCode==-1?dnC:color.new(color.gray,30))
+    r := r + 1
+    f_row(r, "Why", reason, color.new(color.silver,0))

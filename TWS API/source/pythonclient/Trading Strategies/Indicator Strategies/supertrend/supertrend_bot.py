@@ -70,10 +70,10 @@ import math
 import os
 import sys
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from ib_async import IB, Stock, Future, MarketOrder, StopOrder, LimitOrder, StopLimitOrder
+from ib_async import IB, Stock, Future, ContFuture, MarketOrder, StopOrder, LimitOrder, StopLimitOrder
 
 # Shared indicator library at <Trading Strategies>/Indicators, reused by every strategy family.
 # The bot may sit at any depth below <Trading Strategies> (e.g. Indicator Strategies/supertrend/),
@@ -174,6 +174,22 @@ class SupertrendBot:
         self.is_future = self.sec_type in ("FUT", "FUTURE", "CONTFUT")
         self.exchange = str(cfg.get("exchange", "")).strip() or ("CME" if self.is_future else "SMART")
         self.currency = str(cfg.get("currency", "USD")).strip() or "USD"
+        # Optional futures disambiguators. Some roots list MULTIPLE contract sizes under one IBKR
+        # symbol (e.g. COMEX silver symbol "SI" carries both the 5000oz SI and the 1000oz SIL
+        # trading classes). `trading_class` filters the front-month lookup to the intended class
+        # (e.g. "SIL"); `expected_multiplier` is a secondary guard. Leave blank for MNQ/MES/MGC.
+        self.trading_class = str(cfg.get("trading_class", "")).strip()
+        self.expected_multiplier = float(cfg.get("expected_multiplier", 0) or 0)
+        # Front-month contract selection: "active" (default) uses IBKR's ContFuture, i.e. the
+        # LIQUID contract most traders quote/chart (avoids picking an illiquid near/serial expiry
+        # that prices away by carry and fills market orders poorly); "nearest" = nearest calendar
+        # expiry (legacy). roll_buffer_days optionally skips any expiry within N days of expiring.
+        self.contract_selection = str(cfg.get("contract_selection", "active")).lower().strip()
+        self.roll_buffer_days = int(cfg.get("roll_buffer_days", 0) or 0)
+        # Optional explicit expiry PIN (highest priority): "YYYYMM" (e.g. "202612" = Dec 2026) or a
+        # full "YYYYMMDD". Forces that contract month regardless of contract_selection — use to match
+        # a specific month across instruments. Static: update it at each roll (or clear to auto-select).
+        self.expiry = str(cfg.get("expiry", "")).strip()
         self.bar_size = cfg.get("bar_size", "15 mins")
         st = cfg.get("supertrend", {})
         self.atr_period = int(st.get("atr_period", 10))
@@ -630,6 +646,8 @@ class SupertrendBot:
         from the same lookup (saves a reqContractDetails round-trip)."""
         exch = self.exchange or "CME"
         base = Future(symbol=symbol, exchange=exch, currency=self.currency or "USD")
+        if self.trading_class:
+            base.tradingClass = self.trading_class            # e.g. SIL (1000oz) vs SI (5000oz)
         try:
             self.rate.acquire(self.ib)
             cds = list(self.ib.reqContractDetails(base) or [])
@@ -639,6 +657,16 @@ class SupertrendBot:
         if not cds:
             self.log(f"no futures contracts found for {symbol} on {exch} — check symbol/exchange")
             return base
+        # Belt-and-suspenders: if a trading_class / expected_multiplier is set, keep only matching
+        # contracts (reqContractDetails may still return siblings if the filter was loose).
+        if self.trading_class:
+            tc = [cd for cd in cds if str(getattr(cd.contract, "tradingClass", "")).upper() == self.trading_class.upper()]
+            if tc:
+                cds = tc
+        if self.expected_multiplier:
+            mm = [cd for cd in cds if abs(float(getattr(cd.contract, "multiplier", 0) or 0) - self.expected_multiplier) < 1e-6]
+            if mm:
+                cds = mm
         today = now_et().strftime("%Y%m%d")
 
         def expkey(cd):
@@ -646,7 +674,62 @@ class SupertrendBot:
             return e if len(e) >= 8 else (e + "31")[:8]   # month-only -> treat as month-end
 
         live = [cd for cd in cds if expkey(cd) >= today]      # not yet expired
-        chosen = min(live or cds, key=expkey)                 # nearest expiry
+        pool = live or cds
+        chosen = None
+        # Highest priority: an explicit expiry PIN ("YYYYMM" or "YYYYMMDD") forces that contract month.
+        if self.expiry:
+            m = [cd for cd in pool if expkey(cd).startswith(self.expiry)] \
+                or [cd for cd in cds if expkey(cd).startswith(self.expiry)]
+            if m:
+                chosen = min(m, key=expkey)
+                self.log(f"{symbol} pinned to configured expiry {self.expiry}: "
+                         f"{getattr(chosen.contract, 'localSymbol', '') or symbol}")
+            else:
+                self.log(f"{symbol} configured expiry '{self.expiry}' not found among listed "
+                         f"contracts; falling back to contract_selection='{self.contract_selection}'")
+        # Prefer IBKR's ACTIVE continuous front (selected by liquidity) — the contract most traders
+        # quote/chart — over the nearest CALENDAR expiry, which can be an illiquid serial month that
+        # prices ~carry away from the active month and fills market orders poorly. ContFuture ignores
+        # tradingClass, so only use it when no trading_class is configured (SIL keeps nearest-expiry).
+        if chosen is None and self.contract_selection == "active" and not self.trading_class:
+            try:
+                cf = ContFuture(symbol=symbol, exchange=exch, currency=self.currency or "USD")
+                self.rate.acquire(self.ib)
+                self.ib.qualifyContracts(cf)
+                cf_id = int(getattr(cf, "conId", 0) or 0)
+                if cf_id:
+                    chosen = next((cd for cd in pool if cd.contract.conId == cf_id), None) \
+                        or next((cd for cd in cds if cd.contract.conId == cf_id), None)
+                    if chosen is not None:
+                        self.log(f"{symbol} active front via ContFuture: "
+                                 f"{getattr(chosen.contract, 'localSymbol', '') or symbol}")
+            except Exception as e:
+                self.log(f"{symbol} active-front (ContFuture) lookup failed: {e}; using nearest expiry")
+        # 'quarterly': restrict to Mar/Jun/Sep/Dec (H/M/U/Z) months so this instrument rolls on the
+        # SAME quarterly cycle as the equity-index futures (MNQ/MES). Picks the nearest quarterly-
+        # month contract that is listed (honoring roll_buffer_days). NOTE: gold reliably lists only
+        # Jun/Dec among these, so MGC syncs exactly on Jun/Dec and uses the nearest listed quarterly
+        # otherwise (Mar/Sep gold generally aren't listed/liquid).
+        if chosen is None and self.contract_selection == "quarterly":
+            QM = {3, 6, 9, 12}
+            q = [cd for cd in pool if expkey(cd)[4:6].isdigit() and int(expkey(cd)[4:6]) in QM]
+            if self.roll_buffer_days > 0:
+                cutoff = (now_et() + timedelta(days=self.roll_buffer_days)).strftime("%Y%m%d")
+                q = [cd for cd in q if expkey(cd) >= cutoff] or q
+            if q:
+                chosen = min(q, key=expkey)
+                self.log(f"{symbol} quarterly (Mar/Jun/Sep/Dec) contract: "
+                         f"{getattr(chosen.contract, 'localSymbol', '') or symbol}")
+            else:
+                self.log(f"{symbol} no quarterly-month contract listed; falling back to nearest expiry")
+        # roll buffer: skip any expiry within roll_buffer_days of expiring (thin, about to roll)
+        if chosen is None and self.roll_buffer_days > 0:
+            cutoff = (now_et() + timedelta(days=self.roll_buffer_days)).strftime("%Y%m%d")
+            far = [cd for cd in pool if expkey(cd) >= cutoff]
+            if far:
+                chosen = min(far, key=expkey)
+        if chosen is None:
+            chosen = min(pool, key=expkey)                    # fallback: nearest expiry
         c = chosen.contract
         try:
             mt = float(getattr(chosen, "minTick", 0) or 0)

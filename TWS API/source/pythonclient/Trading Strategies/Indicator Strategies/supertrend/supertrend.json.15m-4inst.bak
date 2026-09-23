@@ -1,0 +1,59 @@
+{
+  "_comment": "Supertrend bot — PAPER futures (DU672616): MNQ, MES, MGC, SIL on 15m, long_short, regime-adaptive (stand-aside in chop) + partial_tp (trim half at 2R, runner trails 1R). Runs the native ~24h Globex/COMEX session. Rebuild with supertrend.ps1 after code changes; JSON is read at startup.",
+  "_regime_and_partial_comment": "regime_filter = TREND/CHOP gate (Choppiness+ADX, hysteresis), chop_action stand_aside trades only trends. partial_tp trims tranches at r_multiple*R (R=entry->stop) and trails runner at trail_r*R after first trim >= tighten_after_r. partial_tp needs fixed_stocks>=2.",
+  "_silver_comment": "SIL = 1000oz mini silver: IBKR lists it under root symbol 'SI' with trading_class 'SIL' (the 5000oz full contract is trading_class 'SI'). We set symbols=['SI'] + trading_class 'SIL' + expected_multiplier 1000 so the front-month lookup selects the 1000oz mini. Strategy NAME is DU672616_SIL_15m so logs/reports read as SIL.",
+
+  "host": "127.0.0.1",
+  "port": 4002,
+  "client_id": 40,
+  "accounts": ["DU672616"],
+  "default_account": "DU672616",
+  "market_data_type": 1,
+
+  "strategies": {
+    "stocks": [],
+    "futures": [
+      {
+        "name": "DU672616_MNQ_15m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MNQ"], "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "DU672616_MES_15m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MES"], "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "DU672616_MGC_15m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "COMEX", "currency": "USD",
+        "symbols": ["MGC"], "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "DU672616_SIL_15m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "COMEX", "currency": "USD",
+        "symbols": ["SI"], "trading_class": "SIL", "expected_multiplier": 1000,
+        "bar_size": "15 mins", "market_hours": "24H", "hist_duration": "30 D",
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "regime_filter": { "enabled": true, "adx_period": 14, "chop_period": 14, "adx_trend": 25, "chop_trend": 38, "chop_range": 61, "chop_action": "stand_aside", "trend_momentum": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 2, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+strat,symbol,period,trades,legs,win%,pf,net$,avg_win$,avg_loss$,expectancy$,max_dd$,2R_hits
+Supertrend,MNQ,2025-03-24 -> 2026-09-18,1400,1541,31.6,1.33,130056,1195,-415,93,-30771,141
+Supertrend,MES,2025-03-20 -> 2026-09-18,1396,1475,31.5,1.38,68913,573,-191,49,-10720,79
+Supertrend,MGC,2025-01-09 -> 2026-09-18,1309,1479,32.7,1.61,196043,1204,-362,150,-13453,170
+Supertrend,TOTAL,,,,,,395012,,,,,

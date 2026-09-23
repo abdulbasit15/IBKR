@@ -1,0 +1,5 @@
+strat,symbol,period,trades,legs,win%,pf,net$,avg_win$,avg_loss$,expectancy$,max_dd$,recovery_factor,2R_hits
+Supertrend + DEMA + regime,MNQ,2025-03-24 -> 2026-09-18,693,774,34.2,1.32,73149,1288,-509,106,-16433,4.45,81
+Supertrend + DEMA + regime,MES,2025-03-20 -> 2026-09-18,642,684,36.0,1.35,36307,611,-255,57,-12869,2.82,42
+Supertrend + DEMA + regime,MGC,2025-01-09 -> 2026-09-18,650,736,35.1,1.44,90588,1303,-489,139,-23837,3.80,86
+Supertrend + DEMA + regime,TOTAL,,,,,,200043,,,,,,

@@ -1,0 +1,180 @@
+========================================================================
+  TRADE JOURNAL — QUICK COMMAND REFERENCE
+========================================================================
+
+Run all commands from this folder:
+  C:\...\Trading Strategies\Trade Journal
+
+------------------------------------------------------------------------
+ EVERYDAY: after exporting orders from Tradovate
+------------------------------------------------------------------------
+ 1. Save the export into THIS folder. Any name works:
+      Orders.csv   Orders1.csv   tradovate-orders-....csv
+ 2. CLOSE the Excel workbook (ZTH Trade Tracker - AB.xlsx).
+ 3. Double-click  update.bat
+      ...or run:
+
+      python -m journal all --open
+
+ This auto-detects the NEWEST csv, imports it (duplicates skipped),
+ auto-tags setups, refreshes analysis + AI coaching, and opens the
+ dashboard. The CSV can be a full month or just the last few days —
+ only genuinely new trades are added, in any order.
+
+------------------------------------------------------------------------
+ ALL COMMANDS
+------------------------------------------------------------------------
+ python -m journal all --open
+     Import newest CSV + tag + analyze + AI + build dashboard, then open it.
+
+ python -m journal import --dry-run
+     Preview what a new CSV would add. Writes nothing.
+
+ python -m journal import --csv "Orders1.csv"
+     Import one specific file.
+
+ python -m journal tag
+     Auto-tag setups (Breakout/Pullback/Reversal/...) into the Excel
+     "Trade Setup" column from 5-minute price action.
+
+ python -m journal report --open
+     Rebuild the single-page HTML report + write Analysis/AI sheets to Excel.
+
+ python -m journal app --open
+     Rebuild ONLY the TradeZella-style web app (no new import).
+
+------------------------------------------------------------------------
+ USEFUL FLAGS (add to any command)
+------------------------------------------------------------------------
+ --open           Open the dashboard in your browser when done.
+ --dry-run        Preview an import without writing to Excel.
+ --no-ai          Skip the Claude coaching call (faster).
+ --no-market      Skip Yahoo market-context fetch.
+ --no-news        Skip the economic-calendar fetch.
+ --no-writeback   Don't add analysis sheets to the workbook.
+ --csv "PATH"     Use a specific CSV instead of auto-detecting.
+
+------------------------------------------------------------------------
+ OUTPUT LOCATIONS
+------------------------------------------------------------------------
+ Dashboard (web app):  reports\TradeJournal.html   (double-click to open)
+ HTML report:          reports\report_*.html
+ Excel workbook:       ZTH Trade Tracker - AB.xlsx  (+ Analysis / AI sheets)
+ Auto backups:         backups\   (made before every write)
+
+------------------------------------------------------------------------
+ NOTES
+------------------------------------------------------------------------
+ * CLOSE the Excel workbook before importing, or the write is blocked.
+ * AI coaching uses your Claude Code login (the `claude` CLI) — no API key.
+   If it says "Not logged in", run `claude` once and `/login`.
+ * News tab = ForexFactory current week. Past trade days show major
+   economic-event dots on the Dashboard/Calendar (via Nasdaq).
+ * After a rebuild, if an already-open dashboard looks stale, hard-refresh
+   the browser tab (Ctrl+F5).
+========================================================================
+
+------------------------------------------------------------------------
+ TAGGING TRADES (Setups / Mistakes / Custom Tags)
+------------------------------------------------------------------------
+ TWO ways to add tags:
+
+ A) In Excel (simple):
+      Type into these columns of ZTH Trade Tracker - AB.xlsx, then rebuild:
+        Column Q = Trade Setup     (e.g. Breakout, bear flag)
+        Column V = Mistakes        (e.g. FOMO, moved stop, oversized)
+        Column W = Custom Tags     (e.g. A+ setup, news day)
+      Separate multiple tags with commas. Then: python -m journal app --open
+
+ B) In the browser, saved live to Excel (like TradeZella):
+      Double-click  tag.bat        (or run:  python -m journal serve)
+      - A dashboard opens with a running local server.
+      - Click any trade -> edit Setups / Mistakes / Custom Tags -> "Save tags".
+      - Each save writes straight into your Excel workbook (backup made first).
+      - Keep the Excel file CLOSED while the server runs.
+      - Press Ctrl+C in the window to stop the server when done.
+
+ Tags drive the Playbooks screen and the by-setup breakdowns.
+ `python -m journal tag` still auto-fills BLANK setups from price action;
+ it never overwrites tags you entered yourself.
+
+------------------------------------------------------------------------
+ TAG TAXONOMY (important categories + top tags)
+------------------------------------------------------------------------
+ Based on trade-journal best practice + your ZTH Post-Challenge Reflection.
+ In the tag popup (journal serve) these appear as one-click "Quick add" chips.
+
+ SETUPS (col Q):   A+ setup, Full confluence, Breakout, Breakdown, Pullback,
+                   Reversal, Range fade, Trend continuation
+ MISTAKES (col V): Revenge trade, Oversized, Moved stop, Cut winner early,
+                   Blew stop, No confluence, Early/Late entry, Overtraded,
+                   Out-of-plan, Chased entry
+ EMOTIONS (col W): FOMO, Fear, Greed, Boredom, Frustration, Tilt, Impatient,
+                   Pressure to recover, Confident, Disciplined
+ MARKET (col W):   Trending, Ranging, Choppy, High/Low volatility, News day
+ PROCESS (col W):  Followed plan, A+ process day, Pre-market done, Cooled off,
+                   Distracted, No pre-market, Outside session
+
+ * `python -m journal tag` AUTO-fills Setups + the Mistakes it can detect from
+   your data (Revenge trade, Oversized, Blew stop, Cut winner early, Overtraded).
+ * Add Emotions / Market / Process yourself in the trade popup (journal serve).
+ * Reports > "Tag performance" shows P&L, win% and expectancy per tag.
+ * Claude's coaching now includes a "Tag Insights" section driven by these tags.
+
+========================================================================
+  DOUBLE-CLICK BATCH FILES (no terminal typing needed)
+========================================================================
+ Always CLOSE the Excel workbook before running update/tag bats.
+
+ update.bat          Transfer newest orders CSV + update everything,
+                     WITH AI coaching, then open the dashboard.
+                     (= "run everything with AI"; your main daily file.)
+
+ update-no-ai.bat    Same full update but WITHOUT AI (fast, no login needed).
+                     (= "run everything without AI".)
+
+ tag.bat             Import newest CSV + auto-tag, THEN start the live tagging
+                     server. Click a trade (Trades OR Daily Journal) -> edit
+                     Setups/Mistakes/Custom Tags + paste a TradingView
+                     screenshot -> "Save tags" -> saved to Excel. Ctrl+C stops.
+                     (So tag.bat also pulls in new trades - no need to run
+                      update.bat first just to tag.)
+
+ WHICH TO USE:
+   - Just added a new Orders.csv?            -> update.bat  (or update-no-ai.bat)
+   - Want to sit and tag trades?             -> tag.bat
+   - AI coaching needs `claude` logged in (run `claude` + /login once, in a
+     normal PowerShell window, not inside a Claude Code terminal).
+========================================================================
+
+------------------------------------------------------------------------
+ TRADINGVIEW SCREENSHOTS
+------------------------------------------------------------------------
+ On TradingView, press the camera icon -> "Copy link to the chart image"
+ (a link like https://www.tradingview.com/x/AbC123/).
+
+ Add it to a trade EITHER:
+   - In the trade popup (run tag.bat / `journal serve`): paste into the
+     "TradingView screenshot URL" box -> Save tags. Saved to Excel col U.
+   - Or type the link directly into column U (Trade Screenshot) in Excel.
+
+ The screenshot then shows as an image inside the trade popup (below the
+ 5-min chart), and as a "↗" link in the Trades table.
+
+------------------------------------------------------------------------
+ TAG CATEGORIES (updated) - 7 categories, each its own Excel column
+------------------------------------------------------------------------
+   Rules                 -> col W
+   Market conditions     -> col X
+   Emotion before trade  -> col Y
+   Setup                 -> col Q   (auto-filled by `journal tag`)
+   Process               -> col Z
+   Mistakes              -> col V   (auto-filled by `journal tag`)
+   Learning              -> col AA
+
+ * The "Tag Options" sheet in the workbook lists suggested default values
+   for each category (edit it freely - it's just a reference list).
+ * Add tags in the trade popup (tag.bat / `journal serve`): one box per
+   category with one-click "Quick add" chips. Multiple values = commas.
+ * IMPORTANT: the Excel workbook must be CLOSED while tagging, or saves are
+   blocked. If a save fails, that's almost always the cause.

@@ -1,0 +1,5 @@
+strat,symbol,period,trades,legs,win%,pf,net$,avg_win$,avg_loss$,expectancy$,max_dd$,2R_hits
+EMA 9/21 + DEMA + regime,MNQ,2025-03-24 -> 2026-09-18,1223,1550,33.1,1.02,6669,883,-429,5,-32337,327
+EMA 9/21 + DEMA + regime,MES,2025-03-20 -> 2026-09-18,1191,1531,33.9,1.10,16611,444,-207,14,-12740,340
+EMA 9/21 + DEMA + regime,MGC,2025-01-09 -> 2026-09-18,1158,1487,34.9,1.24,69550,896,-388,60,-23262,329
+EMA 9/21 + DEMA + regime,TOTAL,,,,,,92831,,,,,

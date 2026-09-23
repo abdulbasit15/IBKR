@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supertrend v1 — Strategy Logic</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --good:#006300; --bad:#d03b3b;
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --good:#0ca30c; --bad:#e66767;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:26px;margin:0 0 4px} h2{font-size:19px;margin:44px 0 10px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:22px 0 6px}
+  p,li{color:var(--ink2);font-size:14.5px} .sub{color:var(--muted);font-size:13px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  .callout{border-left:3px solid var(--s2);background:var(--surface);border-radius:0 10px 10px 0;padding:12px 16px;margin:16px 0;font-size:14px}
+  .callout.b{border-left-color:var(--s1)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  .yes{color:var(--good);font-weight:700} .no{color:var(--bad);font-weight:700}
+  .flow{display:flex;flex-direction:column;gap:0;margin:14px 0}
+  .step{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px}
+  .step b{font-size:14px} .step .d{font-size:13px;color:var(--ink2)}
+  .arrow{align-self:center;color:var(--muted);font-size:18px;line-height:1;margin:5px 0}
+  .branch{display:flex;gap:12px;flex-wrap:wrap}
+  .branch .step{flex:1;min-width:180px}
+  .gate{border-left:4px solid var(--s1)}
+  .decision{border-left:4px solid var(--s2)}
+  .open{border-left:4px solid var(--good);background:color-mix(in srgb,var(--good) 8%,var(--surface))}
+  .block{border-left:4px solid var(--muted)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;margin-left:6px}
+  .pill.b{background:color-mix(in srgb,var(--s1) 18%,transparent);color:var(--s1)}
+  .ol{counter-reset:n;list-style:none;padding-left:0}
+  .ol li{counter-increment:n;position:relative;padding:8px 0 8px 40px;border-bottom:1px solid var(--border)}
+  .ol li::before{content:counter(n);position:absolute;left:0;top:8px;width:26px;height:26px;border-radius:50%;
+    background:var(--s1);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--border);padding-top:14px}
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;border-left:4px solid var(--s1)}
+  .box h3{margin-top:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Supertrend <b>v1</b> — Strategy Logic</h1>
+    <p class="sub">How the bot turns bars into orders. Distinguishing feature: <b>partial take-profit</b>.</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<h2>Cadence &amp; indicators</h2>
+<p>
+  Evaluate <strong>once per completed bar</strong> (on the last closed bar, <code>bars[-2]</code>); heartbeat between
+  bars for connection + stop-fill checks. At most <strong>one entry per bar per symbol</strong>. <code>hist_duration</code>
+  auto-covers the largest indicator warmup then clamps to a safe max for the bar size.
+</p>
+<table>
+  <thead><tr><th>Indicator</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>Supertrend ST(10,3)</td><td>trend direction + the trailing stop line</td></tr>
+    <tr><td>DEMA(200)</td><td>core entry gate (close vs DEMA)</td></tr>
+    <tr><td>ADX</td><td>optional strength gate; input to regime classifier</td></tr>
+    <tr><td>Choppiness Index</td><td>regime classifier (TREND vs CHOP)</td></tr>
+    <tr><td>RSI / MACD</td><td>optional momentum gates</td></tr>
+  </tbody>
+</table>
+
+<h2>Regime classification (hysteresis)</h2>
+<p>Each bar the tape is labelled <strong>TREND</strong> or <strong>CHOP</strong> using Choppiness + ADX, and the state is held per symbol so it doesn't flip-flop at the boundary:</p>
+<div class="flow">
+  <div class="step decision"><b>Flip → TREND</b><div class="d">only when <code>CHOP &lt; chop_trend (38)</code> <strong>AND</strong> <code>ADX &gt; adx_trend (25)</code></div></div>
+  <div class="arrow">↕</div>
+  <div class="step decision"><b>Flip → CHOP</b><div class="d">only when <code>CHOP &gt; chop_range (61)</code></div></div>
+  <div class="arrow">↕</div>
+  <div class="step block"><b>Otherwise</b><div class="d">hold the current regime (starts CHOP — conservative)</div></div>
+</div>
+
+<h2>Entry pipeline (per symbol, once per bar)</h2>
+<div class="flow">
+  <div class="step"><b>New bar &amp; inside <code>entry_window</code>?</b><div class="d">If not: manage the existing position only (exits/stops always run).</div></div>
+  <div class="arrow">↓</div>
+  <div class="step"><b>Desired side</b> from <code>direction</code> + Supertrend trend<div class="d">LONG / SHORT / FLAT</div></div>
+  <div class="arrow">↓</div>
+  <div class="step gate"><b>DEMA gate</b><div class="d">long only if <code>close &gt; DEMA</code>; short only if <code>close &lt; DEMA</code></div></div>
+  <div class="arrow">↓</div>
+  <div class="step gate"><b>ADX gate</b> <span class="d">(if enabled: <code>ADX ≥ threshold</code>)</span></div>
+  <div class="arrow">↓</div>
+  <div class="step decision"><b>regime_filter enabled?</b></div>
+  <div class="branch" style="margin-top:8px">
+    <div class="step">
+      <b>TREND regime</b>
+      <div class="d">enter on the Supertrend signal (require RSI+MACD only if <code>trend_momentum</code>) → <span class="yes">OPEN</span></div>
+    </div>
+    <div class="step">
+      <b>CHOP regime — <code>chop_action</code></b>
+      <div class="d">
+        • <code>stand_aside</code> → <span class="no">no entry</span><br>
+        • <code>momentum</code> → require RSI+MACD, then <span class="yes">OPEN</span>
+      </div>
+    </div>
+  </div>
+  <div class="arrow">↓ <span class="d">(regime off → DEMA → ADX → always-on RSI+MACD)</span></div>
+  <div class="step open"><b>OPEN / TOP UP to target</b><div class="d">market entry + attached server-side stop at the Supertrend line, then consolidate to ONE stop for the full qty</div></div>
+</div>
+<div class="callout"><strong>When regime_filter is on it supersedes the always-on RSI/MACD gates</strong> (applies momentum by regime instead). It does <em>not</em> override DEMA. Any filter that can't be evaluated (too little history) <strong>blocks</strong> the entry.</div>
+
+<h2>Partial take-profit — v1's feature</h2>
+<div class="box">
+  <h3>Scale-out on trend trades <span class="pill b">v1</span></h3>
+  <p>R = |entry − initial stop|. Trim a fraction at each R-multiple via <strong>resting LIMIT orders</strong> (visible in TWS), then trail the runner.</p>
+  <ul>
+    <li>Default ladder: <strong>trim 50% at 2R</strong>.</li>
+    <li>After a trim at ≥ <code>tighten_after_r</code>, the runner switches to a <code>trail_r</code>-R trailing stop (locks profit).</li>
+    <li>The protective stop is resized to the reduced qty; TPs are cancelled on any stop/flip/EOD exit and re-armed on reconnect (so a half-qty TP can't orphan into a new position).</li>
+    <li>Needs <code>fixed_stocks ≥ 2</code>. <strong>Backtests positive</strong> in both regimes — see <a href="performance.html">performance</a>.</li>
+  </ul>
+</div>
+
+<h2>Position management (each bar)</h2>
+<ol class="ol">
+  <li><b>Partial-TP first</b> — fire any reached tranche, shrink the position, tighten the runner.</li>
+  <li><b>Signal unchanged</b> → trail the single stop toward the Supertrend line (favourable direction only).</li>
+  <li><b>Signal flipped</b> → cancel the stop and flatten. In <code>long_short</code>, immediately open the opposite side; else go to cash.</li>
+</ol>
+<div class="callout"><strong>Invariant: never an unprotected position, never stacked stops.</strong> Entry attaches a stop atomically (parent <code>transmit=false</code> → stop child <code>transmit=true</code>); every top-up/adoption cancels all stops and places ONE consolidated stop for the full held qty.</div>
+
+<h2>Sizing, sessions &amp; reconnect</h2>
+<table>
+  <thead><tr><th>Area</th><th>Behaviour</th></tr></thead>
+  <tbody>
+    <tr><td>Sizing</td><td><code>fixed_stocks &gt; 0</code> → target position, tops up to it (never stacks duplicates on restart). <code>= 0</code> → <code>floor(capital × risk_pct / (entry − stop))</code>, stop floored at <code>min_stop_pct</code>, capped by <code>max_position_notional</code>. Futures size by multiplier (MNQ $2/pt, MES $5/pt).</td></tr>
+    <tr><td>RTH</td><td>market entries, native STP stop.</td></tr>
+    <tr><td>ETH / 24H</td><td>orders flagged <code>outsideRth</code>; entries use a marketable-limit chase (market orders reject outside RTH); stops STP (futures) or STP-LMT (outside-RTH equities).</td></tr>
+    <tr><td>24H equities overnight</td><td>routes to the OVERNIGHT venue (LIMIT-only, no GTC) → synthetic stop (monitor + marketable-limit exit on breach). Futures never use OVERNIGHT.</td></tr>
+    <tr><td>Startup / reconnect</td><td><code>sync_existing()</code>: read a LIVE position snapshot, adopt per symbol, flatten if the Supertrend already flipped, else top up + consolidate to one stop (and re-arm the TP). Swing stops are GTC + server-side, so positions stay protected while the process is down.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout b"><strong>Reliability:</strong> v1 wraps loop/reconnect waits in <code>_safe_sleep()</code>, which swallows the <code>CancelledError</code>/<code>ConnectionError</code> raised when IB Gateway's daily restart peer-closes the socket — so the strategy thread survives and reconnects on the next tick. (This is one of the two things the <a href="../supertrendv2/logic.html">v2 branch</a> lacks.)</div>
+
+<p class="foot">Prose source: <code>LOGIC.md</code> (this folder). Canonical spec = the module docstring atop <code>supertrend_bot.py</code>.</p>
+</div>
+<script>
+function tog(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';}
+</script>
+</body>
+</html>

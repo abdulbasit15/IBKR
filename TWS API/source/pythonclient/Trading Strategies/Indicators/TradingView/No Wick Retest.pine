@@ -1,0 +1,168 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/ MPL-2.0
+//@version=6
+strategy("No-Wick Retest Strategy", "NWR", overlay = true, max_labels_count = 500, initial_capital = 1000000, default_qty_type = strategy.fixed, default_qty_value = 1, pyramiding = 0, commission_type = strategy.commission.percent, commission_value = 0.01, slippage = 1, process_orders_on_close = false)
+
+// --- Constants ---
+string GROUP_LOGIC = "Retest Logic"
+string GROUP_FILTERS = "Signal Filters"
+string GROUP_RISK = "Risk Management"
+string GROUP_BACKTEST = "Backtest Window"
+string GROUP_STYLE = "Style"
+
+// --- Inputs ---
+int lookbackInput = input.int(20, "Breakout lookback", minval = 2, tooltip = "Number of completed bars used to calculate the resistance or support level.", group = GROUP_LOGIC)
+int maxBarsInput = input.int(10, "Maximum retest bars", minval = 1, tooltip = "Maximum number of bars after a breakout during which a retest can occur.", group = GROUP_LOGIC)
+float toleranceInput = input.float(0.0, "Level tolerance", minval = 0.0, step = 0.01, tooltip = "Extra price distance allowed when checking whether the candle touches the breakout level.", group = GROUP_LOGIC)
+bool requireDirectionInput = input.bool(true, "Require rejection direction", tooltip = "Require a bullish candle for bullish retests and a bearish candle for bearish retests.", group = GROUP_LOGIC)
+
+// Signal filters (each optional, ANDed with the retest signal before an entry is taken)
+bool useTrendFilterInput = input.bool(true, "Trend filter (EMA)", tooltip = "Only take longs when price is above the trend EMA and shorts when below it.", group = GROUP_FILTERS)
+int trendLengthInput = input.int(200, "Trend EMA length", minval = 1, tooltip = "Length of the chart-timeframe EMA used as the trend filter.", group = GROUP_FILTERS)
+bool useHtfFilterInput = input.bool(false, "Higher-timeframe trend filter", tooltip = "Also require the higher-timeframe trend to agree with the trade direction.", group = GROUP_FILTERS)
+string htfTimeframeInput = input.timeframe("D", "HTF timeframe", tooltip = "Higher timeframe used for the trend filter.", group = GROUP_FILTERS)
+int htfMaLengthInput = input.int(50, "HTF EMA length", minval = 1, tooltip = "EMA length evaluated on the higher timeframe.", group = GROUP_FILTERS)
+bool useVolumeFilterInput = input.bool(true, "Volume filter", tooltip = "Require the signal bar's volume to exceed its moving average. Ignored on symbols without volume.", group = GROUP_FILTERS)
+int volumeMaLengthInput = input.int(20, "Volume MA length", minval = 1, tooltip = "Length of the volume moving average used by the volume filter.", group = GROUP_FILTERS)
+float volumeMultInput = input.float(1.0, "Volume multiplier", minval = 0.0, step = 0.1, tooltip = "Signal bar volume must be at least this multiple of its moving average.", group = GROUP_FILTERS)
+bool useMomentumFilterInput = input.bool(false, "Momentum filter (RSI)", tooltip = "Require RSI to confirm the trade direction.", group = GROUP_FILTERS)
+int rsiLengthInput = input.int(14, "RSI length", minval = 1, tooltip = "RSI period used by the momentum filter.", group = GROUP_FILTERS)
+float rsiLongThresholdInput = input.float(50.0, "RSI long threshold", minval = 0.0, maxval = 100.0, tooltip = "Longs require RSI at or above this value.", group = GROUP_FILTERS)
+float rsiShortThresholdInput = input.float(50.0, "RSI short threshold", minval = 0.0, maxval = 100.0, tooltip = "Shorts require RSI at or below this value.", group = GROUP_FILTERS)
+bool useSessionFilterInput = input.bool(false, "Session filter", tooltip = "Only take trades inside the chosen intraday session.", group = GROUP_FILTERS)
+string sessionInput = input.session("0930-1600", "Session", tooltip = "Intraday session window during which trades are allowed.", group = GROUP_FILTERS)
+string sessionTimezoneInput = input.string("America/New_York", "Session timezone", tooltip = "Timezone used to evaluate the session window.", group = GROUP_FILTERS)
+
+int atrLengthInput = input.int(14, "ATR length", minval = 1, tooltip = "ATR period used to calculate the initial stop-loss distance.", group = GROUP_RISK)
+float stopAtrMultiplierInput = input.float(1.5, "Stop ATR multiplier", minval = 0.1, step = 0.1, tooltip = "Initial stop distance as a multiple of ATR at the retest signal.", group = GROUP_RISK)
+float rewardRiskInput = input.float(2.0, "Reward-to-risk target", minval = 0.1, step = 0.1, tooltip = "Profit target multiple relative to the initial stop distance.", group = GROUP_RISK)
+int startDateInput = input.time(timestamp("2020-01-01T00:00:00"), "Start date", tooltip = "Earliest date on which the strategy can open trades.", group = GROUP_BACKTEST)
+int endDateInput = input.time(timestamp("2099-12-31T23:59:00"), "End date", tooltip = "Latest date on which the strategy can open trades.", group = GROUP_BACKTEST)
+bool showBreakoutsInput = input.bool(true, "Show breakout markers", tooltip = "Display the candles that create new breakout levels.", group = GROUP_STYLE)
+color bullishColorInput = input.color(#089981, "Bullish color", tooltip = "Color used for bullish breakout and retest markers.", group = GROUP_STYLE)
+color bearishColorInput = input.color(#f23645, "Bearish color", tooltip = "Color used for bearish breakout and retest markers.", group = GROUP_STYLE)
+
+// --- State ---
+var float activeLevel = na
+var int activeDirection = 0
+var int breakoutBar = na
+var bool retestFound = false
+var float longStopPrice = na
+var float longTargetPrice = na
+var float shortStopPrice = na
+var float shortTargetPrice = na
+
+// --- Breakout logic ---
+float priorHigh = ta.highest(high[1], lookbackInput)
+float priorLow = ta.lowest(low[1], lookbackInput)
+bool bullishBreakout = not na(priorHigh) and close > priorHigh and close[1] <= priorHigh[1]
+bool bearishBreakout = not na(priorLow) and close < priorLow and close[1] >= priorLow[1]
+
+if bullishBreakout
+    activeLevel := priorHigh
+    activeDirection := 1
+    breakoutBar := bar_index
+    retestFound := false
+else if bearishBreakout
+    activeLevel := priorLow
+    activeDirection := -1
+    breakoutBar := bar_index
+    retestFound := false
+
+// --- Retest logic ---
+int barsSinceBreakout = not na(breakoutBar) ? bar_index - breakoutBar : na
+bool activeRetestWindow = not na(activeLevel) and not na(barsSinceBreakout) and barsSinceBreakout > 0 and barsSinceBreakout <= maxBarsInput and not retestFound
+
+// A bullish retest touches support while its lower wick does not pierce below it.
+// A bearish retest is the mirrored condition at resistance.
+bool bullishNoWickRetest = activeRetestWindow and activeDirection == 1 and low >= activeLevel and low <= activeLevel + toleranceInput and close > activeLevel and (not requireDirectionInput or close >= open)
+bool bearishNoWickRetest = activeRetestWindow and activeDirection == -1 and high <= activeLevel and high >= activeLevel - toleranceInput and close < activeLevel and (not requireDirectionInput or close <= open)
+
+bool bullishRetestSignal = bullishNoWickRetest and not bullishNoWickRetest[1]
+bool bearishRetestSignal = bearishNoWickRetest and not bearishNoWickRetest[1]
+
+if bullishRetestSignal or bearishRetestSignal
+    retestFound := true
+
+if not na(barsSinceBreakout) and barsSinceBreakout > maxBarsInput
+    activeLevel := na
+    activeDirection := 0
+    breakoutBar := na
+    retestFound := false
+
+// --- Signal filters ---
+// Trend EMA on the chart timeframe.
+float trendMa = ta.ema(close, trendLengthInput)
+bool trendLongOk = not useTrendFilterInput or (not na(trendMa) and close > trendMa)
+bool trendShortOk = not useTrendFilterInput or (not na(trendMa) and close < trendMa)
+
+// Higher-timeframe trend (lookahead off to avoid look-ahead bias; may repaint on the forming HTF bar).
+[htfClose, htfEma] = request.security(syminfo.tickerid, htfTimeframeInput, [close, ta.ema(close, htfMaLengthInput)], lookahead = barmerge.lookahead_off)
+bool htfLongOk = not useHtfFilterInput or (not na(htfEma) and htfClose > htfEma)
+bool htfShortOk = not useHtfFilterInput or (not na(htfEma) and htfClose < htfEma)
+
+// Volume expansion (ignored when the symbol has no volume data).
+float volumeMa = ta.sma(volume, volumeMaLengthInput)
+bool volumeOk = not useVolumeFilterInput or na(volume) or na(volumeMa) or volume >= volumeMa * volumeMultInput
+
+// RSI momentum confirmation.
+float rsiValue = ta.rsi(close, rsiLengthInput)
+bool momentumLongOk = not useMomentumFilterInput or (not na(rsiValue) and rsiValue >= rsiLongThresholdInput)
+bool momentumShortOk = not useMomentumFilterInput or (not na(rsiValue) and rsiValue <= rsiShortThresholdInput)
+
+// Intraday session window.
+bool inSession = not useSessionFilterInput or not na(time(timeframe.period, sessionInput, sessionTimezoneInput))
+
+bool longFiltersOk = trendLongOk and htfLongOk and volumeOk and momentumLongOk and inSession
+bool shortFiltersOk = trendShortOk and htfShortOk and volumeOk and momentumShortOk and inSession
+
+bool longEntrySignal = bullishRetestSignal and longFiltersOk
+bool shortEntrySignal = bearishRetestSignal and shortFiltersOk
+
+// --- Backtest and risk logic ---
+float atrValue = ta.atr(atrLengthInput)
+bool inDateRange = time >= startDateInput and time <= endDateInput
+bool validRisk = not na(atrValue) and atrValue > 0
+
+if inDateRange and longEntrySignal and validRisk and strategy.position_size <= 0
+    float riskDistance = atrValue * stopAtrMultiplierInput
+    longStopPrice := close - riskDistance
+    longTargetPrice := close + riskDistance * rewardRiskInput
+    strategy.entry("Long", strategy.long, comment = "Bullish NWR")
+
+if inDateRange and shortEntrySignal and validRisk and strategy.position_size >= 0
+    float riskDistance = atrValue * stopAtrMultiplierInput
+    shortStopPrice := close + riskDistance
+    shortTargetPrice := close - riskDistance * rewardRiskInput
+    strategy.entry("Short", strategy.short, comment = "Bearish NWR")
+
+if strategy.position_size > 0 and not na(longStopPrice) and not na(longTargetPrice)
+    strategy.exit("Long Exit", from_entry = "Long", stop = longStopPrice, limit = longTargetPrice)
+
+if strategy.position_size < 0 and not na(shortStopPrice) and not na(shortTargetPrice)
+    strategy.exit("Short Exit", from_entry = "Short", stop = shortStopPrice, limit = shortTargetPrice)
+
+if not inDateRange and strategy.position_size != 0
+    strategy.close_all(comment = "Outside test window")
+
+if strategy.position_size == 0 and not bullishRetestSignal and not bearishRetestSignal
+    longStopPrice := na
+    longTargetPrice := na
+    shortStopPrice := na
+    shortTargetPrice := na
+
+// --- Visual elements ---
+color levelColor = activeDirection == 1 ? bullishColorInput : activeDirection == -1 ? bearishColorInput : na
+plot(activeLevel, "Active breakout level", color = levelColor, linewidth = 2, style = plot.style_linebr)
+
+plot(useTrendFilterInput ? trendMa : na, "Trend EMA", color = color.new(color.orange, 0), linewidth = 1)
+
+plotshape(showBreakoutsInput and bullishBreakout, title = "Bullish breakout", style = shape.triangleup, location = location.belowbar, color = bullishColorInput, text = "BO", textcolor = chart.fg_color, size = size.tiny)
+plotshape(showBreakoutsInput and bearishBreakout, title = "Bearish breakout", style = shape.triangledown, location = location.abovebar, color = bearishColorInput, text = "BO", textcolor = chart.fg_color, size = size.tiny)
+plotshape(bullishRetestSignal and not longFiltersOk, title = "Bullish retest (filtered out)", style = shape.labelup, location = location.belowbar, color = color.new(bullishColorInput, 70), text = "NWR", textcolor = chart.fg_color, size = size.tiny)
+plotshape(bearishRetestSignal and not shortFiltersOk, title = "Bearish retest (filtered out)", style = shape.labeldown, location = location.abovebar, color = color.new(bearishColorInput, 70), text = "NWR", textcolor = chart.fg_color, size = size.tiny)
+plotshape(longEntrySignal, title = "Bullish no-wick retest (entry)", style = shape.labelup, location = location.belowbar, color = bullishColorInput, text = "NWR", textcolor = chart.fg_color, size = size.tiny)
+plotshape(shortEntrySignal, title = "Bearish no-wick retest (entry)", style = shape.labeldown, location = location.abovebar, color = bearishColorInput, text = "NWR", textcolor = chart.fg_color, size = size.tiny)
+
+// --- Alerts ---
+alertcondition(longEntrySignal, "Bullish no-wick retest", "Bullish no-wick retest entry on {{ticker}} {{interval}}")
+alertcondition(shortEntrySignal, "Bearish no-wick retest", "Bearish no-wick retest entry on {{ticker}} {{interval}}")

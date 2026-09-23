@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supertrend v1 — Configuration Reference</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834; --good:#006300;
+    --k:#4a3aa7; --str:#008300; --num:#2a78d6; --cmt:#898781;
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --good:#0ca30c;
+    --k:#9085e9; --str:#5cc98c; --num:#86b6ef; --cmt:#898781;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:19px;margin:44px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:22px 0 4px}
+  p,li{color:var(--ink2);font-size:14.5px}
+  .sub{color:var(--muted);font-size:13px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .callout{border-left:3px solid var(--s2);background:var(--surface);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:16px 0;font-size:14px}
+  .callout.v1{border-left-color:var(--s1)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td:first-child{white-space:nowrap}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  td code{background:transparent;border:none;padding:0;color:var(--k)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;vertical-align:middle}
+  .tag.b{background:color-mix(in srgb,var(--s1) 18%,transparent);color:var(--s1)}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;
+    overflow:auto;font-size:12.5px;line-height:1.5;font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+  .k{color:var(--k)} .s{color:var(--str)} .n{color:var(--num)} .c{color:var(--cmt);font-style:italic}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--border);padding-top:14px}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;margin:16px 0}
+  .toc a{margin-right:16px;font-size:13px;white-space:nowrap;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Supertrend <b>v1</b> — Configuration</h1>
+    <p class="sub">JSON config reference for <code>supertrend.json</code> (the partial-take-profit line).</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<p>
+  The bot is fully config-driven: it reads the JSON next to it (or a path you pass) and needs no code changes to
+  switch symbol, timeframe, ST params, direction, session, filters, or sizing. The distinguishing v1 block is
+  <span class="tag b">partial_tp</span>; for the mean-reversion branch see
+  <a href="../supertrendv2/configuration.html">v2's configuration</a>.
+</p>
+
+<div class="toc">
+  <a href="#conn">Connection / top-level</a><a href="#strat">Per-strategy</a><a href="#filters">Filters</a>
+  <a href="#ptp">Partial-TP</a><a href="#examples">Examples</a>
+</div>
+
+<h2 id="conn">Connection / top-level</h2>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>host</code> / <code>port</code></td><td>TWS/Gateway. Default <code>127.0.0.1</code> / <code>4002</code> (paper gateway; <code>4001</code> = live).</td></tr>
+    <tr><td><code>client_id</code> / <code>client_id_base</code></td><td>Base API client id (default <code>40</code>). Each strategy gets <code>base + index</code> (or its own <code>client_id</code>). Keep clear of the equity bots (30/31/32).</td></tr>
+    <tr><td><code>accounts</code> / <code>default_account</code></td><td>Accounts the config intends to trade. Effective account is resolved against the login's managed accounts at connect (adopts the sole managed account if the configured one isn't managed).</td></tr>
+    <tr><td><code>market_data_type</code></td><td><code>1</code> live · <code>2</code> frozen · <code>3</code> delayed · <code>4</code> delayed-frozen. Paper <code>DU672616</code> has no live sub → use <code>3</code>.</td></tr>
+    <tr><td><code>direction</code></td><td><code>long_only</code> (default) / <code>short_only</code> / <code>long_short</code>.</td></tr>
+    <tr><td><code>intraday_mode</code></td><td><code>false</code> = swing (hold overnight, GTC stop). <code>true</code> = intraday (flatten at <code>eod_flatten_time</code>, DAY stop).</td></tr>
+    <tr><td><code>eod_flatten_time</code></td><td>ET flatten time when intraday (e.g. <code>"15:55"</code>).</td></tr>
+    <tr><td><code>entry_window</code></td><td><code>[start, end]</code> ET — new entries only inside this window (exits/stops always active). Defaults to the session for the chosen <code>market_hours</code>.</td></tr>
+    <tr><td><code>entry_on_flip_only</code></td><td><code>false</code> = enter whenever the regime matches. <code>true</code> = require a fresh Supertrend flip.</td></tr>
+    <tr><td><code>poll_interval_sec</code></td><td>Heartbeat seconds (default 30) for connection/stop checks between bars. Signal is still evaluated once per bar.</td></tr>
+    <tr><td><code>reconnect_backoff_sec</code></td><td>Steady reconnect retry interval (default 60).</td></tr>
+    <tr><td><code>hist_timeout_sec</code></td><td>Per historical-request timeout (default 20).</td></tr>
+    <tr><td><code>data_fail_reconnect_cycles</code></td><td>Consecutive no-data bar-evals before forcing a session reset (default 4) — recovers from a stolen data line.</td></tr>
+    <tr><td><code>max_concurrent_positions</code></td><td>Cap on simultaneous open names (per strategy).</td></tr>
+    <tr><td><code>log_dir</code> / <code>trade_log_csv</code></td><td>Log folder and CSV base name (per-strategy <code>_&lt;name&gt;</code> suffix is added automatically).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="strat">Per-strategy</h2>
+<p class="sub">Inside a <code>strategies</code> array (one thread per entry), or at the top level for single-strategy mode. Common top-level keys are inherited and can be overridden per strategy.</p>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>name</code></td><td>Label for logs / CSV / client-id display.</td></tr>
+    <tr><td><code>account</code></td><td>Account to trade (resolved to the managed account).</td></tr>
+    <tr><td><code>symbols</code></td><td>e.g. <code>["SOXL"]</code>, <code>["GOOG","AMZN"]</code>, or a future root <code>["MNQ"]</code>.</td></tr>
+    <tr><td><code>sec_type</code></td><td><code>STK</code> (default, equities on SMART) or <code>FUT</code> (CME futures; front-month auto-selected, sized by multiplier). With FUT also set <code>exchange</code> (e.g. <code>CME</code>) and <code>currency</code>.</td></tr>
+    <tr><td><code>bar_size</code></td><td>Any IB bar: <code>"1 min"</code>, <code>"5 mins"</code>, <code>"15 mins"</code>, <code>"1 hour"</code>, <code>"1 day"</code>. Sets both the signal timeframe and the evaluation cadence. <strong>Deploy on 15 mins</strong> (best backtest timeframe).</td></tr>
+    <tr><td><code>market_hours</code></td><td><code>RTH</code> (09:30–16:00) / <code>ETH</code> (04:00–20:00) / <code>24H</code> (all hours, incl. OVERNIGHT venue for equities). ETH/24H flag <code>outsideRth</code>.</td></tr>
+    <tr><td><code>supertrend.atr_period</code> / <code>.multiplier</code></td><td>ST config, e.g. <code>10</code> / <code>3.0</code>.</td></tr>
+    <tr><td><code>hist_duration</code></td><td>History per evaluation. Auto-derived + clamped to a safe max for the bar size if omitted (only needs to exceed the DEMA/ATR warmup).</td></tr>
+    <tr><td><code>sizing.fixed_stocks</code></td><td>Target total shares/contracts (bot tops up to it; authoritative over the notional cap). <code>0</code> → % risk. <strong>≥ 2 required for partial-TP.</strong></td></tr>
+    <tr><td><code>sizing.risk_per_trade_pct</code> / <code>.strategy_capital</code></td><td>% risk-at-stop sizing when <code>fixed_stocks = 0</code>.</td></tr>
+    <tr><td><code>sizing.min_stop_pct</code></td><td>Floor on stop distance so a too-tight Supertrend line can't blow up size.</td></tr>
+    <tr><td><code>sizing.max_position_notional</code></td><td>Notional cap (applies to % risk; only warns for <code>fixed_stocks</code>).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="filters">Filter blocks (all optional)</h2>
+<table>
+  <thead><tr><th>Block</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>dema_filter</code></td><td><code>{enabled, period=200}</code> — core entry gate (default ON): long only if <code>close &gt; DEMA</code>, short only if <code>close &lt; DEMA</code>.</td></tr>
+    <tr><td><code>adx_filter</code></td><td><code>{enabled, period=14, threshold=20}</code> — trend-strength gate: enter only when <code>ADX ≥ threshold</code>. Shorthand <code>"adx": 20</code>.</td></tr>
+    <tr><td><code>rsi_filter</code></td><td><code>{enabled, period=14, long_min=50, short_max=50}</code> — momentum must agree: LONG needs <code>RSI &gt; long_min</code>, SHORT needs <code>RSI &lt; short_max</code>. Shorthand <code>"rsi": 50</code>.</td></tr>
+    <tr><td><code>macd_filter</code></td><td><code>{enabled, fast=12, slow=26, signal=9}</code> — LONG needs histogram &gt; 0, SHORT needs &lt; 0.</td></tr>
+    <tr><td><code>regime_filter</code></td><td><code>{enabled, adx_period=14, chop_period=14, adx_trend=25, chop_trend=38, chop_range=61, chop_action, trend_momentum=false}</code>. Classifies TREND vs CHOP (Choppiness + ADX, hysteresis). When enabled it <strong>supersedes</strong> the always-on RSI/MACD gates (not DEMA). <code>chop_action</code> = <code>stand_aside</code> (default) / <code>momentum</code>.</td></tr>
+  </tbody>
+</table>
+<div class="callout"><strong>Filters block when they can't be evaluated.</strong> If there's too little history to compute a filter, the entry is refused (by design). Widen <code>hist_duration</code> if you see "insufficient bars".</div>
+
+<h2 id="ptp">Partial take-profit <span class="tag b">v1 feature</span></h2>
+<p>Scale-out on trend trades. R = |entry − initial stop|. Trims a fraction at each R-multiple via resting LIMIT orders (visible in TWS), then trails the runner. <strong>Needs <code>fixed_stocks ≥ 2</code>.</strong></p>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>partial_tp.enabled</code></td><td>Turn scale-out on.</td></tr>
+    <tr><td><code>partial_tp.tranches</code></td><td>Ladder, e.g. <code>[{"fraction":0.5,"r_multiple":2}]</code> (trim 50% at 2R). Backtest: 50%@2R (or 33/33@2R,3R) is the edge; finer 1R ladders don't help.</td></tr>
+    <tr><td><code>partial_tp.tighten_after_r</code></td><td>After a trim at ≥ this R, switch the runner to a trailing stop that locks profit (default 2.0).</td></tr>
+    <tr><td><code>partial_tp.trail_r</code></td><td>Runner trailing distance in R once tightened (default 1.0).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="examples">Examples</h2>
+
+<h3>Futures, deployed — 15m regime + partial-TP</h3>
+<pre>{
+  <span class="k">"name"</span>: <span class="s">"DU672616_MNQ_15m"</span>, <span class="k">"account"</span>: <span class="s">"DU672616"</span>, <span class="k">"direction"</span>: <span class="s">"long_short"</span>,
+  <span class="k">"sec_type"</span>: <span class="s">"FUT"</span>, <span class="k">"exchange"</span>: <span class="s">"CME"</span>, <span class="k">"currency"</span>: <span class="s">"USD"</span>,
+  <span class="k">"symbols"</span>: [<span class="s">"MNQ"</span>], <span class="k">"bar_size"</span>: <span class="s">"15 mins"</span>, <span class="k">"market_hours"</span>: <span class="s">"24H"</span>, <span class="k">"hist_duration"</span>: <span class="s">"30 D"</span>,
+  <span class="k">"supertrend"</span>: { <span class="k">"atr_period"</span>: <span class="n">10</span>, <span class="k">"multiplier"</span>: <span class="n">3</span> },
+  <span class="k">"dema_filter"</span>: { <span class="k">"enabled"</span>: <span class="n">true</span>, <span class="k">"period"</span>: <span class="n">200</span> },
+  <span class="k">"regime_filter"</span>: { <span class="k">"enabled"</span>: <span class="n">true</span>, <span class="k">"chop_action"</span>: <span class="s">"stand_aside"</span> },
+  <span class="k">"partial_tp"</span>: { <span class="k">"enabled"</span>: <span class="n">true</span>, <span class="k">"trail_r"</span>: <span class="n">1.0</span>, <span class="k">"tighten_after_r"</span>: <span class="n">2.0</span>,
+                  <span class="k">"tranches"</span>: [ { <span class="k">"fraction"</span>: <span class="n">0.5</span>, <span class="k">"r_multiple"</span>: <span class="n">2</span> } ] },
+  <span class="k">"sizing"</span>: { <span class="k">"fixed_stocks"</span>: <span class="n">4</span>, <span class="k">"max_position_notional"</span>: <span class="n">500000</span> }   <span class="c">// ≥2 so half actually trims</span>
+}</pre>
+
+<h3>Multi-account (<code>strategies[]</code> array) — inherits top-level keys</h3>
+<pre><span class="k">"client_id_base"</span>: <span class="n">40</span>,
+<span class="k">"accounts"</span>: [<span class="s">"U20181485"</span>, <span class="s">"DU672616"</span>], <span class="k">"default_account"</span>: <span class="s">"DU672616"</span>,
+<span class="k">"strategies"</span>: [
+  { <span class="k">"name"</span>: <span class="s">"acctA_5m"</span>, <span class="k">"account"</span>: <span class="s">"U20181485"</span>, <span class="k">"symbols"</span>: [<span class="s">"SOXL"</span>],
+    <span class="k">"bar_size"</span>: <span class="s">"5 mins"</span>, <span class="k">"market_hours"</span>: <span class="s">"RTH"</span>,
+    <span class="k">"supertrend"</span>: {<span class="k">"atr_period"</span>: <span class="n">10</span>, <span class="k">"multiplier"</span>: <span class="n">3</span>}, <span class="k">"dema_filter"</span>: {<span class="k">"enabled"</span>: <span class="n">true</span>, <span class="k">"period"</span>: <span class="n">200</span>},
+    <span class="k">"sizing"</span>: {<span class="k">"fixed_stocks"</span>: <span class="n">1940</span>, <span class="k">"min_stop_pct"</span>: <span class="n">0.005</span>} }
+]</pre>
+
+<div class="callout"><strong>Paper vs live gateways don't mix.</strong> One login per gateway; paper (<code>DU…</code>) and live (<code>U…</code>) can't share a port. Multiple live accounts at once require an FA/advisor-master login. Paper-first, always — no live account without LPL pre-clearance.</div>
+
+<p class="foot">Full prose reference: <code>README.md</code> (this folder). Live config file: <code>supertrend.json</code>.</p>
+</div>
+<script>
+function tog(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';}
+</script>
+</body>
+</html>

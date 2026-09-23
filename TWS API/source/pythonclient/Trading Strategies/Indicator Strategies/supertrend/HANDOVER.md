@@ -46,7 +46,7 @@ Supertrend direction; a filter that can't be evaluated blocks the entry (same co
   reduced qty, and after a trim at ≥`tighten_after_r` switches the runner to a `trail_r`-R trailing
   stop (via `trail_mode="oneR"` handled in `_trail`). Wired into `manage_symbol`'s same-side branch
   before the trail; exits/stops/flips still apply to the remainder.
-- Backtest verdict (see `backtest/mnq_mes_tranche_scaleout.txt`): 50%@2R (or 33/33@2,3) beats plain
+- Backtest verdict (see `../../Historical Data/Futures/results/mnq_mes_tranche_scaleout.txt`): 50%@2R (or 33/33@2,3) beats plain
   exit; laddering into smaller/earlier 1R trims does NOT help. Needs `fixed_stocks ≥ 2`.
 
 ### 3. Regime-adaptive gate (`supertrend_bot.py`) — the main new feature
@@ -69,7 +69,7 @@ Supertrend direction; a filter that can't be evaluated blocks the entry (same co
 - `supertrend - futures.json` — documented `rsi_filter` / `macd_filter` / `regime_filter` templates
   (all disabled by default) globally and per-strategy.
 
-## Key findings from backtests (reports in `backtest/`, scripts in `backtest/scripts/`)
+## Key findings from backtests (reports in `../../Historical Data/Futures/results/`, scripts in `../../Historical Data/Futures/scripts/`)
 1. **Raw Supertrend alone is marginal** — whipsaws badly in chop (win rate ~30%, PF often <1.1). Matches
    the online literature.
 2. **RSI>50/<50 momentum filter helps** win rate (+6–10pts) and drawdown, esp. 30m/1h. MACD similar but
@@ -90,11 +90,11 @@ Supertrend direction; a filter that can't be evaluated blocks the entry (same co
   ADX seed returns all-None → 0 trades with the ADX/regime filter; inflated P/L.)
 - For multi-regime history use **continuous futures** (`ContFuture`, whatToShow="TRADES", useRTH=False).
   IBKR forbids `endDateTime` on continuous futures → request ONE big duration (no end date), don't chunk.
-  Downloaded data lives in the Trade root: `MNQ_cont_{15mins,30mins,1hour}.csv`, `MES_cont_*.csv`
+  Downloaded data lives in `../../Historical Data/data/`: `MNQ_cont_{15mins,30mins,1hour}.csv`, `MES_cont_*.csv`
   (15m≈1y, 30m≈2y, 1h≈3y). Single-contract sets `MNQ_*_bt.csv` / `MES_*_bt.csv` also there.
 
 ## How to re-run / extend
-- Scripts persisted to `backtest/scripts/` (they were built in a session scratchpad). Run with
+- Scripts persisted to `../../Historical Data/Futures/scripts/` (they were built in a session scratchpad). Run with
   `py -3.12 <script>.py`. `backtest_compare/three/two.py` import `backtest_regime.py` (same folder).
   `backtest_regime.py` holds the canonical indicators + regime classifier used by the comparisons.
 - Data downloaders: `download_contfut.py` (continuous, preferred), `download_mnq.py`/`download_mes.py`

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supertrend v1 — Performance & Backtest</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s7:#4a3aa7;
+    --good:#006300; --bad:#d03b3b;
+    --seq1:#b7d3f6; --seq2:#5598e7; --seq3:#1c5cab;
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s7:#9085e9;
+    --good:#0ca30c; --bad:#e66767;
+    --seq1:#256abf; --seq2:#3987e5; --seq3:#86b6ef;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:19px;margin:44px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:24px 0 4px;color:var(--ink2)}
+  p,li{color:var(--ink2);font-size:14.5px}
+  .sub{color:var(--muted);font-size:13px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:18px 18px 10px;margin:16px 0}
+  .callout{border-left:3px solid var(--s2);background:var(--surface);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:16px 0;font-size:14px}
+  .callout.warn{border-left-color:var(--s4)}
+  .callout.good{border-left-color:var(--good)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:2px 2px 10px;font-size:13px;color:var(--ink2)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);
+    font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left}
+  thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .best{font-weight:700}
+  .chart-title{font-size:14px;font-weight:600;margin:2px 2px 2px}
+  .chart-note{font-size:12px;color:var(--muted);margin:0 2px 8px}
+  svg{width:100%;height:auto;display:block;overflow:visible}
+  .bar{transition:opacity .12s} .bar:hover{opacity:.82;cursor:default}
+  .vlab{font-size:11px;fill:var(--ink2);font-variant-numeric:tabular-nums}
+  .axlab{font-size:11px;fill:var(--muted);font-variant-numeric:tabular-nums}
+  .glab{font-size:12px;fill:var(--ink2)}
+  #tip{position:fixed;pointer-events:none;opacity:0;transform:translate(-50%,-120%);
+    background:var(--ink);color:var(--surface);padding:6px 9px;border-radius:7px;font-size:12px;
+    white-space:nowrap;z-index:10;font-variant-numeric:tabular-nums;transition:opacity .1s}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--border);padding-top:14px}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Supertrend <b>v1</b> — Performance</h1>
+    <p class="sub">Backtest for the production line: ST + DEMA + regime + <b>partial-take-profit</b>. Source: <code>Historical&nbsp;Data/Futures/results/</code>.</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<div class="callout warn">
+  <strong>Read this first.</strong> All figures are <strong>in-sample, fixed-contract, and frictionless</strong>
+  (no commissions/slippage). They compare <em>configurations on the same history</em> — directional evidence,
+  <strong>not</strong> a live-P/L forecast. Paper-validate and obtain LPL pre-clearance before any live use.
+</div>
+
+<h2>The headline</h2>
+<p>
+  <strong>v1 is the production line.</strong> Its stack improves at every stage in backtest and it carries the
+  <code>_safe_sleep()</code> Gateway-restart reliability fix. The regime gate is the biggest single win and roughly
+  <strong>halves max drawdown</strong>; partial-take-profit adds a further edge on top. (The sibling
+  <a href="../supertrendv2/performance.html">v2 branch</a> swaps partial-TP for a mean-reversion fade that
+  backtests flat-to-negative at its defaults.)
+</p>
+
+<div class="card">
+  <div class="chart-title">Strategy evolution — deployed 15-min futures, Net P/L (MNQ+MES, Q=4)</div>
+  <div class="chart-note">Source: mnq_mes_real_backtest_evolution.txt · full history through 2026-07-20 · long_short</div>
+  <div id="c1"></div>
+</div>
+<p>
+  The regime gate adds <span class="pos">+$19,016</span> over raw Supertrend and roughly halves drawdown;
+  partial-take-profit adds a further <span class="pos">+$7,569</span>. It is <em>defence in chop, offence in
+  trends</em> — it avoids chop rather than profiting from it.
+</p>
+
+<div class="card">
+  <div class="chart-title">Partial-TP vs plain exit — Net P/L across all 6 series (Q=10)</div>
+  <div class="chart-note">Source: mnq_mes_partial_tp.txt · trim ½ @2R, runner trails 1R · Nov-2025 → Jul-2026</div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--s2)"></i>Plain exit (baseline)</span>
+    <span><i class="sw" style="background:var(--s1)"></i>Partial-TP (v1 feature)</span>
+  </div>
+  <div id="c2"></div>
+</div>
+<p>
+  Partial-TP helped in <strong>both</strong> regimes and roughly <strong>doubled</strong> full-window P/L at Q=10,
+  with the biggest relief in the losing trend window (banking half at 2R rescues give-backs). Tranche tests show
+  <strong>50%@2R + 1R runner</strong> is the edge; finer/earlier 1R ladders do not help. Requires <code>fixed_stocks ≥ 2</code>.
+</p>
+
+<h2>Per-series detail — strategy evolution</h2>
+<p class="sub">Net P/L $ / Profit Factor / Max Drawdown $. long_short, Q=4. <span class="best">Bold</span> = best stage per row.</p>
+<table>
+  <thead><tr><th>Series</th><th>PLAIN_ST</th><th>+DEMA+regime</th><th>+partial-TP (deployed)</th></tr></thead>
+  <tbody>
+    <tr><td>MNQ 15m</td><td>+30,660 · 1.09 · −47.2k</td><td>+45,536 · 1.32 · −11.2k</td><td class="best">+49,953 · 1.35 · −9.8k</td></tr>
+    <tr><td>MNQ 30m</td><td class="best">+14,628 · 1.03 · −37.5k</td><td>−442 · 1.00 · −35.3k</td><td>−6,940 · 0.97 · −40.0k</td></tr>
+    <tr><td>MNQ 1h</td><td>+39,658 · 1.10 · −26.6k</td><td>+56,509 · 1.27 · −19.0k</td><td class="best">+65,035 · 1.29 · −18.0k</td></tr>
+    <tr><td>MES 15m</td><td>+4,781 · 1.03 · −21.8k</td><td>+8,920 · 1.12 · −12.5k</td><td class="best">+12,072 · 1.17 · −11.1k</td></tr>
+    <tr><td>MES 30m</td><td>−23,249 · 0.91 · −33.8k</td><td>−14,101 · 0.89 · −25.1k</td><td class="best">−14,046 · 0.89 · −24.7k</td></tr>
+    <tr><td>MES 1h</td><td>+9,288 · 1.05 · −16.0k</td><td>+11,761 · 1.11 · −16.8k</td><td class="best">+14,431 · 1.12 · −18.1k</td></tr>
+  </tbody>
+</table>
+<p><strong>Timeframe matters:</strong> gains concentrate on <strong>15m</strong> and <strong>1h</strong>; <strong>30m is the weak timeframe</strong> in every series — hence the deployed strategies run on 15m.</p>
+
+<h2>Why each filter is (or isn't) on</h2>
+<ul>
+  <li><strong>Raw Supertrend alone is marginal</strong> — whipsaws in chop (win rate ~30%, PF often &lt; 1.1).</li>
+  <li><strong>RSI &gt; 50 / &lt; 50 momentum</strong> helps win rate (+6–10 pts) and drawdown, mostly on 30m/1h; MACD similar but mixed.</li>
+  <li><strong>DEMA / ADX gates mostly delay entries</strong> (redundant with Supertrend); DEMA on top of the regime gate is ≈ a wash — kept on for a small drawdown benefit.</li>
+  <li><strong>Regime gate (stand-aside in chop) is the biggest win</strong> and supersedes the always-on RSI/MACD gates when enabled (does not override DEMA).</li>
+</ul>
+
+<h2>Verdict</h2>
+<div class="callout good">
+  <strong>Deploy on 15m</strong> (DEMA200 + regime stand-aside + partial-TP). Every stage backtests positive on the
+  deployed timeframe, and it has the <code>_safe_sleep()</code> Gateway-restart fix. Avoid 30m (the weak timeframe
+  in every series above).
+</div>
+
+<p class="foot">
+  Contract P/L: MNQ = $2/point, MES = $5/point. Data = continuous back-adjusted futures (TRADES, useRTH=False,
+  volume&gt;0 filtered). CHOPPY = Nov-2025→Mar-2026, TREND = Apr→Jul-2026, BOTH = full window. Markdown source:
+  <code>PERFORMANCE.md</code> (this folder).
+</p>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), cs=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function tog(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';drawAll();}
+function money(n){return (n<0?'−$':'$')+Math.abs(Math.round(n)).toLocaleString();}
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px';tip.style.opacity=1;}
+function hideTip(){tip.style.opacity=0;}
+
+function groupedBar(mountId,{groups,series,colors,values,fmt}){
+  const W=760,H=360,m={t:22,r:14,b:52,l:70},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const flat=values.flat(); let max=Math.max(0,...flat),min=Math.min(0,...flat);
+  const pad=(max-min)*0.12||1; max+=pad; if(min<0)min-=pad; min=Math.min(min,0);
+  const y=v=>m.t+ih*(max-v)/(max-min);
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('role','img');
+  const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const ticks=5;
+  for(let i=0;i<=ticks;i++){const v=min+(max-min)*i/ticks,yy=y(v);
+    svg.appendChild(mk('line',{x1:m.l,x2:W-m.r,y1:yy,y2:yy,stroke:v===0?cs('--axis'):cs('--grid'),'stroke-width':v===0?1.5:1}));
+    const tl=mk('text',{x:m.l-8,y:yy+3,'text-anchor':'end',class:'axlab'});tl.textContent=fmt(v);svg.appendChild(tl);}
+  const gw=iw/groups.length, bw=Math.min(46,(gw*0.62)/series.length), gap=6;
+  const blockW=series.length*bw+(series.length-1)*gap;
+  groups.forEach((g,gi)=>{
+    const gx=m.l+gw*gi+gw/2;
+    series.forEach((s,si)=>{
+      const v=values[gi][si], x=gx-blockW/2+si*(bw+gap), yv=y(v), y0=y(0);
+      const top=Math.min(yv,y0), h=Math.max(2,Math.abs(yv-y0));
+      const r=mk('rect',{x,y:top,width:bw,height:h,rx:3,fill:colors[si],class:'bar'});
+      r.addEventListener('mousemove',e=>showTip(e,`<b>${g}</b> · ${s}<br>${fmt(v)}`));
+      r.addEventListener('mouseleave',hideTip);svg.appendChild(r);
+      const lab=mk('text',{x:x+bw/2,y:v>=0?yv-5:yv+13,'text-anchor':'middle',class:'vlab'});
+      lab.textContent=fmt(v);svg.appendChild(lab);
+    });
+    const gl=mk('text',{x:gx,y:H-m.b+22,'text-anchor':'middle',class:'glab'});gl.textContent=g;svg.appendChild(gl);
+  });
+  const mount=document.getElementById(mountId);mount.innerHTML='';mount.appendChild(svg);
+}
+
+function drawAll(){
+  groupedBar('c1',{groups:['PLAIN_ST','+DEMA+regime','+partial-TP'],series:['Net P/L'],
+    colors:[cs('--seq1')],values:[[35440],[54456],[62025]],fmt:money});
+  const seq=[cs('--seq1'),cs('--seq2'),cs('--seq3')];
+  document.querySelectorAll('#c1 .bar').forEach((b,i)=>b.setAttribute('fill',seq[i]));
+  groupedBar('c2',{groups:['CHOPPY','TREND','BOTH (full)'],series:['Plain exit','Partial-TP'],
+    colors:[cs('--s2'),cs('--s1')],
+    values:[[76651,91013],[-38073,-9799],[44191,85400]],fmt:money});
+}
+drawAll();
+</script>
+</body>
+</html>

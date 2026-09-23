@@ -25,7 +25,7 @@ from supertrend_bot import SupertrendBot, LONG, SHORT, FLAT       # noqa: E402
 from Indicators.trend.supertrend import supertrend               # noqa: E402
 from Indicators.dema import dema                                 # noqa: E402
 
-DATA = r"C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Tools\Market Data\data"
+DATA = os.path.normpath(os.path.join(_IS, "..", "..", "Tools", "Market Data", "data"))
 AVG_CAP = 363_121.0   # user's time-weighted avg deployed capital in June (derived earlier)
 
 Bar = namedtuple("Bar", "open high low close date")

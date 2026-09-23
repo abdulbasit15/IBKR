@@ -1,0 +1,99 @@
+// This Pine Script™ is subject to the terms of the Mozilla Public License 2.0
+// © AB
+//
+// EMA Diverging
+// ───────────────────────────────────────────────────────────────────────────
+// EMA 9 / 21 crossover signal that stays ON while the two EMAs keep diverging.
+//
+//   BUY   : fast EMA crosses ABOVE slow EMA.
+//   SELL  : fast EMA crosses BELOW slow EMA.
+//   HOLD  : while a position is on, the signal stays live as long as the gap
+//           between the EMAs |fast - slow| keeps INCREASING or stays FLAT
+//           (within a small tick tolerance) -> momentum still expanding.
+//   CLOSE : the moment the gap starts DECREASING (EMAs converging) -> close.
+//
+//   After a CLOSE the indicator is flat and only re-arms on the next crossover
+//   (no auto re-entry if the gap happens to expand again without a fresh cross).
+// ───────────────────────────────────────────────────────────────────────────
+
+//@version=6
+indicator(title="EMA Diverging", shorttitle="EMA Div", overlay=true, max_labels_count=500)
+
+// ═══════════════════════════════════════════════════════════════
+// INPUTS
+// ═══════════════════════════════════════════════════════════════
+grpMA   = "EMAs"
+fastLen = input.int(9,  "Fast EMA length", minval=1, group=grpMA)
+slowLen = input.int(21, "Slow EMA length", minval=1, group=grpMA)
+src     = input.source(close, "Source", group=grpMA)
+
+grpSig  = "Signal"
+tolTicks = input.int(1, "Flat tolerance (ticks)", minval=0, group=grpSig, tooltip="The EMA gap must shrink by more than this many ticks before a CLOSE is triggered. Filters tiny wiggles so the signal isn't closed on noise. 0 = any decrease closes.")
+
+grpViz  = "Display"
+showSig = input.bool(true, "Show BUY / SELL markers",  group=grpViz)
+showCls = input.bool(true, "Show CLOSE markers",       group=grpViz)
+showBg  = input.bool(true, "Shade background while in a position", group=grpViz)
+
+// ═══════════════════════════════════════════════════════════════
+// CALCULATIONS
+// ═══════════════════════════════════════════════════════════════
+fast = ta.ema(src, fastLen)
+slow = ta.ema(src, slowLen)
+
+width = math.abs(fast - slow)          // divergence: gap between the EMAs
+tol   = tolTicks * syminfo.mintick     // flat tolerance in price terms
+
+crossUp = ta.crossover(fast, slow)
+crossDn = ta.crossunder(fast, slow)
+
+// Gap is widening or holding flat (within tolerance) vs the previous bar.
+nonDecreasing = width >= (nz(width[1]) - tol)
+// Gap is genuinely shrinking beyond tolerance -> EMAs converging.
+decreasing    = width <  (nz(width[1]) - tol)
+
+// ═══════════════════════════════════════════════════════════════
+// STATE MACHINE  (pos: 0 = flat, 1 = long, -1 = short)
+// ═══════════════════════════════════════════════════════════════
+var int pos = 0
+
+buySignal   = false
+sellSignal  = false
+closeSignal = false
+
+if crossUp
+    // Fresh bullish cross re-arms long, overriding any prior state.
+    buySignal := true
+    pos       := 1
+else if crossDn
+    // Fresh bearish cross re-arms short.
+    sellSignal := true
+    pos        := -1
+else if pos != 0 and decreasing
+    // In a position and the gap is contracting -> close and go flat.
+    closeSignal := true
+    pos         := 0
+
+inLong  = pos == 1
+inShort = pos == -1
+
+// ═══════════════════════════════════════════════════════════════
+// PLOTS
+// ═══════════════════════════════════════════════════════════════
+emaColor = inLong ? color.new(color.green, 0) : inShort ? color.new(color.red, 0) : color.new(color.gray, 0)
+
+plot(fast, "Fast EMA", color=emaColor, linewidth=2)
+plot(slow, "Slow EMA", color=color.new(color.orange, 0), linewidth=2)
+
+bgcolor(showBg and inLong  ? color.new(color.green, 90) : showBg and inShort ? color.new(color.red, 90) : na, title="Position tint")
+
+plotshape(showSig and buySignal,   title="BUY",   style=shape.triangleup,   location=location.belowbar, color=color.new(color.green, 0), size=size.small, text="BUY")
+plotshape(showSig and sellSignal,  title="SELL",  style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),   size=size.small, text="SELL")
+plotshape(showCls and closeSignal, title="CLOSE", style=shape.xcross,       location=location.top,      color=color.new(color.blue, 0),  size=size.tiny,  text="CLOSE")
+
+// ═══════════════════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════════════════
+alertcondition(buySignal,   title="EMA Diverging: BUY",   message="EMA Diverging BUY on {{ticker}} ({{interval}}) @ {{close}}")
+alertcondition(sellSignal,  title="EMA Diverging: SELL",  message="EMA Diverging SELL on {{ticker}} ({{interval}}) @ {{close}}")
+alertcondition(closeSignal, title="EMA Diverging: CLOSE", message="EMA Diverging CLOSE (EMAs converging) on {{ticker}} ({{interval}}) @ {{close}}")

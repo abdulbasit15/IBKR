@@ -1,0 +1,109 @@
+//@version=5
+// =====================================================================================
+// Supertrend + DEMA + Regime — STRATEGY (backtestable in TradingView)
+// Same logic as the indicator, plus order execution to mirror the live bot's scale-out:
+//   * long_short, regime-gated entries (stand aside in chop), Supertrend-flip exit/reverse
+//   * protective stop = Supertrend line (trailed; floored 0.5% => R)
+//   * take-profit: trim 50% at 2R, then trail the runner at 1R
+// Approximation notes: signals act on the confirmed bar; the 2R take-profit is a limit and the
+// stop fills at its level (TradingView backtest fill model), so results are an idealization of
+// the live bot (no slippage/commission unless you add them in Properties).
+// =====================================================================================
+strategy("Supertrend + DEMA + Regime [strategy]", overlay=true, pyramiding=0,
+         default_qty_type=strategy.fixed, default_qty_value=4, calc_on_every_tick=false,
+         initial_capital=100000, commission_type=strategy.commission.cash_per_contract, commission_value=0.0)
+
+atrLen   = input.int(10,   "Supertrend ATR length", group="Supertrend")
+stMult   = input.float(3.0,"Supertrend multiplier", step=0.1, group="Supertrend")
+demaLen  = input.int(200,  "DEMA length", group="Filters")
+useDema  = input.bool(true,"Use DEMA filter", group="Filters")
+chopLen  = input.int(14,   "Choppiness length", group="Regime")
+adxLen   = input.int(14,   "ADX length", group="Regime")
+adxTrend = input.float(25, "ADX trend threshold (>)", group="Regime")
+chopTr   = input.float(38, "Choppiness TREND (<)", group="Regime")
+chopRng  = input.float(61, "Choppiness CHOP (>)", group="Regime")
+useReg   = input.bool(true,"Use regime gate (stand aside in chop)", group="Regime")
+minStop  = input.float(0.005,"Min stop % (floor for R)", step=0.001, group="Risk")
+tpR      = input.float(2.0,"Take-profit (R multiple)", step=0.5, group="Risk")
+trailR   = input.float(1.0,"Runner trail (R multiple)", step=0.5, group="Risk")
+qtyC     = input.int(4,    "Contracts", group="Risk")
+
+// ---- Supertrend (manual, mirrors the bot) ----
+atr  = ta.rma(ta.tr(true), atrLen)
+hl2v = (high + low) / 2.0
+upB  = hl2v - stMult * atr
+dnB  = hl2v + stMult * atr
+var float up = na
+var float dn = na
+var int   trnd = 1
+up   := na(up[1])  ? upB : ((upB > up[1] or close[1] < up[1]) ? upB : up[1])
+dn   := na(dn[1])  ? dnB : ((dnB < dn[1] or close[1] > dn[1]) ? dnB : dn[1])
+trnd := na(trnd[1]) ? 1  : (trnd[1] == -1 and close > dn ? 1 : (trnd[1] == 1 and close < up ? -1 : trnd[1]))
+stLine = trnd == 1 ? up : dn
+bull = trnd == 1
+
+// ---- DEMA ----
+e1   = ta.ema(close, demaLen)
+dema = 2.0 * e1 - ta.ema(e1, demaLen)
+
+// ---- Choppiness + ADX + regime ----
+chopSum = math.sum(ta.tr(true), chopLen)
+chopHiLo = ta.highest(high, chopLen) - ta.lowest(low, chopLen)
+chop = chopHiLo > 0 and chopSum > 0 ? 100.0 * math.log10(chopSum / chopHiLo) / math.log10(chopLen) : na
+[diP, diM, adxv] = ta.dmi(adxLen, adxLen)
+var int reg = 0
+reg := (not na(chop) and not na(adxv) and chop < chopTr and adxv > adxTrend) ? 1 : ((not na(chop) and chop > chopRng) ? 0 : nz(reg[1], 0))
+inTrend = not useReg or reg == 1
+
+demaLongOk  = not useDema or close > dema
+demaShortOk = not useDema or close < dema
+canLong  = bull and demaLongOk and inTrend
+canShort = (not bull) and demaShortOk and inTrend
+
+// ---- entries (regime-gated; strategy.entry auto-reverses an opposite position) ----
+if canLong and strategy.position_size <= 0
+    strategy.entry("Long", strategy.long, qty=qtyC)
+if canShort and strategy.position_size >= 0
+    strategy.entry("Short", strategy.short, qty=qtyC)
+// Supertrend flipped against us but regime blocks re-entry -> just close (stand aside)
+if strategy.position_size > 0 and not bull and not canShort
+    strategy.close("Long", comment="flip")
+if strategy.position_size < 0 and bull and not canLong
+    strategy.close("Short", comment="flip")
+
+// ---- risk levels: set on a fresh entry, then trail; trim 50% at 2R, runner trails 1R ----
+var float eP = na
+var float sP = na
+var float R  = na
+var float tP = na
+var bool  trimmed = false
+
+newLong  = strategy.position_size > 0 and strategy.position_size[1] <= 0
+newShort = strategy.position_size < 0 and strategy.position_size[1] >= 0
+if newLong
+    eP := strategy.position_avg_price
+    sP := math.min(stLine, eP * (1.0 - minStop)); R := eP - sP; tP := eP + tpR * R; trimmed := false
+if newShort
+    eP := strategy.position_avg_price
+    sP := math.max(stLine, eP * (1.0 + minStop)); R := sP - eP; tP := eP - tpR * R; trimmed := false
+
+if strategy.position_size > 0
+    sP := trimmed ? math.max(sP, close - trailR * R) : math.max(sP, math.min(stLine, close * (1.0 - 0.0001)))
+    strategy.exit("tpL", from_entry="Long", qty_percent=50, limit=tP)   // trim half at 2R
+    strategy.exit("slL", from_entry="Long", stop=sP)                    // protective stop on remainder
+    if high >= tP
+        trimmed := true
+if strategy.position_size < 0
+    sP := trimmed ? math.min(sP, close + trailR * R) : math.min(sP, math.max(stLine, close * (1.0 + 0.0001)))
+    strategy.exit("tpS", from_entry="Short", qty_percent=50, limit=tP)
+    strategy.exit("slS", from_entry="Short", stop=sP)
+    if low <= tP
+        trimmed := true
+if strategy.position_size == 0
+    trimmed := false
+
+// ---- plots ----
+plot(bull ? stLine : na, "ST up", color=color.new(color.green,0), style=plot.style_linebr, linewidth=2)
+plot(not bull ? stLine : na, "ST dn", color=color.new(color.red,0), style=plot.style_linebr, linewidth=2)
+plot(dema, "DEMA200", color=color.new(color.orange,0))
+bgcolor(useReg ? (reg == 1 ? color.new(color.green, 90) : color.new(color.gray, 92)) : na)
