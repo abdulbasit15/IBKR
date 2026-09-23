@@ -72,19 +72,19 @@ python -m journal report --open
 
 ### Useful flags
 
-| Flag | Effect |
-|------|--------|
-| `--open` | Open the HTML dashboard in your browser when done |
-| `--dry-run` | Preview an import without writing to Excel |
-| `--no-ai` | Skip the Claude call (no API cost) |
-| `--no-market` | Skip Yahoo market-context fetch |
-| `--no-news` | Skip the economic-calendar fetch |
+| Flag             | Effect                                                     |
+| ---------------- | ---------------------------------------------------------- |
+| `--open`         | Open the HTML dashboard in your browser when done          |
+| `--dry-run`      | Preview an import without writing to Excel                 |
+| `--no-ai`        | Skip the Claude call (no API cost)                         |
+| `--no-market`    | Skip Yahoo market-context fetch                            |
+| `--no-news`      | Skip the economic-calendar fetch                           |
 | `--no-writeback` | Don't add analysis sheets to the workbook (dashboard only) |
-| `--csv PATH` | Use a specific Tradovate CSV |
+| `--csv PATH`     | Use a specific Tradovate CSV                               |
 
 ## How trades are reconstructed
 
-Tradovate exports one row per order. The importer keeps only *filled* orders,
+Tradovate exports one row per order. The importer keeps only _filled_ orders,
 walks them chronologically per symbol tracking net position, and emits a
 round-trip trade every time the position returns to flat. TP/SL prices are
 recovered from the protective bracket orders in the trade's time window. This was
@@ -93,7 +93,7 @@ stop, and target).
 
 ## Notes & limitations
 
-- **News history**: the free ForexFactory feed only covers the *current week*, so
+- **News history**: the free ForexFactory feed only covers the _current week_, so
   trades before this week won't have calendar events (the dashboard says so).
 - **Market data** uses Yahoo's continuous-future charts (`ES=F`, `NQ=F`, etc.);
   micros map to the same underlying.
@@ -160,7 +160,7 @@ feed, styled like ForexFactory itself:
 
 **Limitation:** the free feed only covers the **current week**, so it's for
 planning ahead (e.g. "Core PCE Wed 8:30 — size down / avoid"), not back-testing
-past trade days. Per-day *market* context (day direction, gap, range vs. average)
+past trade days. Per-day _market_ context (day direction, gap, range vs. average)
 for your historical trades is still computed from Yahoo and used in the AI
 coaching and setup auto-tagging.
 
