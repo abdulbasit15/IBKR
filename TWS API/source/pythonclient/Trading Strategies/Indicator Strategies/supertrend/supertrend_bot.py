@@ -1567,6 +1567,11 @@ class SupertrendBot:
             return
         ref = self._ref(symbol)
         held = abs(self.held_qty(symbol))               # shares already held (live snapshot)
+        if held == 0:
+            # reqPositions can lag right after a fill/close; a stale 0 here is what let the bot
+            # re-enter on top of a position it already held (4->6->12->24). Re-read after a settle.
+            self.ib.sleep(1)
+            held = abs(self.held_qty(symbol))
         oc = self._order_contract(contract)             # OVERNIGHT venue during overnight (24H)
         top_up = target - held
         if top_up <= 0:
@@ -1594,9 +1599,21 @@ class SupertrendBot:
             self.log(f"{symbol} top-up no fill (chased to max) and nothing held -> skip")
             return
         total = held + filled
+        fill = float(pt.orderStatus.avgFillPrice or entry_ref)
+        # SAFETY CAP: never carry more than the target. Re-read the LIVE position; if a stale
+        # snapshot or a partial cover let it accumulate, flatten the excess so size can't balloon
+        # (the 4->6->12->24 bug). Trust the live count for sizing the stop/tranches when available.
+        live_after = abs(self.held_qty(symbol))
+        if live_after > target:
+            excess = live_after - target
+            self.log(f"{symbol} SAFETY CAP: live position {live_after} > target {target} "
+                     f"-> flattening excess {excess}")
+            self.flatten(oc, side, excess, ref, ref_price=fill)
+            total = target
+        elif live_after > 0:
+            total = min(live_after, target)
         # ONE consolidated stop for the full position (cancels st_child + any prior/stacked stops)
         st = self.reconcile_stops(symbol, oc, side, total, stop, tick)
-        fill = float(pt.orderStatus.avgFillPrice or entry_ref)
         R, tranches = self._setup_tranches(side, fill, stop, total, tick)
         # RESTING take-profit LIMIT order(s) for the tranche qty (half), visible in TWS. The full
         # position is protected by the stop above; each tranche is a working limit at its R target.
@@ -1899,8 +1916,12 @@ class SupertrendBot:
                 (p["side"] == SHORT and last_px >= p["stop"]))
             if native_filled or synth_hit:
                 if native_filled:
-                    self.close_position(symbol, float(st.orderStatus.avgFillPrice or p["stop"]), "STOP")
-                    p = None
+                    # verify the account is truly flat before clearing (a partial/stale stop fill
+                    # must not mark us flat and let a fresh entry stack on the residual)
+                    if self._confirm_stop_close(symbol, p):
+                        p = None
+                    else:
+                        return   # residual re-adopted; manage it next bar, no re-entry
                 else:
                     self.log(f"{symbol} SYNTHETIC stop hit: {p['side']} px {last_px:.2f} "
                              f"vs stop {p['stop']:.2f} -> flattening")
@@ -2004,14 +2025,39 @@ class SupertrendBot:
             return 7 * 24 * 3600
         return max(self.poll, 60)
 
+    def _confirm_stop_close(self, symbol, p) -> bool:
+        """A native protective stop reported 'Filled'. VERIFY the account actually went flat before
+        clearing state. A PARTIAL fill, or a stale/replaced stop `Trade` object still reading
+        'Filled', must NOT mark us flat — doing so let a fresh entry stack on the residual and
+        ballooned position size (4->6->12->24). If a residual remains, re-adopt it (correct
+        side/qty) with a fresh consolidated stop and KEEP managing it (never leave it untracked,
+        never allow a re-entry). Returns True only if the position is genuinely closed."""
+        exit_px = float(p["st"].orderStatus.avgFillPrice or p.get("stop") or 0)
+        live = self.held_qty(symbol)
+        if live == 0:
+            self.close_position(symbol, exit_px, "STOP")
+            return True
+        side = LONG if live > 0 else SHORT
+        qty = abs(int(live))
+        self.log(f"{symbol} stop reported Filled but live position={live} != 0 -> NOT clearing; "
+                 f"re-adopting {qty} {side} with a fresh stop (prevents re-entry stacking)")
+        contract = self.contracts.get(symbol)
+        tick = self.min_tick(symbol, contract) if contract is not None else 0.01
+        oc = self._order_contract(contract) if contract is not None else contract
+        stop = p.get("stop") or exit_px or 0
+        p["side"] = side
+        p["qty"] = qty
+        p["stop"] = stop
+        p["st"] = self.reconcile_stops(symbol, oc, side, qty, stop, tick)
+        return False
+
     def _watch_stops(self):
         """Cheap between-bars check (no history pull): catch a server-side stop that filled so
         the CSV/state update isn't delayed until the next bar evaluation."""
         for symbol in list(self.positions):
             p = self.positions.get(symbol)
             if p and p.get("st") is not None and p["st"].orderStatus.status == "Filled":
-                exit_px = float(p["st"].orderStatus.avgFillPrice or p["stop"])
-                self.close_position(symbol, exit_px, "STOP")
+                self._confirm_stop_close(symbol, p)
 
     def run(self):
         if not self.connect():

@@ -1,0 +1,53 @@
+{
+  "_comment": "Supertrend bot — PAPER futures (DU672616): MNQ, MES, MGC on 5-min bars, RTH-only (09:30-16:00 ET), long_short. MES + MGC = plain Supertrend (no DEMA, no regime). MNQ = Supertrend + DEMA(200) trend filter (no regime). All keep partial_tp (trim half at 2R, runner trails 1R) to match the backtested strategies. Everything here is config-driven; rebuild with supertrend.ps1 after CODE changes only (JSON is read at startup).",
+  "_indicator_toggles": "dema_filter.enabled and regime_filter.enabled are independent per-strategy switches (both default false). Plain Supertrend = both false. Supertrend+DEMA = dema_filter.enabled true, regime_filter.enabled false. To also gate by regime, set regime_filter.enabled true.",
+  "_partial_tp_comment": "partial_tp trims each tranche at r_multiple*R (R=entry->initial stop) and, after the first trim >= tighten_after_r, trails the runner at trail_r*R. Needs fixed_stocks>=2. Set enabled:false for plain Supertrend-line exits only.",
+  "_contract_selection_comment": "contract_selection: 'active' (default) picks IBKR's ContFuture active/liquid front month; 'quarterly' restricts to Mar/Jun/Sep/Dec (H/M/U/Z) so the instrument rolls on the SAME quarterly cycle as MNQ/MES (used for MGC to keep its expiry month in sync with the index futures); 'nearest' = legacy nearest calendar expiry. roll_buffer_days (0=off) skips any expiry within N days of expiring so it rolls BEFORE the contract thins into expiry. NEEDS REBUILD (code change).",
+  "_expiry_pin_comment": "expiry (optional, HIGHEST priority) hard-pins one contract month: 'YYYYMM' (e.g. '202612'=Dec 2026) or 'YYYYMMDD'. Overrides contract_selection. Leave unset to auto-select/roll. NOTE on 'quarterly' for MGC: gold reliably lists only Jun/Dec among the quarterly months, so MGC matches MNQ/MES EXACTLY on Jun & Dec; in the Mar/Sep index quarters gold has no liquid Mar/Sep contract, so it uses the nearest listed quarterly (e.g. Jun) — always a liquid gold contract, but may lead the index month by one quarter then.",
+
+  "host": "127.0.0.1",
+  "port": 4002,
+  "client_id": 40,
+  "accounts": ["DU672616"],
+  "default_account": "DU672616",
+  "market_data_type": 1,
+
+  "strategies": {
+    "stocks": [],
+    "futures": [
+      {
+        "name": "DU672616_MNQ_5m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MNQ"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "active", "roll_buffer_days": 0,
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "regime_filter": { "enabled": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "DU672616_MES_5m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MES"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "active", "roll_buffer_days": 0,
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": false, "period": 200 },
+        "regime_filter": { "enabled": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "DU672616_MGC_5m", "account": "DU672616", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "COMEX", "currency": "USD",
+        "symbols": ["MGC"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "quarterly", "roll_buffer_days": 7,
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": false, "period": 200 },
+        "regime_filter": { "enabled": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 4, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      }
+    ]
+  }
+}

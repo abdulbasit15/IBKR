@@ -1,0 +1,62 @@
+{
+  "_comment": "Qullamaggie LONG-only IBKR bot config. PAPER + DRY-RUN by default. See qm_bot.py header.",
+
+  "paper": true,
+  "host": "127.0.0.1",
+  "port": 4002,
+  "client_id": 50,
+  "account": "",
+  "dry_run": false,
+  "reconnect_backoff_sec": 60,
+
+  "risk_per_trade_pct": 0.01,
+  "max_positions": 10,
+  "max_position_pct": 0.30,
+  "capital_override": 0,
+  "trade_log_csv": "qm_trades.csv",
+
+  "universe": "us",
+  "min_cap_m": 300,
+  "max_cap_m": 20000,
+  "min_price": 10,
+  "min_dollar_vol_m": 5,
+  "max_symbols": 0,
+  "data_source": "auto",
+  "data_range": "1y",
+
+  "setups": ["breakout", "parabolic_long", "ep"],
+
+  "min_move_pct": 30,
+  "max_move_pct": 300,
+  "cons_days": 10,
+  "max_base_range_pct": 20,
+  "near_high_pct": 15,
+  "min_adr_pct": 3,
+  "breakout_buffer_pct": 0.1,
+  "max_risk_frac": 0.25,
+
+  "pl_lookback": 40,
+  "pl_runup": 50,
+  "pl_runup_days": 20,
+  "pl_drop": 50,
+  "pl_drop_days": 15,
+  "pl_bounce_within": 5,
+  "pl_max_bounce": 30,
+
+  "ep_entry_time": "09:40",
+  "ep_gap": 10,
+  "ep_max_prior": 50,
+  "ep_or_bars": 1,
+  "ep_min_vol_frac": 0.05,
+  "ep_min_surprise": 0,
+
+  "partial_days": 5,
+  "partial_fraction": 0.5,
+  "trail_sma": 20,
+
+  "entry_time": "09:40",
+  "entry_window": ["09:40", "11:00"],
+  "manage_time": "15:50",
+  "poll_seconds": 60,
+  "entry_tif": "DAY"
+}

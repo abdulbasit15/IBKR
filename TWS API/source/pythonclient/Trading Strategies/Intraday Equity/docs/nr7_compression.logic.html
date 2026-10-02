@@ -1,0 +1,79 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NR7 Compression Breakout — Strategy Logic</title><style>
+:root{
+  --ink:#1f2933; --muted:#67727e; --line:#e3e8ef; --bg:#ffffff; --soft:#f7f9fc;
+  --pos:#1f9d63; --neg:#d64545; --accent:#2f6feb; --accent-soft:#eaf1ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;
+  padding:28px 34px;box-shadow:0 1px 3px rgba(16,24,40,.04);}
+h1{font-size:30px;line-height:1.25;margin:.2em 0 .4em;letter-spacing:-.01em}
+h2{font-size:22px;margin:1.6em 0 .5em;padding-top:.3em;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:17px;margin:1.3em 0 .4em}
+h1+p,h2+p{margin-top:.2em}
+p{margin:.7em 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--soft);border:1px solid var(--line);border-radius:5px;
+  padding:.08em .35em;font:13.5px/1.4 "SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;color:inherit;padding:0;font-size:13px}
+blockquote{margin:1em 0;padding:.6em 1em;background:var(--accent-soft);
+  border-left:4px solid var(--accent);border-radius:0 8px 8px 0;color:#243b53}
+blockquote.warn{background:#fff4f0;border-left-color:var(--neg);color:#7a271a}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfe}
+hr{border:none;border-top:1px solid var(--line);margin:2em 0}
+ul,ol{margin:.6em 0 .6em 1.3em;padding:0}
+li{margin:.25em 0}
+.tiles{display:flex;flex-wrap:wrap;gap:14px;margin:1.2em 0}
+.tile{flex:1 1 140px;background:var(--soft);border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.v.pos{color:var(--pos)} .v.neg{color:var(--neg)}
+.chart{margin:1.4em 0}
+.chart .cap{font-size:13px;color:var(--muted);margin:.2em 0 .6em}
+.footer{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+svg{max-width:100%;height:auto;display:block}
+</style></head>
+<body><div class="wrap"><div class="card">
+<h1>NR7 Compression Breakout — Strategy Logic</h1>
+<blockquote>Source: <a href="../strategies/nr7_compression.py"><code>strategies/nr7_compression.py</code></a> · engine: <a href="../equity_base.py"><code>equity_base.py</code></a> · config block: <code>"NR7 - 9.35"</code> in <a href="../equity.json"><code>equity.json</code></a></blockquote>
+<h2>Edge thesis</h2>
+<p><strong>Volatility compression precedes expansion.</strong> When yesterday's daily range is the narrowest of the last 7 sessions (an "NR7") <em>and</em> the name is a liquid, above-trend mover (ADR% &gt; 5, close &gt; 20-day SMA), a break of the opening range the next morning can release a directional move. Combines a <strong>multi-day daily-bar filter</strong> (the compression setup) with an <strong>intraday ORB trigger</strong>.</p>
+<h2>Universe &amp; watchlist (multi-day, daily bars)</h2>
+<p>The scanner is <strong>off</strong> for NR7 — no <code>scanCode</code> can express a multi-day compression pattern, so it screens the fixed <code>universe_symbols</code> (liquid ETFs/large-caps) each morning in <code>build_watchlist()</code>:</p>
+<ol><li><strong>Price band</strong> — most-recent completed close within <code>price_min</code>/<code>price_max</code> (15–150).</li><li><strong>NR7</strong> — <code>(ref.high − ref.low)</code> is the <strong>minimum</strong> range of the last <code>nr7_lookback</code> (7) sessions.</li><li><strong>ADR%</strong> — average daily range over <code>adr_lookback</code> (20) ≥ <code>adr_min_pct</code> (5.0).</li><li><strong>Trend</strong> — <code>ref.close &gt; SMA(sma_period=20)</code>.</li><li><strong>Liquidity</strong> — 20-day average share volume ≥ <code>adv_min_shares</code> (1,000,000).</li></ol>
+<p>Survivors are persisted to the day cache as the NR7 watchlist.</p>
+<h2>Opening range</h2>
+<p>Same 09:30–09:35 5-min OR bar as ORB (<code>ORB_high</code>, <code>ORB_low</code>, <code>height</code>), accepted only when <code>orb_height_min_pct ≤ height/high ≤ orb_height_max_pct</code> (0.3%–5%).</p>
+<h2>Entry conditions (all must hold)</h2>
+<p>On the <strong>last completed 5-min bar</strong> (<code>bars5[-2]</code>), at a new-bar-open boundary:</p>
+<table><thead><tr><th>#</th><th>Gate</th><th>Rule</th></tr></thead><tbody><tr><td>1</td><td>Trade window</td><td>ET now inside <code>09:35–11:00</code></td></tr><tr><td>2</td><td>Breakout</td><td><code>bar.close &gt; ORB_high</code> (5-min close)</td></tr><tr><td>3</td><td>RVOL</td><td>intraday RVOL ≥ <code>rvol_min</code> (1.5); missing history + <code>require_rvol:true</code> ⇒ skip</td></tr><tr><td>4</td><td>VWAP</td><td>session VWAP from bars; <code>price &gt; VWAP</code></td></tr></tbody></table>
+<h2>Levels (entry / stop / target) — ATR + VWAP hybrid</h2>
+<pre><code>entry     = ORB_high + entry_offset_atr_mult × ATR(atr_period,5m)   # +0.05·ATR5
+stop_atr  = ORB_low − stop_atr_mult × ATR5                          # 0.5·ATR5 below OR-low
+stop_vwap = VWAP × (1 − vwap_stop_buffer_pct)                       # just under VWAP (0.1%)
+structural= max(stop_atr, stop_vwap)                                # higher = tighter/more conservative
+stop      = min(structural, entry × (1 − min_stop_pct))             # floored to ≥0.5%
+target    = entry + target_r_mult × (entry − stop)                  # 2.2R</code></pre>
+<p>Using the <strong>more conservative</strong> of the ATR-based and VWAP-based stops keeps the risk tight; flooring to <code>min_stop_pct</code> keeps the printed R:R honest. Rejected if <code>R ≤ 0</code> or R:R <code>&lt; min_rr</code> (1.5).</p>
+<h2>Position sizing &amp; management</h2>
+<p>Identical engine to the others: <code>fixed_stocks</code> (1) or 1% risk-at-stop on $100k; native stop-market + TP bracket; breakeven at 1.0R; trail from 1.5R locking 0.5R; EOD flatten 15:55.</p>
+<h2>Order execution</h2>
+<p><code>entry_order_type</code> is currently <strong><code>MKT</code></strong>. Set to <code>LMT</code> for the bounded marketable-limit chase (rest at <code>entry</code>, step to <code>entry × (1 + max_chase_pct)</code>), same as PDH now uses.</p>
+<h2>Config keys (NR7 block)</h2>
+<table><thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><code>entry_order_type</code></td><td><code>MKT</code></td><td>true market entry (consider <code>LMT</code>)</td></tr><tr><td><code>windows</code></td><td><code>[["09:35","11:00"]]</code></td><td>single morning window</td></tr><tr><td><code>price_min</code> / <code>price_max</code></td><td><code>15</code> / <code>150</code></td><td>price band</td></tr><tr><td><code>nr7_lookback</code></td><td><code>7</code></td><td>NR7 compression window</td></tr><tr><td><code>adr_min_pct</code></td><td><code>5.0</code></td><td>minimum average daily range %</td></tr><tr><td><code>sma_period</code></td><td><code>20</code></td><td>trend filter</td></tr><tr><td><code>adv_min_shares</code></td><td><code>1,000,000</code></td><td>liquidity floor</td></tr><tr><td><code>atr_period</code></td><td><code>14</code></td><td>ATR for entry/stop</td></tr><tr><td><code>entry_offset_atr_mult</code></td><td><code>0.05</code></td><td>entry buffer above OR-high</td></tr><tr><td><code>stop_atr_mult</code></td><td><code>0.5</code></td><td>ATR component of the stop</td></tr><tr><td><code>vwap_stop_buffer_pct</code></td><td><code>0.001</code></td><td>VWAP component of the stop</td></tr><tr><td><code>target_r_mult</code></td><td><code>2.2</code></td><td>target multiple of R</td></tr><tr><td><code>rvol_min</code></td><td><code>1.5</code></td><td>intraday RVOL gate</td></tr></tbody></table>
+<h2>Known failure modes</h2>
+<ul><li><strong>Very low trade count.</strong> The stacked daily filters (NR7 ∧ ADR&gt;5 ∧ close&gt;SMA20 ∧ liquidity) rarely all fire on a small fixed universe, so signals are scarce — the backtest produced only a handful of trades, far too few to claim an edge (see performance doc). Broaden <code>universe_symbols</code> (or enable a <code>MOST_ACTIVE_USD</code> scanner seed) to get a testable sample.</li><li>**Compression can resolve *down*** — this is long-only, so downside breaks are simply missed, and an upside break that fails tags the stop.</li><li><strong>Delayed data</strong> breaks intraday timing; run live.</li></ul>
+<div class="footer">Intraday Equity Bots · generated by <code>docs/build_docs.py</code> ·
+<a href="README.html">docs index</a></div>
+</div></div></body></html>

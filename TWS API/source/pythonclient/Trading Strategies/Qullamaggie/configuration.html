@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qullamaggie LONG Bot — Configuration & Overview</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834; --good:#006300;
+    --k:#4a3aa7; --str:#008300; --num:#2a78d6; --cmt:#898781;
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --good:#0ca30c;
+    --k:#9085e9; --str:#5cc98c; --num:#86b6ef; --cmt:#898781;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:19px;margin:44px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:22px 0 4px}
+  p,li{color:var(--ink2);font-size:14.5px}
+  .sub{color:var(--muted);font-size:13px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .callout{border-left:3px solid var(--s2);background:var(--surface);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:16px 0;font-size:14px}
+  .callout.v1{border-left-color:var(--s1)}
+  .callout.warn{border-left-color:#c0392b}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td:first-child{white-space:nowrap}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  td code{background:transparent;border:none;padding:0;color:var(--k)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;vertical-align:middle}
+  .tag.b{background:color-mix(in srgb,var(--s1) 18%,transparent);color:var(--s1)}
+  .tag.o{background:color-mix(in srgb,var(--s2) 18%,transparent);color:var(--s2)}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;
+    overflow:auto;font-size:12.5px;line-height:1.5;font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+  .k{color:var(--k)} .s{color:var(--str)} .n{color:var(--num)} .c{color:var(--cmt);font-style:italic}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--border);padding-top:14px}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;margin:16px 0}
+  .toc a{margin-right:16px;font-size:13px;white-space:nowrap;display:inline-block}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .card h3{margin-top:0}
+  ul.cell{margin:0;padding-left:18px}
+  ul.cell li{font-size:13.5px;margin:2px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Qullamaggie <b>LONG</b> Bot — Configuration &amp; Overview</h1>
+    <p class="sub">JSON reference for <code>qm_bot.json</code> + how the bot scans, enters and exits. Long only — no shorts.</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<div class="callout warn"><strong>Paper-first, dry-run-first.</strong> Ships with <code>paper:true</code> (gateway port 4002) and
+<code>dry_run:true</code> (logs orders, places none). LIVE needs <code>paper:false</code> <em>and</em> the CLI flag
+<code>--i-understand-live</code>. No live account without LPL pre-clearance. Not financial advice.</div>
+
+<div class="toc">
+  <a href="#universe">Universe / screener</a><a href="#overview">Overview</a><a href="#howto">How it runs</a>
+  <a href="#conn">Connection</a><a href="#setups">Setups</a><a href="#exits">Exits / sizing</a>
+  <a href="#sched">Schedule</a><a href="#examples">Examples</a><a href="#cli">CLI</a>
+</div>
+
+<!-- ───────────────────────── UNIVERSE ───────────────────────── -->
+<h2 id="universe">Universe / screener (what type of stocks it scans)</h2>
+<p>
+  The scanner looks at <strong>US-listed common stocks</strong> only — Qullamaggie's actual hunting ground:
+  small-to-mid-cap, liquid, priced above $10. It is <strong>not</strong> mega-caps, penny stocks, or funds.
+</p>
+<div class="grid2">
+  <div class="card">
+    <h3>The universe (from <code>universe.py</code>)</h3>
+    <ul>
+      <li><strong>Source:</strong> the full Nasdaq / NYSE / AMEX common-stock list from <code>api.nasdaq.com</code> (~7,000 names).</li>
+      <li><strong>Kept:</strong> plain tickers only (<code>^[A-Z]{1,5}$</code>), US common stock.</li>
+      <li><strong>Excluded:</strong> ETFs, funds, warrants, units, rights, preferreds (filtered by name).</li>
+      <li><strong>Cap / price band:</strong>
+        <ul>
+          <li><code>min_cap_m</code> — default <strong>$300M+</strong> market cap</li>
+          <li><code>max_cap_m</code> — <strong>$20B</strong> ceiling in the bot config (<code>0</code> = no ceiling)</li>
+          <li><code>min_price</code> — <strong>$10+</strong></li>
+          <li><code>min_dollar_vol_m</code> — <strong>$5M+</strong> average daily dollar volume</li>
+        </ul>
+      </li>
+    </ul>
+    <p class="sub">So the base pool is roughly <strong>small-to-mid-cap, liquid, $10+ US common stocks</strong> —
+      deliberately Qullamaggie's hunting ground (not mega-caps, not sub-$10 illiquid junk, no ETFs).</p>
+  </div>
+  <div class="card">
+    <h3>Then each setup narrows it further at scan time</h3>
+    <p class="sub" style="margin:0 0 6px"><span class="tag b">breakout</span> (defaults shown)</p>
+    <ul class="cell">
+      <li>Up <strong>30–300%</strong> over ~3 months (<code>min_move_pct</code> 30 / <code>max_move_pct</code> 300)</li>
+      <li>In an uptrend: close &gt; SMA20 &gt; SMA50</li>
+      <li>Tight base: last <strong>10</strong>-day range ≤ <strong>20%</strong> (<code>cons_days</code> 10 / <code>max_base_range_pct</code> 20)</li>
+      <li>Within <strong>15%</strong> of the 52-wk high (<code>near_high_pct</code> 15)</li>
+      <li>ADR% ≥ <strong>3</strong> (<code>min_adr_pct</code>) · $vol ≥ <strong>$5M</strong> (<code>min_dollar_vol_m</code>)</li>
+      <li>Not yet broken out</li>
+    </ul>
+    <p class="sub" style="margin:10px 0 6px"><span class="tag o">parabolic_long</span> (defaults shown)</p>
+    <ul class="cell">
+      <li>Ran up ≥ <strong>50%</strong> into the peak (<code>pl_runup</code> 50 over <code>pl_runup_days</code> 20)</li>
+      <li>Crashed ≥ <strong>50%</strong> within <strong>15</strong> days (<code>pl_drop</code> 50 / <code>pl_drop_days</code> 15)</li>
+      <li>Basing within <strong>5</strong> days of the crash low (<code>pl_bounce_within</code> 5)</li>
+      <li>Price within <strong>30%</strong> of that low, not chased (<code>pl_max_bounce</code> 30)</li>
+    </ul>
+    <p class="sub" style="margin:10px 0 6px"><span class="tag b">ep</span> (defaults shown)</p>
+    <ul class="cell">
+      <li>Confirmed <strong>earnings catalyst</strong> (Nasdaq calendar)</li>
+      <li>Gaps up ≥ <strong>10%</strong> at the open (<code>ep_gap</code> 10)</li>
+      <li>Not already extended: prior-6m ≤ <strong>50%</strong> (<code>ep_max_prior</code> 50)</li>
+      <li>Opening range = first <strong>1</strong>×5-min bar (<code>ep_or_bars</code> 1) · volume surge</li>
+      <li>Runs at the open <strong>09:40 ET</strong> (<code>ep_entry_time</code>)</li>
+    </ul>
+    <p class="sub">So the universe is the <em>haystack</em>; the setup filters find the ~handful of needles each day.</p>
+  </div>
+</div>
+<div class="callout v1"><strong>Two different defaults.</strong> The <strong>live bot</strong> (<code>qm_bot.json</code>) ships with
+<code>"universe":"us"</code> → it scans the whole filtered US market. The <strong>standalone screener</strong>
+(<code>qm_screener.py</code>) defaults to <code>"builtin"</code> (a curated ~72-name list) unless you pass
+<code>--universe us</code>. Point either at small caps (<code>min_cap_m 300</code>, <code>max_cap_m 5000</code>) to lean
+into his sweet spot.</div>
+
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>universe</code></td><td><code>"us"</code> = full US market via <code>universe.py</code> (Nasdaq/NYSE/AMEX common stock). <code>"builtin"</code> = the ~72-name curated list.</td></tr>
+    <tr><td><code>min_cap_m</code> / <code>max_cap_m</code></td><td>Market-cap band in $M. <code>max_cap_m:0</code> = no ceiling. His edge is small/mid caps → e.g. <code>300</code>–<code>20000</code>.</td></tr>
+    <tr><td><code>min_price</code></td><td>Minimum share price (default 10) — drops illiquid sub-$10 names.</td></tr>
+    <tr><td><code>min_dollar_vol_m</code></td><td>Minimum avg 20-day dollar volume in $M (default 5) — his liquidity gate.</td></tr>
+    <tr><td><code>max_symbols</code></td><td>Cap the number scanned (0 = all). Useful for a fast test.</td></tr>
+    <tr><td><code>data_source</code> / <code>data_range</code></td><td><code>auto</code>/<code>yahoo</code>/<code>stooq</code>; history window (<code>1y</code> is enough for the daily signals).</td></tr>
+  </tbody>
+</table>
+
+<!-- ───────────────────────── OVERVIEW ───────────────────────── -->
+<h2 id="overview">Overview — what the bot does</h2>
+<p>
+  A swing bot that automates the <strong>long</strong> setups from Qullamaggie's "3 timeless setups". It scans the
+  broad US market once per day for stocks in a strong momentum profile, places <strong>buy-stop</strong> entries at the
+  breakout trigger with a protective stop attached (native IB bracket), sizes each to risk <strong>1% of capital</strong>,
+  holds at most <strong>10 names</strong>, and manages exits by his rules (partial + break-even + moving-average trail).
+</p>
+
+<div class="grid2">
+  <div class="card">
+    <h3>Timeframe &amp; cadence</h3>
+    <ul>
+      <li><strong>Daily bars</strong> for all signals (swing horizon, multi-day holds).</li>
+      <li><strong>Scan runs once/day</strong> at <code>entry_time</code> (default <b>09:40 ET</b>, just after the opening range).</li>
+      <li><strong>Manage runs once/day</strong> at <code>manage_time</code> (default <b>15:50 ET</b>, near the close).</li>
+      <li>Between those it just heartbeats every <code>poll_seconds</code> (60s); the IB bracket handles intraday stop fills.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Data sources (no PyPI at runtime)</h3>
+    <ul>
+      <li>Universe list: <code>api.nasdaq.com</code> screener (cached to <code>universe_us_raw.csv</code>).</li>
+      <li>Daily bars: <strong>Yahoo</strong> primary, <strong>Stooq</strong> fallback, via <code>urllib</code>.</li>
+      <li>EP: <strong>Nasdaq earnings calendar</strong> + <strong>Yahoo 5-min</strong> intraday (opening range).</li>
+      <li>Account equity, positions, orders: <strong>IBKR</strong> via <code>ib_async</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Stock selection per strategy</h3>
+<table>
+  <thead><tr><th>Setup</th><th>What it looks for (daily bars)</th><th>Entry trigger</th><th>Initial stop</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="tag b">breakout</span></td>
+      <td>
+        <ul class="cell">
+          <li>Up <code>min_move_pct</code>–<code>max_move_pct</code> (30–300%) over ~3 months</li>
+          <li>In an uptrend (close &gt; SMA20 &gt; SMA50)</li>
+          <li>Coiled into a <strong>tight base</strong> (last <code>cons_days</code> range ≤ <code>max_base_range_pct</code>)</li>
+          <li>Within <code>near_high_pct</code> of the 52-wk high</li>
+          <li><code>ADR% ≥ min_adr_pct</code> · liquid (<code>$vol ≥ min_dollar_vol_m</code>)</li>
+          <li><strong>Not yet broken out</strong></li>
+        </ul>
+      </td>
+      <td>BUY-STOP at the <strong>base high</strong> (+<code>breakout_buffer_pct</code>).</td>
+      <td>The <strong>base low</strong>.</td>
+    </tr>
+    <tr>
+      <td><span class="tag o">parabolic_long</span></td>
+      <td>
+        <ul class="cell">
+          <li>A former parabolic: ran up ≥ <code>pl_runup</code>% into a peak</li>
+          <li>Then <strong>crashed ≥ <code>pl_drop</code>%</strong> within <code>pl_drop_days</code> days</li>
+          <li>Now basing within <code>pl_bounce_within</code> days of the crash low</li>
+          <li>Price still within <code>pl_max_bounce</code>% of that low (not chased)</li>
+          <li>A bounce play — rare by design</li>
+        </ul>
+      </td>
+      <td>BUY-STOP at the recent swing high (first range-break up).</td>
+      <td>The <strong>crash low</strong>.</td>
+    </tr>
+    <tr>
+      <td><span class="tag b">ep</span></td>
+      <td>
+        <ul class="cell">
+          <li>Confirmed <strong>earnings catalyst</strong> (Nasdaq calendar — reported prev-day after-hours or today pre-market)</li>
+          <li><strong>Gaps up ≥ <code>ep_gap</code>%</strong> at the open</li>
+          <li>Not already extended (prior-6m gain ≤ <code>ep_max_prior</code>%)</li>
+          <li>Volume surge · liquid</li>
+          <li>Runs at the open (<code>ep_entry_time</code>)</li>
+        </ul>
+      </td>
+      <td>BUY-STOP at the <strong>opening-range high</strong> (first <code>ep_or_bars</code>×5-min bars, from intraday).</td>
+      <td>The <strong>opening-range low</strong>.</td>
+    </tr>
+  </tbody>
+</table>
+<p class="sub">Enable any of the three via <code>"setups"</code>, e.g. <code>["breakout","parabolic_long","ep"]</code>.
+EP additionally needs the Nasdaq earnings calendar + 5-min intraday (both fetched automatically). The parabolic
+<b>short</b> is intentionally excluded.</p>
+
+<h3>How candidates are ranked (quality)</h3>
+<p>Everything that passes the filters is scored and the best fill the slots. The breakout score is a
+  weighted blend of the factors Qullamaggie emphasises (tunable via <code>quality_weights</code>):</p>
+<ul>
+  <li><strong>Relative strength</strong> — 3-month return in <em>excess of SPY</em> (leaders beat the market, not just rise).</li>
+  <li><strong>ADR sweet-spot</strong> — rewards ADR%, but <em>capped</em> so the most volatile junk doesn't auto-win.</li>
+  <li><strong>Base tightness</strong> — a smaller consolidation range scores higher.</li>
+  <li><strong>Volume dry-up</strong> — lighter volume in the base vs the prior run (accumulation / contraction).</li>
+  <li><strong>Proximity to the 52-week high</strong>, <strong>trend alignment</strong> (above the 200-day SMA), and an <strong>orderly base</strong> (higher lows).</li>
+</ul>
+<p class="sub">EP ranks by gap% + earnings surprise + opening relative-volume + ADR; parabolic_long by crash-depth + ADR + bounce freshness.</p>
+
+<h3>When it opens</h3>
+<ul>
+  <li><strong>Per-strategy slots:</strong> breakout, EP, and parabolic_long each fill up to <code>max_positions</code> (10) independently — up to 30 names total, 1% risk each. A name is never entered in two strategies at once. An empty scan for a strategy is skipped.</li>
+  <li>Each entry is a DAY buy-stop at the trigger; it only fills if price actually breaks out that session, otherwise it expires and is re-scanned next day.</li>
+  <li>Size = <code>floor(capital × risk_per_trade_pct / (trigger − stop))</code>, capped so one name ≤ <code>max_position_pct</code> of capital.</li>
+</ul>
+<div class="callout warn"><strong>Aggregate risk.</strong> 10 per strategy × 3 strategies × 1% = up to <strong>~30% of capital at risk</strong> if every position stopped out at once. Lower <code>max_positions</code> or <code>risk_per_trade_pct</code>, or run fewer <code>setups</code>, if that's more than you want exposed.</div>
+
+<h3>When it exits</h3>
+<ul>
+  <li><strong>Hard stop</strong> (always resting, server-side): the initial protective stop at the base/crash low.</li>
+  <li><strong>Partial + break-even:</strong> after <code>partial_days</code> (5) held, sell <code>partial_fraction</code> (half) at market and move the stop to break-even.</li>
+  <li><strong>Trail:</strong> exit the remainder on the first daily <strong>close below</strong> the <code>trail_sma</code> (10 or 20-day). Close-based, so intraday wicks don't shake you out.</li>
+</ul>
+
+<!-- ───────────────────────── HOW IT RUNS ───────────────────────── -->
+<h2 id="howto">How it runs (build &amp; launch)</h2>
+<pre><span class="c"># Build the exe + copy config into dist\ (from this folder)</span>
+.\qm.ps1
+
+<span class="c"># Sanity checks (no IB needed)</span>
+cd dist
+.\qm_bot.exe --check          <span class="c"># validate config + imports</span>
+.\qm_bot.exe --scan-only      <span class="c"># print today's setups</span>
+
+<span class="c"># With IB Gateway running (paper on 4002):</span>
+.\qm_bot.exe --once           <span class="c"># one entry+manage cycle, then exit</span>
+.\qm_bot.exe                  <span class="c"># scheduled loop (leave running)</span>
+
+<span class="c"># Keep it always-on (relaunches on crash / gateway outage):</span>
+..\run_qm.ps1</pre>
+<p class="sub">From source instead of the exe: <code>python qm_bot.py --scan-only</code>, etc.
+Config/state live next to the exe (or the .py when run from source): <code>qm_bot.json</code>,
+<code>qm_bot_state.json</code>; logs go to <code>logs/</code> (combined + per-setup) and per-setup
+trade CSVs (<code>qm_trades_&lt;setup&gt;.csv</code>) to the root.</p>
+
+<div class="callout v1"><strong>Running in parallel with the other bots.</strong> All three can share the same IB Gateway
+(paper port 4002) at once — IB allows many API clients, each on a <strong>unique <code>client_id</code></strong>:
+<table style="margin-top:8px">
+  <thead><tr><th>Bot</th><th>dist location</th><th>client_id(s)</th></tr></thead>
+  <tbody>
+    <tr><td>Intraday Equity (<code>intraday_equity.exe</code>)</td><td><code>Intraday Equity\dist</code></td><td>30–33</td></tr>
+    <tr><td>Supertrend (<code>supertrend_bot.exe</code>)</td><td><code>Indicator Strategies\supertrend\dist</code></td><td>40+</td></tr>
+    <tr><td><strong>QM (<code>qm_bot.exe</code>)</strong></td><td><code>Trading Strategies\Qullamaggie\dist</code></td><td><strong>50</strong></td></tr>
+  </tbody>
+</table>
+Each bot writes its own state/log/CSV next to its own exe, so they never collide on files either. QM also
+pulls its market data from Yahoo/Stooq (not IB streaming), so it doesn't consume the gateway's market-data lines
+that the equity/supertrend bots use. Launch each in its own window (or its own <code>run_*.ps1</code> supervisor).</div>
+
+<!-- ───────────────────────── CONNECTION ───────────────────────── -->
+<h2 id="conn">Connection / safety</h2>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>paper</code></td><td><code>true</code> (default) → paper gateway. <code>false</code> → live, and ONLY if <code>--i-understand-live</code> is also passed.</td></tr>
+    <tr><td><code>dry_run</code></td><td><code>true</code> (default) → logs every order it would place, transmits nothing. Set <code>false</code> to arm.</td></tr>
+    <tr><td><code>host</code> / <code>port</code></td><td>TWS/Gateway. <code>127.0.0.1</code> / <code>4002</code> (paper gateway; live gateway = 4001; TWS 7497 paper / 7496 live).</td></tr>
+    <tr><td><code>client_id</code></td><td>API client id (default <code>50</code>). <strong>Must be unique per IB connection</strong> — for running in parallel: Intraday Equity uses <code>30–33</code>, Supertrend <code>40+</code>, this bot the <code>50s</code>. All three share one gateway (port 4002) fine, each on its own id.</td></tr>
+    <tr><td><code>account</code></td><td>Account to trade. Blank → adopts the login's sole managed account.</td></tr>
+    <tr><td><code>reconnect_backoff_sec</code></td><td>Steady reconnect retry interval in seconds (default 60). The bot survives an IB Gateway restart / a competing login: it retries fast (5s ×3) then every this-many seconds, indefinitely, and re-reconciles state on reconnect. Positions rest on their server-side stops meanwhile.</td></tr>
+    <tr><td><code>capital_override</code></td><td><code>0</code> → use live <code>NetLiquidation</code> for sizing. &gt;0 → size off this fixed number instead.</td></tr>
+    <tr><td><code>trade_log_csv</code></td><td><strong>Base</strong> filename (next to the exe) for the trades log; the setup is inserted, giving <strong>one CSV per setup</strong> — <code>qm_trades_breakout.csv</code>, <code>qm_trades_parabolic_long.csv</code>, <code>qm_trades_ep.csv</code>. A row is appended as <strong>each leg closes</strong> (partial, break-even, trail, stop) in the Backtest Journal format, so <code>python -m journal backtest</code> ingests them. Default base <code>qm_trades.csv</code>. Logs land in <code>logs/</code>: a combined <code>qm_bot_&lt;date&gt;.log</code> plus a per-setup <code>qm_&lt;setup&gt;_&lt;date&gt;.log</code> for each setup.</td></tr>
+  </tbody>
+</table>
+<p class="sub">Trade log columns: <code>symbol, strat, entry_id, side, qty, entry_time_et, entry_price,
+exit_time_et, exit_price, reason, R_points, R_result, pnl</code>. One row per exit leg; legs of one
+trade share <code>entry_id</code> (e.g. a <code>PARTIAL</code> leg + the final <code>TRAIL</code>/<code>Stop</code> leg).</p>
+
+<!-- ───────────────────────── SETUPS ───────────────────────── -->
+<h2 id="setups">Setup parameters</h2>
+<p><code>"setups"</code> selects which long setups are active, e.g. <code>["breakout","parabolic_long"]</code>.</p>
+
+<h3>Breakout <span class="tag b">momentum continuation</span></h3>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>min_move_pct</code> / <code>max_move_pct</code></td><td>Required 3-month gain band (30–300%). Upper bound skips already-parabolic names.</td></tr>
+    <tr><td><code>cons_days</code></td><td>Consolidation/base lookback in days (default 10).</td></tr>
+    <tr><td><code>max_base_range_pct</code></td><td>Max % range of the base (default 20) — how tight the coil must be.</td></tr>
+    <tr><td><code>near_high_pct</code></td><td>Max % below the 52-week high (default 15).</td></tr>
+    <tr><td><code>min_adr_pct</code></td><td>Minimum Average Daily Range % (default 3) — his volatility gauge.</td></tr>
+    <tr><td><code>breakout_buffer_pct</code></td><td>Buffer above the base high for the buy-stop trigger (default 0.1%).</td></tr>
+    <tr><td><code>max_risk_frac</code></td><td>Skip a setup if (trigger−stop)/trigger exceeds this (default 0.25) — caps per-share risk.</td></tr>
+  </tbody>
+</table>
+
+<h3>Parabolic long <span class="tag o">bounce after a crash</span></h3>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>pl_lookback</code></td><td>Window (days) to locate the parabolic peak (default 40).</td></tr>
+    <tr><td><code>pl_runup</code> / <code>pl_runup_days</code></td><td>Min % run-up into the peak (50) over this many days (20) — confirms it WAS parabolic.</td></tr>
+    <tr><td><code>pl_drop</code> / <code>pl_drop_days</code></td><td>Min % crash from peak to low (50) within this many days (15) — a fast crash.</td></tr>
+    <tr><td><code>pl_bounce_within</code></td><td>Only enter within N days of the crash low (default 5) — fresh bounce.</td></tr>
+    <tr><td><code>pl_max_bounce</code></td><td>Max % above the crash low to still enter (default 30) — don't chase.</td></tr>
+  </tbody>
+</table>
+<div class="callout"><strong>Parabolic longs are rare by design.</strong> A genuine 50%+ multi-day crash of a former
+parabolic is uncommon, especially in liquid large-caps. Expect few/none in a large-cap band; point the universe at
+small caps (<code>min_cap_m 300</code>, <code>max_cap_m 5000</code>) to surface them.</div>
+
+<h3>Episodic Pivot <span class="tag b">earnings gap</span></h3>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>ep_entry_time</code></td><td>ET time the EP open-scan runs (default <code>"09:40"</code> — after the first 5-min bar).</td></tr>
+    <tr><td><code>ep_gap</code></td><td>Min opening gap % (today's open vs prev close), default 10.</td></tr>
+    <tr><td><code>ep_max_prior</code></td><td>Max prior-6-month gain % so the earnings gap is the fresh catalyst (default 50).</td></tr>
+    <tr><td><code>ep_or_bars</code></td><td>Number of 5-min bars in the opening range (1 = first 5 min; 3 = 15 min; 12 = 60 min).</td></tr>
+    <tr><td><code>ep_min_vol_frac</code></td><td>Min intraday volume-so-far as a fraction of the 20-day avg daily volume (default 0.05).</td></tr>
+    <tr><td><code>ep_min_surprise</code></td><td>Min earnings surprise % to require (0 = off). Uses the Nasdaq calendar's surprise field.</td></tr>
+  </tbody>
+</table>
+<div class="callout"><strong>EP runs at the open.</strong> It confirms the earnings catalyst from the Nasdaq calendar
+(prev-day after-hours + today pre-market), then places a buy-stop at the opening-range high. It has its own
+schedule slot (<code>ep_entry_time</code>), separate from the breakout/parabolic daily scan.</div>
+
+<!-- ───────────────────────── EXITS ───────────────────────── -->
+<h2 id="exits">Exits &amp; sizing</h2>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>risk_per_trade_pct</code></td><td>Fraction of capital risked per ticker (default <code>0.01</code> = 1%).</td></tr>
+    <tr><td><code>max_positions</code></td><td><strong>Per-strategy</strong> cap (default 10). Breakout, EP, and parabolic_long each get their OWN 10 slots at 1% risk — so up to 30 names total if all three run. A symbol already held/pending in any strategy is never entered twice. If a strategy's scan is empty, it's skipped.</td></tr>
+    <tr><td><code>quality_weights</code></td><td>Optional override of the breakout ranking weights (keys: <code>rs</code>, <code>adr</code>, <code>tight</code>, <code>voldry</code>, <code>near</code>, <code>trend</code>, <code>hl</code>). Merges over the defaults — omit to use them.</td></tr>
+    <tr><td><code>max_position_pct</code></td><td>Cap on any single position as a fraction of capital (default 0.30 — his overnight max).</td></tr>
+    <tr><td><code>partial_days</code></td><td>Days held before the partial sell (default 5; his "3–5 days").</td></tr>
+    <tr><td><code>partial_fraction</code></td><td>Fraction sold at the partial (default 0.5 = half). Stop then moves to break-even.</td></tr>
+    <tr><td><code>trail_sma</code></td><td>Moving average the runner trails (10 or 20). Exit on first daily close below it.</td></tr>
+  </tbody>
+</table>
+
+<!-- ───────────────────────── SCHEDULE ───────────────────────── -->
+<h2 id="sched">Schedule</h2>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>ep_entry_time</code></td><td>ET time the EP earnings-gap open-scan runs (default <code>"09:40"</code>). Only used if <code>"ep"</code> is in <code>setups</code>.</td></tr>
+    <tr><td><code>entry_time</code></td><td>ET time the daily breakout/parabolic scan runs (default <code>"09:40"</code>, after the opening range).</td></tr>
+    <tr><td><code>entry_window</code></td><td><code>[start, end]</code> ET — entries + EP fire ONLY inside this window (default <code>["09:40","11:00"]</code>). Lets you run the bot <strong>24/7</strong>: starting it after hours (or mid-afternoon) places <strong>no</strong> late/after-hours entry orders — it just waits for the next window. Management + reconnect stay always-on.</td></tr>
+    <tr><td><code>manage_time</code></td><td>ET time the daily management pass runs (default <code>"15:50"</code>, near the close).</td></tr>
+    <tr><td><code>poll_seconds</code></td><td>Heartbeat interval between the two daily jobs (default 60).</td></tr>
+    <tr><td><code>entry_tif</code></td><td>Time-in-force for the buy-stop entry (default <code>"DAY"</code>; child protective stop is GTC).</td></tr>
+  </tbody>
+</table>
+
+<!-- ───────────────────────── EXAMPLES ───────────────────────── -->
+<h2 id="examples">Examples</h2>
+
+<h3>Default — both long setups, paper, dry-run</h3>
+<pre>{
+  <span class="k">"paper"</span>: <span class="n">true</span>, <span class="k">"port"</span>: <span class="n">4002</span>, <span class="k">"client_id"</span>: <span class="n">21</span>, <span class="k">"dry_run"</span>: <span class="n">true</span>,
+  <span class="k">"risk_per_trade_pct"</span>: <span class="n">0.01</span>, <span class="k">"max_positions"</span>: <span class="n">10</span>, <span class="k">"max_position_pct"</span>: <span class="n">0.30</span>,
+  <span class="k">"universe"</span>: <span class="s">"us"</span>, <span class="k">"min_cap_m"</span>: <span class="n">300</span>, <span class="k">"max_cap_m"</span>: <span class="n">20000</span>, <span class="k">"min_price"</span>: <span class="n">10</span>, <span class="k">"min_dollar_vol_m"</span>: <span class="n">5</span>,
+  <span class="k">"setups"</span>: [<span class="s">"breakout"</span>, <span class="s">"parabolic_long"</span>],
+  <span class="k">"partial_days"</span>: <span class="n">5</span>, <span class="k">"trail_sma"</span>: <span class="n">20</span>,
+  <span class="k">"entry_time"</span>: <span class="s">"09:40"</span>, <span class="k">"manage_time"</span>: <span class="s">"15:50"</span>
+}</pre>
+
+<h3>Breakout only, tighter (his sweet spot), small/mid caps</h3>
+<pre>{
+  <span class="k">"setups"</span>: [<span class="s">"breakout"</span>],
+  <span class="k">"min_cap_m"</span>: <span class="n">1000</span>, <span class="k">"max_cap_m"</span>: <span class="n">15000</span>, <span class="k">"min_price"</span>: <span class="n">15</span>,
+  <span class="k">"min_move_pct"</span>: <span class="n">40</span>, <span class="k">"max_base_range_pct"</span>: <span class="n">15</span>, <span class="k">"near_high_pct"</span>: <span class="n">10</span>, <span class="k">"min_adr_pct"</span>: <span class="n">5</span>,
+  <span class="k">"trail_sma"</span>: <span class="n">10</span>   <span class="c">// faster trail for tighter momentum names</span>
+}</pre>
+
+<h3>Parabolic long only, small-cap bounce hunting</h3>
+<pre>{
+  <span class="k">"setups"</span>: [<span class="s">"parabolic_long"</span>],
+  <span class="k">"min_cap_m"</span>: <span class="n">300</span>, <span class="k">"max_cap_m"</span>: <span class="n">5000</span>,
+  <span class="k">"pl_drop"</span>: <span class="n">50</span>, <span class="k">"pl_drop_days"</span>: <span class="n">15</span>, <span class="k">"pl_bounce_within"</span>: <span class="n">5</span>, <span class="k">"pl_max_bounce"</span>: <span class="n">30</span>
+}</pre>
+
+<div class="callout warn"><strong>Going live.</strong> Set <code>"paper": false</code> AND launch with <code>--i-understand-live</code>,
+point <code>port</code> at the live gateway (4001), and set <code>"dry_run": false</code> only after weeks of paper validation.
+Paper (<code>DU…</code>) and live (<code>U…</code>) gateways cannot share a port or login.</div>
+
+<!-- ───────────────────────── CLI ───────────────────────── -->
+<h2 id="cli">CLI flags</h2>
+<table>
+  <thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>--check</code></td><td>Validate config + imports. No network, no IB.</td></tr>
+    <tr><td><code>--scan-only</code></td><td>Print today's ranked setups. Needs data (Yahoo/Nasdaq) but no IB.</td></tr>
+    <tr><td><code>--once</code></td><td>Connect, run one entry+manage cycle, exit.</td></tr>
+    <tr><td><code>(no flag)</code></td><td>Run the scheduled loop continuously.</td></tr>
+    <tr><td><code>--config PATH</code></td><td>Use a specific config file (default <code>qm_bot.json</code> next to the exe).</td></tr>
+    <tr><td><code>--i-understand-live</code></td><td>Required to connect when <code>paper:false</code>.</td></tr>
+  </tbody>
+</table>
+
+<p class="foot">Companion docs in this folder: <code>README_BOT.md</code> (usage), <code>HANDOVER.md</code> (for the next engineer).
+Live config: <code>qm_bot.json</code>. Source: <code>qm_bot.py</code>, <code>universe.py</code>, <code>qm_long_backtest.py</code>.</p>
+</div>
+<script>
+function tog(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';}
+</script>
+</body>
+</html>

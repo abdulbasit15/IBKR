@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intraday Equity Bots — Documentation</title><style>
+:root{
+  --ink:#1f2933; --muted:#67727e; --line:#e3e8ef; --bg:#ffffff; --soft:#f7f9fc;
+  --pos:#1f9d63; --neg:#d64545; --accent:#2f6feb; --accent-soft:#eaf1ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;
+  padding:28px 34px;box-shadow:0 1px 3px rgba(16,24,40,.04);}
+h1{font-size:30px;line-height:1.25;margin:.2em 0 .4em;letter-spacing:-.01em}
+h2{font-size:22px;margin:1.6em 0 .5em;padding-top:.3em;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:17px;margin:1.3em 0 .4em}
+h1+p,h2+p{margin-top:.2em}
+p{margin:.7em 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--soft);border:1px solid var(--line);border-radius:5px;
+  padding:.08em .35em;font:13.5px/1.4 "SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;color:inherit;padding:0;font-size:13px}
+blockquote{margin:1em 0;padding:.6em 1em;background:var(--accent-soft);
+  border-left:4px solid var(--accent);border-radius:0 8px 8px 0;color:#243b53}
+blockquote.warn{background:#fff4f0;border-left-color:var(--neg);color:#7a271a}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfe}
+hr{border:none;border-top:1px solid var(--line);margin:2em 0}
+ul,ol{margin:.6em 0 .6em 1.3em;padding:0}
+li{margin:.25em 0}
+.tiles{display:flex;flex-wrap:wrap;gap:14px;margin:1.2em 0}
+.tile{flex:1 1 140px;background:var(--soft);border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.v.pos{color:var(--pos)} .v.neg{color:var(--neg)}
+.chart{margin:1.4em 0}
+.chart .cap{font-size:13px;color:var(--muted);margin:.2em 0 .6em}
+.footer{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+svg{max-width:100%;height:auto;display:block}
+</style></head>
+<body><div class="wrap"><div class="card">
+<h1>Intraday Equity Bots — Documentation</h1>
+<p>Documentation set for the long-only intraday IBKR equity bots (PDH · ORB · NR7). This folder complements the project <a href="../README.md"><code>../README.md</code></a> (setup/run/build) and the operational handoff. For deep code/operational context see <a href="AI_HANDOVER.md"><code>AI_HANDOVER.md</code></a>.</p>
+<h2>Contents</h2>
+<table><thead><tr><th>Strategy</th><th>Logic</th><th>Performance</th></tr></thead><tbody><tr><td><strong>PDH Breakout</strong></td><td><a href="pdh_breakout.logic.md">md</a> · <a href="pdh_breakout.logic.html">html</a></td><td><a href="pdh_breakout.performance.md">md</a> · <a href="pdh_breakout.performance.html">html</a></td></tr><tr><td><strong>ORB Stocks-in-Play</strong></td><td><a href="orb_stocks_in_play.logic.md">md</a> · <a href="orb_stocks_in_play.logic.html">html</a></td><td><a href="orb_stocks_in_play.performance.md">md</a> · <a href="orb_stocks_in_play.performance.html">html</a></td></tr><tr><td><strong>NR7 Compression</strong></td><td><a href="nr7_compression.logic.md">md</a> · <a href="nr7_compression.logic.html">html</a></td><td><a href="nr7_compression.performance.md">md</a> · <a href="nr7_compression.performance.html">html</a></td></tr><tr><td><strong>VWAP Pullback / Reclaim</strong></td><td><a href="vwap_pullback.logic.md">md</a> · <a href="vwap_pullback.logic.html">html</a></td><td><a href="vwap_pullback.performance.md">md</a> · <a href="vwap_pullback.performance.html">html</a></td></tr></tbody></table>
+<ul><li><strong>Logic</strong> docs explain the edge thesis, universe, entry/stop/target math, management, and config keys, cross-linked to the source.</li><li><strong>Performance</strong> docs summarize the faithful backtest (<a href="../backtest.py"><code>../backtest.py</code></a>) output stored in <a href="../reports"><code>../reports/</code></a>, with equity curves and daily P&amp;L. <strong>Read the caveats</strong> — these are regime- and selection-biased samples, not live guarantees.</li></ul>
+<h2>The four strategies at a glance</h2>
+<table><thead><tr><th></th><th>PDH Breakout</th><th>ORB Stocks-in-Play</th><th>NR7 Compression</th><th>VWAP Pullback</th></tr></thead><tbody><tr><td>Setup</td><td>break of prior-day high</td><td>break of 09:30–09:35 opening range on a gapper</td><td>break of OR on a compressed (NR7) trend name</td><td>retest &amp; reclaim of rising VWAP</td></tr><tr><td>Trigger bar</td><td>5-min close</td><td>1-min close</td><td>5-min close</td><td>5-min close</td></tr><tr><td>Stop</td><td>floored 0.05%-below-PDH</td><td>ORB low / mid</td><td>max(ORB_low−0.5·ATR5, VWAP−buf), floored</td><td>below pullback low, floored</td></tr><tr><td>Target</td><td>2R</td><td>entry + 2 × OR height</td><td>2.2R</td><td>2R</td></tr><tr><td>Windows (ET)</td><td>09:35–11:30, 14:00–15:30</td><td>09:35–11:00</td><td>09:35–11:00</td><td>09:45–11:30, 14:00–15:30</td></tr><tr><td>Entry order</td><td><strong>LMT</strong> (chase)</td><td>MKT</td><td>MKT</td><td>MKT</td></tr><tr><td>1-month verdict</td><td>strongly positive <em>in sample</em></td><td>too few trades (2)</td><td>zero trades</td><td>net negative</td></tr></tbody></table>
+<blockquote><strong>Backtest window:</strong> the current performance pages cover the <strong>last ~1 month (2026-08-07 → 2026-09-04)</strong>. Earlier ~6-week runs (through 2026-07-17) are archived in <a href="../reports/_prev_20260905"><code>../reports/_prev_20260905/</code></a>.</blockquote>
+<h2>Regenerating the performance docs</h2>
+<p>The performance <code>.md</code>/<code>.html</code> are generated from the Excel reports:</p>
+<pre><code>python docs/build_docs.py</code></pre>
+<p>It reads <code>reports/bt_faithful_<em>.xlsx</code> (and <code>reports/backtest_</em>.xlsx</code>), rebuilds each performance page, and re-renders <strong>all</strong> <code>.md</code> in this folder to matching <code>.html</code> (self-contained, no external assets or JS). Re-run <a href="../backtest.py"><code>../backtest.py</code></a> first (needs a live IB Gateway) to refresh the underlying numbers.</p>
+<h2>Honest-status banner</h2>
+<p>The bots are a <strong>paper-validation candidate, not live-ready</strong>. The backtests assume clean limit fills at the computed entry; the real 2026-07-16 paper run used market orders on <em>delayed</em> data and filled 5–6% past the level — the execution gap that motivated switching PDH to <code>LMT</code> and the feed to live data. Treat all performance numbers accordingly.</p>
+<div class="footer">Intraday Equity Bots · generated by <code>docs/build_docs.py</code> ·
+<a href="README.html">docs index</a></div>
+</div></div></body></html>

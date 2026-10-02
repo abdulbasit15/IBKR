@@ -62,7 +62,8 @@ Every strategy block in `equity.json` carries:
 Sizing: `fixed_stocks>0 → qty = fixed_stocks`; else `qty = floor(strategy_capital × risk_per_trade_pct / (entry − stop))`. A shared `SymbolLock` still prevents two strategies from going long the same symbol at once.
 
 ## Logs & reports (per strategy, per day)
-- **Daily log per strategy:** `logs/<Strategy>_<YYYYMMDD>.log` (one file per strategy per day).
+- **Daily log per strategy:** `logs/<Strategy>_<YYYYMMDD>.log` (one file per strategy per day). Plus a shared `logs/equity_<date>.log` and `logs/equity_daemon.log` (dormant/wake lifecycle).
+- **Trades CSV per strategy:** `intraday_trades_<Strategy>.csv` in the app root — one row appended on every trade **close** (created with a header the first time, appended thereafter). Columns: `Date,Time,Strategy,Ticker,Sector,Shares,Entry,Stop,Target,Exit,PnL,R_Multiple,Result,Reason,HoldMin`.
 - **Persistent analytics report per strategy:** `reports/report_<Strategy>.xlsx` — **accumulates across days** and is rewritten after every closed trade. Sheets:
   - `Trades` — every closed trade (date, time, ticker, sector, shares, entry/stop/target/exit, P/L, R-multiple, win/loss, reason).
   - `Daily` — per trading day: trades, wins, losses, win-rate %, gross P/L, avg R.

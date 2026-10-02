@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VWAP Pullback / Reclaim — Strategy Logic</title><style>
+:root{
+  --ink:#1f2933; --muted:#67727e; --line:#e3e8ef; --bg:#ffffff; --soft:#f7f9fc;
+  --pos:#1f9d63; --neg:#d64545; --accent:#2f6feb; --accent-soft:#eaf1ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;
+  padding:28px 34px;box-shadow:0 1px 3px rgba(16,24,40,.04);}
+h1{font-size:30px;line-height:1.25;margin:.2em 0 .4em;letter-spacing:-.01em}
+h2{font-size:22px;margin:1.6em 0 .5em;padding-top:.3em;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:17px;margin:1.3em 0 .4em}
+h1+p,h2+p{margin-top:.2em}
+p{margin:.7em 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--soft);border:1px solid var(--line);border-radius:5px;
+  padding:.08em .35em;font:13.5px/1.4 "SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;color:inherit;padding:0;font-size:13px}
+blockquote{margin:1em 0;padding:.6em 1em;background:var(--accent-soft);
+  border-left:4px solid var(--accent);border-radius:0 8px 8px 0;color:#243b53}
+blockquote.warn{background:#fff4f0;border-left-color:var(--neg);color:#7a271a}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfe}
+hr{border:none;border-top:1px solid var(--line);margin:2em 0}
+ul,ol{margin:.6em 0 .6em 1.3em;padding:0}
+li{margin:.25em 0}
+.tiles{display:flex;flex-wrap:wrap;gap:14px;margin:1.2em 0}
+.tile{flex:1 1 140px;background:var(--soft);border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.v.pos{color:var(--pos)} .v.neg{color:var(--neg)}
+.chart{margin:1.4em 0}
+.chart .cap{font-size:13px;color:var(--muted);margin:.2em 0 .6em}
+.footer{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+svg{max-width:100%;height:auto;display:block}
+</style></head>
+<body><div class="wrap"><div class="card">
+<h1>VWAP Pullback / Reclaim — Strategy Logic</h1>
+<blockquote>Source: <a href="../strategies/vwap_pullback.py"><code>strategies/vwap_pullback.py</code></a> · engine: <a href="../equity_base.py"><code>equity_base.py</code></a> · config block: <code>"VWAP PB - 9.45"</code> in <a href="../equity.json"><code>equity.json</code></a></blockquote>
+<h2>Edge thesis</h2>
+<p>A <strong>break-and-retest of session VWAP</strong>. After a first impulse pushes price above a <strong>rising</strong> session VWAP, a <em>controlled</em> pullback that re-tests the VWAP zone and holds above it on a <strong>higher low</strong> often resolves into continuation. Go long when the next completed 5-min bar <strong>reclaims</strong> — closing back above both VWAP and the pullback high — on volume. VWAP is the intraday "fair value" line institutions lean on, so a held retest is a lower-risk entry than chasing the initial breakout.</p>
+<h2>Universe &amp; watchlist</h2>
+<p>Same "stocks in play" screen as PDH (<code>build_watchlist()</code>): scanner seed → prior-close price band (<code>min_price</code>/<code>max_price</code> 15–500) → dollar-ADV ≥ <code>min_dollar_adv</code> (25M) → pre-market RVOL ≥ <code>min_premarket_rvol</code> (1.5, <em>missing ⇒ keep</em>). Excludes <code>SPY</code>/<code>QQQ</code>; capped at <code>max_watchlist</code> (30).</p>
+<h2>Entry conditions (all must hold)</h2>
+<p>Evaluated on the <strong>last completed 5-min bar</strong> (<code>bars5[-2]</code> = the trigger bar), only at a new-bar-open boundary. VWAP is computed <strong>from bars</strong> (delayed-safe). Windows <code>09:45–11:30</code> and <code>14:00–15:30</code> (the first ~10 min is skipped so VWAP + an impulse leg can form):</p>
+<table><thead><tr><th>#</th><th>Gate</th><th>Rule</th></tr></thead><tbody><tr><td>1</td><td><strong>Trend</strong></td><td>session VWAP <strong>rising</strong> over <code>vwap_slope_lookback</code> (3) bars, and <code>price &gt; VWAP</code> now</td></tr><tr><td>2</td><td><strong>Impulse</strong></td><td>an earlier bar in the last <code>pullback_lookback</code> (8) bars had <code>high ≥ VWAP × (1 + impulse_pct)</code> (0.3%)</td></tr><tr><td>3</td><td><strong>Re-test</strong></td><td>at least one pullback bar dipped into the VWAP zone: <code>low ≤ VWAP × (1 + pullback_touch_band)</code> (0.3%)</td></tr><tr><td>4</td><td><strong>Controlled</strong></td><td>pullback held above VWAP: <code>pullback_low ≥ VWAP × (1 − reclaim_depth_pct)</code> (0.2%)</td></tr><tr><td>5</td><td><strong>Higher low</strong></td><td><code>pullback_low &gt; impulse_bar.low</code></td></tr><tr><td>6</td><td><strong>Reclaim trigger</strong></td><td><code>bar.close &gt; pullback_high</code> <strong>and</strong> <code>bar.close &gt; VWAP</code></td></tr><tr><td>7</td><td><strong>Volume</strong></td><td><code>bar.volume ≥ vol_mult × avg(prior 6 completed bars)</code> (<code>vol_mult</code> 1.3)</td></tr></tbody></table>
+<h2>Levels (entry / stop / target)</h2>
+<pre><code>entry   = pullback_high + entry_offset_atr_mult × ATR(atr_period,5m)   # +0.05·ATR5
+structural = pullback_low − stop_atr_mult × ATR5                        # below the higher low
+stop    = min(structural, entry × (1 − min_stop_pct))                   # floored to ≥0.5%
+R       = entry − stop
+target  = entry + target_r_mult × R                                     # target_r_mult = 2.0 → 2R</code></pre>
+<p>Rejected if <code>R ≤ 0</code>. The stop sits below the <strong>pullback (higher) low</strong>, so risk is defined by the retest structure, not an arbitrary distance.</p>
+<h2>Position sizing &amp; management</h2>
+<p>Same engine as the others: <code>fixed_stocks</code> (1) or 1% risk-at-stop on $100k; native stop-market + TP bracket, OCA-grouped; breakeven at <code>breakeven_mult</code> R (1.0), trail from <code>trail_start_mult</code> R (1.5) locking <code>trail_lock_mult</code> R (0.5); EOD flatten 15:55.</p>
+<h2>Order execution</h2>
+<p><code>entry_order_type</code> is currently <strong><code>MKT</code></strong>. As with the other bots, set it to <code>LMT</code> for the bounded marketable-limit chase (<code>max_chase_pct</code> 0.5%) to cap entry slippage.</p>
+<h2>Config keys (VWAP PB block)</h2>
+<table><thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><code>entry_order_type</code></td><td><code>MKT</code></td><td>true market entry (consider <code>LMT</code>)</td></tr><tr><td><code>windows</code></td><td><code>[["09:45","11:30"],["14:00","15:30"]]</code></td><td>two windows; skip the first ~10 min</td></tr><tr><td><code>vwap_slope_lookback</code></td><td><code>3</code></td><td>bars used to confirm VWAP is rising</td></tr><tr><td><code>impulse_pct</code></td><td><code>0.003</code></td><td>how far above VWAP the impulse must reach</td></tr><tr><td><code>pullback_lookback</code></td><td><code>8</code></td><td>window to find the impulse/pullback</td></tr><tr><td><code>pullback_touch_band</code></td><td><code>0.003</code></td><td>how close to VWAP the retest must dip</td></tr><tr><td><code>reclaim_depth_pct</code></td><td><code>0.002</code></td><td>max allowed dip below VWAP during the pullback</td></tr><tr><td><code>vol_mult</code></td><td><code>1.3</code></td><td>reclaim-bar volume confirmation</td></tr><tr><td><code>atr_period</code></td><td><code>14</code></td><td>ATR for entry/stop</td></tr><tr><td><code>entry_offset_atr_mult</code> / <code>stop_atr_mult</code></td><td><code>0.05</code> / <code>0.5</code></td><td>entry buffer / stop distance</td></tr><tr><td><code>target_r_mult</code></td><td><code>2.0</code></td><td>2R target</td></tr><tr><td><code>max_chase_pct</code> / <code>entry_timeout_sec</code></td><td><code>0.005</code> / <code>30</code></td><td>LMT chase (if enabled)</td></tr></tbody></table>
+<h2>Known failure modes</h2>
+<ul><li><strong>Chop below/around VWAP</strong> produces failed reclaims that tag the stop — the dominant risk,</li></ul>
+<p>  and the backtest was <strong>net negative</strong> (see performance doc).</p>
+<ul><li><strong>Parameter sensitivity</strong> — impulse/touch/reclaim bands are tight; small changes materially</li></ul>
+<p>  change the trade count.</p>
+<ul><li><strong>Delayed data</strong> breaks the intraday VWAP timing; run on live data.</li></ul>
+<div class="footer">Intraday Equity Bots · generated by <code>docs/build_docs.py</code> ·
+<a href="README.html">docs index</a></div>
+</div></div></body></html>

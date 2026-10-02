@@ -1,0 +1,116 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI HANDOVER — Intraday Equity Bots (IBKR / ib_async)</title><style>
+:root{
+  --ink:#1f2933; --muted:#67727e; --line:#e3e8ef; --bg:#ffffff; --soft:#f7f9fc;
+  --pos:#1f9d63; --neg:#d64545; --accent:#2f6feb; --accent-soft:#eaf1ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;
+  padding:28px 34px;box-shadow:0 1px 3px rgba(16,24,40,.04);}
+h1{font-size:30px;line-height:1.25;margin:.2em 0 .4em;letter-spacing:-.01em}
+h2{font-size:22px;margin:1.6em 0 .5em;padding-top:.3em;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:17px;margin:1.3em 0 .4em}
+h1+p,h2+p{margin-top:.2em}
+p{margin:.7em 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--soft);border:1px solid var(--line);border-radius:5px;
+  padding:.08em .35em;font:13.5px/1.4 "SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;color:inherit;padding:0;font-size:13px}
+blockquote{margin:1em 0;padding:.6em 1em;background:var(--accent-soft);
+  border-left:4px solid var(--accent);border-radius:0 8px 8px 0;color:#243b53}
+blockquote.warn{background:#fff4f0;border-left-color:var(--neg);color:#7a271a}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfe}
+hr{border:none;border-top:1px solid var(--line);margin:2em 0}
+ul,ol{margin:.6em 0 .6em 1.3em;padding:0}
+li{margin:.25em 0}
+.tiles{display:flex;flex-wrap:wrap;gap:14px;margin:1.2em 0}
+.tile{flex:1 1 140px;background:var(--soft);border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.v.pos{color:var(--pos)} .v.neg{color:var(--neg)}
+.chart{margin:1.4em 0}
+.chart .cap{font-size:13px;color:var(--muted);margin:.2em 0 .6em}
+.footer{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+svg{max-width:100%;height:auto;display:block}
+</style></head>
+<body><div class="wrap"><div class="card">
+<h1>AI HANDOVER — Intraday Equity Bots (IBKR / ib_async)</h1>
+<p>Continuity doc for the next AI/engineer. Written 2026-09-05. Complements the older operational <a href="../HANDOFF.md"><code>../HANDOFF.md</code></a> and <a href="../BUILD_AND_DEPLOY.md"><code>../BUILD_AND_DEPLOY.md</code></a>; where they disagree, <strong>this file is newer</strong>.</p>
+<h2>1. What this project is</h2>
+<p>Three <strong>long-only, intraday-only</strong> IBKR equity bots on <strong>ib_async</strong> (API 10.45.x), config-driven by <a href="../equity.json"><code>../equity.json</code></a>, defaulting to <strong>paper account DU672616</strong>, <strong>IB Gateway port 4002</strong>. Entry point <a href="../runner.py"><code>../runner.py</code></a> runs one thread per active strategy (own clientId 30/31/32; bootstrap clientId ~120). Long-only, ≤1% risk-at-stop, hard EOD flatten.</p>
+<h2>2. Code map</h2>
+<table><thead><tr><th>File</th><th>Role</th></tr></thead><tbody><tr><td><a href="../runner.py"><code>../runner.py</code></a></td><td>bootstrap equity/vol-scale, shared risk/cache/journal, spawn one thread per active strategy</td></tr><tr><td><a href="../equity_base.py"><code>../equity_base.py</code></a></td><td><code>EquityStrategyBase</code>: per-thread event loop, ET windows, sizing + min-stop floor, RVOL, VWAP-from-bars, ATR/ADR, regime gate, bracket placement, breakeven/trail, EOD-flatten-every-tick, reconnect, scanner, journaling</td></tr><tr><td><a href="../equity_order.py"><code>../equity_order.py</code></a></td><td>bracket builder; <strong>entry modes</strong> (MKT true-market / LMT marketable-limit chase); resize on partial; breakeven/trail modify; emergency+EOD flatten</td></tr><tr><td><a href="../strategies/pdh_breakout.py"><code>../strategies/pdh_breakout.py</code></a></td><td>PDH breakout (see <a href="pdh_breakout.logic.md">logic</a>)</td></tr><tr><td><a href="../strategies/orb_stocks_in_play.py"><code>../strategies/orb_stocks_in_play.py</code></a></td><td>ORB stocks-in-play (see <a href="orb_stocks_in_play.logic.md">logic</a>)</td></tr><tr><td><a href="../strategies/nr7_compression.py"><code>../strategies/nr7_compression.py</code></a></td><td>NR7 compression (see <a href="nr7_compression.logic.md">logic</a>)</td></tr><tr><td><a href="../portfolio_risk.py"><code>../portfolio_risk.py</code></a></td><td>thread-safe risk book: 1% risk-at-stop, aggregate-risk cap, sector cap, same-symbol lock, daily-loss halt, persistence</td></tr><tr><td><a href="../market_data.py"><code>../market_data.py</code></a></td><td>global historical-data rate limiter, per-day JSON cache, vol-scale detection</td></tr><tr><td><a href="../calendar_util.py"><code>../calendar_util.py</code></a></td><td>ET tz + NYSE holiday/half-day calendar (static 2025–2027)</td></tr><tr><td><a href="../reporting.py"><code>../reporting.py</code></a></td><td>Excel analytics report (Trades/Daily/ByTicker/Summary)</td></tr><tr><td><a href="../backtest.py"><code>../backtest.py</code></a></td><td>faithful historical replay of the live engine → <code>reports/*.xlsx</code> (read-only; needs live IB Gateway)</td></tr><tr><td><a href="../test_order.py"><code>../test_order.py</code></a> / <a href="../scanner_test.py"><code>../scanner_test.py</code></a></td><td>1-share bracket smoke test / scanner+data check</td></tr><tr><td><a href="build_docs.py"><code>build_docs.py</code></a></td><td>regenerate these docs (performance md/html from xlsx + render all md→html)</td></tr></tbody></table>
+<h2>3. Recent changes</h2>
+<h3>2026-09-27 — backtest-parity config</h3>
+<ul><li>Per user: aligned the 4 active strategies to the faithful backtest's assumptions —</li></ul>
+<p>  <strong><code>entry_order_type: "LMT"</code></strong> (all 4; ORB/NR7/VWAP were <code>MKT</code>) and <strong><code>fixed_stocks: 0</code></strong>   (all 4; was <code>1</code>) so sizing is 1% risk-at-stop on $100k, the same basis the backtest reports.   Strategy params were already identical (backtest reads them from <code>equity.json</code>).</p>
+<ul><li><strong>Parity is only partial by design.</strong> <code>backtest.py</code> does NOT model several live safety gates,</li></ul>
+<p>  so live is MORE conservative than the reported numbers: (a) <code>max_position_notional</code> ($100k)   caps size — with PDH's ~0.5% floored stop each trade <em>wants</em> ~$200k notional, so the cap   roughly halves PDH size vs the (uncapped, ~2x-levered) backtest; (b) portfolio risk gates   (<code>aggregate_open_risk_pct</code> 0.03, <code>max_concurrent_positions</code>, <code>max_positions_per_sector</code> 2,   <code>daily_loss_limit_pct</code> 0.03 halt) and (c) the <code>regime</code> gate (SPY/VIX) can all skip trades the   per-symbol backtest took. Closing that gap means relaxing risk controls — do NOT do so without   explicit sign-off (removing the notional cap = intraday leverage).</p>
+<h3>2026-09-27 — persistent daemon (dormant between sessions)</h3>
+<ul><li><strong><a href="../runner.py"><code>../runner.py</code></a> no longer exits</strong> on a non-trading day / outside the window.</li></ul>
+<p>  It now runs as a <strong>daemon</strong>: <code>main()</code> loops <code>wait_for_session()</code> → <code>run_one_session()</code>. It stays   <strong>dormant (no broker connection)</strong> on weekends/holidays, before a per-day pre-open lead, and   after the day's EOD flatten; it wakes ~<code>preopen_lead_min</code> (default 10) minutes before the   earliest active-strategy window, runs that session (bootstrap + one thread per strategy, which   self-flatten at EOD), then returns to dormancy for the next trading day.</p>
+<ul><li>New optional top-level config keys: <code>preopen_lead_min</code> (default 10), <code>dormant_poll_sec</code></li></ul>
+<p>  (default 60). Lifecycle logs go to <code>logs/equity_daemon.log</code>; per-session trading logs stay   date-stamped. Ctrl+C stops the daemon cleanly. (The old per-thread <code>is_trading_day</code> guard in   <a href="../equity_base.py"><code>../equity_base.py</code></a> remains as a redundant safety net but no longer fires.)</p>
+<h3>2026-09-05</h3>
+<ol><li><strong>Diagnosed the 2026-07-16 PDH live run</strong> (<a href="../logs/logs/PDH___9_35_20260716.log"><code>../logs/logs/PDH___9_35_20260716.log</code></a>):</li></ol>
+<p>   4 of 5 entries filled <strong>above</strong> their own take-profit. Root cause = <code>market_data_type: 3</code>    (15-min <strong>delayed</strong> data) + <code>entry_order_type: "MKT"</code>. The signal fired on stale bars; the    unbounded market order filled at the true price 5–6% past the level (IR level ~79.58 →    filled @ 84.64), so the TP <code>LMT SELL</code> was instantly marketable and dumped for a small loss.</p>
+<ol><li><strong><code>equity_order.py</code></strong> — documented and preserved the two entry modes; <code>MKT</code> is a true</li></ol>
+<p>   market order (no ceiling), <code>LMT</code> is the marketable-limit <strong>chase walk</strong> bounded by    <code>max_chase_pct</code> (rests at entry, steps up, no-fills if price ran away).</p>
+<ol><li><strong><code>equity_base.py</code></strong> — added a startup <strong>WARNING</strong> when <code>market_data_type</code> is 3/4 explaining</li></ol>
+<p>   the delayed-data execution risk for both modes.</p>
+<ol><li><strong><code>equity.json</code></strong> — per user decision: <strong>PDH → <code>entry_order_type: "LMT"</code></strong> and</li></ol>
+<p>   <strong><code>market_data_type: 1</code> (live)</strong> for all strategies. ORB and NR7 remain <code>MKT</code>.</p>
+<blockquote class="warn">⚠️ <code>market_data_type: 1</code> requires the paper account to have a <strong>live data subscription shared</strong> to it (Client Portal → Settings → Account Config → Paper Trading Account → "Share real-time market data"). Without it, ticker fields are <strong>NaN</strong> and the VWAP gate silently blocks every entry (a known past failure). If you see NaN prices / zero trades, that's the cause — either share the sub or set <code>market_data_type: 3</code> and expect delayed.</blockquote>
+<h2>4. Data-entitlement — the key operational fact</h2>
+<ul><li>Paper <code>DU672616</code> historically had <strong>no live data sub</strong>. <code>market_data_type: 3</code> (delayed)</li></ul>
+<p>  makes historical bars + VWAP-from-bars work but makes every intraday signal ~15 min stale.</p>
+<ul><li>The bots compute VWAP <strong>from bars</strong> (<code>session_vwap_from_bars</code>) precisely so the VWAP gate</li></ul>
+<p>  survives delayed feeds; the live RTVolume <code>ticker.vwap</code> (tick 233) is NaN without entitlement.</p>
+<ul><li>Net: to trade the levels for real you need <strong>live data (type 1)</strong> <em>and</em> the subscription</li></ul>
+<p>  shared. This is the single biggest gating item.</p>
+<h2>5. Backtest &amp; performance status</h2>
+<ul><li><a href="../backtest.py"><code>../backtest.py</code></a> faithfully mirrors the engine (windows, VWAP-from-bars,</li></ul>
+<p>  gates, stop floor, breakeven+trail, EOD, slippage 5bps/side + $0.005/sh) on IBKR historical   bars. It needs a live IB Gateway to pull data; <strong>it cannot run in a sandbox</strong>.</p>
+<ul><li><strong>Current</strong> outputs in <a href="../reports"><code>../reports/</code></a> are the <strong>1-month run (2026-08-07 → 2026-09-04)</strong>,</li></ul>
+<p>  run 2026-09-05 on live data via Gateway 4002 (BT_DAYS=21):</p>
+<ul><li><strong>PDH</strong> — 66 trades, 81.8% win, PF 9.1, <strong>+$71,384</strong> <em>(regime/selection-biased; see perf doc)</em>.</li><li><strong>ORB</strong> — 2 trades, 50% win, +$94 <em>(too few to judge this window)</em>.</li><li><strong>NR7</strong> — <strong>0 trades</strong> (no report file written; stacked daily filters didn't fire).</li><li><strong>VWAP PB</strong> — 36 trades, 30.6% win, PF 0.44, <strong>−$9,625</strong> (failed reclaims in chop).</li><li><strong>Earlier</strong> ~6-week run (≈2026-06-03 → 2026-07-17) is archived in <code>reports/_prev_20260905/</code></li></ul>
+<p>  (PDH 137 trades PF 11.43 +$159.7k; ORB 321 trades −$54.3k; VWAP 24 trades; NR7 3 trades).</p>
+<ul><li>The performance docs derive their numbers from these files via <a href="build_docs.py"><code>build_docs.py</code></a>.</li><li><strong>Big caveat:</strong> backtests assume clean <strong>limit fills at the computed entry</strong>. The live</li></ul>
+<p>  2026-07-16 run showed the real execution gap when using MKT on delayed data. Backtested   edge ≠ live edge until data + execution match the backtest assumptions.</p>
+<h2>6. Known discrepancies / gotchas</h2>
+<ul><li><strong>VWAP Pullback is now a 4th active strategy</strong> (added externally ~2026-09-05):</li></ul>
+<p>  <code>active_strategies</code> now lists <code>"VWAP PB - 9.45"</code>, <a href="../strategies/vwap_pullback.py"><code>../strategies/vwap_pullback.py</code></a>   now exists, and it has a config block. (This resolves the earlier "vwap_pullback.py missing"   note.) Its <code>entry_order_type</code> is still <code>MKT</code> — consider <code>LMT</code> like PDH. Its   <a href="vwap_pullback.logic.md">logic</a> / <a href="vwap_pullback.performance.md">performance</a> docs are included.</p>
+<ul><li><strong><code>TradeReporter</code> ACCUMULATES</strong> — <code>backtest.py</code> writes via it, so re-running a backtest</li></ul>
+<p>  <em>appends</em> to any existing <code>reports/bt_faithful_*.xlsx</code> (blending old + new). <strong>Delete the   target report(s) before a fresh run</strong>, or slice off the new rows afterward (the 2026-09-05   1-month run did the latter; July originals are archived in <code>reports/_prev_20260905/</code>).</p>
+<ul><li><strong>Stale <code>dist/intraday_equity.exe</code></strong> — built before recent fixes. <strong>Rebuild</strong> before any</li></ul>
+<p>  deployment (<code>build_and_deploy.ps1</code>; see <a href="../BUILD_AND_DEPLOY.md"><code>../BUILD_AND_DEPLOY.md</code></a>).</p>
+<ul><li><strong><code>fixed_stocks: 1</code></strong> on all strategies ⇒ every trade is exactly 1 share (P&amp;L is tiny by</li></ul>
+<p>  design during validation). Set to <code>0</code> for real 1%-risk sizing when ready.</p>
+<ul><li><strong>Static calendar</strong> (2025–2027) in <code>calendar_util.py</code> — extend yearly.</li><li><strong>Polling engine</strong> — <code>reqHistoricalData</code> each tick (rate-limited). Fine for a few names;</li></ul>
+<p>  move to <code>reqRealTimeBars</code> for large universes.</p>
+<h2>7. Open items / TODO</h2>
+<ol><li><strong>Live data confirmed working 2026-09-05</strong> (historical bars flowed on Gateway 4002 once a</li></ol>
+<p>   duplicate session was closed — Error 162 "connected from a different IP address" clears when    only one session is logged in). Still TODO: verify a real <em>order fill</em> end-to-end with    <code>market_data_type: 1</code> during RTH (watch for NaN quotes → zero trades if the sub lapses).</p>
+<ol><li>Decide whether to also switch <strong>ORB/NR7 to <code>LMT</code></strong> (recommended, same slippage rationale).</li><li>~~Flip <code>fixed_stocks</code> 1 → 0~~ <strong>DONE 2026-09-27</strong> (all 4 active now <code>fixed_stocks: 0</code>, <code>LMT</code>).</li></ol>
+<p>   Positions are now real-sized (1% risk-at-stop) — validate a real fill before trusting size.</p>
+<ol><li><strong>Run at the open (~09:35 ET)</strong> on live data to see genuine breakout entries.</li><li><strong>NR7 needs a bigger universe</strong> to produce a testable trade count.</li><li>Resolve the <strong><code>vwap_pullback.py</code></strong> discrepancy.</li><li><strong>Rebuild the exe</strong> before deploy.</li><li>Re-run <code>backtest.py</code> on live Gateway to refresh <code>reports/*.xlsx</code>, then <code>python docs/build_docs.py</code>.</li></ol>
+<h2>8. Environment constraints (LPL)</h2>
+<ul><li><strong>pypi.org blocked (403)</strong> → install via Aliyun mirror <code>https://mirrors.aliyun.com/pypi/simple/</code>.</li><li>Python 3.12; project <code>.venv</code> present (has <code>openpyxl</code>; no <code>pandas</code>/<code>matplotlib</code>/<code>markdown</code>,</li></ul>
+<p>  hence <code>build_docs.py</code> is dependency-free).</p>
+<ul><li>Do <strong>not</strong> consider SOXL for this work (explicitly excluded by the user).</li><li>Never point at a live account without LPL pre-clearance.</li></ul>
+<h2>9. How to pick up quickly</h2>
+<ol><li>Read <a href="../README.md"><code>../README.md</code></a> (setup) → this file → the three <a href="README.md">logic docs</a>.</li><li>Start IB Gateway (paper, port 4002, API on). <code>python runner.py</code> from the project root.</li><li>For a safe order-path check: <code>python test_order.py AAPL</code> (places a 1-share bracket — flatten it after).</li><li>To refresh docs after a new backtest: <code>python docs/build_docs.py</code>.</li></ol>
+<div class="footer">Intraday Equity Bots · generated by <code>docs/build_docs.py</code> ·
+<a href="README.html">docs index</a></div>
+</div></div></body></html>

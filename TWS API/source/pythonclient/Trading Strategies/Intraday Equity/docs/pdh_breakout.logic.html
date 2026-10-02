@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDH Breakout — Strategy Logic</title><style>
+:root{
+  --ink:#1f2933; --muted:#67727e; --line:#e3e8ef; --bg:#ffffff; --soft:#f7f9fc;
+  --pos:#1f9d63; --neg:#d64545; --accent:#2f6feb; --accent-soft:#eaf1ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;
+  padding:28px 34px;box-shadow:0 1px 3px rgba(16,24,40,.04);}
+h1{font-size:30px;line-height:1.25;margin:.2em 0 .4em;letter-spacing:-.01em}
+h2{font-size:22px;margin:1.6em 0 .5em;padding-top:.3em;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:17px;margin:1.3em 0 .4em}
+h1+p,h2+p{margin-top:.2em}
+p{margin:.7em 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--soft);border:1px solid var(--line);border-radius:5px;
+  padding:.08em .35em;font:13.5px/1.4 "SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;color:inherit;padding:0;font-size:13px}
+blockquote{margin:1em 0;padding:.6em 1em;background:var(--accent-soft);
+  border-left:4px solid var(--accent);border-radius:0 8px 8px 0;color:#243b53}
+blockquote.warn{background:#fff4f0;border-left-color:var(--neg);color:#7a271a}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfe}
+hr{border:none;border-top:1px solid var(--line);margin:2em 0}
+ul,ol{margin:.6em 0 .6em 1.3em;padding:0}
+li{margin:.25em 0}
+.tiles{display:flex;flex-wrap:wrap;gap:14px;margin:1.2em 0}
+.tile{flex:1 1 140px;background:var(--soft);border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.v.pos{color:var(--pos)} .v.neg{color:var(--neg)}
+.chart{margin:1.4em 0}
+.chart .cap{font-size:13px;color:var(--muted);margin:.2em 0 .6em}
+.footer{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+svg{max-width:100%;height:auto;display:block}
+</style></head>
+<body><div class="wrap"><div class="card">
+<h1>PDH Breakout — Strategy Logic</h1>
+<blockquote>Source: <a href="../strategies/pdh_breakout.py"><code>strategies/pdh_breakout.py</code></a> · engine: <a href="../equity_base.py"><code>equity_base.py</code></a> · orders: <a href="../equity_order.py"><code>equity_order.py</code></a> · config block: <code>"PDH - 9.35"</code> in <a href="../equity.json"><code>equity.json</code></a></blockquote>
+<h2>Edge thesis</h2>
+<p>The prior session's high (PDH) is a widely-watched level. A clean intraday break of it, <strong>on volume and above session VWAP</strong>, tends to attract continuation buying. This is the simplest and most mechanical of the three bots — one level, one direction (long), one confirmation stack.</p>
+<h2>Universe &amp; watchlist</h2>
+<p>Built once, right after the first window opens, in <code>build_watchlist()</code>:</p>
+<ol><li><strong>Scanner seed</strong> — <code>TOP_PERC_GAIN</code> (IBKR <code>ScannerSubscription</code>, <code>STK.US.MAJOR</code>, <code>CORP</code>, price 20–200). Falls back to <code>universe_symbols</code> on empty/error.</li><li><strong>Price band</strong> — prior-session close within <code>min_price</code>/<code>max_price</code> (20–200).</li><li><strong>Liquidity</strong> — 30-day dollar-ADV ≥ <code>min_dollar_adv</code> (25,000,000).</li><li><strong>Pre-market RVOL</strong> — ≥ <code>min_premarket_rvol</code> (1.5). <em>Missing history ⇒ keep</em> (distinct from a genuine 0).</li><li>Excludes the mega-caps in <code>exclude_symbols</code> (AAPL, MSFT, NVDA, AMZN, GOOGL, META).</li></ol>
+<p>For each survivor the prior-session <strong>high</strong> is cached as that symbol's PDH.</p>
+<h2>Entry conditions (all must hold)</h2>
+<p>Evaluated per symbol each poll, only at a <strong>new-bar-open boundary</strong> (<code>is_new_bar</code>), acting on the <strong>last completed 5-min bar</strong> (<code>bars5[-2]</code> — never the forming bar):</p>
+<table><thead><tr><th>#</th><th>Gate</th><th>Rule</th></tr></thead><tbody><tr><td>1</td><td>Trade window</td><td>ET now inside <code>09:35–11:30</code> <strong>or</strong> <code>14:00–15:30</code></td></tr><tr><td>2</td><td>Breakout</td><td><code>bar.close &gt; PDH × (1 + breakout_buffer_pct)</code>  (buffer 0.1%)</td></tr><tr><td>3</td><td>Volume</td><td><code>bar.volume ≥ vol_mult × avg(volume of prior 6 completed bars)</code> (<code>vol_mult</code> 1.5)</td></tr><tr><td>4</td><td>VWAP</td><td>session VWAP computed <strong>from bars</strong> (delayed-safe); <code>price &gt; VWAP</code> (skip if <code>require_vwap:false</code>)</td></tr></tbody></table>
+<h2>Levels (entry / stop / target)</h2>
+<pre><code>trigger = PDH × (1 + breakout_buffer_pct)          # 0.1% above PDH
+entry   = trigger + entry_offset_pct × PDH          # +0.05%
+raw_stop= PDH × (1 − stop_pct)                      # 0.05% below PDH (structural)
+stop    = min(raw_stop, entry × (1 − min_stop_pct)) # floored to ≥0.5% so sizing stays sane
+R       = entry − stop
+target  = entry + target1_R × R                     # target1_R = 2.0  → 2R</code></pre>
+<p>The tight structural stop (0.05% below PDH) is deliberately <strong>floored to <code>min_stop_pct</code> (0.5%)</strong> so a razor-thin stop can't explode share count; the target is measured off the <em>floored</em> stop so the printed R:R is honest. A signal is rejected if <code>R ≤ 0</code> or if realized R:R <code>&lt; min_rr</code> (1.5).</p>
+<h2>Position sizing</h2>
+<p><code>fixed_stocks &gt; 0</code> ⇒ exactly that many shares (currently <strong>1</strong>). Otherwise <code>qty = floor(strategy_capital × risk_per_trade_pct / (entry − stop))</code> = 1% of $100k risked at the stop, capped by <code>max_position_notional</code>.</p>
+<h2>Trade management (<code>manage_open</code>)</h2>
+<ul><li><strong>Protective bracket</strong> — TP (<code>LMT SELL</code>) + stop-<strong>limit</strong> child, attached to the parent and OCA-grouped, so protection is server-side the instant the entry fills (no naked long). PDH uses a <strong>stop-limit</strong> (<code>use_stop_limit=True</code>, band derived from <code>stop_limit_pct</code>) to cap slippage on the exit.</li><li><strong>Breakeven</strong> — at <code>breakeven_mult × R</code> (1.0R) the stop moves to entry.</li><li><strong>Trailing</strong> — from <code>trail_start_mult × R</code> (1.5R) the stop trails <code>high_water − trail_lock_mult × R</code> (0.5R).</li><li><strong>EOD flatten</strong> — checked every tick; hard flat at <code>eod_flatten_time</code> (15:55, pulled earlier on half-days).</li></ul>
+<h2>Order execution (entry) — the important part</h2>
+<p><code>entry_order_type</code> in the config selects how the parent BUY is sent (see <a href="../equity_order.py"><code>equity_order.py</code></a> <code>place_protected_entry</code>):</p>
+<ul><li><strong><code>"LMT"</code> (current setting)</strong> — a marketable-limit <strong>chase walk</strong>: rest a <code>BUY LIMIT</code> at <code>entry</code> and step it up over <code>entry_timeout_sec</code> toward <code>entry × (1 + max_chase_pct)</code>, never above that cap. Fills near the level; <strong>no-fills (skips) if price has already run away.</strong></li><li><strong><code>"MKT"</code></strong> — a true market order: immediate fill, no price ceiling. On a stale/gapped signal it can fill far past the level.</li></ul>
+<blockquote><strong>Why this matters:</strong> on the 2026-07-16 live run PDH used <code>MKT</code> on <strong>delayed</strong> data. An IR signal computed at ~79.58 filled a market order @ <strong>84.64</strong> — 6% past the level, above its own target. Switching PDH to <code>LMT</code> (+ live data) makes the entry bounded: it fills at the level or not at all. See <a href="pdh_breakout.performance.md"><code>pdh_breakout.performance.md</code></a> for the execution-gap discussion.</blockquote>
+<h2>Config keys (PDH block)</h2>
+<table><thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><code>entry_order_type</code></td><td><code>LMT</code></td><td>bounded marketable-limit chase (was <code>MKT</code>)</td></tr><tr><td><code>windows</code></td><td><code>[["09:35","11:30"],["14:00","15:30"]]</code></td><td>two trade windows</td></tr><tr><td><code>breakout_buffer_pct</code></td><td><code>0.001</code></td><td>breakout trigger above PDH</td></tr><tr><td><code>vol_mult</code></td><td><code>1.5</code></td><td>breakout-bar volume confirmation</td></tr><tr><td><code>entry_offset_pct</code></td><td><code>0.0005</code></td><td>entry above trigger</td></tr><tr><td><code>stop_pct</code></td><td><code>0.0005</code></td><td>raw structural stop below PDH (then floored)</td></tr><tr><td><code>stop_limit_pct</code></td><td><code>0.0025</code></td><td>stop-limit band</td></tr><tr><td><code>target1_R</code></td><td><code>2.0</code></td><td>2R target</td></tr><tr><td><code>breakeven_mult</code> / <code>trail_start_mult</code> / <code>trail_lock_mult</code></td><td><code>1.0</code> / <code>1.5</code> / <code>0.5</code></td><td>management</td></tr><tr><td><code>max_chase_pct</code></td><td><code>0.005</code></td><td>LMT chase ceiling (0.5%)</td></tr><tr><td><code>entry_timeout_sec</code></td><td><code>30</code></td><td>chase window</td></tr><tr><td><code>min_stop_pct</code> (shared)</td><td><code>0.005</code></td><td>stop floor</td></tr><tr><td><code>min_rr</code> (shared)</td><td><code>1.5</code></td><td>reject thin R:R</td></tr></tbody></table>
+<h2>Known failure modes</h2>
+<ul><li><strong>Delayed data</strong> (<code>market_data_type: 3</code>) makes every signal ~15 min stale — with <code>LMT</code> you mostly no-fill; with <code>MKT</code> you chase. Run on <strong>live data</strong> (<code>market_data_type: 1</code>).</li><li><strong>Whippy/rangebound days</strong> produce false breakouts that tag the floored stop.</li><li><strong>Selection/regime dependence</strong> — the backtested edge leans on high-beta momentum names in a trending window (see performance doc caveats).</li></ul>
+<div class="footer">Intraday Equity Bots · generated by <code>docs/build_docs.py</code> ·
+<a href="README.html">docs index</a></div>
+</div></div></body></html>

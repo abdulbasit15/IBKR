@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ORB &quot;Stocks in Play&quot; — Strategy Logic</title><style>
+:root{
+  --ink:#1f2933; --muted:#67727e; --line:#e3e8ef; --bg:#ffffff; --soft:#f7f9fc;
+  --pos:#1f9d63; --neg:#d64545; --accent:#2f6feb; --accent-soft:#eaf1ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 80px;}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;
+  padding:28px 34px;box-shadow:0 1px 3px rgba(16,24,40,.04);}
+h1{font-size:30px;line-height:1.25;margin:.2em 0 .4em;letter-spacing:-.01em}
+h2{font-size:22px;margin:1.6em 0 .5em;padding-top:.3em;border-top:1px solid var(--line)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:17px;margin:1.3em 0 .4em}
+h1+p,h2+p{margin-top:.2em}
+p{margin:.7em 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--soft);border:1px solid var(--line);border-radius:5px;
+  padding:.08em .35em;font:13.5px/1.4 "SFMono-Regular",Consolas,"Liberation Mono",monospace}
+pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;overflow:auto}
+pre code{background:none;border:none;color:inherit;padding:0;font-size:13px}
+blockquote{margin:1em 0;padding:.6em 1em;background:var(--accent-soft);
+  border-left:4px solid var(--accent);border-radius:0 8px 8px 0;color:#243b53}
+blockquote.warn{background:#fff4f0;border-left-color:var(--neg);color:#7a271a}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+tr:nth-child(even) td{background:#fbfcfe}
+hr{border:none;border-top:1px solid var(--line);margin:2em 0}
+ul,ol{margin:.6em 0 .6em 1.3em;padding:0}
+li{margin:.25em 0}
+.tiles{display:flex;flex-wrap:wrap;gap:14px;margin:1.2em 0}
+.tile{flex:1 1 140px;background:var(--soft);border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+.v.pos{color:var(--pos)} .v.neg{color:var(--neg)}
+.chart{margin:1.4em 0}
+.chart .cap{font-size:13px;color:var(--muted);margin:.2em 0 .6em}
+.footer{color:var(--muted);font-size:13px;margin-top:40px;text-align:center}
+svg{max-width:100%;height:auto;display:block}
+</style></head>
+<body><div class="wrap"><div class="card">
+<h1>ORB "Stocks in Play" — Strategy Logic</h1>
+<blockquote>Source: <a href="../strategies/orb_stocks_in_play.py"><code>strategies/orb_stocks_in_play.py</code></a> · engine: <a href="../equity_base.py"><code>equity_base.py</code></a> · config block: <code>"ORB SIP - 9.35"</code> in <a href="../equity.json"><code>equity.json</code></a></blockquote>
+<h2>Edge thesis</h2>
+<p>An <strong>Opening Range Breakout</strong> filtered to <em>stocks in play</em> — names with a meaningful opening <strong>gap</strong> and elevated <strong>relative volume</strong>. The premise: when a genuinely-in-play stock clears its 09:30–09:35 opening-range high on volume and holds above VWAP, the day's directional move often extends. The edge is mostly in the <strong>pre-market universe selection</strong>, which IBKR has no native scan field for.</p>
+<h2>Universe &amp; watchlist</h2>
+<p>Built at the open in <code>build_watchlist()</code>:</p>
+<ol><li><strong>Scanner seed</strong> — <code>TOP_PERC_GAIN ∩ HOT_BY_VOLUME</code> (intersect), <code>STK.US.MAJOR</code>, <code>CORP</code>, price 15–500.</li><li><strong>Price</strong> — prior-session close ≥ <code>min_price</code> (15).</li><li><strong>Liquidity</strong> — share-ADV ≥ <code>min_adv</code> (1,000,000), derived from dollar-ADV ÷ prior close.</li><li><strong>Gap</strong> — <code>(today_open − prior_close) / prior_close ≥ min_gap_pct</code> (2%).</li><li><strong>Pre-market RVOL</strong> — ≥ <code>min_premarket_rvol</code> (1.5); <em>missing history ⇒ keep</em>.</li><li>Always excludes <code>SPY</code>, <code>QQQ</code>; capped at <code>max_watchlist</code> (30).</li></ol>
+<h2>Opening range</h2>
+<p>The <code>09:30–09:35</code> 5-min bar defines <code>ORB_high</code>, <code>ORB_low</code>, <code>ORB_mid</code>, <code>height</code>. The range is only accepted when its height is a sane fraction of price: <code>orb_height_min_pct ≤ height/high ≤ orb_height_max_pct</code> (0.3%–5%). Degenerate/halted-open bars are rejected.</p>
+<h2>Entry conditions (all must hold)</h2>
+<p>Evaluated on the <strong>last completed 1-min bar</strong> (<code>bars1[-2]</code>), only at a new-bar-open boundary, and only after <code>09:36</code> (one bar past the OR close):</p>
+<table><thead><tr><th>#</th><th>Gate</th><th>Rule</th></tr></thead><tbody><tr><td>1</td><td>Trade window</td><td>ET now inside <code>09:35–11:00</code></td></tr><tr><td>2</td><td>Breakout</td><td><code>bar.close &gt; ORB_high</code> (1-min close)</td></tr><tr><td>3</td><td>Volume</td><td><code>bar.volume ≥ vol_mult × avg(prior 20 completed 1-min volumes)</code> (1.5)</td></tr><tr><td>4</td><td>VWAP</td><td>session VWAP from bars; <code>price &gt; VWAP</code> (skip if <code>require_vwap:false</code>)</td></tr></tbody></table>
+<h2>Levels (entry / stop / target) — range-based</h2>
+<pre><code>entry  = ORB_high + atr_entry_buffer_mult × ATR(14,1d)     # small ATR buffer above the high
+stop   = ORB_mid   if (height/high &lt; min_or_height_pct)     # tiny range → mid
+         else ORB_low                                       # normal → range low, NOT widened
+target = entry + target.mult × ORB_height                   # entry + 2 × range height</code></pre>
+<p>This is the research "Stocks in Play" construction: the stop is the <strong>structural range low</strong> (or mid on a narrow range), never widened by the strategy, and the target is a <strong>multiple of the opening-range height</strong> (not a multiple of R). The base engine still applies a <code>min_stop_pct</code> safety floor for a degenerate tiny range so sizing can't blow up; with <code>orb_height_min_pct ≥ 0.8%</code> in the backtest the floor effectively never binds.</p>
+<h2>Position sizing</h2>
+<p>Same engine as PDH: <code>fixed_stocks</code> (currently 1), else 1% risk-at-stop on <code>strategy_capital</code> ($100k), capped by <code>max_position_notional</code>.</p>
+<h2>Trade management</h2>
+<p>Native <strong>stop-market</strong> child (not stop-limit) + TP, OCA-grouped and attached to the parent. Breakeven at <code>breakeven_mult</code> R (1.0), trail from <code>trail_start_mult</code> R (1.5) locking <code>trail_lock_mult</code> R (0.5). EOD flatten 15:55, checked every tick.</p>
+<h2>Order execution</h2>
+<p><code>entry_order_type</code> is currently <strong><code>MKT</code></strong> (true market order). To bound entry slippage the same way PDH now does, set it to <code>LMT</code> — the chase walk rests a <code>BUY LIMIT</code> at <code>entry</code> and steps up to <code>entry × (1 + max_chase_pct)</code> (0.5%), no-filling if price has already left the level.</p>
+<h2>Config keys (ORB block)</h2>
+<table><thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><code>entry_order_type</code></td><td><code>MKT</code></td><td>true market entry (consider <code>LMT</code>)</td></tr><tr><td><code>windows</code></td><td><code>[["09:35","11:00"]]</code></td><td>single morning window</td></tr><tr><td><code>orb_height_min_pct</code> / <code>orb_height_max_pct</code></td><td><code>0.008</code> (research) / <code>0.05</code></td><td>accepted OR height band</td></tr><tr><td><code>atr_entry_buffer_mult</code></td><td><code>0.05</code></td><td>ATR buffer above OR-high</td></tr><tr><td><code>signal.vol_mult</code></td><td><code>1.5</code></td><td>breakout-bar volume confirmation</td></tr><tr><td><code>stop.min_or_height_pct</code></td><td><code>0.01</code></td><td>below this, stop = ORB_mid</td></tr><tr><td><code>target.mult</code></td><td><code>2.0</code></td><td>target = entry + 2 × ORB height</td></tr><tr><td><code>universe.min_gap_pct</code></td><td><code>0.02</code></td><td>opening-gap gate</td></tr><tr><td><code>universe.min_premarket_rvol</code></td><td><code>1.5</code></td><td>pre-market RVOL gate</td></tr><tr><td><code>max_chase_pct</code> / <code>entry_timeout_sec</code></td><td><code>0.005</code> / <code>30</code></td><td>LMT chase (if enabled)</td></tr></tbody></table>
+<h2>Known failure modes</h2>
+<ul><li><strong>Whipsaw</strong> — the dominant risk. In the backtest, stops dwarfed targets (109 stops for −$93k vs 18 targets for +$34k); a wide, non-widened range low on a choppy morning gets tagged repeatedly. This strategy was <strong>net negative</strong> in the sample (see performance doc).</li><li><strong>Scanner selection bias</strong> — the backtest replays <em>today's</em> movers historically; live behaviour depends on the day's actual gappers.</li><li><strong>Delayed data</strong> breaks the 1-min breakout timing entirely; run live.</li></ul>
+<div class="footer">Intraday Equity Bots · generated by <code>docs/build_docs.py</code> ·
+<a href="README.html">docs index</a></div>
+</div></div></body></html>

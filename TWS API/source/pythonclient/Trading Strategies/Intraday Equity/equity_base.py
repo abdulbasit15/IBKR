@@ -16,6 +16,7 @@ in config and is the documented next iteration (see README).
 """
 from __future__ import annotations
 import asyncio
+import csv
 import math
 import os
 import threading
@@ -62,13 +63,15 @@ class Position:
 class EquityStrategyBase:
     strategy_type = "base"
 
-    def __init__(self, name, cfg, shared, risk_mgr, log_fn, reporter=None):
+    def __init__(self, name, cfg, shared, risk_mgr, log_fn, reporter=None, trade_csv=None):
         self.name = name
         self.cfg = cfg                      # per-strategy config block
         self.shared = shared                # shared_risk + host/port/account + helpers
         self.risk = risk_mgr                # per-strategy PortfolioRiskManager
         self._log = log_fn
         self.reporter = reporter            # per-strategy TradeReporter (analytics report)
+        self.trade_csv = trade_csv          # per-strategy trades CSV path in the app root
+        self._csv_lock = threading.Lock()   # guards the trades-CSV append
         self.ib: IB | None = None
         self.account = shared.get("default_account")
         self.host = shared.get("host", "127.0.0.1")
@@ -725,17 +728,19 @@ class EquityStrategyBase:
         self.risk.register_close(p.order_ref, pnl)
         self.positions.pop(p.order_ref, None)
         self.journal_close(p.symbol, exit_px, pnl, rmult, reason)
+        row = {
+            "Date": cal.now_et().strftime("%Y-%m-%d"),
+            "Time": cal.now_et().strftime("%H:%M:%S"),
+            "Strategy": self.name, "Ticker": p.symbol, "Sector": p.sector,
+            "Shares": p.qty, "Entry": round(p.entry, 4), "Stop": round(p.stop, 4),
+            "Target": round(p.target, 4), "Exit": round(exit_px, 4),
+            "PnL": round(pnl, 2), "R_Multiple": round(rmult, 3),
+            "Result": "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "FLAT"),
+            "Reason": reason, "HoldMin": "",
+        }
         if self.reporter:
-            self.reporter.record_trade({
-                "Date": cal.now_et().strftime("%Y-%m-%d"),
-                "Time": cal.now_et().strftime("%H:%M:%S"),
-                "Strategy": self.name, "Ticker": p.symbol, "Sector": p.sector,
-                "Shares": p.qty, "Entry": round(p.entry, 4), "Stop": round(p.stop, 4),
-                "Target": round(p.target, 4), "Exit": round(exit_px, 4),
-                "PnL": round(pnl, 2), "R_Multiple": round(rmult, 3),
-                "Result": "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "FLAT"),
-                "Reason": reason, "HoldMin": "",
-            })
+            self.reporter.record_trade(row)
+        self.record_trade_csv(row)          # per-strategy trades CSV in the app root
         self.log(f"CLOSED {p.symbol} {reason} exit {exit_px} pnl {pnl:.2f} ({rmult:.2f}R)")
 
     def flatten_all(self, reason="EOD"):
@@ -774,6 +779,31 @@ class EquityStrategyBase:
             "Exit": exit_px, "PnL": round(pnl, 2), "R_Multiple": round(rmult, 2), "Result": reason,
         })
 
+    # ----------------------------------------------------------------- trade CSV
+    # One CSV PER STRATEGY in the app root (e.g. intraday_trades_ORB_SIP___9_35.csv). A row is
+    # appended on every trade CLOSE; the file is created with a header the first time and appended
+    # to thereafter (matches the supertrend bot's per-strategy trade CSV). Same columns as the
+    # analytics report so the two stay aligned.
+    TRADE_CSV_COLS = ["Date", "Time", "Strategy", "Ticker", "Sector", "Shares", "Entry", "Stop",
+                      "Target", "Exit", "PnL", "R_Multiple", "Result", "Reason", "HoldMin"]
+
+    def record_trade_csv(self, row: dict):
+        """Append ONE closed trade to this strategy's trades CSV in the app root, creating it with
+        a header if absent. Lock-guarded and fully wrapped so trade logging can never crash trading
+        (mirrors the 'reporting must never crash trading' convention)."""
+        if not self.trade_csv:
+            return
+        with self._csv_lock:
+            try:
+                new = not os.path.exists(self.trade_csv)
+                with open(self.trade_csv, "a", newline="", encoding="utf-8") as f:
+                    w = csv.DictWriter(f, fieldnames=self.TRADE_CSV_COLS, extrasaction="ignore")
+                    if new:
+                        w.writeheader()
+                    w.writerow(row)
+            except Exception as e:                 # trade logging must never crash trading
+                self.log(f"trade-csv write failed: {e}")
+
     def in_trade_window(self, now=None):
         """True if `now` (ET) is inside ANY configured trade window (self.windows)."""
         now = now or cal.now_et()
@@ -781,8 +811,15 @@ class EquityStrategyBase:
 
     # ----------------------------------------------------------------- template loop
     def run(self):
+        # Initial connect. If IB Gateway isn't up yet (or the clientId is briefly in use), don't
+        # give up for the day — fall into the same fast-then-backoff reconnect loop used mid-session
+        # so the strategy keeps retrying and ultimately connects (until the EOD flatten time, after
+        # which there's nothing left to do today).
         if not self.connect():
-            return
+            self.log("initial connect failed; retrying until connected or EOD...")
+            if not self.ensure_connected():
+                self.log("could not establish a connection before EOD; exiting for the day.")
+                return
         try:
             start = self.window_start
             if not cal.is_trading_day():

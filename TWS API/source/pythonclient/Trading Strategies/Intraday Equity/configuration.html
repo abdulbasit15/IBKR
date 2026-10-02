@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intraday Equity — Configuration Reference</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834; --good:#006300;
+    --k:#4a3aa7; --str:#008300; --num:#2a78d6; --cmt:#898781;
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --good:#0ca30c;
+    --k:#9085e9; --str:#5cc98c; --num:#86b6ef; --cmt:#898781;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:19px;margin:44px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:22px 0 4px}
+  p,li{color:var(--ink2);font-size:14.5px}
+  .sub{color:var(--muted);font-size:13px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .callout{border-left:3px solid var(--s2);background:var(--surface);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:16px 0;font-size:14px}
+  .callout.v1{border-left-color:var(--s1)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td:first-child{white-space:nowrap}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  td code{background:transparent;border:none;padding:0;color:var(--k)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;vertical-align:middle}
+  .tag.b{background:color-mix(in srgb,var(--s1) 18%,transparent);color:var(--s1)}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;
+    overflow:auto;font-size:12.5px;line-height:1.5;font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+  .k{color:var(--k)} .s{color:var(--str)} .n{color:var(--num)} .c{color:var(--cmt);font-style:italic}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--border);padding-top:14px}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;margin:16px 0}
+  .toc a{margin-right:16px;font-size:13px;white-space:nowrap;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Intraday Equity — Configuration</h1>
+    <p class="sub">JSON config reference for <code>equity.json</code> (long-only intraday equity bots, ib_async).</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<p>
+  The daemon is fully config-driven: <code>runner.py</code> (or the frozen
+  <code>dist\intraday_equity.exe</code>) reads <code>equity.json</code> next to it and launches
+  <b>one thread per active strategy</b>, each on its own IB client id. Change strategies, windows,
+  sizing, or risk with no code changes. Defaults: <b>paper account DU672616</b>, <b>IB Gateway port
+  4002</b>.
+</p>
+
+<div class="toc">
+  <a href="#conn">Connection / top-level</a><a href="#active">Active strategies</a>
+  <a href="#risk">Shared risk</a><a href="#strat">Per-strategy block</a>
+  <a href="#scanner">Scanner / universe</a><a href="#out">Logs &amp; trades output</a>
+  <a href="#run">Build &amp; run</a>
+</div>
+
+<h2 id="conn">Connection / top-level</h2>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>host</code> / <code>port</code></td><td>TWS/Gateway. Default <code>127.0.0.1</code> / <code>4002</code> (paper gateway; <code>4001</code> = live).</td></tr>
+    <tr><td><code>accounts</code> / <code>default_account</code></td><td>Account list + the one to trade (e.g. <code>"DU672616"</code>).</td></tr>
+    <tr><td><code>client_id_base</code></td><td>Base API client id (default <code>30</code>). Each active strategy gets <code>base + index</code>; the start-of-day bootstrap connection uses <code>base + 90</code>.</td></tr>
+    <tr><td><code>market_data_type</code></td><td><code>1</code> live · <code>2</code> frozen · <code>3</code> delayed · <code>4</code> delayed-frozen. Paper <code>DU672616</code> has no live sub → <code>3</code> makes bars/quotes/VWAP work; <code>1</code> yields NaNs that silently block entries when <code>require_vwap</code> is on.</td></tr>
+    <tr><td><code>hist_min_interval_sec</code></td><td>Min seconds between historical-data requests (shared rate limiter). Default <code>2.0</code>.</td></tr>
+    <tr><td><code>reconnect_backoff_sec</code></td><td><span class="tag b">resilience</span> Steady reconnect retry interval (default <code>60</code>). Both the bootstrap connect and every strategy retry fast (5s × 3) then settle to this. Retries continue until connected or the EOD flatten time, so a Gateway that isn't up yet is waited out rather than aborting the day.</td></tr>
+    <tr><td><code>preopen_lead_min</code></td><td>Wake this many minutes before the first trade window (default 10). The daemon stays dormant — with no broker connection — outside the session.</td></tr>
+    <tr><td><code>dormant_poll_sec</code></td><td>How often to re-check while dormant (default 60).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="active">Active strategies</h2>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>active_strategies</code></td><td>List of strategy display-names to run. Each must have a matching block under <code>strategies</code>. The display-name (spaces/dots allowed) is sanitised to drive log/report/CSV filenames, e.g. <code>"ORB SIP - 9.35"</code> → <code>ORB_SIP___9_35</code>.</td></tr>
+    <tr><td><code>_available_strategies_off</code> / <code>_note</code></td><td>Documentation-only: names built + configured but disabled (net-negative in backtest). Move a name into <code>active_strategies</code> to enable it.</td></tr>
+  </tbody>
+</table>
+<p>Registered <code>strategy_type</code> → class (in <code>runner.py</code>): <code>orb_stocks_in_play</code>,
+<code>nr7_compression</code>, <code>pdh_breakout</code>, <code>vwap_pullback</code>,
+<code>trend_pullback</code>, <code>range_breakout_retest</code>, <code>sr_bounce</code>.</p>
+
+<h2 id="risk">Shared risk (<code>shared_risk</code>)</h2>
+<p>Applied to all strategies; a per-strategy block may override several of these keys.</p>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>risk_per_trade_pct</code></td><td>Fraction of the strategy's capital risked at the stop (default <code>0.01</code> = 1%). Ignored when <code>fixed_stocks &gt; 0</code>.</td></tr>
+    <tr><td><code>max_concurrent_positions</code></td><td>Cap on simultaneous open names across the book.</td></tr>
+    <tr><td><code>max_positions_per_sector</code></td><td>Cap per sector (uses <code>sector_map</code>).</td></tr>
+    <tr><td><code>aggregate_open_risk_pct</code></td><td>Cap on total open risk-at-stop as a fraction of capital.</td></tr>
+    <tr><td><code>daily_loss_limit_pct</code></td><td>Halt new entries once the day's realized loss hits this fraction.</td></tr>
+    <tr><td><code>min_stop_pct</code></td><td>Floor on stop distance (protects sizing from a too-tight structural stop).</td></tr>
+    <tr><td><code>min_rr</code></td><td>Minimum reward:risk for an entry to be taken.</td></tr>
+    <tr><td><code>eod_flatten_time</code></td><td>ET time to flatten everything and stop for the day (e.g. <code>"15:55"</code>). Checked on every tick.</td></tr>
+    <tr><td><code>market_data_line_cap</code></td><td>Ceiling on simultaneous market-data subscriptions.</td></tr>
+    <tr><td><code>regime</code></td><td>Market gate: <code>spy_downtrend_gate</code>, <code>spy_max_intraday_drop_pct</code>, <code>vix_max</code> — blocks new entries in a weak tape.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="strat">Per-strategy block (<code>strategies["Name"]</code>)</h2>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>strategy_type</code></td><td>Maps to the class in the registry (see above).</td></tr>
+    <tr><td><code>entry_order_type</code></td><td><code>"LMT"</code> (marketable-limit chase) or <code>"MKT"</code>.</td></tr>
+    <tr><td><code>strategy_capital</code></td><td>Capital base this strategy sizes against (not the account NetLiquidation).</td></tr>
+    <tr><td><code>risk_per_trade_pct</code></td><td>Per-strategy override of the shared risk fraction.</td></tr>
+    <tr><td><code>fixed_stocks</code></td><td><code>&gt;0</code> → trade exactly this many shares/ticker (ignores % risk). <code>0</code> → real % sizing.</td></tr>
+    <tr><td><code>max_concurrent_tickers</code></td><td>Per-strategy cap on open names.</td></tr>
+    <tr><td><code>windows</code></td><td>List of <code>[start, end]</code> ET pairs — new entries only inside a window (exits/stops/EOD always active). Falls back to <code>trade_start_time</code>/<code>trade_end_time</code>.</td></tr>
+    <tr><td><code>poll_interval_sec</code></td><td>Heartbeat seconds between manage/connection checks (default 5).</td></tr>
+    <tr><td><code>require_vwap</code></td><td>Require price the right side of VWAP for entry. Needs real (or delayed) data — NaNs block every entry.</td></tr>
+    <tr><td><code>universe_symbols</code> / <code>universe</code></td><td>Fixed candidate list and/or filter block (see below).</td></tr>
+    <tr><td><em>signal / stop / target params</em></td><td>Strategy-specific (OR length, ATR mult, buffers, R multiples, …) — see each strategy's <code>docs/*.logic.html</code>.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="scanner">Scanner / universe</h2>
+<p>Each strategy's <code>build_watchlist()</code> seeds from the IBKR native scanner (when configured)
+then applies its own gap/RVOL/ADV filters. Use the <b>built-in</b> <code>ScannerSubscription</code>
+fields (<code>abovePrice</code>/<code>belowPrice</code>/<code>aboveVolume</code>) — they work without a
+market-data entitlement; generic <code>TagValue</code> filters require entitlement (error 162), so the
+<code>scanner.tag_filters</code> block is left empty. <code>fallback_to_universe: true</code> uses
+<code>universe_symbols</code> if a scan errors or returns nothing.</p>
+
+<h2 id="out">Logs &amp; trades output</h2>
+<p>All paths resolve next to <code>runner.py</code> (or the <code>.exe</code> when frozen).</p>
+<table>
+  <thead><tr><th>Path</th><th>What</th></tr></thead>
+  <tbody>
+    <tr><td><code>logs/&lt;Strategy&gt;_&lt;date&gt;.log</code></td><td><span class="tag b">per strategy</span> One daily log file per active strategy (e.g. <code>logs/ORB_SIP___9_35_20260928.log</code>).</td></tr>
+    <tr><td><code>logs/equity_&lt;date&gt;.log</code></td><td>Shared per-session log (all strategies + launch lines).</td></tr>
+    <tr><td><code>logs/equity_daemon.log</code></td><td>Daemon lifecycle (dormant / wake / session complete).</td></tr>
+    <tr><td><code>intraday_trades_&lt;Strategy&gt;.csv</code></td><td><span class="tag b">per strategy</span> One trades CSV per strategy in the app root, appended on every trade CLOSE. Header on first write; columns <code>Date,Time,Strategy,Ticker,Sector,Shares,Entry,Stop,Target,Exit,PnL,R_Multiple,Result,Reason,HoldMin</code>.</td></tr>
+    <tr><td><code>reports/report_&lt;Strategy&gt;.xlsx</code></td><td>Per-strategy analytics workbook (Trades / Daily / ByTicker / Summary), accumulates across days.</td></tr>
+    <tr><td><code>equity_journal_&lt;date&gt;.xlsx</code></td><td>Raw open/close journal (one sheet per strategy).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="run">Build &amp; run</h2>
+<table>
+  <thead><tr><th>Command</th><th>What</th></tr></thead>
+  <tbody>
+    <tr><td><code>python runner.py</code></td><td>Run from source (preferred while iterating). Daemon: dormant off-session, trades on trading days.</td></tr>
+    <tr><td><code>.\Intraday.ps1</code></td><td>Build one-file <code>dist\intraday_equity.exe</code> via PyInstaller (auto PyPI → Aliyun mirror fallback) and stage <code>equity.json</code>.</td></tr>
+    <tr><td><code>.\run_intraday.ps1</code></td><td>Supervisor: launches the exe and relaunches on any exit (outer safety net on top of the bot's own reconnect). Stop with a <code>STOP.txt</code> file.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout"><strong>Resilience.</strong> The bot keeps retrying the IB connection (fast, then every
+<code>reconnect_backoff_sec</code>) on startup <em>and</em> after a drop, until connected or the EOD
+flatten time — so a Gateway that isn't up yet, or its daily restart, is ridden out. The
+<code>run_intraday.ps1</code> supervisor is the outer net if the process itself ever exits.</div>
+
+<div class="callout v1"><strong>Paper vs live gateways don't mix.</strong> One login per gateway; paper
+(<code>DU…</code>) and live (<code>U…</code>) can't share a port. Paper-first, always.</div>
+
+<p class="foot">Full prose reference: <code>README.md</code> / <code>HANDOVER.md</code> (this folder). Per-strategy logic + performance: <code>docs/</code>. Live config file: <code>equity.json</code>.</p>
+</div>
+<script>
+function tog(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';}
+</script>
+</body>
+</html>

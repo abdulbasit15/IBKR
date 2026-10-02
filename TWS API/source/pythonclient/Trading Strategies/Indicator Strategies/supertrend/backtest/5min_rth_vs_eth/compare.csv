@@ -1,0 +1,4 @@
+symbol,strategy,common_period,trades_rth,win%_rth,pf_rth,net_rth,maxdd_rth,rf_rth,trades_eth,win%_eth,pf_eth,net_eth,maxdd_eth,rf_eth,net_delta,net_delta_pct
+MNQ,Supertrend + DEMA,2025-09-25 -> 2026-09-25,781,30.6,1.26,72710,-18074,4.02,2356,31.1,1.09,46430,-35500,1.31,-26280,-36.1
+MES,Supertrend,2025-09-25 -> 2026-09-25,991,29.1,1.34,44332,-10720,4.14,3179,26.5,1.05,14708,-21647,0.68,-29624,-66.8
+MGC,Supertrend,2025-09-25 -> 2026-09-25,946,30.4,1.47,127730,-13453,9.49,3256,25.9,0.99,-8924,-51255,-0.17,-136653,-107.0
