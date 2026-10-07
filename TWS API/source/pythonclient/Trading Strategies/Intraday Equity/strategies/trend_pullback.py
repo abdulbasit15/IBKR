@@ -77,9 +77,11 @@ class TrendPullback(EquityStrategyBase):
         if not (fast[i] > slow[i] and slow[i] > slow[i - slope_lb]):
             return None
         vw = self.session_vwap_from_bars(bars, i)
-        tk = self.get_ticker(symbol, contract)
-        price = self.last_price(tk) or bars[i].close
-        if self.require_vwap and (vw is None or price <= vw):
+        self.get_ticker(symbol, contract)   # keep the market-data feed warm for position mgmt
+        # Gate on the completed bar's close, not a live tick (last_price degrades to the prior-day
+        # close on an unentitled feed -> below a rising VWAP -> rejects every setup).
+        if self.require_vwap and (vw is None or bars[i].close <= vw):
+            self.log_reject(symbol, f"close {bars[i].close:.2f} <= VWAP {vw:.2f}" if vw else "no VWAP yet")
             return None
         # 2) a recent pullback that TAGGED the rising EMA20 zone (bar low near/below EMA20)
         lb = int(self.cfg.get("pullback_lookback", 6))

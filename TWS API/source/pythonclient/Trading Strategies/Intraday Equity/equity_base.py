@@ -58,6 +58,8 @@ class Position:
     breakeven_done: bool = False
     trail_active: bool = False
     high_water: float = 0.0
+    intended_entry: float = 0.0   # the signal's intended entry level (for fill reconciliation)
+    entry_dt: object = None       # exact entry fill datetime (ET) for hold-time / reconciliation
 
 
 class EquityStrategyBase:
@@ -71,7 +73,10 @@ class EquityStrategyBase:
         self._log = log_fn
         self.reporter = reporter            # per-strategy TradeReporter (analytics report)
         self.trade_csv = trade_csv          # per-strategy trades CSV path in the app root
-        self._csv_lock = threading.Lock()   # guards the trades-CSV append
+        # Fill-reconciliation CSV (live vs intended): same dir as trade_csv, fill_recon_* prefix.
+        self.recon_csv = (trade_csv.replace("intraday_trades_", "fill_recon_")
+                          if trade_csv else None)
+        self._csv_lock = threading.Lock()   # guards the trades-CSV + recon-CSV appends
         self.ib: IB | None = None
         self.account = shared.get("default_account")
         self.host = shared.get("host", "127.0.0.1")
@@ -83,9 +88,18 @@ class EquityStrategyBase:
         self.sector_map = shared.get("sector_map", {})
         sr = shared.get("shared_risk", {})
         self.risk_pct = float(cfg.get("risk_per_trade_pct", sr.get("risk_per_trade_pct", 0.01)))
-        # per-strategy capital base (sizing uses THIS, not the account NetLiquidation)
-        self.strategy_capital = float(cfg.get("strategy_capital", shared.get("start_equity", 0) or 0))
+        # Global capital multiplier (shared) to scale every strategy's sizing up/down with one
+        # knob as live confidence grows. Defaults to 1.0 (no change).
+        self.capital_scale = float(shared.get("capital_scale", 1.0)) or 1.0
+        # per-strategy capital base (sizing uses THIS, not the account NetLiquidation), scaled.
+        self.strategy_capital = float(cfg.get("strategy_capital", shared.get("start_equity", 0) or 0)) * self.capital_scale
         self.fixed_stocks = int(cfg.get("fixed_stocks", 0))  # >0 -> fixed shares/ticker (ignores % risk)
+        # Minimum shares when a valid signal's 1%-risk size rounds DOWN to 0 (small capital):
+        # take at least this many instead of skipping. 0 = disabled (skip as before).
+        self.min_stocks = int(cfg.get("min_stocks", sr.get("min_stocks", 0)))
+        # DRY-RUN: evaluate + log the order it WOULD place, but transmit nothing (live rehearsal).
+        self.dry_run = bool(shared.get("dry_run", False))
+        self._dry_entered = set()   # symbols already logged as a dry-run entry this session
         self.max_concurrent_tickers = int(cfg.get("max_concurrent_tickers",
                                           sr.get("max_concurrent_positions", 5)))
         self.min_stop_pct = float(cfg.get("min_stop_pct", sr.get("min_stop_pct", 0.003)))
@@ -104,6 +118,10 @@ class EquityStrategyBase:
         self.positions: dict[str, Position] = {}
         self._md: dict[str, object] = {}   # base-owned market-data tickers (subscribe once, reuse)
         self._start_equity = float(shared.get("start_equity", 0) or 0)
+        self._shutting_down = False   # True once we deliberately disconnect (EOD / exit)
+        self._entry_block_reason = "unset"   # last-logged entry-gate state (risk halt / regime)
+        self._reject_logged = set()   # (symbol, reason) already logged this session (dedup)
+        self._newbar_seen = False     # logged once when the first new-bar boundary is evaluated
 
     # ----------------------------------------------------------------- connect
     def connect(self) -> bool:
@@ -141,6 +159,9 @@ class EquityStrategyBase:
             return False
 
     def disconnect(self):
+        # Mark this as a DELIBERATE disconnect so the disconnectedEvent handler doesn't
+        # mis-report our own clean shutdown (EOD / exit) as a dropped connection.
+        self._shutting_down = True
         try:
             if self.ib and self.ib.isConnected():
                 self.ib.disconnect()
@@ -148,7 +169,12 @@ class EquityStrategyBase:
             pass
 
     def _on_disconnected(self):
-        self.log("WARNING: TWS/Gateway connection dropped")
+        # Fired both on a genuine mid-session drop AND on our own ib.disconnect() at EOD.
+        # Only warn for the former; the deliberate shutdown is normal and just noise.
+        if self._shutting_down:
+            self.log("disconnected (clean shutdown)")
+        else:
+            self.log("WARNING: TWS/Gateway connection dropped")
 
     def ensure_connected(self):
         """True if connected. If the socket dropped -- e.g. you logged into TWS or the IBKR
@@ -264,16 +290,19 @@ class EquityStrategyBase:
             else:
                 # position with no resting stop -> protect it NOW at the floored min-stop level
                 stop = eo.round_to_tick(entry * (1 - self.min_stop_pct), tick)
-                so = StopOrder("SELL", qty, stop)
-                so.orderRef = ref
-                so.tif = "DAY"
-                if self.account:
-                    so.account = self.account
-                try:
-                    st = self.ib.placeOrder(contract, so)
-                    self.log(f"adopt {symbol}: no resting stop found -> placed protective stop {stop}")
-                except Exception as e:
-                    self.log(f"adopt {symbol}: FAILED to place protective stop: {e}")
+                if self.dry_run:
+                    self.log(f"DRY-RUN adopt {symbol}: no resting stop -> would place protective stop {stop}")
+                else:
+                    so = StopOrder("SELL", qty, stop)
+                    so.orderRef = ref
+                    so.tif = "DAY"
+                    if self.account:
+                        so.account = self.account
+                    try:
+                        st = self.ib.placeOrder(contract, so)
+                        self.log(f"adopt {symbol}: no resting stop found -> placed protective stop {stop}")
+                    except Exception as e:
+                        self.log(f"adopt {symbol}: FAILED to place protective stop: {e}")
             target = eo.round_to_tick(float(tp.order.lmtPrice), tick) if tp is not None else entry
             r_unit = (entry - stop) if entry > stop else entry * self.min_stop_pct
             sector = self.sector_of(symbol, contract)
@@ -291,6 +320,15 @@ class EquityStrategyBase:
 
     def log(self, msg):
         self._log(f"[{self.name}] {msg}")
+
+    def log_reject(self, symbol, reason):
+        """Log a no-entry reason ONCE per (symbol, reason) per session, so a quiet day shows
+        WHY a breakout candidate didn't become a trade (volume / VWAP) without spamming the
+        log on every poll of the same bar."""
+        key = (symbol, reason)
+        if key not in self._reject_logged:
+            self._reject_logged.add(key)
+            self.log(f"{symbol} no-entry: {reason}")
 
     # ----------------------------------------------------------------- data
     def hist(self, contract, duration, bar_size, what="TRADES", use_rth=True):
@@ -565,6 +603,11 @@ class EquityStrategyBase:
         cap = self.cfg.get("max_position_notional") or self.cfg.get("per_name_notional_cap")
         if cap and shares * entry > cap:
             shares = math.floor(cap / entry)
+        # min_stocks floor: the stop is valid (passed the rps/min-stop checks above) but the
+        # risk budget rounded the size down to 0 -> still take at least min_stocks (e.g. 1) so a
+        # small-capital live account can participate. Applied last so it's the true floor.
+        if self.min_stocks > 0 and shares < self.min_stocks:
+            shares = self.min_stocks
         return max(shares, 0)
 
     def get_equity(self):
@@ -627,7 +670,11 @@ class EquityStrategyBase:
             lag = (cal.now_et() - (ts + timedelta(seconds=bar_seconds))).total_seconds()
         except Exception:
             return True   # if the timing math can't be done, don't block the entry
-        return -5 <= lag <= max(self.poll * 2, 15)
+        ok = -5 <= lag <= max(self.poll * 2, 15)
+        if ok and not self._newbar_seen:
+            self._newbar_seen = True
+            self.log("new-bar boundary reached; evaluating entry signals")
+        return ok
 
     # ----------------------------------------------------------------- trade mgmt
     def _enter(self, symbol, contract, sig: Signal):
@@ -651,6 +698,15 @@ class EquityStrategyBase:
         # stop-LIMIT band tracks the FLOORED trigger (keeps limit <= trigger for a SELL stop)
         stop_lmt = round(stop * (1 - sig.stop_limit_band), 4) if sig.use_stop_limit else None
         market_entry = str(self.cfg.get("entry_order_type", "MKT")).upper() == "MKT"
+        if self.dry_run:
+            # Full gate chain (sizing + R:R + risk book) passed; transmit NOTHING. One line per
+            # symbol per session so a rehearsal stays readable. Risk book is NOT mutated.
+            if symbol not in self._dry_entered:
+                self._dry_entered.add(symbol)
+                self.log(f"DRY-RUN would ENTER {symbol} qty {qty} "
+                         f"{'MKT' if market_entry else 'LMT'} entry~{sig.entry:.2f} "
+                         f"stop {stop:.2f} target {sig.target:.2f} risk ${risk_dollars:,.0f}")
+            return
         pt, tp, st = eo.place_protected_entry(
             self.ib, contract, qty, sig.entry, sig.target, stop,
             stop_limit_price=stop_lmt, order_ref=order_ref,
@@ -660,17 +716,28 @@ class EquityStrategyBase:
             market=market_entry,
         )
         if not pt:
+            # LMT entry never filled within the chase (price ran past the cap) — the realistic
+            # live behaviour the ideal backtest ignores. Log it so we can measure the miss-rate.
+            self.record_recon("ENTRY_NOFILL", symbol,
+                              "LMT no-fill (price ran past chase cap)" if not market_entry else "no fill",
+                              qty, sig.entry, None)
             return
         fill = float(pt.orderStatus.avgFillPrice or sig.entry)
         filled_qty = int(pt.orderStatus.filled or qty)
+        entry_dt = self._fill_time(pt) or cal.now_et()      # exact exchange fill time (ET)
+        exec_s = entry_dt.strftime("%H:%M:%S")
         r_unit = fill - stop
+        self.record_recon("ENTRY_FILL", symbol, "MKT" if market_entry else "LMT",
+                          filled_qty, sig.entry, fill, exec_time=exec_s)
         self.risk.register_open(order_ref, symbol, sector, filled_qty * r_unit, filled_qty, fill, stop)
         tk = self.get_ticker(symbol, contract)
         self.positions[order_ref] = Position(order_ref, symbol, sector, contract, filled_qty,
                                               fill, stop, sig.target, r_unit, pt, tp, st,
-                                              ticker=tk, high_water=fill)
+                                              ticker=tk, high_water=fill, intended_entry=sig.entry,
+                                              entry_dt=entry_dt)
         self.journal_open(symbol, sector, filled_qty, fill, stop, sig.target, r_unit)
-        self.log(f"OPENED {symbol} qty {filled_qty} entry {fill} stop {stop} target {sig.target}")
+        self.log(f"OPENED {symbol} qty {filled_qty} entry {fill} @ {exec_s} "
+                 f"stop {stop} target {sig.target}")
 
     def manage_open(self):
         total_unreal = 0.0
@@ -710,6 +777,20 @@ class EquityStrategyBase:
     def _tick(self, p):
         return self.min_tick(p.symbol, p.contract)
 
+    def _fill_time(self, trade):
+        """Exact EXCHANGE execution time (ET datetime) of the LAST fill on `trade`, or None.
+        Uses ib_async Trade.fills[-].time (tz-aware), so it's the real fill time, not the poll
+        time at which we noticed the fill."""
+        try:
+            fills = getattr(trade, "fills", None) or []
+            if fills:
+                t = getattr(fills[-1], "time", None)
+                if t is not None:
+                    return t.astimezone(cal.ET)
+        except Exception:
+            pass
+        return None
+
     def _close(self, p: Position, exit_px, reason):
         pnl = (exit_px - p.entry) * p.qty
         rmult = (exit_px - p.entry) / p.r_unit if p.r_unit else 0
@@ -728,20 +809,38 @@ class EquityStrategyBase:
         self.risk.register_close(p.order_ref, pnl)
         self.positions.pop(p.order_ref, None)
         self.journal_close(p.symbol, exit_px, pnl, rmult, reason)
+        # exact exit fill time from the filling leg (stop/target); EOD market flatten -> detect-time
+        leg = p.st if reason == "STOP" else (p.tp if reason == "TARGET" else None)
+        exit_dt = (self._fill_time(leg) if leg is not None else None) or cal.now_et()
+        exec_s = exit_dt.strftime("%H:%M:%S")
+        entry_s = p.entry_dt.strftime("%H:%M:%S") if getattr(p, "entry_dt", None) else ""
+        hold_min = ""
+        if getattr(p, "entry_dt", None):
+            try:
+                hold_min = round((exit_dt - p.entry_dt).total_seconds() / 60.0, 1)
+            except Exception:
+                hold_min = ""
         row = {
             "Date": cal.now_et().strftime("%Y-%m-%d"),
-            "Time": cal.now_et().strftime("%H:%M:%S"),
+            "EntryTime": entry_s,
+            "Time": exec_s,                                 # exact exit fill time (ET)
             "Strategy": self.name, "Ticker": p.symbol, "Sector": p.sector,
             "Shares": p.qty, "Entry": round(p.entry, 4), "Stop": round(p.stop, 4),
             "Target": round(p.target, 4), "Exit": round(exit_px, 4),
             "PnL": round(pnl, 2), "R_Multiple": round(rmult, 3),
             "Result": "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "FLAT"),
-            "Reason": reason, "HoldMin": "",
+            "Reason": reason, "HoldMin": hold_min,
         }
         if self.reporter:
             self.reporter.record_trade(row)
         self.record_trade_csv(row)          # per-strategy trades CSV in the app root
-        self.log(f"CLOSED {p.symbol} {reason} exit {exit_px} pnl {pnl:.2f} ({rmult:.2f}R)")
+        # Exit fill reconciliation: TARGET vs the target limit, STOP vs the stop trigger (EOD has
+        # no price reference -> intended None). Shows real exit slippage the ideal backtest omits.
+        intended_exit = p.target if reason == "TARGET" else (p.stop if reason == "STOP" else None)
+        self.record_recon(f"EXIT_{reason}", p.symbol, reason, p.qty, intended_exit, exit_px,
+                          exec_time=exec_s)
+        self.log(f"CLOSED {p.symbol} {reason} exit {exit_px} @ {exec_s} pnl {pnl:.2f} "
+                 f"({rmult:.2f}R) hold {hold_min}m")
 
     def flatten_all(self, reason="EOD"):
         for ref, p in list(self.positions.items()):
@@ -784,8 +883,50 @@ class EquityStrategyBase:
     # appended on every trade CLOSE; the file is created with a header the first time and appended
     # to thereafter (matches the supertrend bot's per-strategy trade CSV). Same columns as the
     # analytics report so the two stay aligned.
-    TRADE_CSV_COLS = ["Date", "Time", "Strategy", "Ticker", "Sector", "Shares", "Entry", "Stop",
-                      "Target", "Exit", "PnL", "R_Multiple", "Result", "Reason", "HoldMin"]
+    TRADE_CSV_COLS = ["Date", "EntryTime", "Time", "Strategy", "Ticker", "Sector", "Shares",
+                      "Entry", "Stop", "Target", "Exit", "PnL", "R_Multiple", "Result",
+                      "Reason", "HoldMin"]
+
+    # ---------------------------------------------------------------- fill reconciliation (#1)
+    RECON_CSV_COLS = ["Date", "Time", "Strategy", "Ticker", "Event", "Reason", "Qty",
+                      "Intended", "Actual", "SlipBps", "ExecTime"]
+
+    def record_recon(self, event: str, symbol: str, reason: str, qty, intended, actual,
+                     exec_time=""):
+        """Log + CSV one fill-reconciliation row: live ACTUAL fill vs the strategy's INTENDED
+        price, with slippage in bps. Events: ENTRY_FILL, ENTRY_NOFILL (actual=None),
+        EXIT_FILL. Slippage sign is from the trade's POV: + = worse than intended (paid more on
+        a buy / received less on a sell). Never crashes trading."""
+        slip = ""
+        try:
+            if intended and actual:
+                raw = (actual - intended) / intended * 10000.0
+                slip = round(raw if event.startswith("ENTRY") else -raw, 1)  # +bps = worse either side
+        except Exception:
+            slip = ""
+        self.log(f"FILL-RECON {event} {symbol} intended={intended} actual={actual} "
+                 f"slip={slip}bps qty={qty}" + (f" @ {exec_time}" if exec_time else "")
+                 + (f" ({reason})" if reason else ""))
+        if not self.recon_csv:
+            return
+        with self._csv_lock:
+            try:
+                new = not os.path.exists(self.recon_csv)
+                with open(self.recon_csv, "a", newline="", encoding="utf-8") as f:
+                    w = csv.DictWriter(f, fieldnames=self.RECON_CSV_COLS, extrasaction="ignore")
+                    if new:
+                        w.writeheader()
+                    w.writerow({
+                        "Date": cal.now_et().strftime("%Y-%m-%d"),
+                        "Time": cal.now_et().strftime("%H:%M:%S"),
+                        "Strategy": self.name, "Ticker": symbol, "Event": event,
+                        "Reason": reason, "Qty": qty,
+                        "Intended": round(intended, 4) if intended else "",
+                        "Actual": round(actual, 4) if actual else "",
+                        "SlipBps": slip, "ExecTime": exec_time,
+                    })
+            except Exception as e:                 # recon logging must never crash trading
+                self.log(f"recon-csv write failed: {e}")
 
     def record_trade_csv(self, row: dict):
         """Append ONE closed trade to this strategy's trades CSV in the app root, creating it with
@@ -851,23 +992,37 @@ class EquityStrategyBase:
                     if self.positions:
                         self.log("EOD flatten")
                         self.flatten_all("EOD")
+                    else:
+                        self.log("EOD reached; no open positions; session complete")
                     break
                 self.manage_open()
-                entries_open = self.in_trade_window(now)
-                if entries_open and not self.risk.is_halted() and self.regime_ok():
-                    for sym in watchlist:
-                        ref = f"{self.strategy_type}.{self.client_id}.{sym}"
-                        if ref in self.positions:
-                            continue
-                        if self.risk.is_open_symbol(sym) or self.risk.traded_today(sym):
-                            continue
-                        try:
-                            sig = self.check_entry_signal(sym, contracts[sym])
-                        except Exception as e:
-                            self.log(f"signal error {sym}: {e}")
-                            sig = None
-                        if sig:
-                            self._enter(sym, contracts[sym], sig)
+                if self.in_trade_window(now):
+                    # Explain WHY entries are (not) firing so a quiet day isn't silent. Only log
+                    # on a state CHANGE so it stays a few lines, not one per poll.
+                    if self.risk.is_halted():
+                        reason = "risk halt (daily-loss limit)"
+                    elif not self.regime_ok():
+                        reason = "regime gate (SPY downtrend / VIX)"
+                    else:
+                        reason = None
+                    if reason != self._entry_block_reason:
+                        self._entry_block_reason = reason
+                        self.log(f"entries paused: {reason}" if reason
+                                 else "entries active (scanning watchlist for signals)")
+                    if reason is None:
+                        for sym in watchlist:
+                            ref = f"{self.strategy_type}.{self.client_id}.{sym}"
+                            if ref in self.positions:
+                                continue
+                            if self.risk.is_open_symbol(sym) or self.risk.traded_today(sym):
+                                continue
+                            try:
+                                sig = self.check_entry_signal(sym, contracts[sym])
+                            except Exception as e:
+                                self.log(f"signal error {sym}: {e}")
+                                sig = None
+                            if sig:
+                                self._enter(sym, contracts[sym], sig)
                 self.ib.sleep(self.poll)
             # after EOD: keep managing until flat
             guard = 0

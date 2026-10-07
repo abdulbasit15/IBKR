@@ -155,6 +155,17 @@ def adr_pct_at(bars, i, n=20):
     return (sum(vals) / len(vals)) * 100.0 if vals else None
 
 
+def apply_adr_stop(trigger, raw_stop, adr_pct, use_adr, mult=1.0):
+    """Qullamaggie's 'stop no wider than ~1 ADR'. Returns the TIGHTER of the raw structural stop
+    (base / crash / opening-range low) and an ADR-based stop at trigger - mult*ADR. This caps the
+    stop DISTANCE at mult*ADR -> larger notional for the same 1% risk. No-op when use_adr is off
+    or ADR is unavailable; also never widens a stop that's already tighter than mult*ADR."""
+    if not use_adr or not adr_pct or adr_pct <= 0 or trigger <= 0:
+        return raw_stop
+    adr_stop = trigger - (mult * adr_pct / 100.0) * trigger
+    return max(raw_stop, adr_stop)
+
+
 # ----------------------------------------------------------------------------
 # Signals (evaluated on day i using bars[..i]; filled at open[i+1])
 # ----------------------------------------------------------------------------
@@ -180,6 +191,10 @@ def breakout_signal(bars, i, sma20, sma50, a):
         return None
     # fresh breakout: close clears the base high today, didn't yesterday
     if not (c > prior_hi and bars[i - 1]["c"] <= prior_hi):
+        return None
+    # EXTENSION filter: skip a breakout already too far above the 50-day SMA (late-stage / extended).
+    max_ext = getattr(a, "max_ext_pct", 0)
+    if max_ext and sma50[i] and (c / sma50[i] - 1.0) * 100.0 > max_ext:
         return None
     # ADR sanity
     adr = adr_pct_at(bars, i)
@@ -282,7 +297,8 @@ def backtest_symbol(sym, bars, a, equity_ref):
             if sig:
                 j = i + 1                      # fill next open (no lookahead)
                 entry = bars[j]["o"]
-                stop0 = sig["stop"]
+                stop0 = apply_adr_stop(entry, sig["stop"], adr_pct_at(bars, i),   # cap at ~1 ADR (optional)
+                                       getattr(a, "adr_stop", False), getattr(a, "adr_stop_mult", 1.0))
                 risk = entry - stop0
                 if risk > 0 and (risk / entry) <= a.max_risk_frac:
                     equity = equity_ref[0]
@@ -311,8 +327,10 @@ def backtest_symbol(sym, bars, a, equity_ref):
             exit_all = (min(b["o"], pos["stop"]) if b["o"] < pos["stop"] else pos["stop"],
                         "BE-Stop" if pos["partial"] else "Stop")
 
-        # 2) partial + move to break-even
-        if exit_all is None and (not pos["partial"]) and pos["held"] >= a.partial_days:
+        # 2) partial (profit-gated) + move to break-even — only scale out a WINNER up >= partial_min_r
+        cur_r = (b["c"] - pos["entry"]) / pos["risk"] if pos["risk"] else 0
+        if (exit_all is None and (not pos["partial"]) and pos["held"] >= a.partial_days
+                and cur_r >= getattr(a, "partial_min_r", 0.5)):
             half = pos["left"] // 2
             if half >= 1:
                 _emit(legs, sym, pos, half, b["c"], b["d"], "Partial")
@@ -439,10 +457,14 @@ def main():
     p.add_argument("--pl-max-bounce", type=float, default=30.0, help="max %% above the low (no chase)")
     # exits / sizing
     p.add_argument("--partial-days", type=int, default=5)
+    p.add_argument("--partial-min-r", type=float, default=0.5, help="only take partial if position up >= this R")
     p.add_argument("--trail-sma", type=int, default=20, help="trail on 10 or 20-day SMA")
     p.add_argument("--risk-pct", type=float, default=0.5, help="%% equity risked per trade")
     p.add_argument("--max-pos-pct", type=float, default=30.0)
     p.add_argument("--max-risk-frac", type=float, default=0.25, help="skip if stop>this frac of price")
+    p.add_argument("--adr-stop", action="store_true", help="cap stop distance at adr_stop_mult x ADR (tighter)")
+    p.add_argument("--adr-stop-mult", type=float, default=1.0, help="ADR multiple for the stop cap")
+    p.add_argument("--max-ext-pct", type=float, default=0.0, help="skip breakout if close > this %% above 50-SMA (0=off)")
     p.add_argument("--equity", type=float, default=100000.0)
     p.add_argument("--warmup", type=int, default=150)
     p.add_argument("--workers", type=int, default=6)

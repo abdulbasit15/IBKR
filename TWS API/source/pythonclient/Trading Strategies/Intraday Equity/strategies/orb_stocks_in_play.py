@@ -99,13 +99,15 @@ class ORBStocksInPlay(EquityStrategyBase):
         avg1 = (sum(recent) / len(recent)) if recent else 0
         vol_mult = float(self.cfg.get("signal", {}).get("vol_mult", self.cfg.get("breakout_vol_mult", 1.5)))
         if avg1 and bar.volume < vol_mult * avg1:
+            self.log_reject(symbol, f"breakout vol {bar.volume:.0f} < {vol_mult}x avg {avg1:.0f}")
             return None
-        # VWAP gate — session VWAP from the intraday bars (delayed-safe; the RTVolume tick
-        # ticker.vwap is NaN on delayed/unentitled feeds, which otherwise blocks every entry).
-        tk = self.get_ticker(symbol, contract)
+        # VWAP gate — session VWAP from the intraday bars (delayed-safe). Judge price with the
+        # COMPLETED bar's close, NOT a live tick: last_price() degrades to the prior-day close on
+        # an unentitled feed, which sits below a rising VWAP and would reject every breakout.
+        self.get_ticker(symbol, contract)   # keep the market-data feed warm for position mgmt
         vw = self.session_vwap_from_bars(bars1, len(bars1) - 2)
-        price = self.last_price(tk) or bar.close
-        if self.require_vwap and (vw is None or price <= vw):
+        if self.require_vwap and (vw is None or bar.close <= vw):
+            self.log_reject(symbol, f"close {bar.close:.2f} <= VWAP {vw:.2f}" if vw else "no VWAP yet")
             return None  # VWAP filter; set require_vwap False to disable it entirely
 
         tick = self.min_tick(symbol, contract)

@@ -84,9 +84,11 @@ class RangeBreakoutRetest(EquityStrategyBase):
         if recent and b.volume < vmult * (sum(recent) / len(recent)):
             return None
         vw = self.session_vwap_from_bars(bars, i)
-        tk = self.get_ticker(symbol, contract)
-        price = self.last_price(tk) or b.close
-        if self.require_vwap and (vw is None or price <= vw):
+        self.get_ticker(symbol, contract)   # keep the market-data feed warm for position mgmt
+        # Gate on the completed bar's close, not a live tick (last_price degrades to the prior-day
+        # close on an unentitled feed -> below a rising VWAP -> rejects every breakout).
+        if self.require_vwap and (vw is None or b.close <= vw):
+            self.log_reject(symbol, f"close {b.close:.2f} <= VWAP {vw:.2f}" if vw else "no VWAP yet")
             return None
 
         tick = self.min_tick(symbol, contract)

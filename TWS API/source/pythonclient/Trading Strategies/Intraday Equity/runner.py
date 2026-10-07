@@ -10,6 +10,7 @@ TWS/IB Gateway must be running on the configured port with the API enabled.
 Defaults to PAPER account DU672616.
 """
 from __future__ import annotations
+import argparse
 import asyncio
 import datetime as _dt
 import json
@@ -227,6 +228,8 @@ def run_one_session(cfg: dict, active: list[str], base_id: int, overrides: tuple
         "vol_scale": vol_scale,
         "start_equity": equity,
         "journal": journal,
+        "dry_run": bool(cfg.get("dry_run", False)),       # log orders, transmit nothing
+        "capital_scale": float(cfg.get("capital_scale", 1.0)) or 1.0,  # global sizing multiplier
     }
     symbol_lock = SymbolLock()   # cross-strategy: never two strategies long the same symbol
 
@@ -269,27 +272,95 @@ def run_one_session(cfg: dict, active: list[str], base_id: int, overrides: tuple
     return "ok"
 
 
-def main():
-    cfg_path = os.path.join(BASE, "equity.json")
+def resolve_config_and_mode():
+    """Parse CLI and pick the config file + resolve the paper/live safety state.
+      (no args)            -> equity.json           (PAPER, default)
+      --live               -> equity.live.json      (live account/port; still DRY unless armed)
+      --config PATH        -> explicit file         (overrides --live)
+      --i-understand-live  -> ARM real-money order transmission (only matters when config live=true)
+    Returns (cfg, cfg_path, live_mode, armed, dry_run, forced_dry).
+    A live config that is NOT armed is forced to dry_run so it can never transmit by accident."""
+    ap = argparse.ArgumentParser(description="Intraday Equity bots (PAPER by default).")
+    ap.add_argument("--live", action="store_true",
+                    help="load equity.live.json; still requires --i-understand-live to transmit.")
+    ap.add_argument("--i-understand-live", dest="arm_live", action="store_true",
+                    help="ARM real-money order transmission when the config is live.")
+    ap.add_argument("--config", default=None, help="explicit config path (overrides --live).")
+    a = ap.parse_args()
+    if a.config:
+        cfg_path = a.config if os.path.isabs(a.config) else os.path.join(BASE, a.config)
+    elif a.live:
+        cfg_path = os.path.join(BASE, "equity.live.json")
+    else:
+        cfg_path = os.path.join(BASE, "equity.json")
     with open(cfg_path, "r", encoding="utf-8") as f:
         cfg = json.load(f)
+    live_mode = bool(cfg.get("live", False))
+    armed = bool(a.arm_live)
+    forced_dry = live_mode and not armed          # live but not armed -> cannot transmit
+    dry_run = bool(cfg.get("dry_run", False)) or forced_dry
+    cfg["dry_run"] = dry_run                        # run_one_session reads this into `shared`
+    return cfg, cfg_path, live_mode, armed, dry_run, forced_dry
 
+
+def main():
     log_dir = os.path.join(BASE, "logs")
     os.makedirs(log_dir, exist_ok=True)
     # A single, non-date-stamped daemon log for the dormant/wake lifecycle (per-session
     # trading logs are still date-stamped inside run_one_session).
     dlog = make_logger(os.path.join(log_dir, "equity_daemon.log"))
 
+    try:
+        cfg, cfg_path, live_mode, armed, dry_run, forced_dry = resolve_config_and_mode()
+    except FileNotFoundError as e:
+        dlog(f"config file not found: {e}. Exiting."); return
+
     active = cfg.get("active_strategies", [])
     if not active:
         dlog("no active_strategies configured; nothing to run. Exiting.")
         return
+
+    # ------------------------------------------------ live safety guards (fail fast)
+    acct = str(cfg.get("default_account", "") or "")
+    strat = cfg.get("strategies", {})
+    cap_scale = float(cfg.get("capital_scale", 1.0)) or 1.0
+    if live_mode:
+        zero_cap = [n for n in active if float(strat.get(n, {}).get("strategy_capital", 0) or 0) <= 0]
+        if zero_cap:
+            dlog(f"LIVE refuses to start: strategy_capital is 0/unset for {zero_cap} — set an "
+                 f"explicit capital so sizing never uses full account equity. Exiting."); return
+        if not acct:
+            dlog("LIVE refuses to start: no default_account set. Exiting."); return
+        if acct.startswith("DU"):
+            dlog(f"LIVE refuses to start: account '{acct}' looks like a PAPER account (DU...). "
+                 f"Set default_account/accounts to the live U-account. Exiting."); return
+    elif acct.startswith("U") and not acct.startswith("DU"):
+        dlog(f"WARNING: PAPER mode but default_account '{acct}' looks like a LIVE account. "
+             f"Proceeding as paper on port {cfg.get('port')} — verify this is intended.")
+
     base_id = int(cfg.get("client_id_base", 30))
     overrides = ("max_concurrent_tickers", "max_positions_per_sector", "daily_loss_limit_pct",
                  "aggregate_open_risk_pct", "risk_per_trade_pct")
     eod = cfg.get("shared_risk", {}).get("eod_flatten_time", cfg.get("eod_flatten_time", "15:55"))
     lead_min = int(cfg.get("preopen_lead_min", 10))    # wake this many minutes before window 1
     poll_sec = int(cfg.get("dormant_poll_sec", 60))    # how often to re-check while dormant
+
+    # ------------------------------------------------ startup banner
+    sr_rpt = cfg.get("shared_risk", {}).get("risk_per_trade_pct", 0.01)
+    budget = sum(float(strat.get(n, {}).get("strategy_capital", 0) or 0) * cap_scale
+                 * float(strat.get(n, {}).get("risk_per_trade_pct", sr_rpt)) for n in active)
+    dlog("=" * 72)
+    dlog(f"MODE={'LIVE' if live_mode else 'PAPER'}  DRY_RUN={dry_run}"
+         f"{'  (forced: live not armed)' if forced_dry else ''}  config={os.path.basename(cfg_path)}")
+    dlog(f"account={acct or '(default)'}  host={cfg.get('host')}  port={cfg.get('port')}  "
+         f"mktDataType={cfg.get('market_data_type')}  capital_scale={cap_scale}")
+    dlog(f"active={active}  risk budget/trade (1R sum) ~= ${budget:,.0f}")
+    if live_mode and not dry_run:
+        dlog("*** LIVE ORDER TRANSMISSION ARMED — REAL MONEY WILL BE AT RISK ***")
+    elif live_mode and dry_run:
+        dlog("LIVE config in DRY-RUN — connects to the live account but transmits NOTHING "
+             "(pass --i-understand-live and set dry_run:false to go live for real).")
+    dlog("=" * 72)
 
     dlog(f"daemon start — will run on trading days and stay dormant otherwise "
          f"(wake {lead_min}m before the first window, EOD {eod}). Ctrl+C to stop.")

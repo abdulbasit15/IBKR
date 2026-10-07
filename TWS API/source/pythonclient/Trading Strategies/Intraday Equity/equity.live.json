@@ -1,19 +1,29 @@
 {
-  "accounts": ["DU672616"],
-  "default_account": "DU672616",
+  "accounts": [
+    "U2081485"
+  ],
+  "default_account": "U2081485",
   "host": "127.0.0.1",
-  "port": 4002,
+  "port": 4001,
   "client_id_base": 30,
   "market_data_type": 1,
-  "live": false,
-  "dry_run": false,
+  "live": true,
+  "dry_run": true,
   "capital_scale": 1.0,
   "hist_min_interval_sec": 2.0,
   "reconnect_backoff_sec": 60,
-  "active_strategies": ["ORB SIP - 9.35", "NR7 - 9.35", "PDH - 9.35", "VWAP PB - 9.45"],
-  "_available_strategies_off": ["TREND PB - 10.00", "RANGE RETEST - 10.00", "SR BOUNCE - 10.00"],
+  "active_strategies": [
+    "ORB SIP - 9.35",
+    "NR7 - 9.35",
+    "PDH - 9.35",
+    "VWAP PB - 9.45"
+  ],
+  "_available_strategies_off": [
+    "TREND PB - 10.00",
+    "RANGE RETEST - 10.00",
+    "SR BOUNCE - 10.00"
+  ],
   "_note": "TREND PB / RANGE RETEST / SR BOUNCE are built + configured but OFF (net-negative in the realistic-fill regime backtest). Move a name from _available_strategies_off into active_strategies to enable it.",
-
   "shared_risk": {
     "risk_per_trade_pct": 0.01,
     "max_concurrent_positions": 10,
@@ -30,19 +40,22 @@
       "vix_max": 35
     }
   },
-
   "sector_map": {},
-
   "strategies": {
     "ORB SIP - 9.35": {
       "strategy_type": "orb_stocks_in_play",
       "entry_order_type": "LMT",
-      "strategy_capital": 100000,
+      "strategy_capital": 10000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 0,
       "min_stocks": 1,
       "max_concurrent_tickers": 5,
-      "windows": [["09:35", "11:00"]],
+      "windows": [
+        [
+          "09:35",
+          "11:00"
+        ]
+      ],
       "poll_interval_sec": 5,
       "require_vwap": true,
       "scanner": {
@@ -50,7 +63,10 @@
         "mode": "replace",
         "location_code": "STK.US.MAJOR",
         "stock_type_filter": "CORP",
-        "scan_codes": ["TOP_PERC_GAIN", "HOT_BY_VOLUME"],
+        "scan_codes": [
+          "TOP_PERC_GAIN",
+          "HOT_BY_VOLUME"
+        ],
         "intersect": true,
         "scanner_rows": 50,
         "above_price": 15,
@@ -58,35 +74,68 @@
         "tag_filters": {},
         "fallback_to_universe": true
       },
-      "universe_symbols": ["NVDA", "AMD", "SMCI", "TSLA", "AAPL", "META", "AVGO", "MU",
-                            "MRVL", "PLTR", "COIN", "SHOP", "UBER", "NFLX", "CRWD"],
-      "universe": {"min_price": 15, "min_adv": 1000000, "min_gap_pct": 0.02,
-                   "min_premarket_rvol": 1.5, "exclude_symbols": ["SPY", "QQQ"]},
+      "universe_symbols": [
+        "NVDA",
+        "AMD",
+        "SMCI",
+        "TSLA",
+        "AAPL",
+        "META",
+        "AVGO",
+        "MU",
+        "MRVL",
+        "PLTR",
+        "COIN",
+        "SHOP",
+        "UBER",
+        "NFLX",
+        "CRWD"
+      ],
+      "universe": {
+        "min_price": 15,
+        "min_adv": 1000000,
+        "min_gap_pct": 0.02,
+        "min_premarket_rvol": 1.5,
+        "exclude_symbols": [
+          "SPY",
+          "QQQ"
+        ]
+      },
       "max_watchlist": 30,
       "orb_height_max_pct": 0.05,
       "orb_height_min_pct": 0.008,
       "atr_entry_buffer_mult": 0.05,
-      "signal": {"vol_mult": 1.5},
-      "stop": {"min_or_height_pct": 0.01},
-      "target": {"mult": 2.0},
+      "signal": {
+        "vol_mult": 1.5
+      },
+      "stop": {
+        "min_or_height_pct": 0.01
+      },
+      "target": {
+        "mult": 2.0
+      },
       "breakeven_mult": 1.0,
       "trail_start_mult": 1.5,
       "trail_lock_mult": 0.5,
       "entry_timeout_sec": 30,
       "max_chase_pct": 0.005,
       "one_trade_per_symbol": true,
-      "max_position_notional": 100000
+      "max_position_notional": 10000
     },
-
     "NR7 - 9.35": {
       "strategy_type": "nr7_compression",
       "entry_order_type": "LMT",
-      "strategy_capital": 100000,
+      "strategy_capital": 10000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 0,
       "min_stocks": 1,
       "max_concurrent_tickers": 5,
-      "windows": [["09:35", "11:00"]],
+      "windows": [
+        [
+          "09:35",
+          "11:00"
+        ]
+      ],
       "poll_interval_sec": 5,
       "require_vwap": true,
       "scanner": {
@@ -95,7 +144,9 @@
         "mode": "replace",
         "location_code": "STK.US.MAJOR",
         "stock_type_filter": "ALL",
-        "scan_codes": ["MOST_ACTIVE_USD"],
+        "scan_codes": [
+          "MOST_ACTIVE_USD"
+        ],
         "intersect": false,
         "scanner_rows": 50,
         "above_price": 15,
@@ -103,8 +154,23 @@
         "tag_filters": {},
         "fallback_to_universe": true
       },
-      "universe_symbols": ["XBI", "SMH", "XLE", "XLF", "XLK", "AMD", "MU", "MRVL",
-                            "FCX", "CAT", "DE", "ON", "WDC", "ALB", "DVN"],
+      "universe_symbols": [
+        "XBI",
+        "SMH",
+        "XLE",
+        "XLF",
+        "XLK",
+        "AMD",
+        "MU",
+        "MRVL",
+        "FCX",
+        "CAT",
+        "DE",
+        "ON",
+        "WDC",
+        "ALB",
+        "DVN"
+      ],
       "price_min": 15,
       "price_max": 150,
       "adv_min_shares": 1000000,
@@ -124,18 +190,26 @@
       "entry_timeout_sec": 30,
       "max_chase_pct": 0.005,
       "one_trade_per_symbol": true,
-      "per_name_notional_cap": 100000
+      "per_name_notional_cap": 10000
     },
-
     "PDH - 9.35": {
       "strategy_type": "pdh_breakout",
       "entry_order_type": "LMT",
-      "strategy_capital": 100000,
+      "strategy_capital": 10000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 0,
       "min_stocks": 1,
       "max_concurrent_tickers": 5,
-      "windows": [["09:35", "11:30"], ["14:00", "15:30"]],
+      "windows": [
+        [
+          "09:35",
+          "11:30"
+        ],
+        [
+          "14:00",
+          "15:30"
+        ]
+      ],
       "poll_interval_sec": 5,
       "require_vwap": true,
       "scanner": {
@@ -143,7 +217,9 @@
         "mode": "replace",
         "location_code": "STK.US.MAJOR",
         "stock_type_filter": "CORP",
-        "scan_codes": ["TOP_PERC_GAIN"],
+        "scan_codes": [
+          "TOP_PERC_GAIN"
+        ],
         "intersect": false,
         "scanner_rows": 50,
         "above_price": 20,
@@ -151,11 +227,37 @@
         "tag_filters": {},
         "fallback_to_universe": true
       },
-      "universe_symbols": ["AMD", "MU", "MRVL", "ON", "WDC", "PLTR", "COIN", "SHOP",
-                            "UBER", "RIVN", "AFRM", "DKNG", "SNAP", "ROKU", "CRWD"],
-      "exclude_symbols": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META"],
-      "universe": {"min_price": 20, "max_price": 200, "min_dollar_adv": 25000000,
-                   "min_premarket_rvol": 1.5},
+      "universe_symbols": [
+        "AMD",
+        "MU",
+        "MRVL",
+        "ON",
+        "WDC",
+        "PLTR",
+        "COIN",
+        "SHOP",
+        "UBER",
+        "RIVN",
+        "AFRM",
+        "DKNG",
+        "SNAP",
+        "ROKU",
+        "CRWD"
+      ],
+      "exclude_symbols": [
+        "AAPL",
+        "MSFT",
+        "NVDA",
+        "AMZN",
+        "GOOGL",
+        "META"
+      ],
+      "universe": {
+        "min_price": 20,
+        "max_price": 200,
+        "min_dollar_adv": 25000000,
+        "min_premarket_rvol": 1.5
+      },
       "breakout_buffer_pct": 0.001,
       "vol_mult": 1.5,
       "entry_offset_pct": 0.0005,
@@ -169,18 +271,26 @@
       "entry_timeout_sec": 30,
       "max_chase_pct": 0.005,
       "one_trade_per_symbol": true,
-      "max_position_notional": 100000
+      "max_position_notional": 10000
     },
-
     "VWAP PB - 9.45": {
       "strategy_type": "vwap_pullback",
       "entry_order_type": "LMT",
-      "strategy_capital": 100000,
+      "strategy_capital": 10000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 0,
       "min_stocks": 1,
       "max_concurrent_tickers": 5,
-      "windows": [["09:45", "11:30"], ["14:00", "15:30"]],
+      "windows": [
+        [
+          "09:45",
+          "11:30"
+        ],
+        [
+          "14:00",
+          "15:30"
+        ]
+      ],
       "poll_interval_sec": 5,
       "require_vwap": true,
       "scanner": {
@@ -188,7 +298,10 @@
         "mode": "replace",
         "location_code": "STK.US.MAJOR",
         "stock_type_filter": "CORP",
-        "scan_codes": ["TOP_PERC_GAIN", "HOT_BY_VOLUME"],
+        "scan_codes": [
+          "TOP_PERC_GAIN",
+          "HOT_BY_VOLUME"
+        ],
         "intersect": true,
         "scanner_rows": 50,
         "above_price": 15,
@@ -196,11 +309,33 @@
         "tag_filters": {},
         "fallback_to_universe": true
       },
-      "universe_symbols": ["NVDA", "AMD", "SMCI", "TSLA", "AAPL", "META", "AVGO", "MU",
-                            "MRVL", "PLTR", "COIN", "SHOP", "UBER", "NFLX", "CRWD"],
-      "exclude_symbols": ["SPY", "QQQ"],
-      "universe": {"min_price": 15, "max_price": 500, "min_dollar_adv": 25000000,
-                   "min_premarket_rvol": 1.5},
+      "universe_symbols": [
+        "NVDA",
+        "AMD",
+        "SMCI",
+        "TSLA",
+        "AAPL",
+        "META",
+        "AVGO",
+        "MU",
+        "MRVL",
+        "PLTR",
+        "COIN",
+        "SHOP",
+        "UBER",
+        "NFLX",
+        "CRWD"
+      ],
+      "exclude_symbols": [
+        "SPY",
+        "QQQ"
+      ],
+      "universe": {
+        "min_price": 15,
+        "max_price": 500,
+        "min_dollar_adv": 25000000,
+        "min_premarket_rvol": 1.5
+      },
       "max_watchlist": 30,
       "vwap_slope_lookback": 3,
       "impulse_pct": 0.003,
@@ -218,17 +353,25 @@
       "entry_timeout_sec": 30,
       "max_chase_pct": 0.005,
       "one_trade_per_symbol": true,
-      "max_position_notional": 100000
+      "max_position_notional": 10000
     },
-
     "TREND PB - 10.00": {
       "strategy_type": "trend_pullback",
       "entry_order_type": "MKT",
-      "strategy_capital": 100000,
+      "strategy_capital": 10000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 1,
       "max_concurrent_tickers": 5,
-      "windows": [["10:00", "11:30"], ["13:00", "15:00"]],
+      "windows": [
+        [
+          "10:00",
+          "11:30"
+        ],
+        [
+          "13:00",
+          "15:00"
+        ]
+      ],
       "poll_interval_sec": 5,
       "require_vwap": true,
       "scanner": {
@@ -236,7 +379,10 @@
         "mode": "replace",
         "location_code": "STK.US.MAJOR",
         "stock_type_filter": "CORP",
-        "scan_codes": ["TOP_PERC_GAIN", "HOT_BY_VOLUME"],
+        "scan_codes": [
+          "TOP_PERC_GAIN",
+          "HOT_BY_VOLUME"
+        ],
         "intersect": true,
         "scanner_rows": 50,
         "above_price": 15,
@@ -244,11 +390,33 @@
         "tag_filters": {},
         "fallback_to_universe": true
       },
-      "universe_symbols": ["NVDA", "AMD", "SMCI", "TSLA", "AAPL", "META", "AVGO", "MU",
-                            "MRVL", "PLTR", "COIN", "SHOP", "UBER", "NFLX", "CRWD"],
-      "exclude_symbols": ["SPY", "QQQ"],
-      "universe": {"min_price": 15, "max_price": 800, "min_dollar_adv": 25000000,
-                   "min_premarket_rvol": 1.2},
+      "universe_symbols": [
+        "NVDA",
+        "AMD",
+        "SMCI",
+        "TSLA",
+        "AAPL",
+        "META",
+        "AVGO",
+        "MU",
+        "MRVL",
+        "PLTR",
+        "COIN",
+        "SHOP",
+        "UBER",
+        "NFLX",
+        "CRWD"
+      ],
+      "exclude_symbols": [
+        "SPY",
+        "QQQ"
+      ],
+      "universe": {
+        "min_price": 15,
+        "max_price": 800,
+        "min_dollar_adv": 25000000,
+        "min_premarket_rvol": 1.2
+      },
       "daily_trend_sma": 20,
       "ema_fast": 9,
       "ema_slow": 20,
@@ -265,17 +433,26 @@
       "entry_timeout_sec": 30,
       "max_chase_pct": 0.005,
       "one_trade_per_symbol": true,
-      "max_position_notional": 100000
+      "max_position_notional": 10000,
+      "min_stocks": 1
     },
-
     "RANGE RETEST - 10.00": {
       "strategy_type": "range_breakout_retest",
       "entry_order_type": "MKT",
-      "strategy_capital": 100000,
+      "strategy_capital": 10000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 1,
       "max_concurrent_tickers": 5,
-      "windows": [["10:00", "11:30"], ["13:00", "15:00"]],
+      "windows": [
+        [
+          "10:00",
+          "11:30"
+        ],
+        [
+          "13:00",
+          "15:00"
+        ]
+      ],
       "poll_interval_sec": 5,
       "require_vwap": true,
       "scanner": {
@@ -283,7 +460,9 @@
         "mode": "replace",
         "location_code": "STK.US.MAJOR",
         "stock_type_filter": "CORP",
-        "scan_codes": ["HOT_BY_VOLUME"],
+        "scan_codes": [
+          "HOT_BY_VOLUME"
+        ],
         "intersect": false,
         "scanner_rows": 50,
         "above_price": 15,
@@ -291,10 +470,32 @@
         "tag_filters": {},
         "fallback_to_universe": true
       },
-      "universe_symbols": ["NVDA", "AMD", "SMCI", "TSLA", "AAPL", "META", "AVGO", "MU",
-                            "MRVL", "PLTR", "COIN", "SHOP", "UBER", "NFLX", "CRWD"],
-      "exclude_symbols": ["SPY", "QQQ"],
-      "universe": {"min_price": 15, "max_price": 800, "min_dollar_adv": 25000000},
+      "universe_symbols": [
+        "NVDA",
+        "AMD",
+        "SMCI",
+        "TSLA",
+        "AAPL",
+        "META",
+        "AVGO",
+        "MU",
+        "MRVL",
+        "PLTR",
+        "COIN",
+        "SHOP",
+        "UBER",
+        "NFLX",
+        "CRWD"
+      ],
+      "exclude_symbols": [
+        "SPY",
+        "QQQ"
+      ],
+      "universe": {
+        "min_price": 15,
+        "max_price": 800,
+        "min_dollar_adv": 25000000
+      },
       "range_lookback": 6,
       "retest_window": 4,
       "range_max_pct": 0.03,
@@ -309,17 +510,26 @@
       "entry_timeout_sec": 30,
       "max_chase_pct": 0.005,
       "one_trade_per_symbol": true,
-      "max_position_notional": 100000
+      "max_position_notional": 10000,
+      "min_stocks": 1
     },
-
     "SR BOUNCE - 10.00": {
       "strategy_type": "sr_bounce",
       "entry_order_type": "MKT",
-      "strategy_capital": 100000,
+      "strategy_capital": 10000,
       "risk_per_trade_pct": 0.01,
       "fixed_stocks": 1,
       "max_concurrent_tickers": 5,
-      "windows": [["10:00", "11:30"], ["13:00", "15:00"]],
+      "windows": [
+        [
+          "10:00",
+          "11:30"
+        ],
+        [
+          "13:00",
+          "15:00"
+        ]
+      ],
       "poll_interval_sec": 5,
       "require_vwap": false,
       "scanner": {
@@ -327,7 +537,9 @@
         "mode": "replace",
         "location_code": "STK.US.MAJOR",
         "stock_type_filter": "CORP",
-        "scan_codes": ["MOST_ACTIVE"],
+        "scan_codes": [
+          "MOST_ACTIVE"
+        ],
         "intersect": false,
         "scanner_rows": 50,
         "above_price": 15,
@@ -335,10 +547,32 @@
         "tag_filters": {},
         "fallback_to_universe": true
       },
-      "universe_symbols": ["NVDA", "AMD", "SMCI", "TSLA", "AAPL", "META", "AVGO", "MU",
-                            "MRVL", "PLTR", "COIN", "SHOP", "UBER", "NFLX", "CRWD"],
-      "exclude_symbols": ["SPY", "QQQ"],
-      "universe": {"min_price": 15, "max_price": 800, "min_dollar_adv": 25000000},
+      "universe_symbols": [
+        "NVDA",
+        "AMD",
+        "SMCI",
+        "TSLA",
+        "AAPL",
+        "META",
+        "AVGO",
+        "MU",
+        "MRVL",
+        "PLTR",
+        "COIN",
+        "SHOP",
+        "UBER",
+        "NFLX",
+        "CRWD"
+      ],
+      "exclude_symbols": [
+        "SPY",
+        "QQQ"
+      ],
+      "universe": {
+        "min_price": 15,
+        "max_price": 800,
+        "min_dollar_adv": 25000000
+      },
       "rsi_period": 14,
       "rsi_oversold": 35.0,
       "touch_band": 0.003,
@@ -350,7 +584,9 @@
       "entry_timeout_sec": 30,
       "max_chase_pct": 0.005,
       "one_trade_per_symbol": true,
-      "max_position_notional": 100000
+      "max_position_notional": 10000,
+      "min_stocks": 1
     }
-  }
+  },
+  "_live_comment": "LIVE config. Starts in DRY_RUN (transmits nothing) and small $10k/strategy. Run: python runner.py --live  (rehearsal) ; add --i-understand-live AND set dry_run=false to trade for real. VERIFY default_account/port before arming."
 }

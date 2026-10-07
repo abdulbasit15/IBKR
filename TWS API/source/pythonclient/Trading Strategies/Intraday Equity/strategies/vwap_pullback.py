@@ -100,10 +100,12 @@ class VWAPPullback(EquityStrategyBase):
         if self.require_vwap and (base_vw is None or vw_now <= base_vw):
             return None
 
-        # price above VWAP right now (live tick if available, else the completed-bar close)
-        tk = self.get_ticker(symbol, contract)
-        price = self.last_price(tk) or bar.close
-        if self.require_vwap and price <= vw_now:
+        # price above VWAP, judged on the COMPLETED bar's close (delayed/entitlement-safe,
+        # matches the backtest). A live tick via last_price() degrades to the prior-day close on
+        # an unentitled feed, which sits below a rising VWAP and would reject every setup.
+        self.get_ticker(symbol, contract)   # keep the market-data feed warm for position mgmt
+        if self.require_vwap and bar.close <= vw_now:
+            self.log_reject(symbol, f"close {bar.close:.2f} <= VWAP {vw_now:.2f}")
             return None
 
         # (2) IMPULSE: earliest bar in the lookback window whose HIGH pushed clearly above VWAP

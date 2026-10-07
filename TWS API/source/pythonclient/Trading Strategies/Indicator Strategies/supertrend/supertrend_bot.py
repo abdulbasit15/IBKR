@@ -332,6 +332,11 @@ class SupertrendBot:
             "RTH": ["09:35", "15:55"], "ETH": ["04:00", "20:00"], "24H": ["00:00", "23:59"],
         }[self.market_hours]
         self.entry_on_flip_only = bool(cfg.get("entry_on_flip_only", False))
+        # cooldown_bars: after ANY exit, wait this many bars before opening a new position (reduces
+        # post-stop re-entry churn). Enforced by wall-clock gap vs bar length (so an overnight gap
+        # auto-satisfies it). 0 = off. Backtested per-instrument: MGC/MES benefit from 3 (15 min).
+        self.cooldown_bars = int(cfg.get("cooldown_bars", 0) or 0)
+        self._last_exit_ts: dict[str, object] = {}   # symbol -> datetime of last exit (for cooldown)
         self.poll = int(cfg.get("poll_interval_sec", 30))
 
         s = cfg.get("sizing", {})
@@ -368,6 +373,21 @@ class SupertrendBot:
         # steals the data line WITHOUT dropping the socket or sending 1100 (Error 162 timeouts),
         # which is exactly the "bot doesn't resume after phone interruption" symptom.
         self.data_fail_reconnect_cycles = int(cfg.get("data_fail_reconnect_cycles", 4))
+        # STALE-DATA GUARD: during an active session the newest COMPLETED bar should be no more
+        # than a bar or two old. After a reconnect the HMDS farm can feed an old backlog one bar
+        # per poll (newest bar stuck ~N min behind real time all day); acting on those signals
+        # fills entries/exits far from the signal bar. If the newest bar is older than
+        # stale_data_max_bars * bar_seconds, skip ALL decisions, flag the farm for a re-wake, and
+        # let the data watchdog force a reconnect. 0 disables. Native server-side stops still
+        # protect open positions while we wait for fresh data.
+        self.stale_data_max_bars = int(cfg.get("stale_data_max_bars", 3) or 0)
+        self._last_stale_log: dict[str, datetime] = {}   # per-symbol throttle for the stale warning
+        # A stale feed means the HMDS data farm went into a zombie state (socket still up, no 1100)
+        # and is serving an old cached bar. Only a full reconnect rebuilds the farm (a throwaway
+        # "wake" pull does not). So after this many consecutive stale eval cycles, force the
+        # disconnect->reconnect directly instead of waiting out the slower generic no-data watchdog.
+        self.stale_data_reconnect_evals = int(cfg.get("stale_data_reconnect_evals", 2) or 0)
+        self._cycle_stale = False     # any symbol reported stale data this eval cycle
         self.contracts: dict[str, object] = {}
         self._on_contracts: dict[str, object] = {}   # OVERNIGHT-venue contracts (24H), cached
         self.positions: dict[str, dict] = {}     # symbol -> live position state
@@ -386,6 +406,10 @@ class SupertrendBot:
         # treated as a BASE name; e.g. "supertrend_trades.csv" -> "supertrend_trades_<name>.csv".
         _csv_base, _csv_ext = os.path.splitext(cfg.get("trade_log_csv", "supertrend_trades.csv"))
         self._csv_path = os.path.join(self.base, f"{_csv_base}_{self.safe_name}{_csv_ext or '.csv'}")
+        # Persisted position state (per strategy) so a restart/reconnect restores the TRUE R,
+        # trimmed-status and 2R tranche targets instead of recomputing R from the trailed stop
+        # (which collapsed R and prematurely scratched winning runners).
+        self._state_path = os.path.join(self.base, f"supertrend_state_{self.safe_name}.json")
 
         # hist_duration: use the configured value, else DERIVE one that covers the indicators'
         # warmup at this bar size (so it need not be configured — e.g. 15-min + DEMA(200) -> ~30D).
@@ -1026,6 +1050,7 @@ class SupertrendBot:
             self.log(f"[{p['ref']}] runner ({p['qty']}) -> {self.ptp_trail_r:.0f}R trail; stop locked {p['stop']:.2f}")
         # resize the protective stop to the reduced quantity (at the possibly-tightened level)
         p["st"] = self.reconcile_stops(symbol, oc, side, p["qty"], p["stop"], tick)
+        self._persist_state()   # a trim changed qty/trimmed/stop -> persist the TRUE state
         return True
 
     # ---- RESTING take-profit orders (visible in TWS): a LIMIT per tranche for HALF the qty ----
@@ -1127,6 +1152,8 @@ class SupertrendBot:
             self._cancel_tps(p)
             self.log(f"[{p['ref']}] fully scaled out via take-profit -> flat")
             self.positions.pop(symbol, None)
+            self._last_exit_ts[symbol] = now_et()   # start the re-entry cooldown
+            self._persist_state()
             return False
         # tighten the runner's stop once we've taken a >= tighten_after_r piece (lock profit)
         if fired_rmult >= self.ptp_tighten_after_r and p.get("trail_mode") != "oneR":
@@ -1139,6 +1166,7 @@ class SupertrendBot:
                      f"stop locked {p['stop']:.2f}")
         # resize the protective stop to the reduced quantity (at the possibly-tightened level)
         p["st"] = self.reconcile_stops(symbol, oc, side, p["qty"], p["stop"], tick)
+        self._persist_state()   # a trim changed qty/trimmed/stop -> persist the TRUE state
         return True
 
     def current_regime(self, symbol, bars):
@@ -1586,6 +1614,7 @@ class SupertrendBot:
             }
             self._entry_bar[symbol] = bar_time
             self.log(f"{symbol} already at target: held {held} >= target {target}; stop reconciled for {held}")
+            self._persist_state()
             return
 
         # buy only the SHORTFALL; place_entry_with_stop waits/chases and protects the new
@@ -1600,6 +1629,17 @@ class SupertrendBot:
             return
         total = held + filled
         fill = float(pt.orderStatus.avgFillPrice or entry_ref)
+        # The stop/R were derived from entry_ref (the last completed-bar close). If the market
+        # filled on the WRONG side of that stop (fast move, gap, or a lagged reference price), the
+        # stop is inverted relative to the real entry -> it would trigger immediately and the
+        # OPENED log would read "SHORT ... stop below entry" (or vice-versa). Re-derive the stop
+        # from the ACTUAL fill so protection, R, tranches and the log are consistent with the true
+        # entry (this also matches the backtest, which sizes the stop off the entry price).
+        if (side == LONG and stop >= fill) or (side == SHORT and stop <= fill):
+            oldstop = stop
+            stop = self.resolve_stop(side, fill, st_line)
+            self.log(f"{symbol} stop re-derived from fill {fill:.2f} for {side} "
+                     f"(was {oldstop:.2f}, inverted vs entry) -> {stop:.2f}")
         # SAFETY CAP: never carry more than the target. Re-read the LIVE position; if a stale
         # snapshot or a partial cover let it accumulate, flatten the excess so size can't balloon
         # (the 4->6->12->24 bug). Trust the live count for sizing the stop/tranches when available.
@@ -1632,6 +1672,7 @@ class SupertrendBot:
             self.log(f"{symbol} partial_tp armed: R={R:.2f}, " + ", ".join(
                 f"{t['qty']}@{t['rmult']:.0f}R({t['target']:.2f})" for t in tranches)
                 + f", runner={total - sum(t['qty'] for t in tranches)}")
+        self._persist_state()
 
     def close_position(self, symbol, exit_px, reason):
         p = self.positions.pop(symbol, None)
@@ -1652,6 +1693,44 @@ class SupertrendBot:
             "reason": reason, "hold": hold,
         })
         self.log(f"CLOSED {p['side']} {symbol} {reason} exit {exit_px:.2f} pnl {pnl:.2f} ({ret:+.2f}%)")
+        self._last_exit_ts[symbol] = now_et()   # start the re-entry cooldown
+        self._persist_state()
+
+    # ----------------------------------------------------------------- state persistence
+    def _persist_state(self):
+        """Write the serializable part of self.positions to disk after every change, so a restart
+        or reconnect can restore the TRUE entry/R/trimmed/tranche-targets instead of recomputing R
+        from the (already-trailed) stop — which used to collapse R and scratch winning runners."""
+        try:
+            data = {}
+            for sym, p in self.positions.items():
+                if not p or int(p.get("qty", 0)) <= 0:
+                    continue
+                data[sym] = {
+                    "side": p["side"], "qty": int(p["qty"]), "entry": float(p["entry"]),
+                    "stop": float(p["stop"]), "R": float(p.get("R", 0.0) or 0.0),
+                    "trimmed": bool(p.get("trimmed", False)),
+                    "trail_mode": p.get("trail_mode", "supertrend"),
+                    "opened": (p["opened"].isoformat() if p.get("opened") else None),
+                    "tranches": [{"qty": int(t["qty"]), "rmult": float(t["rmult"]),
+                                  "target": float(t["target"]), "done": bool(t.get("done", False))}
+                                 for t in (p.get("tranches") or [])],
+                }
+            tmp = self._state_path + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(data, f)
+            os.replace(tmp, self._state_path)   # atomic
+        except Exception as e:
+            self.log(f"state persist error: {e}")
+
+    def _load_state(self) -> dict:
+        try:
+            if os.path.exists(self._state_path):
+                with open(self._state_path) as f:
+                    return json.load(f) or {}
+        except Exception as e:
+            self.log(f"state load error: {e}")
+        return {}
 
     # ----------------------------------------------------------------- restart sync
     def sync_existing(self):
@@ -1675,6 +1754,7 @@ class SupertrendBot:
         except Exception as e:
             self.log(f"sync_existing error: {e}")
             return
+        saved_all = self._load_state()   # persisted TRUE state (entry/R/trimmed/tranche targets)
         for symbol in self.symbols:
             pos = held.get(symbol)
             if not pos:
@@ -1706,16 +1786,27 @@ class SupertrendBot:
                          f"-> exited {qty} @ {exit_px:.2f}")
                 continue
 
+            # Restore TRUE persisted state if we have it (fixes R collapsing to the trailed stop).
+            saved = saved_all.get(symbol)
+            restored = bool(saved and saved.get("side") == side)
+            # A TRIMMED runner must NOT be topped back up to target (that re-adds the scaled-out size).
+            allow_topup = not (restored and saved.get("trimmed"))
+
             # current Supertrend stop level (clamped to the valid side of price)
             if line is not None:
                 stop = self._st_stop(side, line, close, tick)
             else:
                 floor = (1 - self.min_stop_pct) if side == LONG else (1 + self.min_stop_pct)
                 stop = round_to_tick(entry * floor, tick)
+            # never loosen below the last persisted stop level (keep protection at least as tight)
+            if restored and saved.get("stop"):
+                ss = float(saved["stop"])
+                stop = max(stop, ss) if side == LONG else min(stop, ss)
 
-            # top up to the TARGET total if under-sized (honors fixed_stocks as authoritative)
+            # top up to the TARGET total if under-sized (honors fixed_stocks as authoritative) —
+            # but NOT for a restored trimmed runner.
             target = self.size_position(entry, stop, self._contract_mult(contract))
-            if target > qty:
+            if allow_topup and target > qty:
                 top_up_qty = target - qty
                 self.log(f"sync {symbol}: under-sized {side} qty {qty} < target {target}; topping up {top_up_qty}")
                 if self._is_overnight(oc):
@@ -1749,27 +1840,50 @@ class SupertrendBot:
             # ONE consolidated stop for the full held quantity (cancels any stacked stops). On
             # the OVERNIGHT venue reconcile_stops returns None -> protection is synthetic.
             st_trade = self.reconcile_stops(symbol, oc, side, qty, stop, tick)
-            # Re-arm the scale-out after a restart/reconnect. If the adopted qty is a FULL fresh
-            # position (>= target) set up tranches + place resting take-profit orders; if it is
-            # SMALLER than target it is most likely a runner that already scaled out -> just trail
-            # it at 1R with no new take-profit (avoids re-trimming an already-trimmed position).
-            R = abs(entry - stop); tranches = []; tp_orders = []; trail_mode = "supertrend"
-            if self.ptp_enabled and qty >= 2:
-                if qty >= target:
-                    R, tranches = self._setup_tranches(side, entry, stop, qty, tick)
-                    tp_orders = self.place_take_profits(symbol, oc, side, tranches, ref, tick)
-                else:
-                    trail_mode = "oneR"   # reduced position -> treat as a post-trim runner
+
+            if restored:
+                # Use the PERSISTED entry/R/trimmed/tranche-targets — never recompute R from the
+                # trailed stop (that collapsed R and scratched winners). Re-place resting TPs only
+                # for tranches not yet taken, at their TRUE targets.
+                entry = float(saved["entry"])
+                R = float(saved.get("R", 0.0) or 0.0)
+                trimmed = bool(saved.get("trimmed", False))
+                trail_mode = saved.get("trail_mode", "supertrend")
+                opened = datetime.fromisoformat(saved["opened"]) if saved.get("opened") else now_et()
+                tranches = [dict(t) for t in (saved.get("tranches") or [])]
+                tp_orders = []
+                if self.ptp_enabled and not trimmed and qty >= 2 and tranches:
+                    pending = [t for t in tranches if not t.get("done")]
+                    tp_orders = self.place_take_profits(symbol, oc, side, pending, ref, tick)
+                self.log(f"sync {symbol}: RESTORED {side} qty {qty} entry {entry:.2f} R {R:.2f} "
+                         f"trimmed={trimmed} stop {stop:.2f}"
+                         + (f"; TP {tp_orders[0]['qty']}@{tp_orders[0]['rmult']:.0f}R "
+                            f"({tp_orders[0]['target']:.2f})" if tp_orders else ""))
+            else:
+                # No persisted state (first run with a pre-existing position). Recompute, but FLOOR
+                # the R-defining stop at min_stop_pct so a trailed stop can't collapse R and make the
+                # 2R target trivially close. The protective stop stays at the live trailed level.
+                stop_for_R = self.resolve_stop(side, entry, stop)
+                R = abs(entry - stop_for_R); tranches = []; tp_orders = []
+                trail_mode = "supertrend"; trimmed = False; opened = now_et()
+                if self.ptp_enabled and qty >= 2:
+                    if qty >= target:
+                        R, tranches = self._setup_tranches(side, entry, stop_for_R, qty, tick)
+                        tp_orders = self.place_take_profits(symbol, oc, side, tranches, ref, tick)
+                    else:
+                        trail_mode = "oneR"; trimmed = True   # reduced -> treat as post-trim runner
+                self.log(f"sync {symbol}: adopted (no saved state) {side} qty {qty} entry {entry:.2f} "
+                         f"R {R:.2f} stop {stop:.2f}"
+                         + (f"; re-armed TP {tranches[0]['qty']}@{tranches[0]['rmult']:.0f}R "
+                            f"({tranches[0]['target']:.2f})" if tranches else ""))
+
             self.positions[symbol] = {
                 "contract": contract, "side": side, "qty": qty, "entry": entry, "stop": stop,
-                "st": st_trade, "ref": ref, "opened": now_et(),
+                "st": st_trade, "ref": ref, "opened": opened,
                 "R": R, "tranches": tranches, "tp_orders": tp_orders,
-                "trimmed": (trail_mode == "oneR"), "trail_mode": trail_mode,
+                "trimmed": trimmed, "trail_mode": trail_mode,
             }
-            self.log(f"sync {symbol}: adopted {side} qty {qty} entry {entry:.2f} "
-                     f"stop {stop:.2f} (single stop for {qty})"
-                     + (f"; re-armed TP {tranches[0]['qty']}@{tranches[0]['rmult']:.0f}R "
-                        f"({tranches[0]['target']:.2f})" if tranches else ""))
+        self._persist_state()   # write back the reconciled state
 
     # ----------------------------------------------------------------- main loop
     def _trading_now(self) -> bool:
@@ -1784,6 +1898,18 @@ class SupertrendBot:
         if wd == 6:                                  # Sunday: only the evening session onward
             return (now.hour * 60 + now.minute) >= 18 * 60
         return True                                  # Mon-Fri (venue handles the daily halt)
+
+    def _session_active(self) -> bool:
+        """True when this strategy's market_hours session is currently open and fresh bars are
+        expected — used to gate the data watchdog so an RTH strategy doesn't 'no-data' force a
+        reconnect overnight. RTH 09:30-16:00, ETH 04:00-20:00, 24H whenever the week is open."""
+        if not self._trading_now():
+            return False
+        if self.market_hours == "24H":
+            return True
+        m = now_et().hour * 60 + now_et().minute
+        lo, hi = (9 * 60 + 30, 16 * 60) if self.market_hours == "RTH" else (4 * 60, 20 * 60)
+        return lo <= m <= hi
 
     def entries_allowed(self) -> bool:
         if not self._trading_now():
@@ -1822,12 +1948,14 @@ class SupertrendBot:
                     self.modify_stop(oc, p["st"], new_stop, p["qty"], tick)
                 self.log(f"{symbol} trail LONG stop -> {new_stop:.2f} ({tag})")
                 p["stop"] = new_stop
+                self._persist_state()
         else:
             if new_stop < p["stop"] - tick / 2:
                 if not synth:
                     self.modify_stop(oc, p["st"], new_stop, p["qty"], tick)
                 self.log(f"{symbol} trail SHORT stop -> {new_stop:.2f} ({tag})")
                 p["stop"] = new_stop
+                self._persist_state()
 
     def manage_symbol(self, symbol):
         contract = self.contracts[symbol]
@@ -1901,6 +2029,25 @@ class SupertrendBot:
                           if p else "flat")
                 self.log(f"{symbol} [{self.market_hours}] idle — no new bar since {bar_time} "
                          f"(symbol not trading this session) | {postxt}")
+
+        # ---- STALE-DATA GUARD: inside an active session, bail out if the newest completed bar is
+        # too far behind real time (lagging data farm replaying a backlog). Do NOT trade on stale
+        # signals: count the cycle as a data failure (watchdog -> reconnect), flag an HMDS re-wake,
+        # and skip. Open positions remain protected by their native server-side stops.
+        if self.stale_data_max_bars and self._session_active():
+            bar_age = (now_et() - bar_time).total_seconds()
+            max_age = self.stale_data_max_bars * self._bar_seconds()
+            if bar_age > max_age:
+                self._cycle_data_ok = False      # treat like no-data for the watchdog
+                self._cycle_stale = True          # trip the FAST stale-reconnect path
+                self._farm_wake_needed = True     # throwaway wake attempt (reconnect is the real cure)
+                last = self._last_stale_log.get(symbol)
+                if last is None or (now_et() - last).total_seconds() >= 60:
+                    self._last_stale_log[symbol] = now_et()
+                    self.log(f"{symbol} STALE DATA: newest bar {bar_time} is {bar_age/60:.0f} min "
+                             f"behind real time (> {max_age/60:.0f} min limit) — skipping decisions "
+                             f"and forcing data refresh (position held by native stop)")
+                return
 
         if p:
             oc = self._order_contract(contract)          # active venue (OVERNIGHT during 20-04)
@@ -1986,6 +2133,11 @@ class SupertrendBot:
             return
         if not fresh_bar:                              # only open at a new-bar-open boundary
             return
+        if self.cooldown_bars:                         # wait N bars after an exit before re-entering
+            lx = self._last_exit_ts.get(symbol)
+            if lx is not None and (now_et() - lx).total_seconds() < self.cooldown_bars * self._bar_seconds():
+                self.log(f"{symbol} cooldown: {self.cooldown_bars} bars since exit not elapsed -> skip entry")
+                return
         if self.entry_on_flip_only:
             fresh = (bull and not bull_prev) if desired == LONG else ((not bull) and bull_prev)
             if not fresh:
@@ -2049,6 +2201,7 @@ class SupertrendBot:
         p["qty"] = qty
         p["stop"] = stop
         p["st"] = self.reconcile_stops(symbol, oc, side, qty, stop, tick)
+        self._persist_state()
         return False
 
     def _watch_stops(self):
@@ -2063,10 +2216,19 @@ class SupertrendBot:
         if not self.connect():
             return
         try:
+            # If the session is closed at startup (weekend / off-hours), DON'T exit — stay connected
+            # and idle until it opens, then start. (Previously the thread exited on a closed session,
+            # so launching over the weekend just connected-and-quit instead of waiting for the open.)
             if not self._trading_now():
-                self.log("market closed for this strategy's session (ET); exiting. "
-                         "(24H/futures trade Sun evening–Fri; RTH/ETH Mon–Fri. No holiday calendar.)")
-                return
+                self.log("session closed for this strategy (ET) — staying connected and idling until "
+                         "it opens (futures: Sun 18:00 ET–Fri; RTH/ETH: Mon–Fri). No holiday calendar.")
+                while not self._trading_now():
+                    self._safe_sleep(300)                 # re-check every 5 min
+                    try:
+                        self.ensure_connected()           # keep the socket alive through the wait
+                    except Exception as e:
+                        self.log(f"idle reconnect: {e}")
+                self.log("session open (ET) — starting up")
             self.contracts = {s: self.qualify(s) for s in self.symbols}
             self.log(f"direction={self.direction} symbols={self.symbols} "
                      f"sec_type={self.sec_type}{'@' + self.exchange if self.is_future else ''} "
@@ -2115,6 +2277,7 @@ class SupertrendBot:
 
                     if do_eval:
                         self._cycle_data_ok = False
+                        self._cycle_stale = False
                         for symbol in self.symbols:
                             try:
                                 self.manage_symbol(symbol)
@@ -2122,19 +2285,29 @@ class SupertrendBot:
                                 self.log(f"manage error {symbol}: {e}")
                         # DATA WATCHDOG: socket up but no symbol returned data for several bar-evals
                         # (a competing login stealing the data line sends Error 162 timeouts WITHOUT
-                        # dropping the socket or firing 1100) -> force a full session reset.
+                        # dropping the socket or firing 1100) -> force a full session reset. ONLY
+                        # applies DURING the strategy's session: outside it (e.g. an RTH strategy
+                        # overnight) there are legitimately no new bars, so "no data" is expected and
+                        # must NOT force needless reconnect churn.
                         if self._cycle_data_ok:
                             self._data_fail = 0
-                        else:
+                        elif self._session_active():
                             self._data_fail += 1
-                            if self._data_fail >= self.data_fail_reconnect_cycles:
-                                self.log(f"no market data for {self._data_fail} evals while connected; "
-                                         f"forcing session reset (disconnect -> reconnect)")
+                            # STALE feed (farm zombie) trips FAST: a reconnect is the only cure, so
+                            # don't wait out the slower generic no-data threshold.
+                            stale_trip = (self._cycle_stale and self.stale_data_reconnect_evals
+                                          and self._data_fail >= self.stale_data_reconnect_evals)
+                            if self._data_fail >= self.data_fail_reconnect_cycles or stale_trip:
+                                why = ("stale data farm" if stale_trip else "no market data")
+                                self.log(f"{why} for {self._data_fail} evals while connected during "
+                                         f"the session; forcing session reset (disconnect -> reconnect)")
                                 try:
                                     self.ib.disconnect()
                                 except Exception:
                                     pass
                                 self._data_fail = 0
+                        else:
+                            self._data_fail = 0   # outside the session: no new bars expected, not a fault
                     else:
                         self._watch_stops()      # heartbeat: catch a stop fill between bars
 

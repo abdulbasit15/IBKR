@@ -1,0 +1,56 @@
+{
+  "_comment": "Supertrend bot — LIVE futures config. Launch with: supertrend_bot.exe supertrend.live.json  (the paper supertrend.json is unchanged, so you can run paper in parallel). SAME strategy/indicators as paper; only the account, port and sizing differ. JSON is read at startup — no rebuild needed to change these.",
+  "_GO_LIVE_CHECKLIST": "1) Replace REPLACE_WITH_LIVE_ACCOUNT below (both 'accounts' and 'default_account') with your real IBKR account (e.g. U1234567). 2) Confirm 'port' matches your LIVE gateway/TWS (IB Gateway live = 4001; TWS live = 7496). 3) Ensure the live account has FUTURES permission + a live CME/COMEX market-data subscription. 4) Confirm LPL compliance has cleared live futures trading on this account. 5) Start IB Gateway logged into the LIVE account, then launch. Strategy names are prefixed LIVE_ so logs/CSVs/state stay separate from paper.",
+  "_sizing_comment": "fixed_stocks=2 is the SMALLEST size that keeps partial-profit working (trim 1 @ 2R, trail the other 1 @ 1R) — matches the backtest. fixed_stocks=1 would DISABLE partial profit (can't trim half of 1 lot; the single contract just rides the Supertrend trailing stop). max_position_notional is a hard safety cap.",
+  "_scaling_comment": "To SCALE UP after live results are good: EITHER bump fixed_stocks (2 -> 4 -> 6...), OR switch to risk-based sizing per strategy: set fixed_stocks:0 and then size auto-computes as floor(strategy_capital * risk_per_trade_pct / risk-per-contract-at-stop), capped by max_position_notional. In risk-based mode, scale by raising strategy_capital and/or risk_per_trade_pct (partial profit needs the computed qty to reach >=2).",
+  "_contract_selection_comment": "contract_selection: 'active' = IBKR ContFuture active/liquid front; 'quarterly' = Mar/Jun/Sep/Dec cycle (MGC synced to the index quarters); roll_buffer_days skips a contract within N days of expiry. expiry (optional) hard-pins a month 'YYYYMM'.",
+
+  "_stale_data_comment": "stale_data_max_bars: if the newest completed bar is older than N*bar_seconds (3*5min=15min), SKIP all decisions, re-wake the HMDS farm and let the watchdog reconnect — prevents trading a stale backlog replayed one bar per poll after a reconnect. 0 disables. NEEDS REBUILD.",
+
+  "host": "127.0.0.1",
+  "port": 4001,
+  "client_id": 40,
+  "accounts": ["REPLACE_WITH_LIVE_ACCOUNT"],
+  "default_account": "REPLACE_WITH_LIVE_ACCOUNT",
+  "market_data_type": 1,
+  "stale_data_max_bars": 3,
+
+  "strategies": {
+    "stocks": [],
+    "futures": [
+      {
+        "name": "LIVE_MNQ_5m", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MNQ"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "active", "roll_buffer_days": 0, "entry_on_flip_only": true,
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": true, "period": 200 },
+        "regime_filter": { "enabled": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 2, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "LIVE_MES_5m", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "CME", "currency": "USD",
+        "symbols": ["MES"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "active", "roll_buffer_days": 0, "cooldown_bars": 3,
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": false, "period": 200 },
+        "regime_filter": { "enabled": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 2, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      },
+      {
+        "name": "LIVE_MGC_5m", "direction": "long_short",
+        "sec_type": "FUT", "exchange": "COMEX", "currency": "USD",
+        "symbols": ["MGC"], "bar_size": "5 mins", "market_hours": "RTH", "hist_duration": "30 D",
+        "contract_selection": "quarterly", "roll_buffer_days": 7, "cooldown_bars": 3,
+        "supertrend": { "atr_period": 10, "multiplier": 3 },
+        "dema_filter": { "enabled": false, "period": 200 },
+        "regime_filter": { "enabled": false },
+        "partial_tp": { "enabled": true, "trail_r": 1.0, "tighten_after_r": 2.0, "tranches": [ { "fraction": 0.5, "r_multiple": 2 } ] },
+        "sizing": { "strategy_capital": 100000, "fixed_stocks": 2, "risk_per_trade_pct": 0.01, "max_position_notional": 500000 }
+      }
+    ]
+  }
+}

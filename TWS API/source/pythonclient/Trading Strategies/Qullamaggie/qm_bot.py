@@ -74,7 +74,7 @@ else:
 
 # Reuse the already-built + verified pieces (no duplication):
 from universe import get_us_universe                       # noqa: E402
-from qm_long_backtest import fetch, sma_series, adr_pct_at, DEFAULT_UNIVERSE  # noqa: E402
+from qm_long_backtest import fetch, sma_series, adr_pct_at, apply_adr_stop, DEFAULT_UNIVERSE  # noqa: E402
 import earnings                                            # noqa: E402  (EP catalyst feed; top-level so PyInstaller bundles it)
 
 ET = ZoneInfo("America/New_York")
@@ -112,7 +112,10 @@ def log(msg: str, setup: str = None):
     given (breakout / parabolic_long / ep) it ALSO appends to that setup's own per-strategy file, so
     each setup has its own log in logs/ in addition to the combined one."""
     line = f"[{now_et():%Y-%m-%d %H:%M:%S ET}] {msg}"
-    print(line, flush=True)
+    try:
+        print(line, flush=True)
+    except UnicodeEncodeError:                   # Windows cp1252 console can't encode some chars
+        print(line.encode("ascii", "replace").decode("ascii"), flush=True)
     try:
         os.makedirs(LOG_DIR, exist_ok=True)
     except OSError:
@@ -216,6 +219,11 @@ def analyze_breakout(sym: str, bars: list, p: SimpleNamespace):
         return None
     above_200 = n >= 200 and price > (sum(closes[-200:]) / 200)
 
+    # EXTENSION filter: skip breakouts already too far above the 50-day SMA (late-stage / chasing)
+    max_ext = getattr(p, "max_ext_pct", 0)
+    if max_ext and sma50 and (price / sma50 - 1.0) * 100.0 > max_ext:
+        return None
+
     base_c = closes[-1 - 63] if n > 63 else closes[0]
     perf3m = (price / base_c - 1.0) * 100.0 if base_c else 0.0
     if perf3m < p.min_move_pct or perf3m > p.max_move_pct:
@@ -246,7 +254,8 @@ def analyze_breakout(sym: str, bars: list, p: SimpleNamespace):
     trigger = round_cent(base_hi * (1.0 + p.breakout_buffer_pct / 100.0))
     if price > trigger:                                  # already broke out -> skip (chasing)
         return None
-    stop = round_cent(base_lo)
+    stop = round_cent(apply_adr_stop(trigger, base_lo, adr,
+                                     getattr(p, "adr_stop", False), getattr(p, "adr_stop_mult", 1.0)))
     rps = trigger - stop
     if rps <= 0 or (rps / trigger) > p.max_risk_frac:
         return None
@@ -264,6 +273,7 @@ def analyze_breakout(sym: str, bars: list, p: SimpleNamespace):
     return {
         "sym": sym, "setup": "breakout", "price": price, "trigger": trigger, "stop": stop,
         "rps": rps, "perf3m": perf3m, "adr": adr, "off_high": off_high,
+        "rs": perf3m - (getattr(p, "spy_perf3m", 0.0) or 0.0),      # relative strength vs SPY
         "dollar_vol_m": dollar_vol_m, "base_range_pct": base_range_pct,
         "voldry": (ref_vol / base_vol) if base_vol else 0.0, "above_200": above_200,
         "higher_lows": higher_lows, "score": score, "score_parts": comp,
@@ -311,11 +321,12 @@ def analyze_parabolic_long(sym: str, bars: list, p: SimpleNamespace):
     trigger = round_cent(max(highs[-2:]) * (1.0 + p.breakout_buffer_pct / 100.0))
     if price > trigger:                                        # already broke -> skip
         return None
-    stop = round_cent(min(lows[ll_idx:]))                      # protective stop = crash low
+    adr = adr_pct_at(bars, i, 20)
+    stop = round_cent(apply_adr_stop(trigger, min(lows[ll_idx:]), adr,     # crash low, capped at ~1 ADR
+                                     getattr(p, "adr_stop", False), getattr(p, "adr_stop_mult", 1.0)))
     rps = trigger - stop
     if rps <= 0 or (rps / trigger) > p.max_risk_frac:
         return None
-    adr = adr_pct_at(bars, i, 20)
     dollar_vol_m = (sum(b["c"] * b["v"] for b in bars[-20:]) / min(20, n)) / 1e6
     if dollar_vol_m < p.min_dollar_vol_m:
         return None
@@ -331,6 +342,26 @@ def analyze_parabolic_long(sym: str, bars: list, p: SimpleNamespace):
 
 
 ANALYZERS = {"breakout": analyze_breakout, "parabolic_long": analyze_parabolic_long}
+
+
+def market_regime(cfg: dict):
+    """Qullamaggie's market filter: trend-following setups only work when the broad market is trending
+    up. Rule: the index's short MA above its long MA = GOOD (take breakouts/EP); below = BAD (step aside,
+    'breakouts don't exist in a falling market'). Returns (ok: bool, detail: str).
+
+    cfg: regime_symbol (QQQ), regime_fast_ma (10), regime_slow_ma (20). Fail-open if data is missing."""
+    sym = cfg.get("regime_symbol", "QQQ")
+    fast_n = int(cfg.get("regime_fast_ma", 10))
+    slow_n = int(cfg.get("regime_slow_ma", 20))
+    bars = fetch(sym, cfg.get("data_source", "auto"), cfg.get("data_range", "1y"))
+    if not bars or len(bars) < slow_n + 1:
+        return True, f"{sym} regime unknown (no data) — not blocking"   # fail-open, don't freeze the bot
+    closes = [b["c"] for b in bars]
+    fast = sum(closes[-fast_n:]) / fast_n
+    slow = sum(closes[-slow_n:]) / slow_n
+    ok = fast > slow
+    return ok, (f"{sym} {fast_n}MA {fast:.2f} {'>' if ok else '<='} {slow_n}MA {slow:.2f} "
+                f"-> {'GOOD (uptrend)' if ok else 'BAD (step aside)'}")
 
 
 def scan_setups(cfg: dict, limit: int = None):
@@ -349,12 +380,17 @@ def scan_setups(cfg: dict, limit: int = None):
         pl_max_bounce=cfg.get("pl_max_bounce", 30.0),
         # quality-ranking weights (breakout); cfg override merges over the defaults
         quality_weights={**QUALITY_WEIGHTS, **(cfg.get("quality_weights") or {})},
+        adr_stop=cfg.get("adr_stop", False), adr_stop_mult=cfg.get("adr_stop_mult", 1.0),
+        max_ext_pct=cfg.get("max_ext_pct", 0),
     )
-    # Relative strength benchmark: SPY's 3-month return, so breakout RS = stock 3m − SPY 3m.
+    # Relative strength benchmark: default to the index Qullamaggie actually watches — the Nasdaq
+    # (QQQ), same as the regime filter — so breakout RS = stock 3m − benchmark 3m. Override via
+    # rs_benchmark; falls back to regime_symbol (QQQ) for one consistent "market" gauge.
+    bench = cfg.get("rs_benchmark") or cfg.get("regime_symbol", "QQQ")
     try:
-        spy = fetch("SPY", cfg["data_source"], cfg["data_range"])
-        p.spy_perf3m = ((spy[-1]["c"] / spy[-1 - 63]["c"] - 1.0) * 100.0) if spy and len(spy) > 63 else 0.0
-        log(f"RS benchmark: SPY 3-month = {p.spy_perf3m:+.1f}%")
+        bb = fetch(bench, cfg["data_source"], cfg["data_range"])
+        p.spy_perf3m = ((bb[-1]["c"] / bb[-1 - 63]["c"] - 1.0) * 100.0) if bb and len(bb) > 63 else 0.0
+        log(f"RS benchmark: {bench} 3-month = {p.spy_perf3m:+.1f}%")
     except Exception:
         p.spy_perf3m = 0.0
     setups = cfg.get("setups") or ["breakout"]
@@ -431,6 +467,7 @@ def scan_ep(cfg: dict):
         ep_or_bars=max(1, cfg.get("ep_or_bars", 1)),
         ep_min_vol_frac=cfg.get("ep_min_vol_frac", 0.05),
         ep_min_surprise=cfg.get("ep_min_surprise", 0.0),
+        adr_stop=cfg.get("adr_stop", False), adr_stop_mult=cfg.get("adr_stop_mult", 1.0),
     )
     recent = E.recent_earnings()
     if not recent:
@@ -472,14 +509,15 @@ def scan_ep(cfg: dict):
         if avgvol > 0 and volsofar < p.ep_min_vol_frac * avgvol:   # volume surge sanity
             continue
         trigger = round_cent(or_high * (1.0 + p.breakout_buffer_pct / 100.0))
-        stop = round_cent(or_low)
+        adr = adr_pct_at(daily, len(daily) - 1, 20) or 0.0
+        stop = round_cent(apply_adr_stop(trigger, or_low, adr,          # OR low, capped at ~1 ADR
+                                         p.adr_stop, p.adr_stop_mult))
         rps = trigger - stop
         if rps <= 0 or (rps / trigger) > p.max_risk_frac:
             continue
         last = intr.get("last") or price
         if last > trigger * (1.0 + p.max_risk_frac):        # already ran too far past the ORH
             continue
-        adr = adr_pct_at(daily, len(daily) - 1, 20) or 0.0
         rvol = (volsofar / avgvol) if avgvol > 0 else 0.0   # opening relative volume (conviction)
         cands.append({
             "sym": sym, "setup": "ep", "price": price, "trigger": trigger, "stop": stop,
@@ -513,26 +551,134 @@ class QMBot:
 
     # ---- IB connection (resilient — mirrors supertrend_bot) ----
     def _wire_events(self):
-        # errorEvent carries IB 1100/1101/1102 connectivity notices even while the local API
-        # socket stays up (a competing login bumps the Gateway's UPSTREAM link, not our socket).
-        # disconnectedEvent fires on a real socket drop (e.g. the Gateway's daily restart).
-        for hook, fn in (("errorEvent", self._on_error), ("disconnectedEvent", self._on_disconnected)):
+        # errorEvent carries IB 1100/1101/1102 connectivity notices + order reject/cancel reasons.
+        # execDetailsEvent = real fills (time/price/qty). orderStatusEvent = status changes
+        # (Filled / Cancelled). disconnectedEvent = a real socket drop (Gateway daily restart).
+        self._order_status_seen = {}             # orderId -> last status (dedupe status spam)
+        for hook, fn in (("errorEvent", self._on_error),
+                         ("disconnectedEvent", self._on_disconnected),
+                         ("execDetailsEvent", self._on_exec),
+                         ("orderStatusEvent", self._on_order_status)):
             try:
                 getattr(self.ib, hook).__iadd__(fn)
             except Exception:
                 pass
 
+    def _setup_for(self, sym: str) -> str:
+        return self.state["positions"].get(sym, {}).get("setup", "breakout")
+
+    def _trail_sma_for(self, setup: str) -> int:
+        """Per-setup moving average (trail length, or 1st take-profit MA for parabolic). His defaults:
+        breakout 20, EP 50, parabolic 10. Override via cfg['trail_sma_by_setup']."""
+        defaults = {"breakout": 20, "ep": 50, "parabolic_long": 10}
+        m = self.cfg.get("trail_sma_by_setup") or {}
+        return int(m.get(setup, defaults.get(setup, self.cfg.get("trail_sma", 20))))
+
+    def _exit_mode_for(self, setup: str) -> str:
+        """'trail' = trend trail (breakout/ep); 'target_ma' = take-profit into the MA (parabolic)."""
+        m = self.cfg.get("exit_mode_by_setup") or {}
+        return m.get(setup, "target_ma" if setup == "parabolic_long" else "trail")
+
+    # Benign data-farm status notices — not errors, don't spam the log with them.
+    _BENIGN_CODES = {2104, 2106, 2107, 2108, 2119, 2158, 2100, 2150}
+
     def _on_error(self, *args):
+        # ib_async: (reqId, errorCode, errorString, contract, ...)
+        reqId = args[0] if len(args) > 0 else None
         code = args[1] if len(args) > 1 else None
-        if code == 1100:                         # connectivity between IB and TWS/Gateway lost
+        msg = args[2] if len(args) > 2 else ""
+        contract = args[3] if len(args) > 3 else None
+        if code == 1100:
             self._conn_ok = False
             log("IB error 1100: connectivity to IB LOST — data/orders will fail until restored")
-        elif code in (1101, 1102):               # restored (1101 = with data loss, 1102 = maintained)
+        elif code in (1101, 1102):
             self._conn_ok = True
             log(f"IB error {code}: connectivity RESTORED — resuming")
+        elif code in self._BENIGN_CODES:
+            return                               # data-farm OK notices — ignore
+        else:
+            # Everything else: order rejects/cancels (201/202/203/10147/10148…) + warnings. These carry
+            # the CANCEL/REJECT REASON. Tag the symbol/order when we can.
+            sym = getattr(contract, "symbol", None)
+            where = f" {sym}" if sym else ""
+            log(f"IB msg code={code} order/req={reqId}{where}: {msg}",
+                setup=self._setup_for(sym) if sym else None)
+
+    def _on_exec(self, trade, fill):
+        """Real fill — log time/price/qty. On an ENTRY (BOT) fill, stamp the actual fill into state."""
+        try:
+            ex = fill.execution
+            sym = trade.contract.symbol
+            setup = self._setup_for(sym)
+            side = "BUY" if ex.side == "BOT" else "SELL"
+            kind = "ENTRY FILLED" if ex.side == "BOT" else "EXIT FILLED"
+            log(f"{kind}: {side} {int(ex.shares)} {sym} @ {ex.price:.2f}  "
+                f"time={ex.time}  order={ex.orderId}  cum={int(ex.cumQty)}", setup=setup)
+            if ex.side == "BOT":                 # entry hit -> record actual open date/price in state
+                pos = self.state["positions"].get(sym)
+                if pos is not None:
+                    first_fill = pos.get("entry_date") is None
+                    if first_fill:
+                        pos["entry_date"] = now_et().strftime("%Y-%m-%d")
+                    pos["fill_price"] = ex.price
+                    save_state(self.state)
+                    if first_fill and not pos.get("entry_logged"):
+                        self._record_entry(sym, pos, ex.price)   # write ENTRY row w/ quality factors
+                        pos["entry_logged"] = True
+                        save_state(self.state)
+        except Exception as e:
+            log(f"exec-log error: {e}")
+
+    def _on_order_status(self, trade):
+        """Log meaningful order-status transitions (Filled / Cancelled / Inactive), once each."""
+        try:
+            oid = trade.order.orderId
+            status = trade.orderStatus.status
+            if self._order_status_seen.get(oid) == status:
+                return
+            self._order_status_seen[oid] = status
+            if status in ("Cancelled", "ApiCancelled", "Inactive", "PendingCancel"):
+                sym = trade.contract.symbol
+                o = trade.order
+                log(f"ORDER {status}: {o.action} {int(o.totalQuantity)} {sym} "
+                    f"{o.orderType}@{o.auxPrice or o.lmtPrice or 0} id={oid} "
+                    f"(reason in the IB msg line above, if any)", setup=self._setup_for(sym))
+        except Exception as e:
+            log(f"order-status-log error: {e}")
 
     def _on_disconnected(self):
         log("API socket disconnected — will reconnect on next tick")
+
+    def log_status(self):
+        """Periodic snapshot of resting open orders + positions. To avoid log spam (this fires hourly)
+        the DETAIL lines print only when the book CHANGES vs the last snapshot; otherwise a single
+        compact line. Order fills/cancels are logged in real time regardless."""
+        try:
+            trades = self.ib.openTrades()
+        except Exception as e:
+            log(f"status: openTrades error {e}")
+            return
+        oo = [t for t in trades if t.orderStatus.status in ("PreSubmitted", "Submitted")]
+        pos = self.ib_positions()
+        # signature of the current book; detail only when it changes
+        sig = "|".join(sorted(f"{t.order.action}{int(t.order.totalQuantity)}{t.contract.symbol}"
+                              f"@{t.order.auxPrice or t.order.lmtPrice or 0}" for t in oo)) \
+            + "##" + "|".join(f"{s}:{q}" for s, q in sorted(pos.items()))
+        if sig == getattr(self, "_status_sig", None):
+            log(f"STATUS: {len(oo)} open order(s), {len(pos)} position(s) (unchanged)")
+            return
+        self._status_sig = sig
+        log(f"STATUS: {len(oo)} open order(s), {len(pos)} position(s) [changed — detail below]")
+        for t in oo:
+            o, c = t.order, t.contract
+            px = o.auxPrice or o.lmtPrice or 0
+            log(f"  OPEN {o.action} {int(o.totalQuantity)} {c.symbol} {o.orderType}@{px} "
+                f"[{t.orderStatus.status}] filled={int(t.orderStatus.filled)} id={o.orderId}")
+        for sym, sh in pos.items():
+            st = self.state["positions"].get(sym, {})
+            ep = st.get("fill_price") or st.get("entry_price")
+            log(f"  POS {sym} x{sh}" + (f" entry~{ep:.2f}" if ep else "")
+                + (f" stop {st.get('stop'):.2f}" if st.get("stop") else ""))
 
     def _connect_once(self):
         """(Re)open a FRESH IB client and connect. A new IB() per attempt is deliberate:
@@ -637,6 +783,18 @@ class QMBot:
             pass
 
     # ---- account / positions ----
+    def _capital_for(self, setup: str) -> float:
+        """Capital SLEEVE for a strategy. Each setup sizes off its own allocation (e.g. $100k for
+        breakout / ep / parabolic_long) via `strategy_capital_by_setup`; falls back to a flat
+        `strategy_capital`, else the live NetLiquidation/override. Risk-per-trade and the position
+        notional cap are both computed off THIS sleeve, so the three strategies are independent."""
+        m = self.cfg.get("strategy_capital_by_setup") or {}
+        if setup in m:
+            return float(m[setup])
+        if self.cfg.get("strategy_capital"):
+            return float(self.cfg["strategy_capital"])
+        return self.capital()
+
     def capital(self) -> float:
         if self.cfg.get("capital_override"):
             return float(self.cfg["capital_override"])
@@ -665,6 +823,38 @@ class QMBot:
                     and t.orderStatus.status in ("PreSubmitted", "Submitted")):
                 syms.add(c.symbol)
         return syms
+
+    def cancel_stale_entries(self):
+        """Cancel every still-resting BUY (entry) order and drop its pending state, so each morning
+        re-arms from a CLEAN slate using the fresh quality ranking + today's levels. This makes the
+        bot correct even if entry_tif is GTC (DAY orders already expire at the close, but this also
+        clears any that lingered — e.g. placed after-hours, or carried across a Gateway restart).
+        A child protective SELL stop is left alone: it only activates once its parent entry FILLED,
+        i.e. it belongs to a real position, not to an unfilled entry."""
+        if self.dry:
+            return
+        cancelled = 0
+        for t in self.ib.openTrades():
+            o, c = t.order, t.contract
+            if (c.secType == "STK" and o.action == "BUY"
+                    and t.orderStatus.status in ("PreSubmitted", "Submitted")):
+                sym = c.symbol
+                try:
+                    self.ib.cancelOrder(o)
+                    cancelled += 1
+                    log(f"cancel-refresh: cancelled leftover entry order {sym} "
+                        f"{o.orderType}@{o.auxPrice or o.lmtPrice or 0} id={o.orderId}",
+                        setup=self._setup_for(sym))
+                except Exception as e:
+                    log(f"cancel-refresh: failed to cancel {sym} id={o.orderId}: {e}")
+                # drop the pending (unfilled) state entry so the slot frees for the fresh scan
+                pos = self.state["positions"].get(sym)
+                if pos is not None and pos.get("entry_date") is None and not pos.get("adopted"):
+                    del self.state["positions"][sym]
+        if cancelled:
+            self.ib.sleep(0.5)
+            save_state(self.state)
+            log(f"cancel-refresh: cleared {cancelled} unfilled entry order(s) before re-scan")
 
     def _stk(self, sym: str):
         from ib_async import Stock
@@ -715,6 +905,37 @@ class QMBot:
         save_state(self.state)
 
     # ---- ENTRY cycle ----
+    def _log_ranked(self, setup: str, cands: list, fresh: list, slots: int, held_syms: set, floor: float):
+        """Log every ranked candidate with its quality factors and an ACCURATE per-row status:
+        PICK (will be entered) · held (a real position / resting order) · <floor (below quality floor,
+        NOT held) · eligible (passed floor, not held, but no free slot). `fresh` = passed floor & not held."""
+        fresh_syms = {c["sym"] for c in fresh}
+        sel = {c["sym"] for c in fresh[:slots]}         # the ones that will actually be entered
+        held_n = sum(1 for c in cands if c["sym"] in held_syms)
+        low_n = sum(1 for c in cands if c["sym"] not in held_syms and floor and c.get("score", 0) < floor)
+        log(f"{setup}: {len(cands)} passed filters | {len(fresh)} eligible (score>={floor:g} & not held) "
+            f"| {held_n} held/pending | {low_n} below floor | entering {len(sel)} into {slots} free slot(s)",
+            setup=setup)
+        log(f"{setup}: {'RANK':>4} {'SYM':<6} {'SCORE':>7} {'3M%':>6} {'RS%':>6} {'ADR%':>5} "
+            f"{'BASE%':>6} {'VDRY':>5} {'OFFHI':>6} {'>200':>4} {'HL':>3}  STATUS", setup=setup)
+        for i, c in enumerate(cands, 1):
+            sym = c["sym"]
+            if sym in sel:
+                mark = "PICK"
+            elif sym in held_syms:
+                mark = "held"
+            elif floor and c.get("score", 0) < floor:
+                mark = "<floor"
+            elif sym in fresh_syms:
+                mark = "eligible"            # passed floor, not held, but beyond the free slots
+            else:
+                mark = "-"
+            log(f"{setup}: {i:>4} {sym:<6} {c.get('score',0):>7.0f} "
+                f"{c.get('perf3m',0):>6.0f} {c.get('rs',0):>6.0f} {c.get('adr',0):>5.1f} "
+                f"{c.get('base_range_pct',0):>6.1f} {c.get('voldry',0):>5.2f} "
+                f"{c.get('off_high',0):>6.1f} {('Y' if c.get('above_200') else 'n'):>4} "
+                f"{('Y' if c.get('higher_lows') else 'n'):>3}  {mark}", setup=setup)
+
     def _place_candidates(self, cands: list, setup: str):
         """Place a SINGLE strategy's ranked candidates. Each strategy has its OWN cap of
         `max_positions` (10) — breakout / ep / parabolic_long are independent, 1% risk each.
@@ -729,24 +950,35 @@ class QMBot:
         held_syms = set(live) | set(st) | pending                    # dedupe across ALL strategies
         used = sum(1 for pos in st.values() if pos.get("setup") == setup)  # THIS strategy's count
         slots = self.cfg["max_positions"] - used
+        cap = self._capital_for(setup)           # per-strategy capital sleeve (e.g. $100k each)
+        fresh = [c for c in cands if c["sym"] not in held_syms]
+        # QUALITY FLOOR: only take setups whose score clears the bar (quality-driven; max_positions is
+        # just the ceiling). On a weak day far fewer than the cap qualify — concentration over count.
+        floor = self._min_score_for(setup)
+        if floor:
+            before = len(fresh)
+            fresh = [c for c in fresh if c.get("score", 0) >= floor]
+            log(f"{setup}: quality floor {floor}: {len(fresh)}/{before} candidate(s) clear the bar",
+                setup=setup)
+        # Full ranked list with quality factors + accurate per-row status.
+        self._log_ranked(setup, cands, fresh, max(0, slots), held_syms, floor)
         if slots <= 0:
             log(f"{setup}: strategy full ({used}/{self.cfg['max_positions']} held/pending) — skipping",
                 setup=setup)
             return
-        cap = self.capital()
         if cap <= 0:
-            log(f"{setup}: capital is 0 (no NetLiquidation / override) — skipping", setup=setup)
+            log(f"{setup}: capital is 0 (no sleeve / NetLiquidation / override) — skipping", setup=setup)
             return
-        fresh = [c for c in cands if c["sym"] not in held_syms]
+        risk_dollars = cap * self.cfg["risk_per_trade_pct"]
         log(f"{setup}: {len(fresh)} new candidate(s); {slots} slot(s) free "
-            f"({used}/{self.cfg['max_positions']} used); capital=${cap:,.0f}", setup=setup)
+            f"({used}/{self.cfg['max_positions']} used); sleeve=${cap:,.0f} "
+            f"risk/trade=${risk_dollars:,.0f}", setup=setup)
         placed = 0
         for c in fresh:
             if placed >= slots:
                 break
-            risk_dollars = cap * self.cfg["risk_per_trade_pct"]
-            qty = math.floor(risk_dollars / c["rps"])
-            cap_qty = math.floor((cap * self.cfg["max_position_pct"]) / c["trigger"])
+            qty = math.floor(risk_dollars / c["rps"])                 # 1% of the sleeve / per-share risk
+            cap_qty = math.floor((cap * self.cfg["max_position_pct"]) / c["trigger"])  # notional cap of sleeve
             qty = max(0, min(qty, cap_qty))
             if qty < 1:
                 continue
@@ -755,20 +987,76 @@ class QMBot:
         if placed == 0:
             log(f"{setup}: no entries placed this cycle", setup=setup)
 
+    def _min_score_for(self, setup: str) -> float:
+        """Minimum quality score a candidate must clear to be entered (0 = off). Per-setup because the
+        score scales differ (breakout vs ep vs parabolic). cfg: min_quality_score_by_setup {} overrides
+        the flat min_quality_score. Calibrate from the ranked-candidate logs / qm_entries_*.csv."""
+        m = self.cfg.get("min_quality_score_by_setup") or {}
+        if setup in m:
+            return float(m[setup])
+        return float(self.cfg.get("min_quality_score", 0) or 0)
+
+    def _regime_ok(self, setup: str):
+        """(ok_to_enter, detail). Trend setups (breakout/ep) are BLOCKED in a bad market regime;
+        counter-trend setups in `regime_exempt_setups` (parabolic_long) are always allowed."""
+        if not self.cfg.get("regime_filter", True):
+            return True, "regime filter off"
+        if setup in set(self.cfg.get("regime_exempt_setups", ["parabolic_long"])):
+            return True, "exempt (counter-trend)"
+        return market_regime(self.cfg)
+
+    def circuit_breaker_tripped(self):
+        """(tripped, detail). Daily-loss circuit breaker: if the ACCOUNT equity (NetLiquidation) is
+        down >= daily_loss_limit_pct from the START-OF-DAY equity, halt ALL new entries for the day.
+        Exits/management always continue. Disabled when daily_loss_limit_pct = 0."""
+        lim = float(self.cfg.get("daily_loss_limit_pct", 0) or 0)
+        if lim <= 0:
+            return False, "breaker off"
+        sod = self.state.get("equity_sod")
+        nlv = self.capital()                           # actual account equity (NetLiq/override)
+        if not sod or nlv <= 0:
+            return False, "no equity reference yet"
+        loss = (sod - nlv) / sod
+        if loss >= lim:
+            return True, f"day loss {loss*100:.2f}% >= limit {lim*100:.1f}% (SOD ${sod:,.0f} -> ${nlv:,.0f})"
+        return False, f"day loss {loss*100:.2f}% < limit {lim*100:.1f}%"
+
     def run_entries(self):
         """Daily scan for the enabled daily setups (breakout / parabolic_long). Each is placed
-        SEPARATELY so it gets its own independent cap of max_positions."""
+        SEPARATELY so it gets its own independent cap of max_positions. Trend setups are skipped
+        entirely when the market regime is bad (his rule: index short-MA below long-MA)."""
         setups = [s for s in (self.cfg.get("setups") or []) if s in ANALYZERS]
         if not setups:
             return
+        trip, d = self.circuit_breaker_tripped()
+        if trip:
+            log(f"CIRCUIT BREAKER: {d} — NO new entries today")
+            return
         cands = scan_setups(self.cfg)                 # ranked, best-per-symbol, all daily setups
-        for setup in setups:                          # place each strategy against its own cap
+        for setup in setups:
+            ok, detail = self._regime_ok(setup)
+            if not ok:
+                log(f"{setup}: market regime BAD ({detail}) — NO new entries today", setup=setup)
+                continue
+            if self.cfg.get("regime_filter", True) and setup not in \
+                    set(self.cfg.get("regime_exempt_setups", ["parabolic_long"])):
+                log(f"{setup}: regime OK ({detail})", setup=setup)
             self._place_candidates(cands, setup)
 
     def run_ep_entries(self):
-        """Episodic Pivot open-time scan (only if 'ep' is in `setups`). Own cap of max_positions."""
+        """Episodic Pivot open-time scan (only if 'ep' is in `setups`). Own cap of max_positions.
+        Blocked when the market regime is bad (EP is a trend/continuation setup)."""
         if "ep" not in (self.cfg.get("setups") or []):
             return
+        trip, d = self.circuit_breaker_tripped()
+        if trip:
+            log(f"ep: CIRCUIT BREAKER: {d} — NO new entries today", setup="ep")
+            return
+        ok, detail = self._regime_ok("ep")
+        if not ok:
+            log(f"ep: market regime BAD ({detail}) — NO new entries today", setup="ep")
+            return
+        log(f"ep: regime OK ({detail})", setup="ep")
         self._place_candidates(scan_ep(self.cfg), "ep")
 
     def place_entry(self, c: dict, qty: int):
@@ -802,10 +1090,18 @@ class QMBot:
             "stop": stop, "initial_stop": stop, "rps": c["rps"], "trigger": trig,
             "setup": setup,
             "partial_done": False, "parent_id": parent.orderId, "stop_id": child.orderId,
-            "trail_sma": self.cfg["trail_sma"], "adopted": False,
+            # per-setup exits: trail length / 1st TP MA, exit mode, and the 2nd TP MA (parabolic)
+            "trail_sma": self._trail_sma_for(setup), "exit_mode": self._exit_mode_for(setup),
+            "target_ma2": int(self.cfg.get("target_ma2", 20)), "adopted": False,
+            # quality factors at entry — persisted so closed trades + snapshots carry their context
+            "q": {"score": round(c.get("score", 0), 1), "perf3m": round(c.get("perf3m", 0), 1),
+                  "rs": round(c.get("rs", 0), 1), "adr": round(c.get("adr", 0), 2),
+                  "base_range_pct": round(c.get("base_range_pct", 0), 1),
+                  "voldry": round(c.get("voldry", 0), 2), "off_high": round(c.get("off_high", 0), 1)},
         }
         save_state(self.state)
-        log("ARMED " + msg, setup=setup)
+        log("ARMED " + msg + f"  [order {parent.orderId}/{child.orderId} placed {now_et():%H:%M:%S}]",
+            setup=setup)
 
     # ---- MANAGE cycle ----
     def run_manage(self):
@@ -838,31 +1134,78 @@ class QMBot:
             closes = [b["c"] for b in bars]
             price = closes[-1]
             days_held = self._days_held(bars, pos["entry_date"])
-            trail = sma_series(closes, pos.get("trail_sma", self.cfg["trail_sma"]))[-1]
+            exit_mode = pos.get("exit_mode", self._exit_mode_for(setup))
+            ma_n = int(pos.get("trail_sma", self._trail_sma_for(setup)))
+            ma = sma_series(closes, ma_n)[-1]
 
-            # 1) PARTIAL + move to break-even
-            if (not pos.get("partial_done")) and days_held >= self.cfg["partial_days"]:
-                half = int(held * self.cfg["partial_fraction"])
-                if half >= 1:
-                    self._sell(sym, half, "PARTIAL", ref_price=price)
-                    pos["partial_done"] = True
-                    held -= half
-                    pos["shares_left"] = held           # so the BE stop resizes to the remainder
-                    if pos.get("entry_price"):
-                        self._move_stop(sym, pos, round_cent(pos["entry_price"]))
+            if exit_mode == "target_ma":
+                # ---- PARABOLIC bounce: TAKE PROFIT into the moving averages (sell into strength) ----
+                # These mean-revert, so he targets the 10- then 20-day MA rather than trailing for weeks.
+                # The crash-low hard stop (server-side) still guards the downside throughout.
+                ma2_n = int(pos.get("target_ma2", self.cfg.get("target_ma2", 20)))
+                ma2 = sma_series(closes, ma2_n)[-1]
+                max_days = int(self.cfg.get("target_max_days", 15))
+                # 1) first target: sell half into SMA(ma_n), move stop to break-even
+                if (not pos.get("partial_done")) and ma is not None and price >= ma and held > 0:
+                    half = int(held * self.cfg["partial_fraction"])
+                    if half >= 1:
+                        self._sell(sym, half, f"TP1>=SMA{ma_n}", ref_price=price)
+                        pos["partial_done"] = True
+                        held -= half
+                        pos["shares_left"] = held
+                        if pos.get("entry_price"):
+                            self._move_stop(sym, pos, round_cent(pos["entry_price"]))
+                        save_state(self.state)
+                # 2) second target: sell the remainder into SMA(ma2_n)
+                if pos.get("partial_done") and ma2 is not None and price >= ma2 and held > 0:
+                    self._sell(sym, held, f"TP2>=SMA{ma2_n}", ref_price=price)
+                    self._cancel_stop(sym, pos)
+                    del st[sym]
                     save_state(self.state)
-
-            # 2) TRAIL: first close below the trail SMA exits the remainder
-            if trail is not None and price < trail and held > 0:
-                self._sell(sym, held, f"TRAIL<SMA{pos.get('trail_sma')}", ref_price=price)
-                self._cancel_stop(sym, pos)
-                del st[sym]
+                    continue
+                # 3) time cap: a bounce that stalls (never reaches the MA) is exited
+                if days_held >= max_days and held > 0:
+                    self._sell(sym, held, f"TIME>{max_days}d", ref_price=price)
+                    self._cancel_stop(sym, pos)
+                    del st[sym]
+                    save_state(self.state)
+                    continue
+                log(f"HOLD {sym} [parabolic]: {held}sh held={days_held}d price={price:.2f} "
+                    f"TP@SMA{ma_n}={ma:.2f}/SMA{ma2_n}={ma2:.2f} "
+                    f"partial={'Y' if pos.get('partial_done') else 'N'}", setup=setup)
                 save_state(self.state)
-                continue
-
-            log(f"HOLD {sym}: {held}sh held={days_held}d price={price:.2f} "
-                f"trailSMA={trail:.2f} partial={'Y' if pos.get('partial_done') else 'N'}", setup=setup)
-            save_state(self.state)
+            else:
+                # ---- TREND TRAIL (breakout / ep): partial after N days -> break-even -> trail an MA ----
+                # 1) PARTIAL (profit-gated) + move to break-even. Only scale out of a WINNER that's up
+                # >= partial_min_r (R). This is true profit-taking (matches Qullamaggie) AND avoids the
+                # break-even-above-market bug: a loser is never partialed, so its BE stop is never set
+                # above the current price. Losers keep their original stop and trail/stop normally.
+                epx = pos.get("fill_price") or pos.get("entry_price")
+                rps = pos.get("rps")
+                cur_r = ((price - epx) / rps) if (epx and rps) else None
+                min_r = self.cfg.get("partial_min_r", 0.5)
+                if (not pos.get("partial_done")) and days_held >= self.cfg["partial_days"] \
+                        and cur_r is not None and cur_r >= min_r:
+                    half = int(held * self.cfg["partial_fraction"])
+                    if half >= 1:
+                        self._sell(sym, half, "PARTIAL", ref_price=price)
+                        pos["partial_done"] = True
+                        held -= half
+                        pos["shares_left"] = held       # so the BE stop resizes to the remainder
+                        if pos.get("entry_price"):
+                            self._move_stop(sym, pos, round_cent(pos["entry_price"]))
+                        save_state(self.state)
+                # 2) TRAIL: first close below the per-setup trail SMA exits the remainder
+                if ma is not None and price < ma and held > 0:
+                    self._sell(sym, held, f"TRAIL<SMA{ma_n}", ref_price=price)
+                    self._cancel_stop(sym, pos)
+                    del st[sym]
+                    save_state(self.state)
+                    continue
+                log(f"HOLD {sym}: {held}sh held={days_held}d price={price:.2f} "
+                    f"trailSMA{ma_n}={ma:.2f} partial={'Y' if pos.get('partial_done') else 'N'}",
+                    setup=setup)
+                save_state(self.state)
 
     def _days_held(self, bars, entry_date: str) -> int:
         dates = [b["d"] for b in bars]
@@ -912,6 +1255,100 @@ class QMBot:
         """Per-setup trades CSV path (base name + _<setup>), e.g. qm_trades_breakout.csv."""
         base, ext = os.path.splitext(self.trades_csv_base)
         return f"{base}_{setup}{ext or '.csv'}"
+
+    def _sibling_csv(self, kind: str, setup: str = None) -> str:
+        """Derive a sibling CSV from trades_csv_base, e.g. qm_trades.csv -> qm_entries_<setup>.csv
+        or qm_positions.csv (live: qm_live_trades.csv -> qm_live_entries_* / qm_live_positions.csv)."""
+        d = os.path.dirname(self.trades_csv_base)
+        name = os.path.basename(self.trades_csv_base)                  # qm_trades.csv / qm_live_trades.csv
+        prefix = name[:-len("trades.csv")] if name.endswith("trades.csv") else "qm_"
+        fname = f"{prefix}{kind}_{setup}.csv" if setup else f"{prefix}{kind}.csv"
+        return os.path.join(d, fname)
+
+    def _record_entry(self, sym: str, pos: dict, fill_price: float):
+        """Append an ENTRY row (with the entry's quality factors) to qm_entries_<setup>.csv when a
+        buy-stop fills — so every trade, open or closed, is on disk with its entry context."""
+        setup = pos.get("setup", "breakout")
+        q = pos.get("q", {})
+        entry = pos.get("entry_price") or fill_price
+        rps = pos.get("rps") or 0
+        shares = pos.get("shares", 0)
+        cols = ["date", "time", "symbol", "setup", "entry_id", "shares", "trigger", "fill",
+                "stop", "rps", "risk_$", "notional_$", "score", "perf3m", "rs", "adr",
+                "base_range_pct", "voldry", "off_high"]
+        row = {
+            "date": now_et().strftime("%Y-%m-%d"), "time": now_et().strftime("%H:%M:%S"),
+            "symbol": sym, "setup": setup, "entry_id": pos.get("id", sym), "shares": int(shares),
+            "trigger": round(pos.get("trigger", entry), 4), "fill": round(fill_price, 4),
+            "stop": round(pos.get("stop", 0), 4), "rps": round(rps, 4),
+            "risk_$": round(rps * shares, 2), "notional_$": round(fill_price * shares, 2),
+            "score": q.get("score", ""), "perf3m": q.get("perf3m", ""), "rs": q.get("rs", ""),
+            "adr": q.get("adr", ""), "base_range_pct": q.get("base_range_pct", ""),
+            "voldry": q.get("voldry", ""), "off_high": q.get("off_high", ""),
+        }
+        path = self._sibling_csv("entries", setup)
+        try:
+            new = not os.path.exists(path)
+            with open(path, "a", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=cols)
+                if new:
+                    w.writeheader()
+                w.writerow(row)
+            log(f"ENTRY-CSV += {sym} {int(shares)}sh @ {fill_price:.2f} score={q.get('score','?')}",
+                setup=setup)
+        except OSError as e:
+            log(f"entry-csv write failed for {sym}: {e}", setup=setup)
+
+    def snapshot_positions(self):
+        """Daily mark-to-market snapshot of EVERY open position -> qm_positions.csv (appends one row
+        per position per call, with a date). Gives an equity/book time series + a direct diff vs the
+        backtest's open book. Uses daily bars for last price + the trail MA."""
+        st = self.state["positions"]
+        if not st:
+            return
+        cols = ["date", "symbol", "setup", "entry_date", "days_held", "shares", "entry", "last",
+                "stop", "trail_ma", "unreal_$", "R", "score", "perf3m", "rs", "adr"]
+        snap_date = now_et().strftime("%Y-%m-%d")
+        path = self._sibling_csv("positions")
+        rows, tot = [], 0.0
+        for sym, pos in st.items():
+            bars = fetch(sym, self.cfg["data_source"], self.cfg["data_range"])
+            if not bars:
+                continue
+            closes = [b["c"] for b in bars]
+            last = closes[-1]
+            ma = sma_series(closes, int(pos.get("trail_sma", self.cfg["trail_sma"])))[-1]
+            entry = pos.get("fill_price") or pos.get("entry_price")
+            sh = pos.get("shares_left", pos.get("shares", 0))
+            rps = pos.get("rps")
+            days = self._days_held(bars, pos.get("entry_date")) if pos.get("entry_date") else 0
+            q = pos.get("q", {})
+            unreal = (last - entry) * sh if entry else ""
+            R = ((last - entry) / rps) if (entry and rps) else ""
+            if isinstance(unreal, (int, float)):
+                tot += unreal
+            rows.append({
+                "date": snap_date, "symbol": sym, "setup": pos.get("setup", ""),
+                "entry_date": pos.get("entry_date") or "", "days_held": days, "shares": int(sh),
+                "entry": round(entry, 4) if entry else "", "last": round(last, 2),
+                "stop": round(pos.get("stop"), 2) if pos.get("stop") else "",
+                "trail_ma": round(ma, 2) if ma is not None else "",
+                "unreal_$": round(unreal, 2) if isinstance(unreal, (int, float)) else "",
+                "R": round(R, 2) if isinstance(R, (int, float)) else "",
+                "score": q.get("score", ""), "perf3m": q.get("perf3m", ""),
+                "rs": q.get("rs", ""), "adr": q.get("adr", ""),
+            })
+        try:
+            new = not os.path.exists(path)
+            with open(path, "a", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=cols)
+                if new:
+                    w.writeheader()
+                w.writerows(rows)
+            log(f"POSITIONS-CSV += {len(rows)} position(s) for {snap_date}; "
+                f"total unrealized ${tot:,.0f}")
+        except OSError as e:
+            log(f"positions-csv write failed: {e}")
 
     def _record_leg(self, sym: str, pos: dict, qty: int, exit_price, reason: str,
                     exit_date: str = None):
@@ -984,7 +1421,7 @@ class QMBot:
 
     # ---- scheduling ----
     def run_loop(self):
-        did_ep_on = did_entry_on = did_manage_on = None
+        did_refresh_on = did_ep_on = did_entry_on = did_manage_on = None
         setups = self.cfg.get("setups") or []
         ep_on = "ep" in setups
         et_ep = self.cfg.get("ep_entry_time", "09:40")
@@ -995,9 +1432,13 @@ class QMBot:
         # just waits for the next window. Management + reconnect stay always-on. Default end 11:00.
         ew = self.cfg.get("entry_window") or [et_entry, "11:00"]
         ew_start, ew_end = ew[0], ew[1]
+        status_every = max(60, int(self.cfg.get("status_every_min", 60)) * 60)   # hourly snapshot
+        last_status = 0.0
         log(f"loop started; ep@{et_ep if ep_on else 'off'} entry@{et_entry} "
-            f"entry_window=[{ew_start},{ew_end}] manage@{et_manage} poll={self.cfg['poll_seconds']}s")
+            f"entry_window=[{ew_start},{ew_end}] manage@{et_manage} "
+            f"status_every={status_every//60}m poll={self.cfg['poll_seconds']}s")
         import asyncio
+        import time as _t
         while True:
             try:
                 # Reconnect if the Gateway restarted / a competing login bumped us. Never gives up
@@ -1009,6 +1450,26 @@ class QMBot:
                 hhmm = n.strftime("%H:%M")
                 weekday = n.weekday() < 5
                 in_entry_window = ew_start <= hhmm <= ew_end   # entries only inside the window
+
+                # Record start-of-day equity once per day for the daily-loss circuit breaker.
+                if self.cfg.get("daily_loss_limit_pct", 0) and self.state.get("sod_date") != today:
+                    nlv = self.capital()
+                    if nlv > 0:
+                        self.state["sod_date"] = today
+                        self.state["equity_sod"] = nlv
+                        save_state(self.state)
+                        log(f"start-of-day equity = ${nlv:,.0f} (circuit breaker reference)")
+
+                # Hourly status snapshot: open orders + positions (fills/cancels log in real time).
+                if _t.time() - last_status >= status_every:
+                    self.log_status()
+                    last_status = _t.time()
+                # Once at the start of the window: cancel any leftover unfilled entry orders so the
+                # day re-arms from a clean slate on the fresh ranking (works even if entry_tif=GTC).
+                if weekday and in_entry_window and did_refresh_on != today:
+                    self.reconcile()
+                    self.cancel_stale_entries()
+                    did_refresh_on = today
                 # EP first — it must act right at the open (opening-range breakout on earnings)
                 if weekday and ep_on and in_entry_window and did_ep_on != today:
                     self.reconcile()
@@ -1021,6 +1482,7 @@ class QMBot:
                 if weekday and hhmm >= et_manage and did_manage_on != today:
                     self.reconcile()
                     self.run_manage()
+                    self.snapshot_positions()       # daily mark-to-market book snapshot CSV
                     did_manage_on = today
                 self._safe_sleep(self.cfg["poll_seconds"])
             except KeyboardInterrupt:
@@ -1040,9 +1502,11 @@ class QMBot:
 
     def run_once(self):
         self.reconcile()
+        self.cancel_stale_entries()        # clean slate before placing fresh orders
         self.run_ep_entries()
         self.run_entries()
         self.run_manage()
+        self.snapshot_positions()          # daily mark-to-market book snapshot CSV
 
 
 # ─────────────────────────────── entry point ───────────────────────────────
@@ -1089,6 +1553,13 @@ def main():
                     help="required to connect to a LIVE (non-paper) account")
     a = ap.parse_args()
     cfg = load_config(a.config)
+    # Optional per-config overrides so a live config keeps its state/logs separate from paper
+    # (no auto-namespacing — just explicit paths when you want them).
+    global STATE_FILE, LOG_DIR
+    if cfg.get("state_file"):
+        STATE_FILE = os.path.join(_APP_DIR, cfg["state_file"])
+    if cfg.get("log_dir"):
+        LOG_DIR = os.path.join(_APP_DIR, cfg["log_dir"])
 
     if a.check:
         return cmd_check(cfg)

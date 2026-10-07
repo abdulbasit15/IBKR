@@ -33,6 +33,12 @@ MIN_RR = float(SR.get("min_rr", 1.5))
 CAP = 100000.0
 RISK_PCT = float(SR.get("risk_per_trade_pct", 0.01))
 PORTS = [4002, 7497, 4001]
+# ---- #2 realistic fill model (env-gated; 'ideal' reproduces the original optimistic numbers) ----
+FILL_MODEL = os.environ.get("BT_FILL_MODEL", "ideal").lower()        # ideal | realistic
+REALISTIC = FILL_MODEL == "realistic"
+STOP_SLIP = float(os.environ.get("BT_STOP_SLIP_BPS", 20)) / 10000.0  # extra stop slippage (realistic)
+CHASE_DEFAULT = float(os.environ.get("BT_MAX_CHASE_PCT", 0.005))     # LMT chase cap fallback
+NOFILL_COUNT = [0]   # LMT entries that never filled (reset per strategy in main, realistic mode)
 
 
 def connect():
@@ -194,15 +200,35 @@ def atr_intraday(bars, i, period=14):
     return sum(trs) / len(trs)
 
 
-def simulate(day_bars, i_entry, entry, stop, target, r_unit, be_mult, trail_start, trail_lock):
+def realistic_entry_fill(day_bars, i_entry, entry, chase):
+    """Model the LIVE bot's bounded marketable-LIMIT entry. The order rests at `entry` and chases
+    up to entry*(1+chase). On the bar AFTER the signal: pulled back to the limit -> fills at
+    `entry`; stayed above but within the cap -> fills at the cap; ran past the cap -> NEVER fills
+    (returns None) — the fast breakouts the ideal model wrongly books as winners."""
+    j = i_entry + 1
+    if j >= len(day_bars):
+        return None
+    nb = day_bars[j]
+    cap = entry * (1 + max(chase, 0.0))
+    if nb.low <= entry:
+        return entry
+    if nb.low <= cap:
+        return cap
+    return None
+
+
+def simulate(day_bars, i_entry, entry, stop, target, r_unit, be_mult, trail_start, trail_lock,
+             realistic=False, stop_slip=0.0):
     """Bar-by-bar management with breakeven + trailing stop + EOD flatten. Conservative:
-    stop checked before target within a bar; trail updates for the NEXT bar."""
+    stop checked before target within a bar; trail updates for the NEXT bar. In realistic mode a
+    stop that GAPS below the trigger fills at the bar open (worse than the trigger)."""
     hw = entry
     for j in range(i_entry + 1, len(day_bars)):
         b = day_bars[j]
         if _min(b.date) >= EOD_MIN:
             return b.close, "EOD", j
-        if b.low <= stop:  return stop, "STOP", j
+        if b.low <= stop:
+            return (min(stop, b.open) if realistic else stop), "STOP", j
         if b.high >= target: return target, "TARGET", j
         hw = max(hw, b.high)
         if be_mult and hw >= entry + be_mult * r_unit and stop < entry:
@@ -212,10 +238,17 @@ def simulate(day_bars, i_entry, entry, stop, target, r_unit, be_mult, trail_star
     return day_bars[-1].close, "EOD", len(day_bars) - 1
 
 
-def record(sym, d, entry, stop, target, exit_px, reason, r_unit):
-    """Apply slippage+commission, size at 1% risk, return a trade dict (or None)."""
-    e = entry * (1 + SLIP)                                  # buy slippage
-    x = (target if reason == "TARGET" else exit_px * (1 - SLIP))  # target=limit; stop/EOD slip
+def record(sym, d, entry, stop, target, exit_px, reason, r_unit, entry_fill=None, stop_slip=0.0):
+    """Apply slippage+commission, size at 1% risk, return a trade dict (or None). entry_fill (if
+    given) is the realistic LMT fill price; else the ideal entry+SLIP. Stops take an extra
+    stop_slip in realistic mode; targets fill at the limit."""
+    e = entry_fill if entry_fill is not None else entry * (1 + SLIP)   # buy fill
+    if reason == "TARGET":
+        x = target                                         # resting limit -> your price
+    elif reason == "STOP":
+        x = exit_px * (1 - SLIP - stop_slip)               # stop-market slips more
+    else:
+        x = exit_px * (1 - SLIP)                           # EOD market exit
     rps = e - stop
     if rps <= 0: return None
     shares = math.floor(CAP * RISK_PCT / rps)
@@ -286,8 +319,15 @@ def bt_orb(sym, data, cfg):
                 stop = structural; r = entry - stop           # research: stop = ORB_LOW, never widened
                 if r <= 0: continue
                 target = entry + tmult * height                # research: entry + 2 x ORB_HEIGHT (range)
-            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl)
-            t = record(sym, d, entry, stop, target, ex, why, r)
+            entry_fill = (realistic_entry_fill(bars, i, entry,
+                          float(cfg.get("max_chase_pct", CHASE_DEFAULT))) if REALISTIC else None)
+            if REALISTIC and entry_fill is None:
+                NOFILL_COUNT[0] += 1
+                continue   # LMT never filled (price ran past the cap) -> keep scanning, no trade
+            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl,
+                                  realistic=REALISTIC, stop_slip=STOP_SLIP)
+            t = record(sym, d, entry, stop, target, ex, why, r,
+                       entry_fill=entry_fill, stop_slip=STOP_SLIP)
             if t: trades.append(t)
             break
     return trades
@@ -321,8 +361,15 @@ def bt_pdh(sym, data, cfg):
             stop = min(pdh * (1 - stop_pct), entry * (1 - MIN_STOP)); r = entry - stop
             if r <= 0: continue
             target = entry + t1 * r
-            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl)
-            t = record(sym, d, entry, stop, target, ex, why, r)
+            entry_fill = (realistic_entry_fill(bars, i, entry,
+                          float(cfg.get("max_chase_pct", CHASE_DEFAULT))) if REALISTIC else None)
+            if REALISTIC and entry_fill is None:
+                NOFILL_COUNT[0] += 1
+                continue   # LMT never filled (price ran past the cap) -> keep scanning, no trade
+            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl,
+                                  realistic=REALISTIC, stop_slip=STOP_SLIP)
+            t = record(sym, d, entry, stop, target, ex, why, r,
+                       entry_fill=entry_fill, stop_slip=STOP_SLIP)
             if t: trades.append(t)
             break
     return trades
@@ -365,8 +412,15 @@ def bt_nr7(sym, data, cfg):
             stop = min(structural, entry * (1 - MIN_STOP)); r = entry - stop
             if r <= 0: continue
             target = entry + tmult * r
-            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl)
-            t = record(sym, d, entry, stop, target, ex, why, r)
+            entry_fill = (realistic_entry_fill(bars, i, entry,
+                          float(cfg.get("max_chase_pct", CHASE_DEFAULT))) if REALISTIC else None)
+            if REALISTIC and entry_fill is None:
+                NOFILL_COUNT[0] += 1
+                continue   # LMT never filled (price ran past the cap) -> keep scanning, no trade
+            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl,
+                                  realistic=REALISTIC, stop_slip=STOP_SLIP)
+            t = record(sym, d, entry, stop, target, ex, why, r,
+                       entry_fill=entry_fill, stop_slip=STOP_SLIP)
             if t: trades.append(t)
             break
     return trades
@@ -421,8 +475,15 @@ def bt_vwap(sym, data, cfg):
             stop = min(pullback_low - satr * a5, entry * (1 - MIN_STOP)); r = entry - stop
             if r <= 0: continue
             target = entry + tmult * r
-            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl)
-            t = record(sym, d, entry, stop, target, ex, why, r)
+            entry_fill = (realistic_entry_fill(bars, i, entry,
+                          float(cfg.get("max_chase_pct", CHASE_DEFAULT))) if REALISTIC else None)
+            if REALISTIC and entry_fill is None:
+                NOFILL_COUNT[0] += 1
+                continue   # LMT never filled (price ran past the cap) -> keep scanning, no trade
+            ex, why, _ = simulate(bars, i, entry, stop, target, r, be, ts, tl,
+                                  realistic=REALISTIC, stop_slip=STOP_SLIP)
+            t = record(sym, d, entry, stop, target, ex, why, r,
+                       entry_fill=entry_fill, stop_slip=STOP_SLIP)
             if t: trades.append(t)
             break
     return trades
@@ -432,31 +493,40 @@ RUN = {"orb_stocks_in_play": bt_orb, "nr7_compression": bt_nr7, "pdh_breakout": 
        "vwap_pullback": bt_vwap}
 
 
-def summarize(name, trades):
-    if not trades: print(f"\n=== {name} ===  no trades"); return
+def summarize(name, trades, nofills=0):
+    mode = "REALISTIC" if REALISTIC else "ideal"
+    if not trades:
+        print(f"\n=== {name} ===  no trades  (fill_model={mode}, LMT no-fills={nofills})"); return
     n = len(trades); wins = [t for t in trades if t["PnL"] > 0]
     pnl = sum(t["PnL"] for t in trades); gw = sum(t["PnL"] for t in wins)
     gl = abs(sum(t["PnL"] for t in trades if t["PnL"] < 0))
     exits = defaultdict(int)
     for t in trades: exits[t["Reason"]] += 1
+    fill_rate = 100.0 * n / (n + nofills) if (n + nofills) else 100.0
     print(f"\n=== {name} ===")
     print(f"  trades={n}  win_rate={100*len(wins)/n:.0f}%  net_PnL=${pnl:,.0f}  "
           f"avg_R={sum(t['R_Multiple'] for t in trades)/n:.2f}  PF={gw/gl:.2f}" if gl else
           f"  trades={n}  win_rate={100*len(wins)/n:.0f}%  net_PnL=${pnl:,.0f}")
-    print(f"  exits: {dict(exits)}  (net of {SLIP*10000:.0f}bps/side slippage + ${COMM_PS}/sh comm)")
+    extra = (f", +{STOP_SLIP*10000:.0f}bps stop-slip, LMT no-fills={nofills} (fill_rate={fill_rate:.0f}%)"
+             if REALISTIC else "")
+    print(f"  exits: {dict(exits)}  (fill_model={mode}; {SLIP*10000:.0f}bps/side + ${COMM_PS}/sh comm{extra})")
 
 
 def main():
     ib = connect()
     if not ib: print("Could not connect."); return
     os.makedirs(os.path.join(BASE, "reports"), exist_ok=True)
+    tag = "realistic" if REALISTIC else "faithful"
+    print(f"FILL MODEL: {'REALISTIC (LMT no-fill + gap/stop slippage)' if REALISTIC else 'ideal (limit fills)'}"
+          f"  | slippage {SLIP*10000:.0f}bps/side" + (f" +{STOP_SLIP*10000:.0f}bps stop" if REALISTIC else ""))
     try:
         for name in CFG.get("active_strategies", []):
             block = CFG["strategies"].get(name, {}); run = RUN.get(block.get("strategy_type"))
             if not run: continue
+            NOFILL_COUNT[0] = 0                     # reset per strategy (realistic no-fill tally)
             universe = block.get("universe_symbols", [])[:UNIVERSE_CAP]
             safe = "".join(ch if ch.isalnum() else "_" for ch in name)
-            rep = TradeReporter(os.path.join(BASE, "reports", f"bt_faithful_{safe}.xlsx"), name)
+            rep = TradeReporter(os.path.join(BASE, "reports", f"bt_{tag}_{safe}.xlsx"), name)
             print(f"\n--- {name} ({block['strategy_type']}) | {N_DAYS} sessions | windows {block.get('windows')} ---")
             need_m1 = block.get("strategy_type") == "orb_stocks_in_play"
             if need_m1 and os.environ.get("BT_ORB_USE_SCANNER", "0") == "1":
@@ -471,8 +541,8 @@ def main():
                 for t in tr: t["Strategy"] = name; rep.record_trade(t)
                 allt += tr
                 print(f"  {sym}: {len(tr)} trades")
-            summarize(name, allt)
-            print(f"  report -> reports/bt_faithful_{safe}.xlsx")
+            summarize(name, allt, nofills=NOFILL_COUNT[0])
+            print(f"  report -> reports/bt_{tag}_{safe}.xlsx")
     finally:
         ib.disconnect(); print("\ndisconnected.")
 

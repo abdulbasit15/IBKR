@@ -1,8 +1,8 @@
 {
-  "_comment": "Qullamaggie LONG-only IBKR bot config. PAPER + DRY-RUN by default. See qm_bot.py header.",
-  "paper": true,
+  "_comment": "QM LIVE config. REAL MONEY. Launch: qm_bot.exe --config qm_live.json --i-understand-live (or run_qm_live.ps1). Start small, scale strategy_capital_by_setup + risk_per_trade_pct once proven. SET 'account' to your live U-account before running.",
+  "paper": false,
   "host": "127.0.0.1",
-  "port": 4002,
+  "port": 4001,
   "client_id": 50,
   "account": "",
   "dry_run": false,
@@ -16,12 +16,14 @@
   "max_position_pct": 0.3,
   "capital_override": 0,
   "strategy_capital_by_setup": {
-    "breakout": 100000,
-    "ep": 100000,
-    "parabolic_long": 100000
+    "breakout": 10000,
+    "ep": 10000,
+    "parabolic_long": 10000
   },
-  "daily_loss_limit_pct": 0,
-  "trade_log_csv": "qm_trades.csv",
+  "daily_loss_limit_pct": 0.05,
+  "state_file": "qm_live_state.json",
+  "log_dir": "logs_live",
+  "trade_log_csv": "qm_live_trades.csv",
   "universe": "us",
   "min_cap_m": 300,
   "max_cap_m": 20000,

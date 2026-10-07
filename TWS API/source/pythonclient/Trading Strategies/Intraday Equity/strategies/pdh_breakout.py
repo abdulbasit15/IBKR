@@ -72,11 +72,15 @@ class PDHBreakout(EquityStrategyBase):
         avg = (sum(recent) / len(recent)) if recent else 0
         vmult = float(self.cfg.get("vol_mult", 1.5))
         if avg and bar.volume < vmult * avg:
+            self.log_reject(symbol, f"breakout vol {bar.volume:.0f} < {vmult}x avg {avg:.0f}")
             return None
-        tk = self.get_ticker(symbol, contract)
+        self.get_ticker(symbol, contract)   # keep the market-data feed warm for position mgmt
         vw = self.session_vwap_from_bars(bars5, len(bars5) - 2)  # session VWAP from bars (delayed-safe)
-        price = self.last_price(tk) or bar.close
-        if self.require_vwap and (vw is None or price <= vw):
+        # Gate on the COMPLETED breakout bar's close (delayed/entitlement-safe, matches the
+        # backtest). A live tick via last_price() silently degrades to the prior-day close when
+        # the feed is unentitled, which sits below a rising VWAP and would reject every breakout.
+        if self.require_vwap and (vw is None or bar.close <= vw):
+            self.log_reject(symbol, f"close {bar.close:.2f} <= VWAP {vw:.2f}" if vw else "no VWAP yet")
             return None  # VWAP filter; set require_vwap False to disable it entirely
 
         tick = self.min_tick(symbol, contract)

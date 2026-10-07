@@ -102,10 +102,12 @@ class NR7Compression(EquityStrategyBase):
                 return None           # genuinely missing history -> skip (don't bypass the gate)
         elif rv < rvol_min:
             return None
-        tk = self.get_ticker(symbol, contract)
+        self.get_ticker(symbol, contract)   # keep the market-data feed warm for position mgmt
         vw = self.session_vwap_from_bars(bars5, len(bars5) - 2)  # session VWAP from bars (delayed-safe)
-        price = self.last_price(tk) or bar.close
-        if self.require_vwap and (vw is None or price <= vw):
+        # Gate on the COMPLETED breakout bar's close, NOT a live tick: last_price() degrades to the
+        # prior-day close on an unentitled feed, which sits below a rising VWAP and rejects every breakout.
+        if self.require_vwap and (vw is None or bar.close <= vw):
+            self.log_reject(symbol, f"close {bar.close:.2f} <= VWAP {vw:.2f}" if vw else "no VWAP yet")
             return None  # VWAP filter; set require_vwap False to disable it entirely
 
         tick = self.min_tick(symbol, contract)

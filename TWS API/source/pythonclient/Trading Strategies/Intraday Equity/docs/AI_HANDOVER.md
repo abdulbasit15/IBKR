@@ -29,6 +29,91 @@ hard EOD flatten.
 | [`build_docs.py`](build_docs.py) | regenerate these docs (performance md/html from xlsx + render all md→html) |
 
 ## 3. Recent changes
+### 2026-10-04 — fill realism: live reconciliation (#1) + realistic backtest (#2)
+- **#1 Live fill reconciliation** ([`../equity_base.py`](../equity_base.py)): every entry/exit logs
+  `FILL-RECON …` and appends a row to a per-strategy CSV `fill_recon_<strategy>.csv` (cols:
+  Event, Reason, Qty, Intended, Actual, SlipBps, **ExecTime**). Events: `ENTRY_FILL`,
+  `ENTRY_NOFILL` (LMT ran past the chase cap), `EXIT_TARGET/STOP/EOD`. **Exact exchange fill
+  time** comes from `_fill_time()` reading `Trade.fills[-].time` (not poll time); `OPENED`/`CLOSED`
+  logs now show `@ HH:MM:SS` and hold minutes. Positions carry `intended_entry` + `entry_dt`.
+  The trades CSV gained **EntryTime** + populated **HoldMin** (its `Time` is now the exact exit
+  fill time). Run paper with live data to collect real slippage + miss-rate + timing.
+- **#2 Realistic backtest mode** ([`../backtest.py`](../backtest.py), env-gated; `ideal` default is
+  byte-identical to before): `BT_FILL_MODEL=realistic` models the LIVE bounded-LMT entry
+  (`realistic_entry_fill`: pullback→fill at level, within cap→fill at cap, past cap→**no-fill**),
+  gap-through stops (fill at bar open) + extra `BT_STOP_SLIP_BPS` (default 20), and reports
+  **fill_rate** + LMT no-fills. Writes `reports/bt_realistic_*.xlsx` (vs `bt_faithful_*` for ideal).
+  Knobs: `BT_SLIP_BPS`, `BT_STOP_SLIP_BPS`, `BT_MAX_CHASE_PCT`. Use it to bracket the optimistic
+  numbers; the gap = fewer fills (missed fast breakouts) + worse stops.
+- **Paper fill-realism run:** `equity.json` is already $100k / 1% / `market_data_type:1` /
+  `dry_run:false` — `python runner.py` places real paper orders and fills like live; #1 captures
+  the fills. (Saturday/holiday → daemon stays dormant until the next session.)
+
+### 2026-10-04 — paper→live switching, dry-run, capital scaling (Intraday Equity)
+- **Separate live config [`../equity.live.json`](../equity.live.json)** (generated from `equity.json`):
+  `live:true`, `dry_run:true` (default), live port 4001, account U2081485 (VERIFY), small
+  **$10k/strategy** capital + $10k notional cap + `min_stocks:1`. Paper stays [`../equity.json`](../equity.json).
+- **[`../runner.py`](../runner.py) CLI:** `--live` loads `equity.live.json`; `--i-understand-live`
+  ARMS real-money transmission; `--config PATH` overrides. Default (no args) = paper.
+  `resolve_config_and_mode()` resolves it. **Two-factor live:** a live config still runs DRY
+  unless BOTH `--i-understand-live` is passed AND `dry_run:false` in the file.
+- **`dry_run`** ([`../equity_base.py`](../equity_base.py) `_enter`): full gate chain runs
+  (sizing/R:R/`can_open` — all non-mutating) then logs `DRY-RUN would ENTER …` and transmits
+  nothing. Rehearse against the live account with zero risk. `adopt_existing_positions` also
+  logs-instead-of-places in dry.
+- **`capital_scale`** (top-level, default 1.0): global multiplier on every strategy's
+  `strategy_capital` — scale all sizing up/down with one knob as live confidence grows.
+- **`min_stocks`** (per strategy, default 0; set to 1 in both configs' active strategies): when
+  a valid signal's risk-based size rounds down to 0 (small capital), take at least this many
+  instead of skipping. Applied as the final floor in `size_position`.
+- **Startup banner + guards:** logs MODE/account/port/mktDataType/capital_scale/risk-budget;
+  LIVE refuses to start if any active `strategy_capital<=0` (never size off full account),
+  if `default_account` is empty, or if it looks like a paper `DU…` account; PAPER warns if the
+  account looks live. Build note: the PyInstaller stage should copy `equity.live.json` too.
+- Go-live path: paper → `python runner.py --live` (live data + DRY rehearsal) → set
+  `dry_run:false` + `python runner.py --live --i-understand-live` (tiny $10k) → raise
+  `capital_scale`/`strategy_capital`/`risk_per_trade_pct` after a clean live sample. **LPL
+  pre-clearance required before real-money.**
+
+### 2026-10-03 — FIXED: VWAP gate rejected every breakout on an unentitled live feed
+- **Symptom:** live PDH took **0 trades** 9-29..10-2 while a faithful replay on the exact live
+  watchlists showed **22** qualifying trades (18 target / 4 stop). Not "no setups" — a bug.
+- **Root cause:** the entry VWAP gate compared `last_price(tk)` to session VWAP. On
+  `market_data_type: 1` **without a live streaming entitlement**, `last`/`marketPrice()` are NaN so
+  `last_price()` falls back to `ticker.close` = **yesterday's close**. A stock breaking its PDH
+  trades above yesterday's close and today's VWAP is above it too, so `prev_close <= VWAP` was true
+  → every breakout silently rejected. (The bars-based VWAP was already delayed-safe; the price side
+  wasn't.)
+- **Fix:** gate on the **completed breakout bar's close** (`bar.close`), matching `backtest.py`.
+  Applied to all entry strategies: pdh_breakout, orb_stocks_in_play, nr7_compression, vwap_pullback,
+  plus the disabled trend_pullback / range_breakout_retest. `last_price` is still used for live
+  position management (trailing) and the watchlist price filter — just not the entry VWAP gate.
+- **Added diagnostics** ([`../equity_base.py`](../equity_base.py)): `log_reject(symbol, reason)` logs
+  once per (symbol, reason) per session why a breakout candidate didn't enter (volume / VWAP), and
+  `is_new_bar` logs once when the first new-bar boundary is evaluated — so a quiet day is explainable
+  and `is_new_bar` can be ruled in/out.
+- **Also seen:** 10-1 morning was lost to IB Gateway being down (WinError 1225) until 13:24 — an
+  infra issue, separate from the bug. Real live fills will be worse than the replay's idealized
+  limit-at-entry model, so treat the +$30.6k replay figure as an optimistic ceiling, not a forecast.
+
+### 2026-09-29 — EOD "connection dropped" false alarm + quiet-day visibility
+- The `"WARNING: TWS/Gateway connection dropped"` line that appears at ~`eod_flatten_time`
+  (e.g. 15:55) was the bot's **own** clean `ib.disconnect()` at EOD firing `disconnectedEvent` —
+  NOT a real drop. Fixed in [`../equity_base.py`](../equity_base.py): a `_shutting_down` flag makes
+  `_on_disconnected` log `"disconnected (clean shutdown)"` for a deliberate exit and reserve the
+  WARNING for genuine mid-session drops. Also added an explicit `"EOD reached; no open positions;
+  session complete"` line.
+- Added entry-gate visibility: on a state change the run loop now logs `"entries paused: <reason>"`
+  (risk halt / regime gate) or `"entries active (scanning watchlist for signals)"`, so a zero-trade
+  day is explainable rather than silent. (PDH is selective; zero trades in a day can be normal.)
+- **Disabled the regime gate** for backtest parity (per user): `shared_risk.regime.spy_downtrend_gate:
+  false`. `backtest.py` applies NO SPY/VIX filter, so the live gate was suppressing trades the
+  backtest took (the likely cause of the 2026-09-29 zero-trade day). Setting the flag false makes
+  `regime_ok()` short-circuit to `True`. **Kept** the other safety controls the user chose to retain:
+  `daily_loss_limit_pct` (3% circuit breaker), `aggregate_open_risk_pct` (3%), `max_concurrent_positions`,
+  `max_positions_per_sector` (2), and `max_position_notional` ($100k). Those remain live-only (not in
+  the backtest), so live is still somewhat more conservative than the raw backtest — by design.
+
 ### 2026-09-27 — backtest-parity config
 - Per user: aligned the 4 active strategies to the faithful backtest's assumptions —
   **`entry_order_type: "LMT"`** (all 4; ORB/NR7/VWAP were `MKT`) and **`fixed_stocks: 0`**

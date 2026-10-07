@@ -140,6 +140,10 @@ if (-not (Test-Path (Join-Path $distDir 'qm_bot.exe'))) {
 
 Write-Info 'Copying qm_bot.json into dist...'
 Copy-Item -Force 'qm_bot.json' (Join-Path $distDir 'qm_bot.json')
+if (Test-Path 'qm_live.json') {
+    Write-Info 'Copying qm_live.json into dist...'
+    Copy-Item -Force 'qm_live.json' (Join-Path $distDir 'qm_live.json')
+}
 
 Write-Info 'Build and deploy complete.'
 Write-Host "Executable available in: $distDir\qm_bot.exe"
