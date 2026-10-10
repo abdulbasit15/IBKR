@@ -1,0 +1,5 @@
+symbol,strategy,entries,legs,win%,pf,net$,2R_hits
+MNQ,Supertrend + DEMA,1,1,100.0,inf,138,0
+MES,Supertrend,2,2,50.0,25.99,125,0
+MGC,Supertrend,3,3,66.7,0.92,-36,0
+TOTAL,,,,,,227,

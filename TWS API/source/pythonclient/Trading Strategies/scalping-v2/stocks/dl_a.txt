@@ -1,0 +1,21 @@
+SPY chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (96s)
+SPY chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (124s)
+SPY: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\SPY_5m_rth.csv
+QQQ chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (136s)
+QQQ chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (130s)
+QQQ: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\QQQ_5m_rth.csv
+AAPL chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (165s)
+AAPL chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (156s)
+AAPL: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\AAPL_5m_rth.csv
+MSFT chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (128s)
+MSFT chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (106s)
+MSFT: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\MSFT_5m_rth.csv
+NVDA chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (123s)
+NVDA chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (142s)
+NVDA: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\NVDA_5m_rth.csv
+AMZN chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (104s)
+AMZN chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (112s)
+AMZN: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\AMZN_5m_rth.csv
+TSLA chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (58s)
+TSLA chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (64s)
+TSLA: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\TSLA_5m_rth.csv

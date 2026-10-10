@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scalping v2 Bot — Configuration &amp; Overview</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834; --good:#006300;
+    --k:#4a3aa7; --str:#008300; --num:#2a78d6; --cmt:#898781;
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --good:#0ca30c;
+    --k:#9085e9; --str:#5cc98c; --num:#86b6ef; --cmt:#898781;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:19px;margin:44px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:22px 0 4px}
+  p,li{color:var(--ink2);font-size:14.5px}
+  .sub{color:var(--muted);font-size:13px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .callout{border-left:3px solid var(--s2);background:var(--surface);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:16px 0;font-size:14px}
+  .callout.v1{border-left-color:var(--s1)}
+  .callout.warn{border-left-color:#c0392b}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td:first-child{white-space:nowrap}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  td code{background:transparent;border:none;padding:0;color:var(--k)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;vertical-align:middle}
+  .tag.b{background:color-mix(in srgb,var(--s1) 18%,transparent);color:var(--s1)}
+  .tag.o{background:color-mix(in srgb,var(--s2) 18%,transparent);color:var(--s2)}
+  pre{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;
+    overflow:auto;font-size:12.5px;line-height:1.5;font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+  .k{color:var(--k)} .s{color:var(--str)} .n{color:var(--num)} .c{color:var(--cmt);font-style:italic}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--border);padding-top:14px}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;margin:16px 0}
+  .toc a{margin-right:16px;font-size:13px;white-space:nowrap;display:inline-block}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .card h3{margin-top:0}
+  ul.cell{margin:0;padding-left:18px}
+  ul.cell li{font-size:13.5px;margin:2px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Futures <b>2R</b> Bot — Configuration &amp; Overview</h1>
+    <p class="sub">JSON reference for <code>scalping_v2.json</code> (paper) / <code>scalping_v2_live.json</code> (live) + how the bot trades NQ · ES · GC intraday (RTH only; YM optional, off).</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<div class="callout warn"><strong>Paper-first.</strong> <code>scalping_v2.json</code> ships <code>paper:true</code> (gateway 4002) and
+<code>dry_run:false</code> (it <em>will</em> place paper orders). LIVE needs <code>paper:false</code> <em>and</em> the CLI flag
+<code>--i-understand-live</code> (use <code>.\scalping.ps1 -Live</code>, which runs <code>scalping_v2_live.json</code>). No live account without LPL pre-clearance. Not financial advice.</div>
+
+<div class="callout"><strong>Full-size contracts: NQ · ES · GC.</strong> Since 2026-10-09 the bot trades the full-size E-mini
+Nasdaq (NQ, $20/pt), E-mini S&amp;P (ES, $50/pt) and Gold (GC, $100/oz) — <b>10× the micros</b> — so it no longer overlaps your
+<code>supertrend_bot</code>, which trades MNQ/MES/MGC on the same paper account. Futures positions net per contract, and NQ ≠ MNQ, so
+the two bots stay independent. The foreign-exposure guard still blocks a symbol if anything else ever trades NQ/ES/GC on the account.
+1 contract of each needs a sizeable account (typical risk per trade: NQ ~$2,900 IB Trend / ~$550 confluence; GC ~$2,300; ES ~$1,150).
+To go back to micros, change the <code>symbols</code> keys to MNQ/MES/MGC and the strategy symbol lists.</div>
+
+<div class="toc">
+  <a href="#overview">Overview</a><a href="#strategies">Strategies</a><a href="#sched">Daily timeline</a><a href="#orders">Orders &amp; exits</a>
+  <a href="#howto">How to run</a><a href="#conn">Connection / safety</a><a href="#risk">Risk &amp; sizing</a><a href="#symbols">Symbols</a>
+  <a href="#strat-keys">Strategy blocks</a><a href="#files">Outputs</a><a href="#examples">Examples</a><a href="#cli">CLI</a>
+</div>
+
+<!-- ───────────────────────── OVERVIEW ───────────────────────── -->
+<h2 id="overview">Overview — what the bot does</h2>
+<div class="grid2">
+  <div class="card">
+    <h3>Timeframe &amp; cadence</h3>
+    <ul class="cell">
+      <li>5-minute bars, <b>RTH only</b> 09:30–16:00 ET (bars 09:30…15:55).</li>
+      <li>Decides once per bar, <code>bar_delay_sec</code> (6 s) after each 5-minute close.</li>
+      <li><b>Intraday only</b> — flat by 16:00 (or the strategy window end).</li>
+      <li>Every trade: structural stop, target = <b>2 × risk from the actual fill</b> (2:1).</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Data &amp; parity with the backtest</h3>
+    <ul class="cell">
+      <li>All bars come from IB (<code>ContFuture</code> 5-min TRADES, RTH): <code>history_days</code> at start of day, then today's bars each bar.</li>
+      <li>Orders go to the current front month (<code>NQZ6</code>, <code>ESZ6</code>, <code>GCZ6</code> as of Oct 2026), re-resolved every morning.</li>
+      <li>Signals: today's completed bars are <b>replayed through the same engine as the backtest</b> (<code>scalping_v2_core.py</code>);
+        <code>scalping_v2_parity_test.py</code> proves 623/623 trades identical bar-by-bar.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ───────────────────────── STRATEGIES ───────────────────────── -->
+<h2 id="strategies">Strategies (the four 2:1 winners from the time-window study)</h2>
+<table>
+<thead><tr><th>Key</th><th>Rules</th><th>Window · mode</th><th>Symbols (default)</th><th>Backtest PF (portfolio)</th></tr></thead>
+<tbody>
+<tr><td><code>ib_trend</code><br><span class="tag b">IB breakout</span></td><td>Initial Balance = 09:30–10:30 high/low. Daily trend = yesterday's RTH close vs 20-day EMA of RTH closes.
+At 11:00, if the 10:55 bar closed beyond the IB <em>in the trend direction</em> → market entry at 11:00. The first IB break decides the day
+(against-trend = no trade). Stop = IB midpoint. 2R target else 16:00.</td><td>09:30–11:30 · hold</td><td>NQ ES GC</td><td>1.32 (ES 1.60, GC 1.70, NQ 0.92*)</td></tr>
+<tr><td><code>orb2nd</code><br><span class="tag o">failed break → reverse</span></td><td>Opening range = 09:30–09:45. First 5-min close beyond one side, then a close back inside,
+then a close beyond the <em>opposite</em> side → market entry that way. Stop = extreme of the failed break (cap 1×OR). 2R target, else flat at 11:30.</td>
+<td>09:30–11:30 · flat</td><td>NQ GC</td><td>2.65 (NQ 3.83, GC 1.94)</td></tr>
+<tr><td><code>h2l2_trend</code><br><span class="tag b">trend pullback</span></td><td>Al Brooks High-2/Low-2: EMA20 rising, price above EMA20 &amp; VWAP, daily trend up (mirror short).
+After the first pullback “H1”, a lower-high bar → <b>buy-stop</b> 1 tick above it (valid 1 bar) = the H2. Stop = pullback low − 1 tick
+(skip if &gt; 3×ATR). From 10:00, max 3/day. 2R target else 16:00.</td><td>09:30–11:30 · hold</td><td>NQ GC</td><td>1.70 (NQ 1.80, GC 1.51)</td></tr>
+<tr><td><code>confluence_pb</code><br><span class="tag b">trend continuation</span></td><td>Five factors agree: daily trend, first-30-min return, price vs prior close, price vs VWAP,
+30-min momentum. A bar dips to EMA9 and closes back beyond it → market entry. Stop = 1×ATR(14,5m). Max 4/day. 2R target else 16:00.</td>
+<td>13:30–16:00 · hold</td><td>NQ GC</td><td>1.28 (NQ 1.22, GC 1.33)</td></tr>
+</tbody></table>
+<p class="sub">* In portfolio mode NQ IB Trend is often skipped because an earlier ORB trade already holds NQ (one position per symbol); standalone it is PF 1.19.
+ES is left out of h2l2/orb2nd/confluence and YM is off entirely because those combinations lose in the backtest (see <code>stocks/Stocks_Report.html</code> futures matrix). Full numbers: <code>backtest_results.html</code>.</p>
+
+<!-- ───────────────────────── TIMELINE ───────────────────────── -->
+<h2 id="sched">Daily timeline (ET)</h2>
+<table><thead><tr><th>Time</th><th>What happens</th></tr></thead><tbody>
+<tr><td>09:00</td><td>Day init: resolve front-month contracts, load <code>history_days</code> of RTH bars, re-sync own trades from IB executions, flatten any stale trade from a previous session, foreign-exposure check.</td></tr>
+<tr><td>09:35:06 … 16:00:06</td><td>Every 5 minutes: fetch today's bars, replay each enabled strategy (in <code>strategy_priority</code> order) → place a bracket when it signals at the latest bar.</td></tr>
+<tr><td>09:45 →</td><td><code>orb2nd</code> can fire (needs the 15-min OR). <code>h2l2_trend</code> from 10:00.</td></tr>
+<tr><td>11:00:06</td><td><code>ib_trend</code> decision (IB break confirmed by the 10:55 bar).</td></tr>
+<tr><td>11:29:40</td><td><code>orb2nd</code> positions flattened (window end − <code>flatten_lead_sec</code>); unfilled morning entries cancelled.</td></tr>
+<tr><td>13:30 → 15:25</td><td><code>confluence_pb</code> entries.</td></tr>
+<tr><td>15:59:40</td><td>All remaining positions flattened at market; children cancelled. Safety sweep again at 16:02.</td></tr>
+</tbody></table>
+
+<!-- ───────────────────────── ORDERS ───────────────────────── -->
+<h2 id="orders">Orders &amp; exits</h2>
+<ul>
+<li><b>Bracket:</b> parent (MKT, or STP for h2l2 stop-entries, TIF <code>entry_tif</code>) + take-profit LMT + stop-loss STP (both GTC, OCA, children of the parent). A filled position is never unprotected; if the bot dies the GTC stop stays on the server.</li>
+<li><b>Target re-anchor:</b> on the entry fill the take-profit is moved to exactly <code>fill ± 2 × (fill − stop)</code> — the backtest measures R from the fill.</li>
+<li><b>Stop-entry expiry:</b> an unfilled h2l2 buy/sell-stop is cancelled after 1 bar (as in the backtest).</li>
+<li><b>Time exit:</b> at the window end (<code>flat</code> mode) or 16:00 (<code>hold</code>): cancel children → re-sync fills → MKT for <em>exactly this trade's</em> remaining quantity. The bot never closes a position it didn't open.</li>
+<li><b>Tagging:</b> every order has <code>orderRef = sv2|&lt;trade-id&gt;|entry|tp|sl|eod|window</code>; on restart/reconnect the bot rebuilds its trades from today's executions with that tag.</li>
+</ul>
+
+<!-- ───────────────────────── HOW TO ───────────────────────── -->
+<h2 id="howto">How to run (build &amp; launch)</h2>
+<pre><span class="c"># from Trading Strategies\scalping-v2</span>
+python scalping_v2_bot.py --check                <span class="c"># config + imports + engine self-test (no network)</span>
+python scalping_v2_bot.py --status               <span class="c"># READ-ONLY: contracts, history, today's levels + what each strategy did</span>
+python scalping_v2_bot.py --test-orders NQ      <span class="c"># PAPER ONLY: place a far-away bracket, verify, cancel</span>
+python scalping_v2_bot.py                        <span class="c"># run the scheduled loop (leave running all session)</span>
+
+<span class="c"># packaged like the other bots</span>
+.\scalping.ps1                    <span class="c"># PAPER: builds the exe if missing, then runs it supervised (auto-restart; STOP.txt to stop)</span>
+.\scalping.ps1 -Build             <span class="c"># rebuild the exe (after a code change), then run on paper</span>
+.\scalping.ps1 -Build -NoRun      <span class="c"># rebuild only</span>
+.\scalping.ps1 -Live              <span class="c"># LIVE: scalping_v2_live.json + --i-understand-live (asks you to type LIVE)</span>
+.\scalping.ps1 -ResetConfig       <span class="c"># overwrite dist\*.json with the source configs (else your dist edits are kept)</span>
+
+python scalping_v2_backtest.py --html            <span class="c"># backtest the config + rebuild backtest_results.html</span>
+python scalping_v2_parity_test.py                <span class="c"># live-decision vs backtest parity (run after any scalping_v2_core change)</span>
+python scalping_v2_sim_test.py --days 60         <span class="c"># full bot code vs fake broker on historical bars</span></pre>
+<p>Start it any time — before 09:00 it waits; mid-session it initialises immediately and only acts on new bars (it never back-fills a missed signal).</p>
+
+<!-- ───────────────────────── CONNECTION ───────────────────────── -->
+<h2 id="conn">Connection / safety</h2>
+<table><thead><tr><th>Key</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>paper</code></td><td><code>true</code></td><td>Paper gateway. <code>false</code> = live and requires <code>--i-understand-live</code>. With <code>paper:true</code> the bot refuses a non-DU account.</td></tr>
+<tr><td><code>host</code> / <code>port</code></td><td><code>127.0.0.1</code> / <code>4002</code></td><td>IB Gateway paper 4002 · live 4001 (TWS 7497 / 7496).</td></tr>
+<tr><td><code>client_id</code></td><td><code>60</code></td><td>Unique API client id (QM bot 50, supertrend 40+, intraday equity 30–33). Keep it fixed — orders are bound to it across restarts.</td></tr>
+<tr><td><code>account</code></td><td><code>""</code></td><td>Empty = the single managed account. Set your U-account for live.</td></tr>
+<tr><td><code>dry_run</code></td><td><code>false</code></td><td><code>true</code> = log signals/orders only (written to <code>scalping_v2_signals.csv</code> as DRY), place nothing.</td></tr>
+<tr><td><code>reconnect_backoff_sec</code></td><td><code>60</code></td><td>Retry period after a Gateway restart (first 3 retries every 5 s).</td></tr>
+<tr><td><code>allow_shared_symbols</code></td><td><code>false</code></td><td>(optional) allow trading a symbol where another client has a position/orders. Not recommended.</td></tr>
+<tr><td><code>flatten_stale_trades</code></td><td><code>true</code></td><td>(optional) at startup, flatten a bot trade left open from a previous session.</td></tr>
+<tr><td><code>state_file</code> / <code>log_dir</code></td><td>(live only)</td><td>Separate state/logs for the live config (<code>scalping_v2_live_state.json</code>, <code>logs_live/</code>).</td></tr>
+</tbody></table>
+
+<h3>Timing</h3>
+<table><thead><tr><th>Key</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>session_start</code> / <code>session_end</code></td><td><code>09:30</code> / <code>16:00</code></td><td>RTH session (ET). Hold-mode trades are flattened at <code>session_end − flatten_lead_sec</code>.</td></tr>
+<tr><td><code>flatten_lead_sec</code></td><td><code>20</code></td><td>Seconds before a window/session end to send the flatten.</td></tr>
+<tr><td><code>bar_delay_sec</code></td><td><code>6</code></td><td>Wait after each 5-min boundary so IB has the completed bar. If the bar is still missing after 3 retries the bot skips that bar (never acts on stale data).</td></tr>
+<tr><td><code>history_days</code></td><td><code>120</code></td><td>Calendar days of RTH history loaded each morning (IB returns ~80 sessions; ≥20 needed for the daily trend).</td></tr>
+<tr><td><code>poll_seconds</code> / <code>status_every_min</code></td><td><code>2</code> / <code>30</code></td><td>Loop tick and STATUS log cadence.</td></tr>
+<tr><td><code>entry_tif</code></td><td><code>DAY</code></td><td>TIF of the entry (parent) order. Children are always GTC.</td></tr>
+</tbody></table>
+
+<!-- ───────────────────────── RISK ───────────────────────── -->
+<h2 id="risk">Risk &amp; sizing</h2>
+<table><thead><tr><th>Key</th><th>Paper / Live</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>one_position_per_symbol</code></td><td><code>true</code></td><td>Only one strategy in a contract at a time (earlier signal wins, then <code>strategy_priority</code>). A pending stop-entry also occupies the symbol.</td></tr>
+<tr><td><code>strategy_priority</code></td><td><code>[ib_trend, orb2nd, h2l2_trend, confluence_pb]</code></td><td>Evaluation order when two strategies signal on the same bar.</td></tr>
+<tr><td><code>account_size_usd</code></td><td><code>150000</code></td><td>Account size used only for the <b>% yearly return / % drawdown</b> figures in the backtest reports.</td></tr>
+<tr><td><code>daily_loss_limit_usd</code></td><td><code>0</code> / <code>3000</code></td><td>Circuit breaker: no new entries once realized + open P&amp;L today ≤ −limit (0 = off). Open trades still exit normally.</td></tr>
+<tr><td><code>max_trades_per_day</code></td><td><code>12</code> / <code>8</code></td><td>All symbols/strategies combined.</td></tr>
+<tr><td><code>sizing.mode</code></td><td><code>fixed</code></td><td><code>fixed</code> = <code>symbols.&lt;SYM&gt;.contracts</code>. <code>risk</code> = floor(<code>risk_usd</code> / (risk points × multiplier)), capped at <code>max_contracts</code>, skip if &lt; 1.</td></tr>
+<tr><td><code>commission_per_side</code></td><td>NQ/ES/YM 2.25, GC 2.42</td><td>Used for P&amp;L when IB's commission report isn't available, and by the backtest.</td></tr>
+<tr><td><code>trade_log_csv</code></td><td><code>scalping_v2_trades.csv</code> / <code>scalping_v2_live_trades.csv</code></td><td>Base name; one file per strategy (<code>scalping_v2_trades_ib_trend.csv</code>…).</td></tr>
+</tbody></table>
+
+<!-- ───────────────────────── SYMBOLS ───────────────────────── -->
+<h2 id="symbols">Symbols block</h2>
+<table><thead><tr><th>Key</th><th>NQ</th><th>ES</th><th>GC</th><th>YM</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>enabled</code></td><td>true</td><td>true</td><td>true</td><td>false</td><td>Master switch per contract (YM loses with every strategy in the backtest).</td></tr>
+<tr><td><code>exchange</code></td><td>CME</td><td>CME</td><td>COMEX</td><td>CBOT</td><td>For the ContFuture lookup.</td></tr>
+<tr><td><code>contracts</code></td><td>1</td><td>1</td><td>1</td><td>1</td><td>Size per trade (fixed sizing).</td></tr>
+<tr><td><code>max_risk_usd</code> paper / live</td><td>6000 / 4000</td><td>3000 / 2000</td><td>5000 / 3500</td><td>3000 / 2000</td><td>Skip a trade whose risk (stop distance × multiplier × contracts) is larger. Typical risk per contract: NQ IB Trend ~$2,900, ORB ~$2,550, H2L2 ~$1,100, Confluence ~$550; ES IB ~$1,150; GC IB ~$2,300, ORB ~$1,500.</td></tr>
+<tr><td><code>data_symbol</code></td><td colspan=4>(optional) backtest price history to use; default from <code>scalping_v2_core.SPECS</code>: NQ←MNQ, ES←MES, GC←MGC, YM←MYM</td><td>Full-size and micro track the same underlying, so the backtest reuses the micro 5-min RTH CSVs.</td></tr>
+</tbody></table>
+<p class="sub">Point values: NQ $20/pt (tick 0.25 = $5) · ES $50/pt (tick 0.25 = $12.50) · GC $100/oz (tick 0.10 = $10) · YM $5/pt (tick 1 = $5).
+Read from IB at runtime. Micros (MNQ/MES/MGC/MYM) are still supported — just use those keys.</p>
+
+<!-- ───────────────────────── STRATEGY KEYS ───────────────────────── -->
+<h2 id="strat-keys">Strategy blocks (<code>strategies.&lt;key&gt;</code>)</h2>
+<table><thead><tr><th>Key</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>enabled</code></td><td>Turn the strategy on/off.</td></tr>
+<tr><td><code>symbols</code></td><td>Which contracts it trades (subset of the symbols block).</td></tr>
+<tr><td><code>window</code></td><td><code>["HH:MM","HH:MM"]</code> ET — entries only inside; event setups that fire before the window are skipped for the day.</td></tr>
+<tr><td><code>mode</code></td><td><code>hold</code> (2R / stop / 16:00, entries ≤ 15:25) or <code>flat</code> (also out at the window end).</td></tr>
+<tr><td><code>params</code></td><td>Strategy parameters — see below.</td></tr>
+</tbody></table>
+<div class="grid2">
+<div class="card"><h3><code>ib_trend</code> params</h3><ul class="cell">
+<li><code>trend</code>: <code>e10</code>/<code>e20</code>/<code>e50</code> daily EMA trend filter · <code>none</code> · <code>long</code> (default e20)</li>
+<li><code>entry</code>: <code>confirm</code> (11:00 only) · <code>first</code> (first close beyond IB)</li>
+<li><code>stop</code>: <code>mid</code> (IB midpoint) · <code>cap</code> (tighter of mid / 0.5×IB)</li>
+<li><code>nw</code>: skip IB wider than nw × 14-day avg range (9.9 = off)</li></ul></div>
+<div class="card"><h3><code>orb2nd</code> params</h3><ul class="cell">
+<li><code>orm</code>: opening-range minutes (15)</li>
+<li><code>dtf</code>: require daily trend (false)</li></ul></div>
+<div class="card"><h3><code>h2l2_trend</code> params</h3><ul class="cell">
+<li><code>maxr</code>: max risk in ATRs (3.0)</li>
+<li><code>dtf</code>: require daily trend (true)</li>
+<li><code>max_trades</code>: per day (3)</li></ul></div>
+<div class="card"><h3><code>confluence_pb</code> params</h3><ul class="cell">
+<li><code>trig</code>: <code>pb</code> (EMA9 pullback) · <code>align</code></li>
+<li><code>k</code>: stop = k × ATR (1.0)</li>
+<li><code>mx</code>: max trades/day (4)</li></ul></div>
+</div>
+<p>Change a parameter → run <code>python scalping_v2_backtest.py</code> to see its effect before running the bot with it.</p>
+
+<!-- ───────────────────────── FILES ───────────────────────── -->
+<h2 id="files">Outputs</h2>
+<table><thead><tr><th>File</th><th>Content</th></tr></thead><tbody>
+<tr><td colspan=2 class="sub">Same file logic as the supertrend bot: one <b>strategy instance</b> = <code>&lt;account&gt;_&lt;symbol&gt;_&lt;strategy&gt;</code>
+(e.g. <code>DU672616_NQ_ib_trend</code>, like supertrend's <code>DU672616_MNQ_5m</code>) → its own daily log and its own trade CSV. All files are next to the exe in <code>dist\</code>.</td></tr>
+<tr><td><code>logs/scalping_v2_&lt;date&gt;.log</code></td><td>Combined: everything (connect, contracts, signals, orders, fills, exits, STATUS, reports).</td></tr>
+<tr><td><code>logs/scalping_v2_&lt;account&gt;_&lt;symbol&gt;_&lt;strategy&gt;_&lt;date&gt;.log</code></td><td>Per strategy instance per day (signals, orders, fills, CLOSED lines) — like <code>supertrend_&lt;name&gt;_&lt;date&gt;.log</code>.</td></tr>
+<tr><td><code>scalping_v2_trades_&lt;account&gt;_&lt;symbol&gt;_&lt;strategy&gt;.csv</code></td><td>One row per closed trade, <b>supertrend column format</b>: <code>time,strategy,account,symbol,side,qty,entry,exit,stop,pnl,ret_pct,reason,hold</code>
++ extras <code>r_mult,entry_time,trade_id,commission</code>. <code>time</code> = exit time ET, <code>pnl</code> = <b>$ net of commission</b> (points × multiplier × qty − commission), <code>reason</code> = TARGET / STOP / WINDOW / EOD / STALE.</td></tr>
+<tr><td><code>reports/eod_report_&lt;YYYYMMDD&gt;.html</code></td><td>End-of-day report (supertrend layout): overview by instrument and by strategy + every trade closed that day per strategy instance.
+Written automatically ~16:05 ET once all positions are flat; rebuild any day with <code>.\scalping.ps1 -Reports -Date YYYY-MM-DD</code>.</td></tr>
+<tr><td><code>reports/performance_report.html</code></td><td>Cumulative to date: trades, win%, PF, net $ and % of <code>account_size_usd</code>, expectancy, avg R, max DD $ / %, best/worst — by strategy instance, instrument and strategy — plus equity curves.</td></tr>
+<tr><td><code>scalping_v2_signals.csv</code></td><td>Every live signal and what happened (PLACED / SKIP + reason / DRY).</td></tr>
+<tr><td><code>scalping_v2_state.json</code></td><td>Today's trades + seen signals + processed executions (rebuilt from IB on restart).</td></tr>
+</tbody></table>
+
+<!-- ───────────────────────── EXAMPLES ───────────────────────── -->
+<h2 id="examples">Examples</h2>
+<h3>NQ only, all four strategies</h3>
+<pre>"symbols": {"NQ": {"enabled": <span class="k">true</span>, ...}, "ES": {"enabled": <span class="k">false</span>, ...}, "GC": {"enabled": <span class="k">false</span>, ...}}</pre>
+<h3>Back to micros (e.g. a smaller live account)</h3>
+<pre>"symbols": {"MNQ": {...}, "MES": {...}, "MGC": {...}}   <span class="c"># and use MNQ/MES/MGC in each strategies.&lt;key&gt;.symbols list</span></pre>
+<h3>Only the 11:00 IB Trend trade on all three (fewest trades, simplest)</h3>
+<pre>"orb2nd": {"enabled": <span class="k">false</span>, ...}, "h2l2_trend": {"enabled": <span class="k">false</span>, ...}, "confluence_pb": {"enabled": <span class="k">false</span>, ...}</pre>
+<h3>Risk-based sizing ($250 per trade, max 3 contracts)</h3>
+<pre>"sizing": {"mode": <span class="s">"risk"</span>, "risk_usd": <span class="n">2500</span>, "max_contracts": <span class="n">3</span>}</pre>
+<h3 id="live">Going live</h3>
+<ol>
+<li>Paper for several weeks; compare <code>scalping_v2_trades_*.csv</code> with <code>python scalping_v2_backtest.py</code> for the same dates.</li>
+<li>Edit <code>dist\scalping_v2_live.json</code>: set <code>account</code> (U…), check <code>max_risk_usd</code>, <code>daily_loss_limit_usd</code>, contracts = 1.</li>
+<li>Live Gateway on 4001, API not read-only; no other bot on NQ/ES/GC on that account.</li>
+<li><code>.\scalping.ps1 -Live</code> (type LIVE to confirm). Scale contracts only after live results match paper.</li>
+</ol>
+
+<!-- ───────────────────────── CLI ───────────────────────── -->
+<h2 id="cli">CLI flags</h2>
+<table><thead><tr><th>Flag</th><th>Effect</th></tr></thead><tbody>
+<tr><td><code>--config FILE</code></td><td>Config path (default <code>scalping_v2.json</code> next to the script/exe).</td></tr>
+<tr><td><code>--check</code></td><td>Validate config + imports + engine self-test. No network.</td></tr>
+<tr><td><code>--status</code></td><td>Connect read-only; print contracts, history, today's (or last session's) levels, trades each strategy took and its live-edge decision, account futures positions.</td></tr>
+<tr><td><code>--test-orders SYM</code></td><td>PAPER ONLY. Places a 1-lot BUY-STOP bracket 5% above the market (cannot fill), shows IB's statuses, cancels it.</td></tr>
+<tr><td><code>--once</code></td><td>Day init + one decision pass at the latest completed bar (orders only if armed), then exit.</td></tr>
+<tr><td><code>--i-understand-live</code></td><td>Required with <code>paper:false</code>.</td></tr>
+</tbody></table>
+<div class="foot">Scalping v2 bot · scalping_v2_bot.py · research: scalping-v1 (RR2_Strategy_Report.md, Windows_Report.md) · not financial advice</div>
+
+</div>
+<script>function tog(){var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'}</script>
+</body>
+</html>

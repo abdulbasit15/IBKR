@@ -1,0 +1,20 @@
+wrote Stocks_Report.html; overall avg R -0.0689
+                                     count   mean
+strategy      group  year                        
+confluence_pb ETFs   Y1 Oct24–Sep25    587 -0.145
+                     Y2 Oct25–Oct26    541  0.025
+              Stocks Y1 Oct24–Sep25   1265 -0.164
+                     Y2 Oct25–Oct26   1238 -0.079
+h2l2_trend    ETFs   Y1 Oct24–Sep25    121 -0.143
+                     Y2 Oct25–Oct26    143 -0.053
+              Stocks Y1 Oct24–Sep25    256 -0.071
+                     Y2 Oct25–Oct26    300 -0.084
+ib_trend      ETFs   Y1 Oct24–Sep25    171 -0.073
+                     Y2 Oct25–Oct26    160  0.016
+              Stocks Y1 Oct24–Sep25    236  0.059
+                     Y2 Oct25–Oct26    265  0.068
+orb2nd        ETFs   Y1 Oct24–Sep25    161  0.009
+                     Y2 Oct25–Oct26    182  0.094
+              Stocks Y1 Oct24–Sep25    144 -0.106
+                     Y2 Oct25–Oct26    140  0.092
+survivors: 11

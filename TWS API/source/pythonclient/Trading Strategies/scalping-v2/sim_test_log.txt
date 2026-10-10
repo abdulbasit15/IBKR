@@ -1,0 +1,574 @@
+[2026-07-15 11:00:06] ARMED NQ-ib_trend-20260715-1055: SHORT 1 NQSIM MKT stop 30112.0 target~29576.5 risk 178.50pt $3,570 exit_by 15:59:40  [orders 1000/1001/1002]
+[2026-07-15 11:00:06] ENTRY FILLED NQ-ib_trend-20260715-1055: SELL 1 @ 29933.5 (avg 29933.5000)
+[2026-07-15 11:10:06] ARMED GC-orb2nd-20260715-1105: SHORT 1 GCSIM MKT stop 4130.4 target~4106.2 risk 8.06pt $806 exit_by 11:29:40  [orders 1003/1004/1005]
+[2026-07-15 11:10:06] ENTRY FILLED GC-orb2nd-20260715-1105: SELL 1 @ 4122.0365 (avg 4122.0365)
+[2026-07-15 11:10:06] GC-orb2nd-20260715-1105: target re-anchored to 2R from fill -> 4105.3
+[2026-07-15 11:29:45] FLATTEN GC-orb2nd-20260715-1105 [window]: BUY 1 at market
+[2026-07-15 11:29:45] EXIT FILLED GC-orb2nd-20260715-1105 [window]: 1 @ 4116.9365
+[2026-07-15 11:29:45] CLOSED SHORT GC orb2nd WINDOW entry 4122.0365 exit 4116.9365 qty 1 pnl $505.16 (0.61R, +0.12%) hold 0:19:39  (day $505.16)
+[2026-07-15 15:59:45] FLATTEN NQ-ib_trend-20260715-1055 [eod]: BUY 1 at market
+[2026-07-15 15:59:45] EXIT FILLED NQ-ib_trend-20260715-1055 [eod]: 1 @ 30004.0
+[2026-07-15 15:59:45] CLOSED SHORT NQ ib_trend EOD entry 29933.5 exit 30004.0 qty 1 pnl $-1,414.50 (-0.39R, -0.24%) hold 4:59:39  (day $-909.34)
+[2026-07-16 13:35:06] ARMED NQ-confluence_pb-20260716-1330: SHORT 1 NQSIM MKT stop 29636.75 target~29485.25 risk 50.50pt $1,010 exit_by 15:59:40  [orders 1008/1009/1010]
+[2026-07-16 13:35:06] ARMED GC-confluence_pb-20260716-1330: SHORT 1 GCSIM MKT stop 4054.9 target~4039.1 risk 5.26pt $526 exit_by 15:59:40  [orders 1011/1012/1013]
+[2026-07-16 13:35:06] ENTRY FILLED NQ-confluence_pb-20260716-1330: SELL 1 @ 29586.25 (avg 29586.2500)
+[2026-07-16 13:35:06] ENTRY FILLED GC-confluence_pb-20260716-1330: SELL 1 @ 4049.3365 (avg 4049.3365)
+[2026-07-16 13:35:06] GC-confluence_pb-20260716-1330: target re-anchored to 2R from fill -> 4038.2
+[2026-07-16 14:10:06] EXIT FILLED GC-confluence_pb-20260716-1330 [sl]: 1 @ 4055.0
+[2026-07-16 14:10:06] CLOSED SHORT GC confluence_pb STOP entry 4049.3365 exit 4055.0 qty 1 pnl $-571.19 (-1.02R, -0.14%) hold 0:35:00  (day $-571.19)
+[2026-07-16 14:35:06] ARMED GC-confluence_pb-20260716-1430: SHORT 1 GCSIM MKT stop 4049.0 target~4034.4 risk 4.86pt $486 exit_by 15:59:40  [orders 1014/1015/1016]
+[2026-07-16 14:35:06] ENTRY FILLED GC-confluence_pb-20260716-1430: SELL 1 @ 4044.0365 (avg 4044.0365)
+[2026-07-16 14:35:06] GC-confluence_pb-20260716-1430: target re-anchored to 2R from fill -> 4034.1
+[2026-07-16 14:45:06] EXIT FILLED GC-confluence_pb-20260716-1430 [sl]: 1 @ 4049.1
+[2026-07-16 14:45:06] CLOSED SHORT GC confluence_pb STOP entry 4044.0365 exit 4049.1 qty 1 pnl $-511.19 (-1.02R, -0.13%) hold 0:10:00  (day $-1,082.38)
+[2026-07-16 14:50:06] ARMED GC-confluence_pb-20260716-1445: SHORT 1 GCSIM MKT stop 4052.7 target~4038.4 risk 4.76pt $476 exit_by 15:59:40  [orders 1017/1018/1019]
+[2026-07-16 14:50:06] ENTRY FILLED GC-confluence_pb-20260716-1445: SELL 1 @ 4048.0365 (avg 4048.0365)
+[2026-07-16 14:50:06] GC-confluence_pb-20260716-1445: target re-anchored to 2R from fill -> 4038.7
+[2026-07-16 15:05:06] EXIT FILLED NQ-confluence_pb-20260716-1330 [tp]: 1 @ 29485.25
+[2026-07-16 15:05:06] CLOSED SHORT NQ confluence_pb TARGET entry 29586.25 exit 29485.25 qty 1 pnl $2,015.50 (2.0R, +0.34%) hold 1:30:00  (day $933.12)
+[2026-07-16 15:10:06] ARMED NQ-confluence_pb-20260716-1505: SHORT 1 NQSIM MKT stop 29524.75 target~29398.0 risk 42.25pt $845 exit_by 15:59:40  [orders 1020/1021/1022]
+[2026-07-16 15:10:06] ENTRY FILLED NQ-confluence_pb-20260716-1505: SELL 1 @ 29482.0 (avg 29482.0000)
+[2026-07-16 15:10:06] NQ-confluence_pb-20260716-1505: target re-anchored to 2R from fill -> 29396.5
+[2026-07-16 15:35:06] EXIT FILLED GC-confluence_pb-20260716-1445 [tp]: 1 @ 4038.7
+[2026-07-16 15:35:06] CLOSED SHORT GC confluence_pb TARGET entry 4048.0365 exit 4038.7 qty 1 pnl $928.81 (2.0R, +0.23%) hold 0:45:00  (day $1,861.93)
+[2026-07-16 15:45:06] EXIT FILLED NQ-confluence_pb-20260716-1505 [tp]: 1 @ 29396.5
+[2026-07-16 15:45:06] CLOSED SHORT NQ confluence_pb TARGET entry 29482.0 exit 29396.5 qty 1 pnl $1,705.50 (2.0R, +0.29%) hold 0:35:00  (day $3,567.43)
+[2026-07-20 11:00:06] ARMED NQ-ib_trend-20260720-1055: SHORT 1 NQSIM MKT stop 29346.25 target~28867.0 risk 159.75pt $3,195 exit_by 15:59:40  [orders 1023/1024/1025]
+[2026-07-20 11:00:06] ARMED ES-ib_trend-20260720-1055: SHORT 1 ESSIM MKT stop 7595.75 target~7521.5 risk 24.75pt $1,238 exit_by 15:59:40  [orders 1026/1027/1028]
+[2026-07-20 11:00:06] ENTRY FILLED NQ-ib_trend-20260720-1055: SELL 1 @ 29186.0 (avg 29186.0000)
+[2026-07-20 11:00:06] NQ-ib_trend-20260720-1055: target re-anchored to 2R from fill -> 28865.5
+[2026-07-20 11:00:06] ENTRY FILLED ES-ib_trend-20260720-1055: SELL 1 @ 7571.0 (avg 7571.0000)
+[2026-07-20 11:10:06] ARMED GC-orb2nd-20260720-1105: LONG 1 GCSIM MKT stop 4074.9 target~4104.1 risk 9.74pt $974 exit_by 11:29:40  [orders 1029/1030/1031]
+[2026-07-20 11:10:06] ENTRY FILLED GC-orb2nd-20260720-1105: BUY 1 @ 4084.8365 (avg 4084.8365)
+[2026-07-20 11:10:06] GC-orb2nd-20260720-1105: target re-anchored to 2R from fill -> 4104.7
+[2026-07-20 11:29:45] FLATTEN GC-orb2nd-20260720-1105 [window]: SELL 1 at market
+[2026-07-20 11:29:45] EXIT FILLED GC-orb2nd-20260720-1105 [window]: 1 @ 4081.8365
+[2026-07-20 11:29:45] CLOSED LONG GC orb2nd WINDOW entry 4084.8365 exit 4081.8365 qty 1 pnl $-304.84 (-0.3R, -0.07%) hold 0:19:39  (day $-304.84)
+[2026-07-20 11:50:06] EXIT FILLED NQ-ib_trend-20260720-1055 [sl]: 1 @ 29346.5
+[2026-07-20 11:50:06] CLOSED SHORT NQ ib_trend STOP entry 29186.0 exit 29346.5 qty 1 pnl $-3,214.50 (-1.0R, -0.55%) hold 0:50:00  (day $-3,519.34)
+[2026-07-20 12:05:06] EXIT FILLED ES-ib_trend-20260720-1055 [sl]: 1 @ 7596.0
+[2026-07-20 12:05:06] CLOSED SHORT ES ib_trend STOP entry 7571.0 exit 7596.0 qty 1 pnl $-1,254.50 (-1.01R, -0.33%) hold 1:05:00  (day $-4,773.84)
+[2026-07-20 13:45:06] ARMED GC-confluence_pb-20260720-1340: SHORT 1 GCSIM MKT stop 4076.5 target~4065.2 risk 3.76pt $376 exit_by 15:59:40  [orders 1033/1034/1035]
+[2026-07-20 13:45:06] ENTRY FILLED GC-confluence_pb-20260720-1340: SELL 1 @ 4072.5365 (avg 4072.5365)
+[2026-07-20 13:45:06] GC-confluence_pb-20260720-1340: target re-anchored to 2R from fill -> 4064.6
+[2026-07-20 14:15:06] EXIT FILLED GC-confluence_pb-20260720-1340 [sl]: 1 @ 4076.6
+[2026-07-20 14:15:06] CLOSED SHORT GC confluence_pb STOP entry 4072.5365 exit 4076.6 qty 1 pnl $-411.19 (-1.03R, -0.10%) hold 0:30:00  (day $-5,185.03)
+[2026-07-20 14:35:06] ARMED GC-confluence_pb-20260720-1430: SHORT 1 GCSIM MKT stop 4073.4 target~4063.0 risk 3.46pt $346 exit_by 15:59:40  [orders 1036/1037/1038]
+[2026-07-20 14:35:06] ENTRY FILLED GC-confluence_pb-20260720-1430: SELL 1 @ 4069.8365 (avg 4069.8365)
+[2026-07-20 14:35:06] GC-confluence_pb-20260720-1430: target re-anchored to 2R from fill -> 4062.7
+[2026-07-20 14:45:06] EXIT FILLED GC-confluence_pb-20260720-1430 [sl]: 1 @ 4073.5
+[2026-07-20 14:45:06] CLOSED SHORT GC confluence_pb STOP entry 4069.8365 exit 4073.5 qty 1 pnl $-371.19 (-1.03R, -0.09%) hold 0:10:00  (day $-5,556.22)
+[2026-07-20 15:15:06] ARMED GC-confluence_pb-20260720-1510: SHORT 1 GCSIM MKT stop 4073.0 target~4063.5 risk 3.16pt $316 exit_by 15:59:40  [orders 1039/1040/1041]
+[2026-07-20 15:15:06] ENTRY FILLED GC-confluence_pb-20260720-1510: SELL 1 @ 4069.6365 (avg 4069.6365)
+[2026-07-20 15:15:06] GC-confluence_pb-20260720-1510: target re-anchored to 2R from fill -> 4062.9
+[2026-07-20 15:15:06] EXIT FILLED GC-confluence_pb-20260720-1510 [sl]: 1 @ 4073.1
+[2026-07-20 15:15:06] CLOSED SHORT GC confluence_pb STOP entry 4069.6365 exit 4073.1 qty 1 pnl $-351.19 (-1.03R, -0.09%) hold 0:00:00  (day $-5,907.41)
+[2026-07-21 11:10:06] ARMED NQ-orb2nd-20260721-1105: LONG 1 NQSIM MKT stop 29453.5 target~29810.5 risk 119.00pt $2,380 exit_by 11:29:40  [orders 1042/1043/1044]
+[2026-07-21 11:10:06] ENTRY FILLED NQ-orb2nd-20260721-1105: BUY 1 @ 29572.75 (avg 29572.7500)
+[2026-07-21 11:10:06] NQ-orb2nd-20260721-1105: target re-anchored to 2R from fill -> 29811.25
+[2026-07-21 11:29:45] FLATTEN NQ-orb2nd-20260721-1105 [window]: SELL 1 at market
+[2026-07-21 11:29:45] EXIT FILLED NQ-orb2nd-20260721-1105 [window]: 1 @ 29606.25
+[2026-07-21 11:29:45] CLOSED LONG NQ orb2nd WINDOW entry 29572.75 exit 29606.25 qty 1 pnl $665.50 (0.28R, +0.11%) hold 0:19:39  (day $665.50)
+[2026-07-22 14:10:06] ARMED NQ-confluence_pb-20260722-1405: SHORT 1 NQSIM MKT stop 29571.75 target~29487.75 risk 28.00pt $560 exit_by 15:59:40  [orders 1046/1047/1048]
+[2026-07-22 14:10:06] ENTRY FILLED NQ-confluence_pb-20260722-1405: SELL 1 @ 29544.0 (avg 29544.0000)
+[2026-07-22 14:10:06] NQ-confluence_pb-20260722-1405: target re-anchored to 2R from fill -> 29488.5
+[2026-07-22 15:55:06] EXIT FILLED NQ-confluence_pb-20260722-1405 [tp]: 1 @ 29488.5
+[2026-07-22 15:55:06] CLOSED SHORT NQ confluence_pb TARGET entry 29544.0 exit 29488.5 qty 1 pnl $1,105.50 (2.0R, +0.19%) hold 1:45:00  (day $1,105.50)
+[2026-07-23 10:25:06] ARMED NQ-h2l2_trend-20260723-1020: SHORT 1 NQSIM STP@28981.25 stop 29073.75 target~28796.25 risk 92.50pt $1,850 exit_by 15:59:40  [orders 1049/1050/1051]
+[2026-07-23 10:30:06] NQ-h2l2_trend-20260723-1020: entry order no longer working and unfilled -> cancelled
+[2026-07-23 10:30:06] ARMED NQ-h2l2_trend-20260723-1025: SHORT 1 NQSIM STP@28986.75 stop 29073.75 target~28812.75 risk 87.00pt $1,740 exit_by 15:59:40  [orders 1052/1053/1054]
+[2026-07-23 10:30:06] ENTRY FILLED NQ-h2l2_trend-20260723-1025: SELL 1 @ 28986.5 (avg 28986.5000)
+[2026-07-23 10:30:06] NQ-h2l2_trend-20260723-1025: target re-anchored to 2R from fill -> 28812.0
+[2026-07-23 11:00:06] SIGNAL NQ-ib_trend-20260723-1055 SHORT skipped: symbol busy (another strategy in position)
+[2026-07-23 11:00:06] ARMED ES-ib_trend-20260723-1055: SHORT 1 ESSIM MKT stop 7531.5 target~7464.75 risk 22.25pt $1,112 exit_by 15:59:40  [orders 1055/1056/1057]
+[2026-07-23 11:00:06] ENTRY FILLED ES-ib_trend-20260723-1055: SELL 1 @ 7509.0 (avg 7509.0000)
+[2026-07-23 11:00:06] ES-ib_trend-20260723-1055: target re-anchored to 2R from fill -> 7464.0
+[2026-07-23 11:10:06] EXIT FILLED NQ-h2l2_trend-20260723-1025 [tp]: 1 @ 28812.0
+[2026-07-23 11:10:06] CLOSED SHORT NQ h2l2_trend TARGET entry 28986.5 exit 28812.0 qty 1 pnl $3,485.50 (2.0R, +0.60%) hold 0:40:00  (day $3,485.50)
+[2026-07-23 13:50:06] ARMED NQ-confluence_pb-20260723-1345: SHORT 1 NQSIM MKT stop 28960.75 target~28819.0 risk 47.25pt $945 exit_by 15:59:40  [orders 1058/1059/1060]
+[2026-07-23 13:50:06] ENTRY FILLED NQ-confluence_pb-20260723-1345: SELL 1 @ 28912.75 (avg 28912.7500)
+[2026-07-23 13:50:06] NQ-confluence_pb-20260723-1345: target re-anchored to 2R from fill -> 28816.75
+[2026-07-23 14:55:06] EXIT FILLED NQ-confluence_pb-20260723-1345 [tp]: 1 @ 28816.75
+[2026-07-23 14:55:06] CLOSED SHORT NQ confluence_pb TARGET entry 28912.75 exit 28816.75 qty 1 pnl $1,915.50 (2.0R, +0.33%) hold 1:05:00  (day $5,401.00)
+[2026-07-23 15:05:06] ARMED NQ-confluence_pb-20260723-1500: SHORT 1 NQSIM MKT stop 28845.75 target~28727.25 risk 39.50pt $790 exit_by 15:59:40  [orders 1061/1062/1063]
+[2026-07-23 15:05:06] ENTRY FILLED NQ-confluence_pb-20260723-1500: SELL 1 @ 28806.5 (avg 28806.5000)
+[2026-07-23 15:05:06] NQ-confluence_pb-20260723-1500: target re-anchored to 2R from fill -> 28728.0
+[2026-07-23 15:20:06] EXIT FILLED NQ-confluence_pb-20260723-1500 [sl]: 1 @ 28846.0
+[2026-07-23 15:20:06] CLOSED SHORT NQ confluence_pb STOP entry 28806.5 exit 28846.0 qty 1 pnl $-794.50 (-1.01R, -0.14%) hold 0:15:00  (day $4,606.50)
+[2026-07-23 15:59:45] FLATTEN ES-ib_trend-20260723-1055 [eod]: BUY 1 at market
+[2026-07-23 15:59:45] EXIT FILLED ES-ib_trend-20260723-1055 [eod]: 1 @ 7509.75
+[2026-07-23 15:59:45] CLOSED SHORT ES ib_trend EOD entry 7509.0 exit 7509.75 qty 1 pnl $-42.00 (-0.03R, -0.01%) hold 4:59:39  (day $4,564.50)
+[2026-07-24 15:00:06] ARMED NQ-confluence_pb-20260724-1455: SHORT 1 NQSIM MKT stop 28632.5 target~28507.25 risk 41.75pt $835 exit_by 15:59:40  [orders 1065/1066/1067]
+[2026-07-24 15:00:06] ENTRY FILLED NQ-confluence_pb-20260724-1455: SELL 1 @ 28589.75 (avg 28589.7500)
+[2026-07-24 15:00:06] NQ-confluence_pb-20260724-1455: target re-anchored to 2R from fill -> 28504.25
+[2026-07-24 15:15:06] EXIT FILLED NQ-confluence_pb-20260724-1455 [tp]: 1 @ 28504.25
+[2026-07-24 15:15:06] CLOSED SHORT NQ confluence_pb TARGET entry 28589.75 exit 28504.25 qty 1 pnl $1,705.50 (2.0R, +0.30%) hold 0:15:00  (day $1,705.50)
+[2026-07-28 11:15:06] ARMED GC-orb2nd-20260728-1110: LONG 1 GCSIM MKT stop 4081.2 target~4121.5 risk 13.44pt $1,344 exit_by 11:29:40  [orders 1068/1069/1070]
+[2026-07-28 11:15:06] ENTRY FILLED GC-orb2nd-20260728-1110: BUY 1 @ 4094.9365 (avg 4094.9365)
+[2026-07-28 11:15:06] GC-orb2nd-20260728-1110: target re-anchored to 2R from fill -> 4122.4
+[2026-07-28 11:29:45] FLATTEN GC-orb2nd-20260728-1110 [window]: SELL 1 at market
+[2026-07-28 11:29:45] EXIT FILLED GC-orb2nd-20260728-1110 [window]: 1 @ 4096.4365
+[2026-07-28 11:29:45] CLOSED LONG GC orb2nd WINDOW entry 4094.9365 exit 4096.4365 qty 1 pnl $145.16 (0.11R, +0.04%) hold 0:14:39  (day $145.16)
+[2026-07-28 14:10:06] ARMED GC-confluence_pb-20260728-1405: SHORT 1 GCSIM MKT stop 4094.4 target~4083.4 risk 3.66pt $366 exit_by 15:59:40  [orders 1072/1073/1074]
+[2026-07-28 14:10:06] ENTRY FILLED GC-confluence_pb-20260728-1405: SELL 1 @ 4090.7365 (avg 4090.7365)
+[2026-07-28 14:50:06] EXIT FILLED GC-confluence_pb-20260728-1405 [tp]: 1 @ 4083.4
+[2026-07-28 14:50:06] CLOSED SHORT GC confluence_pb TARGET entry 4090.7365 exit 4083.4 qty 1 pnl $728.81 (2.0R, +0.18%) hold 0:40:00  (day $873.97)
+[2026-07-28 15:15:06] ARMED GC-confluence_pb-20260728-1510: SHORT 1 GCSIM MKT stop 4087.3 target~4079.0 risk 2.76pt $276 exit_by 15:59:40  [orders 1075/1076/1077]
+[2026-07-28 15:15:06] ENTRY FILLED GC-confluence_pb-20260728-1510: SELL 1 @ 4084.4365000000003 (avg 4084.4365)
+[2026-07-28 15:15:06] GC-confluence_pb-20260728-1510: target re-anchored to 2R from fill -> 4078.7
+[2026-07-28 15:30:06] EXIT FILLED GC-confluence_pb-20260728-1510 [sl]: 1 @ 4087.4
+[2026-07-28 15:30:06] CLOSED SHORT GC confluence_pb STOP entry 4084.4365 exit 4087.4 qty 1 pnl $-301.19 (-1.03R, -0.07%) hold 0:15:00  (day $572.78)
+[2026-07-29 10:35:06] ARMED GC-h2l2_trend-20260729-1030: SHORT 1 GCSIM STP@4062.2 stop 4069.0 target~4048.6 risk 6.80pt $680 exit_by 15:59:40  [orders 1078/1079/1080]
+[2026-07-29 10:35:06] ENTRY FILLED GC-h2l2_trend-20260729-1030: SELL 1 @ 4062.1 (avg 4062.1000)
+[2026-07-29 10:35:06] GC-h2l2_trend-20260729-1030: target re-anchored to 2R from fill -> 4048.3
+[2026-07-29 11:05:06] ARMED NQ-h2l2_trend-20260729-1100: SHORT 1 NQSIM STP@27860.25 stop 27929.5 target~27721.75 risk 69.25pt $1,385 exit_by 15:59:40  [orders 1081/1082/1083]
+[2026-07-29 11:10:06] NQ-h2l2_trend-20260729-1100: entry order no longer working and unfilled -> cancelled
+[2026-07-29 11:10:06] ARMED NQ-h2l2_trend-20260729-1105: SHORT 1 NQSIM STP@27871.25 stop 27938.5 target~27736.75 risk 67.25pt $1,345 exit_by 15:59:40  [orders 1084/1085/1086]
+[2026-07-29 11:10:06] ENTRY FILLED NQ-h2l2_trend-20260729-1105: SELL 1 @ 27871.0 (avg 27871.0000)
+[2026-07-29 11:10:06] NQ-h2l2_trend-20260729-1105: target re-anchored to 2R from fill -> 27736.0
+[2026-07-29 11:20:06] EXIT FILLED GC-h2l2_trend-20260729-1030 [sl]: 1 @ 4069.1
+[2026-07-29 11:20:06] CLOSED SHORT GC h2l2_trend STOP entry 4062.1 exit 4069.1 qty 1 pnl $-704.84 (-1.01R, -0.17%) hold 0:45:00  (day $-704.84)
+[2026-07-29 12:00:06] EXIT FILLED NQ-h2l2_trend-20260729-1105 [tp]: 1 @ 27736.0
+[2026-07-29 12:00:06] CLOSED SHORT NQ h2l2_trend TARGET entry 27871.0 exit 27736.0 qty 1 pnl $2,695.50 (2.0R, +0.48%) hold 0:50:00  (day $1,990.66)
+[2026-07-31 11:00:06] ARMED GC-ib_trend-20260731-1055: LONG 1 GCSIM MKT stop 4089.9 target~4142.2 risk 17.44pt $1,744 exit_by 15:59:40  [orders 1087/1088/1089]
+[2026-07-31 11:00:06] ENTRY FILLED GC-ib_trend-20260731-1055: BUY 1 @ 4107.3365 (avg 4107.3365)
+[2026-07-31 15:59:45] FLATTEN GC-ib_trend-20260731-1055 [eod]: SELL 1 at market
+[2026-07-31 15:59:45] EXIT FILLED GC-ib_trend-20260731-1055 [eod]: 1 @ 4109.236499999999
+[2026-07-31 15:59:45] CLOSED LONG GC ib_trend EOD entry 4107.3365 exit 4109.2365 qty 1 pnl $185.16 (0.11R, +0.05%) hold 4:59:39  (day $185.16)
+[2026-08-03 11:00:06] ARMED ES-ib_trend-20260803-1055: LONG 1 ESSIM MKT stop 7638.5 target~7742.75 risk 34.75pt $1,738 exit_by 15:59:40  [orders 1091/1092/1093]
+[2026-08-03 11:00:06] ENTRY FILLED ES-ib_trend-20260803-1055: BUY 1 @ 7673.25 (avg 7673.2500)
+[2026-08-03 15:59:45] FLATTEN ES-ib_trend-20260803-1055 [eod]: SELL 1 at market
+[2026-08-03 15:59:45] EXIT FILLED ES-ib_trend-20260803-1055 [eod]: 1 @ 7695.5
+[2026-08-03 15:59:45] CLOSED LONG ES ib_trend EOD entry 7673.25 exit 7695.5 qty 1 pnl $1,108.00 (0.64R, +0.29%) hold 4:59:39  (day $1,108.00)
+[2026-08-04 10:55:06] ARMED NQ-h2l2_trend-20260804-1050: LONG 1 NQSIM STP@29858.25 stop 29822.5 target~29929.75 risk 35.75pt $715 exit_by 15:59:40  [orders 1095/1096/1097]
+[2026-08-04 11:00:06] NQ-h2l2_trend-20260804-1050: entry order no longer working and unfilled -> cancelled
+[2026-08-04 11:00:06] ARMED NQ-h2l2_trend-20260804-1055: LONG 1 NQSIM STP@29854.25 stop 29822.5 target~29917.75 risk 31.75pt $635 exit_by 15:59:40  [orders 1098/1099/1100]
+[2026-08-04 11:00:06] ARMED ES-ib_trend-20260804-1055: LONG 1 ESSIM MKT stop 7749.0 target~7852.5 risk 34.50pt $1,725 exit_by 15:59:40  [orders 1101/1102/1103]
+[2026-08-04 11:00:06] ENTRY FILLED NQ-h2l2_trend-20260804-1055: BUY 1 @ 29854.5 (avg 29854.5000)
+[2026-08-04 11:00:06] NQ-h2l2_trend-20260804-1055: target re-anchored to 2R from fill -> 29918.5
+[2026-08-04 11:00:06] ENTRY FILLED ES-ib_trend-20260804-1055: BUY 1 @ 7784.0 (avg 7784.0000)
+[2026-08-04 11:00:06] ES-ib_trend-20260804-1055: target re-anchored to 2R from fill -> 7854.0
+[2026-08-04 11:10:06] EXIT FILLED NQ-h2l2_trend-20260804-1055 [tp]: 1 @ 29918.5
+[2026-08-04 11:10:06] CLOSED LONG NQ h2l2_trend TARGET entry 29854.5 exit 29918.5 qty 1 pnl $1,275.50 (2.0R, +0.21%) hold 0:10:00  (day $1,275.50)
+[2026-08-04 14:40:06] ARMED NQ-confluence_pb-20260804-1435: LONG 1 NQSIM MKT stop 30135.5 target~30221.75 risk 28.75pt $575 exit_by 15:59:40  [orders 1104/1105/1106]
+[2026-08-04 14:40:06] ENTRY FILLED NQ-confluence_pb-20260804-1435: BUY 1 @ 30164.0 (avg 30164.0000)
+[2026-08-04 14:40:06] NQ-confluence_pb-20260804-1435: target re-anchored to 2R from fill -> 30221.0
+[2026-08-04 15:00:06] EXIT FILLED NQ-confluence_pb-20260804-1435 [tp]: 1 @ 30221.0
+[2026-08-04 15:00:06] CLOSED LONG NQ confluence_pb TARGET entry 30164.0 exit 30221.0 qty 1 pnl $1,135.50 (2.0R, +0.19%) hold 0:20:00  (day $2,411.00)
+[2026-08-04 15:45:06] EXIT FILLED ES-ib_trend-20260804-1055 [tp]: 1 @ 7854.0
+[2026-08-04 15:45:06] CLOSED LONG ES ib_trend TARGET entry 7784.0 exit 7854.0 qty 1 pnl $3,495.50 (2.0R, +0.90%) hold 4:45:00  (day $5,906.50)
+[2026-08-07 13:55:06] ARMED NQ-confluence_pb-20260807-1350: LONG 1 NQSIM MKT stop 30019.75 target~30124.0 risk 34.75pt $695 exit_by 15:59:40  [orders 1107/1108/1109]
+[2026-08-07 13:55:06] ENTRY FILLED NQ-confluence_pb-20260807-1350: BUY 1 @ 30055.25 (avg 30055.2500)
+[2026-08-07 13:55:06] NQ-confluence_pb-20260807-1350: target re-anchored to 2R from fill -> 30126.25
+[2026-08-07 14:10:06] EXIT FILLED NQ-confluence_pb-20260807-1350 [sl]: 1 @ 30019.5
+[2026-08-07 14:10:06] CLOSED LONG NQ confluence_pb STOP entry 30055.25 exit 30019.5 qty 1 pnl $-719.50 (-1.01R, -0.12%) hold 0:15:00  (day $-719.50)
+[2026-08-10 10:30:06] ARMED GC-orb2nd-20260810-1025: LONG 1 GCSIM MKT stop 4395.0 target~4427.2 risk 10.74pt $1,074 exit_by 11:29:40  [orders 1110/1111/1112]
+[2026-08-10 10:30:06] ENTRY FILLED GC-orb2nd-20260810-1025: BUY 1 @ 4404.3365 (avg 4404.3365)
+[2026-08-10 10:30:06] GC-orb2nd-20260810-1025: target re-anchored to 2R from fill -> 4423.0
+[2026-08-10 11:29:45] FLATTEN GC-orb2nd-20260810-1025 [window]: SELL 1 at market
+[2026-08-10 11:29:45] EXIT FILLED GC-orb2nd-20260810-1025 [window]: 1 @ 4408.2365
+[2026-08-10 11:29:45] CLOSED LONG GC orb2nd WINDOW entry 4404.3365 exit 4408.2365 qty 1 pnl $385.16 (0.42R, +0.09%) hold 0:59:39  (day $385.16)
+[2026-08-11 10:25:06] ARMED NQ-h2l2_trend-20260811-1020: LONG 1 NQSIM STP@30077.75 stop 30039.75 target~30153.75 risk 38.00pt $760 exit_by 15:59:40  [orders 1114/1115/1116]
+[2026-08-11 10:25:06] ENTRY FILLED NQ-h2l2_trend-20260811-1020: BUY 1 @ 30078.0 (avg 30078.0000)
+[2026-08-11 10:25:06] NQ-h2l2_trend-20260811-1020: target re-anchored to 2R from fill -> 30154.5
+[2026-08-11 10:30:06] EXIT FILLED NQ-h2l2_trend-20260811-1020 [sl]: 1 @ 30039.5
+[2026-08-11 10:30:06] CLOSED LONG NQ h2l2_trend STOP entry 30078.0 exit 30039.5 qty 1 pnl $-774.50 (-1.01R, -0.13%) hold 0:05:00  (day $-774.50)
+[2026-08-12 10:45:06] ARMED NQ-h2l2_trend-20260812-1040: LONG 1 NQSIM STP@30233.5 stop 30139.75 target~30421.0 risk 93.75pt $1,875 exit_by 15:59:40  [orders 1117/1118/1119]
+[2026-08-12 10:45:06] ENTRY FILLED NQ-h2l2_trend-20260812-1040: BUY 1 @ 30233.75 (avg 30233.7500)
+[2026-08-12 10:45:06] NQ-h2l2_trend-20260812-1040: target re-anchored to 2R from fill -> 30421.75
+[2026-08-12 11:30:06] EXIT FILLED NQ-h2l2_trend-20260812-1040 [sl]: 1 @ 30139.5
+[2026-08-12 11:30:06] CLOSED LONG NQ h2l2_trend STOP entry 30233.75 exit 30139.5 qty 1 pnl $-1,889.50 (-1.0R, -0.31%) hold 0:45:00  (day $-1,889.50)
+[2026-08-12 13:45:06] ARMED NQ-confluence_pb-20260812-1340: LONG 1 NQSIM MKT stop 30197.0 target~30266.75 risk 23.25pt $465 exit_by 15:59:40  [orders 1120/1121/1122]
+[2026-08-12 13:45:06] ENTRY FILLED NQ-confluence_pb-20260812-1340: BUY 1 @ 30220.75 (avg 30220.7500)
+[2026-08-12 13:45:06] NQ-confluence_pb-20260812-1340: target re-anchored to 2R from fill -> 30268.25
+[2026-08-12 14:05:06] EXIT FILLED NQ-confluence_pb-20260812-1340 [sl]: 1 @ 30196.75
+[2026-08-12 14:05:06] CLOSED LONG NQ confluence_pb STOP entry 30220.75 exit 30196.75 qty 1 pnl $-484.50 (-1.01R, -0.08%) hold 0:20:00  (day $-2,374.00)
+[2026-08-12 14:25:06] ARMED NQ-confluence_pb-20260812-1420: LONG 1 NQSIM MKT stop 30193.25 target~30254.0 risk 20.25pt $405 exit_by 15:59:40  [orders 1123/1124/1125]
+[2026-08-12 14:25:06] ENTRY FILLED NQ-confluence_pb-20260812-1420: BUY 1 @ 30214.25 (avg 30214.2500)
+[2026-08-12 14:25:06] NQ-confluence_pb-20260812-1420: target re-anchored to 2R from fill -> 30256.25
+[2026-08-12 14:55:06] EXIT FILLED NQ-confluence_pb-20260812-1420 [sl]: 1 @ 30193.0
+[2026-08-12 14:55:06] CLOSED LONG NQ confluence_pb STOP entry 30214.25 exit 30193.0 qty 1 pnl $-429.50 (-1.01R, -0.07%) hold 0:30:00  (day $-2,803.50)
+[2026-08-13 11:10:06] ARMED NQ-h2l2_trend-20260813-1105: LONG 1 NQSIM STP@30532.5 stop 30501.75 target~30594.0 risk 30.75pt $615 exit_by 15:59:40  [orders 1126/1127/1128]
+[2026-08-13 11:10:06] ENTRY FILLED NQ-h2l2_trend-20260813-1105: BUY 1 @ 30532.75 (avg 30532.7500)
+[2026-08-13 11:10:06] NQ-h2l2_trend-20260813-1105: target re-anchored to 2R from fill -> 30594.75
+[2026-08-13 11:25:06] EXIT FILLED NQ-h2l2_trend-20260813-1105 [sl]: 1 @ 30501.5
+[2026-08-13 11:25:06] CLOSED LONG NQ h2l2_trend STOP entry 30532.75 exit 30501.5 qty 1 pnl $-629.50 (-1.01R, -0.10%) hold 0:15:00  (day $-629.50)
+[2026-08-13 14:35:06] ARMED NQ-confluence_pb-20260813-1430: LONG 1 NQSIM MKT stop 30503.75 target~30564.5 risk 20.25pt $405 exit_by 15:59:40  [orders 1129/1130/1131]
+[2026-08-13 14:35:06] ENTRY FILLED NQ-confluence_pb-20260813-1430: BUY 1 @ 30524.25 (avg 30524.2500)
+[2026-08-13 14:35:06] NQ-confluence_pb-20260813-1430: target re-anchored to 2R from fill -> 30565.25
+[2026-08-13 15:05:06] EXIT FILLED NQ-confluence_pb-20260813-1430 [tp]: 1 @ 30565.25
+[2026-08-13 15:05:06] CLOSED LONG NQ confluence_pb TARGET entry 30524.25 exit 30565.25 qty 1 pnl $815.50 (2.0R, +0.13%) hold 0:30:00  (day $186.00)
+[2026-08-13 15:15:06] ARMED NQ-confluence_pb-20260813-1510: LONG 1 NQSIM MKT stop 30527.0 target~30587.75 risk 20.25pt $405 exit_by 15:59:40  [orders 1132/1133/1134]
+[2026-08-13 15:15:06] ENTRY FILLED NQ-confluence_pb-20260813-1510: BUY 1 @ 30547.25 (avg 30547.2500)
+[2026-08-13 15:25:06] EXIT FILLED NQ-confluence_pb-20260813-1510 [sl]: 1 @ 30526.75
+[2026-08-13 15:25:06] CLOSED LONG NQ confluence_pb STOP entry 30547.25 exit 30526.75 qty 1 pnl $-414.50 (-1.01R, -0.07%) hold 0:10:00  (day $-228.50)
+[2026-08-17 11:00:06] ARMED GC-h2l2_trend-20260817-1055: LONG 1 GCSIM STP@4474.0 stop 4469.7 target~4482.6 risk 4.30pt $430 exit_by 15:59:40  [orders 1135/1136/1137]
+[2026-08-17 11:00:06] ENTRY FILLED GC-h2l2_trend-20260817-1055: BUY 1 @ 4474.1 (avg 4474.1000)
+[2026-08-17 11:00:06] GC-h2l2_trend-20260817-1055: target re-anchored to 2R from fill -> 4482.9
+[2026-08-17 11:55:06] EXIT FILLED GC-h2l2_trend-20260817-1055 [tp]: 1 @ 4482.9
+[2026-08-17 11:55:06] CLOSED LONG GC h2l2_trend TARGET entry 4474.1 exit 4482.9 qty 1 pnl $875.16 (2.0R, +0.20%) hold 0:55:00  (day $875.16)
+[2026-08-17 13:55:06] ARMED GC-confluence_pb-20260817-1350: LONG 1 GCSIM MKT stop 4470.6 target~4482.1 risk 3.84pt $384 exit_by 15:59:40  [orders 1138/1139/1140]
+[2026-08-17 13:55:06] ENTRY FILLED GC-confluence_pb-20260817-1350: BUY 1 @ 4473.8365 (avg 4473.8365)
+[2026-08-17 13:55:06] GC-confluence_pb-20260817-1350: target re-anchored to 2R from fill -> 4480.3
+[2026-08-17 13:55:06] EXIT FILLED GC-confluence_pb-20260817-1350 [sl]: 1 @ 4470.5
+[2026-08-17 13:55:06] CLOSED LONG GC confluence_pb STOP entry 4473.8365 exit 4470.5 qty 1 pnl $-338.49 (-1.03R, -0.07%) hold 0:00:00  (day $536.67)
+[2026-08-19 11:00:06] ARMED ES-ib_trend-20260819-1055: LONG 1 ESSIM MKT stop 7802.0 target~7888.25 risk 28.75pt $1,438 exit_by 15:59:40  [orders 1141/1142/1143]
+[2026-08-19 11:00:06] ARMED GC-ib_trend-20260819-1055: LONG 1 GCSIM MKT stop 4522.2 target~4590.4 risk 22.74pt $2,274 exit_by 15:59:40  [orders 1144/1145/1146]
+[2026-08-19 11:00:06] ENTRY FILLED ES-ib_trend-20260819-1055: BUY 1 @ 7830.75 (avg 7830.7500)
+[2026-08-19 11:00:06] ENTRY FILLED GC-ib_trend-20260819-1055: BUY 1 @ 4544.6365000000005 (avg 4544.6365)
+[2026-08-19 11:00:06] GC-ib_trend-20260819-1055: target re-anchored to 2R from fill -> 4589.5
+[2026-08-19 11:05:06] SIGNAL GC-h2l2_trend-20260819-1100 LONG skipped: symbol busy (another strategy in position)
+[2026-08-19 11:10:06] SIGNAL GC-h2l2_trend-20260819-1105 LONG skipped: symbol busy (another strategy in position)
+[2026-08-19 13:20:06] EXIT FILLED ES-ib_trend-20260819-1055 [sl]: 1 @ 7801.75
+[2026-08-19 13:20:06] CLOSED LONG ES ib_trend STOP entry 7830.75 exit 7801.75 qty 1 pnl $-1,454.50 (-1.01R, -0.37%) hold 2:20:00  (day $-1,454.50)
+[2026-08-19 14:05:06] SIGNAL GC-confluence_pb-20260819-1400 LONG skipped: symbol busy (another strategy in position)
+[2026-08-19 14:45:06] SIGNAL GC-confluence_pb-20260819-1440 LONG skipped: symbol busy (another strategy in position)
+[2026-08-19 15:59:45] FLATTEN GC-ib_trend-20260819-1055 [eod]: SELL 1 at market
+[2026-08-19 15:59:45] EXIT FILLED GC-ib_trend-20260819-1055 [eod]: 1 @ 4566.536499999999
+[2026-08-19 15:59:45] CLOSED LONG GC ib_trend EOD entry 4544.6365 exit 4566.5365 qty 1 pnl $2,185.16 (0.98R, +0.48%) hold 4:59:39  (day $730.66)
+[2026-08-20 11:00:06] ARMED GC-ib_trend-20260820-1055: LONG 1 GCSIM MKT stop 4534.7 target~4638.6 risk 34.64pt $3,464 exit_by 15:59:40  [orders 1148/1149/1150]
+[2026-08-20 11:00:06] ENTRY FILLED GC-ib_trend-20260820-1055: BUY 1 @ 4570.0365 (avg 4570.0365)
+[2026-08-20 11:00:06] GC-ib_trend-20260820-1055: target re-anchored to 2R from fill -> 4640.7
+[2026-08-20 15:59:45] FLATTEN GC-ib_trend-20260820-1055 [eod]: SELL 1 at market
+[2026-08-20 15:59:45] EXIT FILLED GC-ib_trend-20260820-1055 [eod]: 1 @ 4582.7365
+[2026-08-20 15:59:45] CLOSED LONG GC ib_trend EOD entry 4570.0365 exit 4582.7365 qty 1 pnl $1,265.16 (0.36R, +0.28%) hold 4:59:39  (day $1,265.16)
+[2026-08-21 14:05:06] ARMED GC-confluence_pb-20260821-1400: LONG 1 GCSIM MKT stop 4675.6 target~4691.9 risk 5.44pt $544 exit_by 15:59:40  [orders 1152/1153/1154]
+[2026-08-21 14:05:06] ENTRY FILLED GC-confluence_pb-20260821-1400: BUY 1 @ 4681.3365 (avg 4681.3365)
+[2026-08-21 14:05:06] GC-confluence_pb-20260821-1400: target re-anchored to 2R from fill -> 4692.8
+[2026-08-21 14:30:06] EXIT FILLED GC-confluence_pb-20260821-1400 [sl]: 1 @ 4675.5
+[2026-08-21 14:30:06] CLOSED LONG GC confluence_pb STOP entry 4681.3365 exit 4675.5 qty 1 pnl $-588.49 (-1.02R, -0.12%) hold 0:25:00  (day $-588.49)
+[2026-08-25 10:05:06] ARMED NQ-orb2nd-20260825-1000: SHORT 1 NQSIM MKT stop 29659.25 target~29363.0 risk 98.75pt $1,975 exit_by 11:29:40  [orders 1155/1156/1157]
+[2026-08-25 10:05:06] ENTRY FILLED NQ-orb2nd-20260825-1000: SELL 1 @ 29560.0 (avg 29560.0000)
+[2026-08-25 10:05:06] NQ-orb2nd-20260825-1000: target re-anchored to 2R from fill -> 29361.5
+[2026-08-25 10:10:06] ARMED GC-orb2nd-20260825-1005: LONG 1 GCSIM MKT stop 4660.5 target~4702.9 risk 14.14pt $1,414 exit_by 11:29:40  [orders 1158/1159/1160]
+[2026-08-25 10:10:06] ENTRY FILLED GC-orb2nd-20260825-1005: BUY 1 @ 4675.936500000001 (avg 4675.9365)
+[2026-08-25 10:10:06] GC-orb2nd-20260825-1005: target re-anchored to 2R from fill -> 4706.8
+[2026-08-25 10:50:06] SIGNAL NQ-h2l2_trend-20260825-1045 SHORT skipped: symbol busy (another strategy in position)
+[2026-08-25 11:00:06] SIGNAL NQ-h2l2_trend-20260825-1055 SHORT skipped: symbol busy (another strategy in position)
+[2026-08-25 11:00:06] SIGNAL GC-ib_trend-20260825-1055 LONG skipped: symbol busy (another strategy in position)
+[2026-08-25 11:29:45] FLATTEN NQ-orb2nd-20260825-1000 [window]: BUY 1 at market
+[2026-08-25 11:29:45] FLATTEN GC-orb2nd-20260825-1005 [window]: SELL 1 at market
+[2026-08-25 11:29:45] EXIT FILLED NQ-orb2nd-20260825-1000 [window]: 1 @ 29575.5
+[2026-08-25 11:29:45] CLOSED SHORT NQ orb2nd WINDOW entry 29560.0 exit 29575.5 qty 1 pnl $-314.50 (-0.16R, -0.05%) hold 1:24:39  (day $-314.50)
+[2026-08-25 11:29:45] EXIT FILLED GC-orb2nd-20260825-1005 [window]: 1 @ 4691.536499999999
+[2026-08-25 11:29:45] CLOSED LONG GC orb2nd WINDOW entry 4675.9365 exit 4691.5365 qty 1 pnl $1,555.16 (1.01R, +0.33%) hold 1:19:39  (day $1,240.66)
+[2026-08-26 10:55:06] ARMED GC-orb2nd-20260826-1050: SHORT 1 GCSIM MKT stop 4671.4 target~4633.4 risk 12.66pt $1,266 exit_by 11:29:40  [orders 1163/1164/1165]
+[2026-08-26 10:55:06] ENTRY FILLED GC-orb2nd-20260826-1050: SELL 1 @ 4659.836499999999 (avg 4659.8365)
+[2026-08-26 10:55:06] GC-orb2nd-20260826-1050: target re-anchored to 2R from fill -> 4636.7
+[2026-08-26 11:15:06] EXIT FILLED GC-orb2nd-20260826-1050 [tp]: 1 @ 4636.7
+[2026-08-26 11:15:06] CLOSED SHORT GC orb2nd TARGET entry 4659.8365 exit 4636.7 qty 1 pnl $2,308.81 (2.0R, +0.50%) hold 0:20:00  (day $2,308.81)
+[2026-08-27 11:00:06] ARMED ES-ib_trend-20260827-1055: LONG 1 ESSIM MKT stop 7784.75 target~7842.5 risk 19.25pt $962 exit_by 15:59:40  [orders 1166/1167/1168]
+[2026-08-27 11:00:06] ENTRY FILLED ES-ib_trend-20260827-1055: BUY 1 @ 7804.25 (avg 7804.2500)
+[2026-08-27 11:00:06] ES-ib_trend-20260827-1055: target re-anchored to 2R from fill -> 7843.25
+[2026-08-27 11:10:06] ARMED GC-h2l2_trend-20260827-1105: LONG 1 GCSIM STP@4645.1 stop 4638.1 target~4659.1 risk 7.00pt $700 exit_by 15:59:40  [orders 1169/1170/1171]
+[2026-08-27 11:15:06] GC-h2l2_trend-20260827-1105: entry order no longer working and unfilled -> cancelled
+[2026-08-27 11:15:06] ARMED GC-h2l2_trend-20260827-1110: LONG 1 GCSIM STP@4645.1 stop 4638.1 target~4659.1 risk 7.00pt $700 exit_by 15:59:40  [orders 1172/1173/1174]
+[2026-08-27 11:15:06] ENTRY FILLED GC-h2l2_trend-20260827-1110: BUY 1 @ 4645.200000000001 (avg 4645.2000)
+[2026-08-27 11:15:06] GC-h2l2_trend-20260827-1110: target re-anchored to 2R from fill -> 4659.4
+[2026-08-27 11:50:06] EXIT FILLED GC-h2l2_trend-20260827-1110 [tp]: 1 @ 4659.4
+[2026-08-27 11:50:06] CLOSED LONG GC h2l2_trend TARGET entry 4645.2 exit 4659.4 qty 1 pnl $1,415.16 (2.0R, +0.31%) hold 0:35:00  (day $1,415.16)
+[2026-08-27 15:59:45] FLATTEN ES-ib_trend-20260827-1055 [eod]: SELL 1 at market
+[2026-08-27 15:59:45] EXIT FILLED ES-ib_trend-20260827-1055 [eod]: 1 @ 7809.5
+[2026-08-27 15:59:45] CLOSED LONG ES ib_trend EOD entry 7804.25 exit 7809.5 qty 1 pnl $258.00 (0.27R, +0.07%) hold 4:59:39  (day $1,673.16)
+[2026-08-28 10:45:06] ARMED NQ-orb2nd-20260828-1040: LONG 1 NQSIM MKT stop 29897.25 target~30318.0 risk 140.25pt $2,805 exit_by 11:29:40  [orders 1176/1177/1178]
+[2026-08-28 10:45:06] ENTRY FILLED NQ-orb2nd-20260828-1040: BUY 1 @ 30038.25 (avg 30038.2500)
+[2026-08-28 10:45:06] NQ-orb2nd-20260828-1040: target re-anchored to 2R from fill -> 30320.25
+[2026-08-28 11:00:06] SIGNAL NQ-ib_trend-20260828-1055 LONG skipped: symbol busy (another strategy in position)
+[2026-08-28 11:00:06] ARMED ES-ib_trend-20260828-1055: LONG 1 ESSIM MKT stop 7812.0 target~7920.0 risk 36.00pt $1,800 exit_by 15:59:40  [orders 1179/1180/1181]
+[2026-08-28 11:00:06] ENTRY FILLED ES-ib_trend-20260828-1055: BUY 1 @ 7848.0 (avg 7848.0000)
+[2026-08-28 11:25:06] SIGNAL NQ-h2l2_trend-20260828-1120 LONG skipped: symbol busy (another strategy in position)
+[2026-08-28 11:29:45] FLATTEN NQ-orb2nd-20260828-1040 [window]: SELL 1 at market
+[2026-08-28 11:29:45] EXIT FILLED NQ-orb2nd-20260828-1040 [window]: 1 @ 30086.5
+[2026-08-28 11:29:45] CLOSED LONG NQ orb2nd WINDOW entry 30038.25 exit 30086.5 qty 1 pnl $960.50 (0.34R, +0.16%) hold 0:44:39  (day $960.50)
+[2026-08-28 11:50:06] EXIT FILLED ES-ib_trend-20260828-1055 [sl]: 1 @ 7811.75
+[2026-08-28 11:50:06] CLOSED LONG ES ib_trend STOP entry 7848.0 exit 7811.75 qty 1 pnl $-1,817.00 (-1.01R, -0.46%) hold 0:50:00  (day $-856.50)
+[2026-09-01 11:00:06] ARMED NQ-ib_trend-20260901-1055: LONG 1 NQSIM MKT stop 29406.5 target~29766.5 risk 120.00pt $2,400 exit_by 15:59:40  [orders 1183/1184/1185]
+[2026-09-01 11:00:06] ENTRY FILLED NQ-ib_trend-20260901-1055: BUY 1 @ 29526.25 (avg 29526.2500)
+[2026-09-01 11:00:06] NQ-ib_trend-20260901-1055: target re-anchored to 2R from fill -> 29765.75
+[2026-09-01 13:25:06] EXIT FILLED NQ-ib_trend-20260901-1055 [sl]: 1 @ 29406.25
+[2026-09-01 13:25:06] CLOSED LONG NQ ib_trend STOP entry 29526.25 exit 29406.25 qty 1 pnl $-2,404.50 (-1.0R, -0.41%) hold 2:25:00  (day $-2,404.50)
+[2026-09-02 10:15:06] ARMED NQ-orb2nd-20260902-1010: LONG 1 NQSIM MKT stop 29341.25 target~29591.0 risk 83.25pt $1,665 exit_by 11:29:40  [orders 1186/1187/1188]
+[2026-09-02 10:15:06] ENTRY FILLED NQ-orb2nd-20260902-1010: BUY 1 @ 29424.75 (avg 29424.7500)
+[2026-09-02 10:15:06] NQ-orb2nd-20260902-1010: target re-anchored to 2R from fill -> 29591.75
+[2026-09-02 11:29:45] FLATTEN NQ-orb2nd-20260902-1010 [window]: SELL 1 at market
+[2026-09-02 11:29:45] EXIT FILLED NQ-orb2nd-20260902-1010 [window]: 1 @ 29502.25
+[2026-09-02 11:29:45] CLOSED LONG NQ orb2nd WINDOW entry 29424.75 exit 29502.25 qty 1 pnl $1,545.50 (0.93R, +0.26%) hold 1:14:39  (day $1,545.50)
+[2026-09-03 11:00:06] ARMED GC-orb2nd-20260903-1055: LONG 1 GCSIM MKT stop 4514.8 target~4558.1 risk 14.44pt $1,444 exit_by 11:29:40  [orders 1190/1191/1192]
+[2026-09-03 11:00:06] ENTRY FILLED GC-orb2nd-20260903-1055: BUY 1 @ 4530.0365 (avg 4530.0365)
+[2026-09-03 11:00:06] GC-orb2nd-20260903-1055: target re-anchored to 2R from fill -> 4560.5
+[2026-09-03 11:29:45] FLATTEN GC-orb2nd-20260903-1055 [window]: SELL 1 at market
+[2026-09-03 11:29:45] EXIT FILLED GC-orb2nd-20260903-1055 [window]: 1 @ 4551.1365
+[2026-09-03 11:29:45] CLOSED LONG GC orb2nd WINDOW entry 4530.0365 exit 4551.1365 qty 1 pnl $2,105.16 (1.38R, +0.47%) hold 0:29:39  (day $2,105.16)
+[2026-09-04 10:45:06] ARMED NQ-orb2nd-20260904-1040: SHORT 1 NQSIM MKT stop 29927.0 target~29650.25 risk 92.25pt $1,845 exit_by 11:29:40  [orders 1194/1195/1196]
+[2026-09-04 10:45:06] ENTRY FILLED NQ-orb2nd-20260904-1040: SELL 1 @ 29834.0 (avg 29834.0000)
+[2026-09-04 10:45:06] NQ-orb2nd-20260904-1040: target re-anchored to 2R from fill -> 29648.0
+[2026-09-04 11:29:45] FLATTEN NQ-orb2nd-20260904-1040 [window]: BUY 1 at market
+[2026-09-04 11:29:45] EXIT FILLED NQ-orb2nd-20260904-1040 [window]: 1 @ 29808.5
+[2026-09-04 11:29:45] CLOSED SHORT NQ orb2nd WINDOW entry 29834.0 exit 29808.5 qty 1 pnl $505.50 (0.27R, +0.09%) hold 0:44:39  (day $505.50)
+[2026-09-09 11:15:06] ARMED NQ-orb2nd-20260909-1110: SHORT 1 NQSIM MKT stop 29789.25 target~29517.75 risk 90.50pt $1,810 exit_by 11:29:40  [orders 1198/1199/1200]
+[2026-09-09 11:15:06] ENTRY FILLED NQ-orb2nd-20260909-1110: SELL 1 @ 29698.0 (avg 29698.0000)
+[2026-09-09 11:15:06] NQ-orb2nd-20260909-1110: target re-anchored to 2R from fill -> 29515.5
+[2026-09-09 11:29:45] FLATTEN NQ-orb2nd-20260909-1110 [window]: BUY 1 at market
+[2026-09-09 11:29:45] EXIT FILLED NQ-orb2nd-20260909-1110 [window]: 1 @ 29690.75
+[2026-09-09 11:29:45] CLOSED SHORT NQ orb2nd WINDOW entry 29698.0 exit 29690.75 qty 1 pnl $140.50 (0.08R, +0.02%) hold 0:14:39  (day $140.50)
+[2026-09-10 10:40:06] ARMED GC-h2l2_trend-20260910-1035: SHORT 1 GCSIM STP@4404.7 stop 4418.1 target~4377.9 risk 13.40pt $1,340 exit_by 15:59:40  [orders 1202/1203/1204]
+[2026-09-10 10:40:06] ENTRY FILLED GC-h2l2_trend-20260910-1035: SELL 1 @ 4404.196999999999 (avg 4404.1970)
+[2026-09-10 10:40:06] GC-h2l2_trend-20260910-1035: target re-anchored to 2R from fill -> 4376.4
+[2026-09-10 11:00:06] ARMED NQ-ib_trend-20260910-1055: LONG 1 NQSIM MKT stop 29457.75 target~29770.25 risk 104.18pt $2,084 exit_by 15:59:40  [orders 1205/1206/1207]
+[2026-09-10 11:00:06] ENTRY FILLED NQ-ib_trend-20260910-1055: BUY 1 @ 29561.93 (avg 29561.9300)
+[2026-09-10 12:30:06] EXIT FILLED NQ-ib_trend-20260910-1055 [sl]: 1 @ 29457.5
+[2026-09-10 12:30:06] CLOSED LONG NQ ib_trend STOP entry 29561.93 exit 29457.5 qty 1 pnl $-2,093.10 (-1.0R, -0.35%) hold 1:30:00  (day $-2,093.10)
+[2026-09-10 13:35:06] SIGNAL GC-confluence_pb-20260910-1330 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-10 14:30:06] EXIT FILLED GC-h2l2_trend-20260910-1035 [tp]: 1 @ 4376.4
+[2026-09-10 14:30:06] CLOSED SHORT GC h2l2_trend TARGET entry 4404.197 exit 4376.4 qty 1 pnl $2,774.86 (2.0R, +0.63%) hold 3:50:00  (day $681.76)
+[2026-09-10 14:55:06] ARMED GC-confluence_pb-20260910-1450: SHORT 1 GCSIM MKT stop 4376.5 target~4360.8 risk 5.25pt $525 exit_by 15:59:40  [orders 1208/1209/1210]
+[2026-09-10 14:55:06] ENTRY FILLED GC-confluence_pb-20260910-1450: SELL 1 @ 4371.254 (avg 4371.2540)
+[2026-09-10 14:55:06] EXIT FILLED GC-confluence_pb-20260910-1450 [sl]: 1 @ 4376.6
+[2026-09-10 14:55:06] CLOSED SHORT GC confluence_pb STOP entry 4371.254 exit 4376.6 qty 1 pnl $-539.44 (-1.02R, -0.12%) hold 0:00:00  (day $142.32)
+[2026-09-10 15:00:06] ARMED GC-confluence_pb-20260910-1455: SHORT 1 GCSIM MKT stop 4378.1 target~4362.1 risk 5.34pt $534 exit_by 15:59:40  [orders 1211/1212/1213]
+[2026-09-10 15:00:06] ENTRY FILLED GC-confluence_pb-20260910-1455: SELL 1 @ 4372.16 (avg 4372.1600)
+[2026-09-10 15:00:06] GC-confluence_pb-20260910-1455: target re-anchored to 2R from fill -> 4360.3
+[2026-09-10 15:00:06] EXIT FILLED GC-confluence_pb-20260910-1455 [tp]: 1 @ 4360.3
+[2026-09-10 15:00:06] CLOSED SHORT GC confluence_pb TARGET entry 4372.16 exit 4360.3 qty 1 pnl $1,181.16 (2.0R, +0.27%) hold 0:00:00  (day $1,323.48)
+[2026-09-11 10:25:06] ARMED GC-orb2nd-20260911-1020: SHORT 1 GCSIM MKT stop 4439.6 target~4382.0 risk 19.18pt $1,918 exit_by 11:29:40  [orders 1214/1215/1216]
+[2026-09-11 10:25:06] ENTRY FILLED GC-orb2nd-20260911-1020: SELL 1 @ 4419.107 (avg 4419.1070)
+[2026-09-11 10:25:06] GC-orb2nd-20260911-1020: target re-anchored to 2R from fill -> 4378.1
+[2026-09-11 11:00:06] ARMED ES-ib_trend-20260911-1055: SHORT 1 ESSIM MKT stop 7738.75 target~7696.75 risk 14.03pt $702 exit_by 15:59:40  [orders 1217/1218/1219]
+[2026-09-11 11:00:06] SIGNAL GC-ib_trend-20260911-1055 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-11 11:00:06] ENTRY FILLED ES-ib_trend-20260911-1055: SELL 1 @ 7724.72 (avg 7724.7200)
+[2026-09-11 11:15:06] EXIT FILLED ES-ib_trend-20260911-1055 [sl]: 1 @ 7739.0
+[2026-09-11 11:15:06] CLOSED SHORT ES ib_trend STOP entry 7724.72 exit 7739.0 qty 1 pnl $-718.50 (-1.02R, -0.18%) hold 0:15:00  (day $-718.50)
+[2026-09-11 11:29:45] FLATTEN GC-orb2nd-20260911-1020 [window]: BUY 1 at market
+[2026-09-11 11:29:45] EXIT FILLED GC-orb2nd-20260911-1020 [window]: 1 @ 4410.441000000001
+[2026-09-11 11:29:45] CLOSED SHORT GC orb2nd WINDOW entry 4419.107 exit 4410.441 qty 1 pnl $861.76 (0.42R, +0.20%) hold 1:04:39  (day $143.26)
+[2026-09-14 10:25:06] ARMED GC-orb2nd-20260914-1020: SHORT 1 GCSIM MKT stop 4315.7 target~4279.6 risk 12.05pt $1,205 exit_by 11:29:40  [orders 1221/1222/1223]
+[2026-09-14 10:25:06] ENTRY FILLED GC-orb2nd-20260914-1020: SELL 1 @ 4303.956999999999 (avg 4303.9570)
+[2026-09-14 10:25:06] GC-orb2nd-20260914-1020: target re-anchored to 2R from fill -> 4280.5
+[2026-09-14 10:45:06] EXIT FILLED GC-orb2nd-20260914-1020 [sl]: 1 @ 4316.045
+[2026-09-14 10:45:06] CLOSED SHORT GC orb2nd STOP entry 4303.957 exit 4316.045 qty 1 pnl $-1,213.64 (-1.03R, -0.28%) hold 0:20:00  (day $-1,213.64)
+[2026-09-15 10:30:06] ARMED GC-orb2nd-20260915-1025: SHORT 1 GCSIM MKT stop 4332.3 target~4303.2 risk 9.71pt $971 exit_by 11:29:40  [orders 1224/1225/1226]
+[2026-09-15 10:30:06] ENTRY FILLED GC-orb2nd-20260915-1025: SELL 1 @ 4321.285 (avg 4321.2850)
+[2026-09-15 10:30:06] GC-orb2nd-20260915-1025: target re-anchored to 2R from fill -> 4299.3
+[2026-09-15 11:00:06] ARMED NQ-ib_trend-20260915-1055: SHORT 1 NQSIM MKT stop 29377.5 target~28965.0 risk 137.50pt $2,750 exit_by 15:59:40  [orders 1227/1228/1229]
+[2026-09-15 11:00:06] ARMED ES-ib_trend-20260915-1055: SHORT 1 ESSIM MKT stop 7670.5 target~7597.75 risk 24.25pt $1,212 exit_by 15:59:40  [orders 1230/1231/1232]
+[2026-09-15 11:00:06] SIGNAL GC-ib_trend-20260915-1055 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-15 11:00:06] ENTRY FILLED NQ-ib_trend-20260915-1055: SELL 1 @ 29239.75 (avg 29239.7500)
+[2026-09-15 11:00:06] NQ-ib_trend-20260915-1055: target re-anchored to 2R from fill -> 28964.25
+[2026-09-15 11:00:06] ENTRY FILLED ES-ib_trend-20260915-1055: SELL 1 @ 7646.25 (avg 7646.2500)
+[2026-09-15 11:20:06] SIGNAL NQ-h2l2_trend-20260915-1115 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-15 11:25:06] SIGNAL NQ-h2l2_trend-20260915-1120 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-15 11:29:45] FLATTEN GC-orb2nd-20260915-1025 [window]: BUY 1 at market
+[2026-09-15 11:29:45] EXIT FILLED GC-orb2nd-20260915-1025 [window]: 1 @ 4321.485000000001
+[2026-09-15 11:29:45] CLOSED SHORT GC orb2nd WINDOW entry 4321.285 exit 4321.485 qty 1 pnl $-24.84 (-0.02R, -0.00%) hold 0:59:39  (day $-24.84)
+[2026-09-15 13:40:06] SIGNAL NQ-confluence_pb-20260915-1335 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-15 14:35:06] SIGNAL NQ-confluence_pb-20260915-1430 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-15 15:59:45] FLATTEN NQ-ib_trend-20260915-1055 [eod]: BUY 1 at market
+[2026-09-15 15:59:45] FLATTEN ES-ib_trend-20260915-1055 [eod]: BUY 1 at market
+[2026-09-15 15:59:45] EXIT FILLED NQ-ib_trend-20260915-1055 [eod]: 1 @ 29251.75
+[2026-09-15 15:59:45] CLOSED SHORT NQ ib_trend EOD entry 29239.75 exit 29251.75 qty 1 pnl $-244.50 (-0.09R, -0.04%) hold 4:59:39  (day $-269.34)
+[2026-09-15 15:59:45] EXIT FILLED ES-ib_trend-20260915-1055 [eod]: 1 @ 7657.25
+[2026-09-15 15:59:45] CLOSED SHORT ES ib_trend EOD entry 7646.25 exit 7657.25 qty 1 pnl $-554.50 (-0.45R, -0.14%) hold 4:59:39  (day $-823.84)
+[2026-09-16 11:00:06] ARMED GC-orb2nd-20260916-1055: LONG 1 GCSIM MKT stop 4381.1 target~4422.6 risk 13.83pt $1,383 exit_by 11:29:40  [orders 1236/1237/1238]
+[2026-09-16 11:00:06] ENTRY FILLED GC-orb2nd-20260916-1055: BUY 1 @ 4395.128000000001 (avg 4395.1280)
+[2026-09-16 11:00:06] GC-orb2nd-20260916-1055: target re-anchored to 2R from fill -> 4423.2
+[2026-09-16 11:29:45] FLATTEN GC-orb2nd-20260916-1055 [window]: SELL 1 at market
+[2026-09-16 11:29:45] EXIT FILLED GC-orb2nd-20260916-1055 [window]: 1 @ 4384.048
+[2026-09-16 11:29:45] CLOSED LONG GC orb2nd WINDOW entry 4395.128 exit 4384.048 qty 1 pnl $-1,112.84 (-0.79R, -0.25%) hold 0:29:39  (day $-1,112.84)
+[2026-09-17 11:00:06] ARMED GC-ib_trend-20260917-1055: SHORT 1 GCSIM MKT stop 4406.7 target~4365.3 risk 13.79pt $1,379 exit_by 15:59:40  [orders 1240/1241/1242]
+[2026-09-17 11:00:06] SIGNAL GC-orb2nd-20260917-1055 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-17 11:00:06] ENTRY FILLED GC-ib_trend-20260917-1055: SELL 1 @ 4392.107999999999 (avg 4392.1080)
+[2026-09-17 11:00:06] GC-ib_trend-20260917-1055: target re-anchored to 2R from fill -> 4362.9
+[2026-09-17 11:55:06] EXIT FILLED GC-ib_trend-20260917-1055 [sl]: 1 @ 4406.8
+[2026-09-17 11:55:06] CLOSED SHORT GC ib_trend STOP entry 4392.108 exit 4406.8 qty 1 pnl $-1,474.04 (-1.01R, -0.33%) hold 0:55:00  (day $-1,474.04)
+[2026-09-18 14:20:06] ARMED NQ-confluence_pb-20260918-1415: LONG 1 NQSIM MKT stop 29749.5 target~29794.5 risk 15.00pt $300 exit_by 15:59:40  [orders 1243/1244/1245]
+[2026-09-18 14:20:06] ENTRY FILLED NQ-confluence_pb-20260918-1415: BUY 1 @ 29764.75 (avg 29764.7500)
+[2026-09-18 14:20:06] NQ-confluence_pb-20260918-1415: target re-anchored to 2R from fill -> 29795.25
+[2026-09-18 14:45:06] EXIT FILLED NQ-confluence_pb-20260918-1415 [tp]: 1 @ 29795.25
+[2026-09-18 14:45:06] CLOSED LONG NQ confluence_pb TARGET entry 29764.75 exit 29795.25 qty 1 pnl $605.50 (2.0R, +0.10%) hold 0:25:00  (day $605.50)
+[2026-09-21 11:00:06] ARMED NQ-ib_trend-20260921-1055: LONG 1 NQSIM MKT stop 30368.0 target~30914.75 risk 182.25pt $3,645 exit_by 15:59:40  [orders 1246/1247/1248]
+[2026-09-21 11:00:06] ENTRY FILLED NQ-ib_trend-20260921-1055: BUY 1 @ 30551.0 (avg 30551.0000)
+[2026-09-21 11:00:06] NQ-ib_trend-20260921-1055: target re-anchored to 2R from fill -> 30917.0
+[2026-09-21 13:30:06] SIGNAL NQ-confluence_pb-20260921-1325 LONG skipped: symbol busy (another strategy in position)
+[2026-09-21 13:35:06] ARMED GC-confluence_pb-20260921-1330: SHORT 1 GCSIM MKT stop 4379.7 target~4366.4 risk 4.42pt $442 exit_by 15:59:40  [orders 1249/1250/1251]
+[2026-09-21 13:35:06] ENTRY FILLED GC-confluence_pb-20260921-1330: SELL 1 @ 4375.384 (avg 4375.3840)
+[2026-09-21 13:35:06] GC-confluence_pb-20260921-1330: target re-anchored to 2R from fill -> 4366.8
+[2026-09-21 13:40:06] EXIT FILLED GC-confluence_pb-20260921-1330 [sl]: 1 @ 4379.8
+[2026-09-21 13:40:06] CLOSED SHORT GC confluence_pb STOP entry 4375.384 exit 4379.8 qty 1 pnl $-446.44 (-1.02R, -0.10%) hold 0:05:00  (day $-446.44)
+[2026-09-21 13:45:06] ARMED GC-confluence_pb-20260921-1340: SHORT 1 GCSIM MKT stop 4381.6 target~4369.0 risk 4.20pt $420 exit_by 15:59:40  [orders 1252/1253/1254]
+[2026-09-21 13:45:06] ENTRY FILLED GC-confluence_pb-20260921-1340: SELL 1 @ 4376.089 (avg 4376.0890)
+[2026-09-21 13:45:06] GC-confluence_pb-20260921-1340: target re-anchored to 2R from fill -> 4365.1
+[2026-09-21 13:50:06] EXIT FILLED GC-confluence_pb-20260921-1340 [sl]: 1 @ 4381.700000000001
+[2026-09-21 13:50:06] CLOSED SHORT GC confluence_pb STOP entry 4376.089 exit 4381.7 qty 1 pnl $-565.94 (-1.02R, -0.13%) hold 0:05:00  (day $-1,012.38)
+[2026-09-21 14:40:06] SIGNAL NQ-confluence_pb-20260921-1435 LONG skipped: symbol busy (another strategy in position)
+[2026-09-21 15:59:45] FLATTEN NQ-ib_trend-20260921-1055 [eod]: SELL 1 at market
+[2026-09-21 15:59:45] EXIT FILLED NQ-ib_trend-20260921-1055 [eod]: 1 @ 30783.0
+[2026-09-21 15:59:45] CLOSED LONG NQ ib_trend EOD entry 30551.0 exit 30783.0 qty 1 pnl $4,635.50 (1.27R, +0.76%) hold 4:59:39  (day $3,623.12)
+[2026-09-22 11:00:06] ARMED NQ-h2l2_trend-20260922-1055: LONG 1 NQSIM STP@30950.25 stop 30890.0 target~31070.75 risk 60.25pt $1,205 exit_by 15:59:40  [orders 1256/1257/1258]
+[2026-09-22 11:05:06] NQ-h2l2_trend-20260922-1055: entry order no longer working and unfilled -> cancelled
+[2026-09-22 13:30:06] ARMED NQ-confluence_pb-20260922-1325: LONG 1 NQSIM MKT stop 30932.25 target~30995.25 risk 21.00pt $420 exit_by 15:59:40  [orders 1259/1260/1261]
+[2026-09-22 13:30:06] ENTRY FILLED NQ-confluence_pb-20260922-1325: BUY 1 @ 30953.5 (avg 30953.5000)
+[2026-09-22 13:30:06] NQ-confluence_pb-20260922-1325: target re-anchored to 2R from fill -> 30996.0
+[2026-09-22 13:30:06] EXIT FILLED NQ-confluence_pb-20260922-1325 [sl]: 1 @ 30932.0
+[2026-09-22 13:30:06] CLOSED LONG NQ confluence_pb STOP entry 30953.5 exit 30932.0 qty 1 pnl $-434.50 (-1.01R, -0.07%) hold 0:00:00  (day $-434.50)
+[2026-09-22 13:45:06] ARMED NQ-confluence_pb-20260922-1340: LONG 1 NQSIM MKT stop 30923.5 target~30985.75 risk 20.75pt $415 exit_by 15:59:40  [orders 1262/1263/1264]
+[2026-09-22 13:45:06] ENTRY FILLED NQ-confluence_pb-20260922-1340: BUY 1 @ 30944.75 (avg 30944.7500)
+[2026-09-22 13:45:06] NQ-confluence_pb-20260922-1340: target re-anchored to 2R from fill -> 30987.25
+[2026-09-22 13:50:06] EXIT FILLED NQ-confluence_pb-20260922-1340 [tp]: 1 @ 30987.25
+[2026-09-22 13:50:06] CLOSED LONG NQ confluence_pb TARGET entry 30944.75 exit 30987.25 qty 1 pnl $845.50 (2.0R, +0.14%) hold 0:05:00  (day $411.00)
+[2026-09-22 13:55:06] ARMED NQ-confluence_pb-20260922-1350: LONG 1 NQSIM MKT stop 30954.25 target~31021.75 risk 22.50pt $450 exit_by 15:59:40  [orders 1265/1266/1267]
+[2026-09-22 13:55:06] ENTRY FILLED NQ-confluence_pb-20260922-1350: BUY 1 @ 30977.0 (avg 30977.0000)
+[2026-09-22 13:55:06] NQ-confluence_pb-20260922-1350: target re-anchored to 2R from fill -> 31022.5
+[2026-09-22 14:00:06] EXIT FILLED NQ-confluence_pb-20260922-1350 [sl]: 1 @ 30954.0
+[2026-09-22 14:00:06] CLOSED LONG NQ confluence_pb STOP entry 30977.0 exit 30954.0 qty 1 pnl $-464.50 (-1.01R, -0.07%) hold 0:05:00  (day $-53.50)
+[2026-09-22 14:05:06] ARMED NQ-confluence_pb-20260922-1400: LONG 1 NQSIM MKT stop 30938.0 target~31005.5 risk 22.50pt $450 exit_by 15:59:40  [orders 1268/1269/1270]
+[2026-09-22 14:05:06] ENTRY FILLED NQ-confluence_pb-20260922-1400: BUY 1 @ 30960.75 (avg 30960.7500)
+[2026-09-22 14:05:06] NQ-confluence_pb-20260922-1400: target re-anchored to 2R from fill -> 31006.25
+[2026-09-22 14:20:06] EXIT FILLED NQ-confluence_pb-20260922-1400 [tp]: 1 @ 31006.25
+[2026-09-22 14:20:06] CLOSED LONG NQ confluence_pb TARGET entry 30960.75 exit 31006.25 qty 1 pnl $905.50 (2.0R, +0.15%) hold 0:15:00  (day $852.00)
+[2026-09-23 10:50:06] ARMED GC-h2l2_trend-20260923-1045: SHORT 1 GCSIM STP@4318.9 stop 4327.3 target~4302.1 risk 8.40pt $840 exit_by 15:59:40  [orders 1271/1272/1273]
+[2026-09-23 10:50:06] ENTRY FILLED GC-h2l2_trend-20260923-1045: SELL 1 @ 4318.799999999999 (avg 4318.8000)
+[2026-09-23 10:50:06] GC-h2l2_trend-20260923-1045: target re-anchored to 2R from fill -> 4301.8
+[2026-09-23 10:50:06] EXIT FILLED GC-h2l2_trend-20260923-1045 [sl]: 1 @ 4327.400000000001
+[2026-09-23 10:50:06] CLOSED SHORT GC h2l2_trend STOP entry 4318.8 exit 4327.4 qty 1 pnl $-864.84 (-1.01R, -0.20%) hold 0:00:00  (day $-864.84)
+[2026-09-23 14:40:06] ARMED GC-confluence_pb-20260923-1435: SHORT 1 GCSIM MKT stop 4323.6 target~4310.6 risk 4.33pt $433 exit_by 15:59:40  [orders 1274/1275/1276]
+[2026-09-23 14:40:06] ENTRY FILLED GC-confluence_pb-20260923-1435: SELL 1 @ 4319.773999999999 (avg 4319.7740)
+[2026-09-23 14:40:06] GC-confluence_pb-20260923-1435: target re-anchored to 2R from fill -> 4312.1
+[2026-09-23 14:55:06] EXIT FILLED GC-confluence_pb-20260923-1435 [sl]: 1 @ 4324.004000000001
+[2026-09-23 14:55:06] CLOSED SHORT GC confluence_pb STOP entry 4319.774 exit 4324.004 qty 1 pnl $-427.84 (-1.11R, -0.10%) hold 0:15:00  (day $-1,292.68)
+[2026-09-24 11:00:06] ARMED GC-ib_trend-20260924-1055: SHORT 1 GCSIM MKT stop 4302.9 target~4254.7 risk 16.07pt $1,607 exit_by 15:59:40  [orders 1277/1278/1279]
+[2026-09-24 11:00:06] ENTRY FILLED GC-ib_trend-20260924-1055: SELL 1 @ 4286.226 (avg 4286.2260)
+[2026-09-24 11:00:06] GC-ib_trend-20260924-1055: target re-anchored to 2R from fill -> 4252.9
+[2026-09-24 12:15:06] EXIT FILLED GC-ib_trend-20260924-1055 [sl]: 1 @ 4303.0
+[2026-09-24 12:15:06] CLOSED SHORT GC ib_trend STOP entry 4286.226 exit 4303.0 qty 1 pnl $-1,682.24 (-1.01R, -0.39%) hold 1:15:00  (day $-1,682.24)
+[2026-09-24 14:05:06] ARMED GC-confluence_pb-20260924-1400: SHORT 1 GCSIM MKT stop 4297.4 target~4279.9 risk 5.84pt $584 exit_by 15:59:40  [orders 1280/1281/1282]
+[2026-09-24 14:05:06] ENTRY FILLED GC-confluence_pb-20260924-1400: SELL 1 @ 4291.062 (avg 4291.0620)
+[2026-09-24 14:05:06] GC-confluence_pb-20260924-1400: target re-anchored to 2R from fill -> 4278.4
+[2026-09-24 14:10:06] EXIT FILLED GC-confluence_pb-20260924-1400 [sl]: 1 @ 4297.81
+[2026-09-24 14:10:06] CLOSED SHORT GC confluence_pb STOP entry 4291.062 exit 4297.81 qty 1 pnl $-679.64 (-1.06R, -0.16%) hold 0:05:00  (day $-2,361.88)
+[2026-09-25 10:15:06] ARMED NQ-orb2nd-20260925-1010: SHORT 1 NQSIM MKT stop 30864.25 target~30495.25 risk 123.00pt $2,460 exit_by 11:29:40  [orders 1283/1284/1285]
+[2026-09-25 10:15:06] ENTRY FILLED NQ-orb2nd-20260925-1010: SELL 1 @ 30741.0 (avg 30741.0000)
+[2026-09-25 10:15:06] NQ-orb2nd-20260925-1010: target re-anchored to 2R from fill -> 30494.5
+[2026-09-25 10:25:06] ARMED GC-h2l2_trend-20260925-1020: SHORT 1 GCSIM STP@4299.2 stop 4304.1 target~4289.4 risk 4.90pt $490 exit_by 15:59:40  [orders 1286/1287/1288]
+[2026-09-25 10:30:06] GC-h2l2_trend-20260925-1020: entry order no longer working and unfilled -> cancelled
+[2026-09-25 10:30:06] ARMED GC-h2l2_trend-20260925-1025: SHORT 1 GCSIM STP@4299.4 stop 4304.4 target~4289.4 risk 5.00pt $500 exit_by 15:59:40  [orders 1289/1290/1291]
+[2026-09-25 10:30:06] ENTRY FILLED GC-h2l2_trend-20260925-1025: SELL 1 @ 4298.92 (avg 4298.9200)
+[2026-09-25 10:30:06] GC-h2l2_trend-20260925-1025: target re-anchored to 2R from fill -> 4288.0
+[2026-09-25 10:35:06] EXIT FILLED GC-h2l2_trend-20260925-1025 [sl]: 1 @ 4304.5
+[2026-09-25 10:35:06] CLOSED SHORT GC h2l2_trend STOP entry 4298.92 exit 4304.5 qty 1 pnl $-562.84 (-1.02R, -0.13%) hold 0:05:00  (day $-562.84)
+[2026-09-25 11:00:06] EXIT FILLED NQ-orb2nd-20260925-1010 [sl]: 1 @ 30864.5
+[2026-09-25 11:00:06] CLOSED SHORT NQ orb2nd STOP entry 30741.0 exit 30864.5 qty 1 pnl $-2,474.50 (-1.0R, -0.40%) hold 0:45:00  (day $-3,037.34)
+[2026-09-25 13:50:06] ARMED NQ-confluence_pb-20260925-1345: LONG 1 NQSIM MKT stop 30881.75 target~30991.25 risk 36.50pt $730 exit_by 15:59:40  [orders 1292/1293/1294]
+[2026-09-25 13:50:06] ENTRY FILLED NQ-confluence_pb-20260925-1345: BUY 1 @ 30918.25 (avg 30918.2500)
+[2026-09-25 14:25:06] EXIT FILLED NQ-confluence_pb-20260925-1345 [sl]: 1 @ 30881.5
+[2026-09-25 14:25:06] CLOSED LONG NQ confluence_pb STOP entry 30918.25 exit 30881.5 qty 1 pnl $-739.50 (-1.01R, -0.12%) hold 0:35:00  (day $-3,776.84)
+[2026-09-30 10:30:06] ARMED NQ-h2l2_trend-20260930-1025: LONG 1 NQSIM STP@30842.5 stop 30799.75 target~30928.0 risk 42.75pt $855 exit_by 15:59:40  [orders 1295/1296/1297]
+[2026-09-30 10:30:06] ENTRY FILLED NQ-h2l2_trend-20260930-1025: BUY 1 @ 30842.75 (avg 30842.7500)
+[2026-09-30 10:30:06] NQ-h2l2_trend-20260930-1025: target re-anchored to 2R from fill -> 30928.75
+[2026-09-30 10:30:06] EXIT FILLED NQ-h2l2_trend-20260930-1025 [sl]: 1 @ 30799.5
+[2026-09-30 10:30:06] CLOSED LONG NQ h2l2_trend STOP entry 30842.75 exit 30799.5 qty 1 pnl $-869.50 (-1.01R, -0.14%) hold 0:00:00  (day $-869.50)
+[2026-09-30 11:00:06] ARMED GC-ib_trend-20260930-1055: SHORT 1 GCSIM MKT stop 4213.8 target~4161.6 risk 17.40pt $1,740 exit_by 15:59:40  [orders 1298/1299/1300]
+[2026-09-30 11:00:06] ENTRY FILLED GC-ib_trend-20260930-1055: SELL 1 @ 4196.5 (avg 4196.5000)
+[2026-09-30 11:00:06] GC-ib_trend-20260930-1055: target re-anchored to 2R from fill -> 4161.9
+[2026-09-30 13:30:06] SIGNAL GC-confluence_pb-20260930-1325 SHORT skipped: symbol busy (another strategy in position)
+[2026-09-30 13:50:06] ARMED NQ-confluence_pb-20260930-1345: LONG 1 NQSIM MKT stop 30825.25 target~30918.25 risk 31.00pt $620 exit_by 15:59:40  [orders 1301/1302/1303]
+[2026-09-30 13:50:06] ENTRY FILLED NQ-confluence_pb-20260930-1345: BUY 1 @ 30856.75 (avg 30856.7500)
+[2026-09-30 13:50:06] NQ-confluence_pb-20260930-1345: target re-anchored to 2R from fill -> 30919.75
+[2026-09-30 14:05:06] EXIT FILLED NQ-confluence_pb-20260930-1345 [sl]: 1 @ 30825.0
+[2026-09-30 14:05:06] CLOSED LONG NQ confluence_pb STOP entry 30856.75 exit 30825.0 qty 1 pnl $-639.50 (-1.01R, -0.10%) hold 0:15:00  (day $-1,509.00)
+[2026-09-30 14:10:06] ARMED NQ-confluence_pb-20260930-1405: LONG 1 NQSIM MKT stop 30815.5 target~30901.0 risk 28.50pt $570 exit_by 15:59:40  [orders 1304/1305/1306]
+[2026-09-30 14:10:06] ENTRY FILLED NQ-confluence_pb-20260930-1405: BUY 1 @ 30844.0 (avg 30844.0000)
+[2026-09-30 14:25:06] EXIT FILLED NQ-confluence_pb-20260930-1405 [sl]: 1 @ 30815.25
+[2026-09-30 14:25:06] CLOSED LONG NQ confluence_pb STOP entry 30844.0 exit 30815.25 qty 1 pnl $-579.50 (-1.01R, -0.09%) hold 0:15:00  (day $-2,088.50)
+[2026-09-30 15:05:06] ARMED NQ-confluence_pb-20260930-1500: LONG 1 NQSIM MKT stop 30814.5 target~30899.25 risk 28.25pt $565 exit_by 15:59:40  [orders 1307/1308/1309]
+[2026-09-30 15:05:06] ENTRY FILLED NQ-confluence_pb-20260930-1500: BUY 1 @ 30843.5 (avg 30843.5000)
+[2026-09-30 15:05:06] NQ-confluence_pb-20260930-1500: target re-anchored to 2R from fill -> 30901.5
+[2026-09-30 15:40:06] EXIT FILLED NQ-confluence_pb-20260930-1500 [sl]: 1 @ 30814.25
+[2026-09-30 15:40:06] CLOSED LONG NQ confluence_pb STOP entry 30843.5 exit 30814.25 qty 1 pnl $-589.50 (-1.01R, -0.09%) hold 0:35:00  (day $-2,678.00)
+[2026-09-30 15:59:45] FLATTEN GC-ib_trend-20260930-1055 [eod]: BUY 1 at market
+[2026-09-30 15:59:45] EXIT FILLED GC-ib_trend-20260930-1055 [eod]: 1 @ 4188.0
+[2026-09-30 15:59:45] CLOSED SHORT GC ib_trend EOD entry 4196.5 exit 4188.0 qty 1 pnl $845.16 (0.49R, +0.20%) hold 4:59:39  (day $-1,832.84)
+[2026-10-01 10:40:06] ARMED GC-orb2nd-20261001-1035: LONG 1 GCSIM MKT stop 4189.5 target~4231.2 risk 13.90pt $1,390 exit_by 11:29:40  [orders 1311/1312/1313]
+[2026-10-01 10:40:06] ENTRY FILLED GC-orb2nd-20261001-1035: BUY 1 @ 4203.400000000001 (avg 4203.4000)
+[2026-10-01 10:55:06] EXIT FILLED GC-orb2nd-20261001-1035 [sl]: 1 @ 4189.4
+[2026-10-01 10:55:06] CLOSED LONG GC orb2nd STOP entry 4203.4 exit 4189.4 qty 1 pnl $-1,404.84 (-1.01R, -0.33%) hold 0:15:00  (day $-1,404.84)
+[2026-10-01 14:30:06] ARMED NQ-confluence_pb-20261001-1425: LONG 1 NQSIM MKT stop 30750.75 target~30900.0 risk 49.75pt $995 exit_by 15:59:40  [orders 1314/1315/1316]
+[2026-10-01 14:30:06] ENTRY FILLED NQ-confluence_pb-20261001-1425: BUY 1 @ 30800.75 (avg 30800.7500)
+[2026-10-01 14:30:06] NQ-confluence_pb-20261001-1425: target re-anchored to 2R from fill -> 30900.75
+[2026-10-01 15:55:06] EXIT FILLED NQ-confluence_pb-20261001-1425 [sl]: 1 @ 30750.5
+[2026-10-01 15:55:06] CLOSED LONG NQ confluence_pb STOP entry 30800.75 exit 30750.5 qty 1 pnl $-1,009.50 (-1.0R, -0.16%) hold 1:25:00  (day $-2,414.34)
+[2026-10-02 10:50:06] ARMED NQ-h2l2_trend-20261002-1045: LONG 1 NQSIM STP@31253.5 stop 31224.25 target~31312.0 risk 29.25pt $585 exit_by 15:59:40  [orders 1317/1318/1319]
+[2026-10-02 10:55:06] NQ-h2l2_trend-20261002-1045: entry order no longer working and unfilled -> cancelled
+[2026-10-02 11:00:06] ARMED GC-ib_trend-20261002-1055: SHORT 1 GCSIM MKT stop 4217.2 target~4130.8 risk 28.80pt $2,880 exit_by 15:59:40  [orders 1320/1321/1322]
+[2026-10-02 11:00:06] ENTRY FILLED GC-ib_trend-20261002-1055: SELL 1 @ 4188.299999999999 (avg 4188.3000)
+[2026-10-02 11:00:06] GC-ib_trend-20261002-1055: target re-anchored to 2R from fill -> 4130.5
+[2026-10-02 11:20:06] ARMED NQ-orb2nd-20261002-1115: SHORT 1 NQSIM MKT stop 31167.5 target~30790.25 risk 125.75pt $2,515 exit_by 11:29:40  [orders 1323/1324/1325]
+[2026-10-02 11:20:06] ENTRY FILLED NQ-orb2nd-20261002-1115: SELL 1 @ 31041.75 (avg 31041.7500)
+[2026-10-02 11:29:45] FLATTEN NQ-orb2nd-20261002-1115 [window]: BUY 1 at market
+[2026-10-02 11:29:45] EXIT FILLED NQ-orb2nd-20261002-1115 [window]: 1 @ 31063.5
+[2026-10-02 11:29:45] CLOSED SHORT NQ orb2nd WINDOW entry 31041.75 exit 31063.5 qty 1 pnl $-439.50 (-0.17R, -0.07%) hold 0:09:39  (day $-439.50)
+[2026-10-02 15:59:45] FLATTEN GC-ib_trend-20261002-1055 [eod]: BUY 1 at market
+[2026-10-02 15:59:45] EXIT FILLED GC-ib_trend-20261002-1055 [eod]: 1 @ 4176.6
+[2026-10-02 15:59:45] CLOSED SHORT GC ib_trend EOD entry 4188.3 exit 4176.6 qty 1 pnl $1,165.16 (0.4R, +0.28%) hold 4:59:39  (day $725.66)
+[2026-10-05 10:25:06] ARMED GC-h2l2_trend-20261005-1020: SHORT 1 GCSIM STP@4166.7 stop 4175.5 target~4149.1 risk 8.80pt $880 exit_by 15:59:40  [orders 1328/1329/1330]
+[2026-10-05 10:25:06] ENTRY FILLED GC-h2l2_trend-20261005-1020: SELL 1 @ 4166.599999999999 (avg 4166.6000)
+[2026-10-05 10:25:06] GC-h2l2_trend-20261005-1020: target re-anchored to 2R from fill -> 4148.8
+[2026-10-05 10:55:06] EXIT FILLED GC-h2l2_trend-20261005-1020 [sl]: 1 @ 4175.6
+[2026-10-05 10:55:06] CLOSED SHORT GC h2l2_trend STOP entry 4166.6 exit 4175.6 qty 1 pnl $-904.84 (-1.01R, -0.22%) hold 0:30:00  (day $-904.84)
+[2026-10-05 13:35:06] ARMED NQ-confluence_pb-20261005-1330: LONG 1 NQSIM MKT stop 31258.5 target~31317.0 risk 19.50pt $390 exit_by 15:59:40  [orders 1331/1332/1333]
+[2026-10-05 13:35:06] ARMED GC-confluence_pb-20261005-1330: SHORT 1 GCSIM MKT stop 4160.4 target~4149.0 risk 3.80pt $380 exit_by 15:59:40  [orders 1334/1335/1336]
+[2026-10-05 13:35:06] ENTRY FILLED NQ-confluence_pb-20261005-1330: BUY 1 @ 31277.75 (avg 31277.7500)
+[2026-10-05 13:35:06] NQ-confluence_pb-20261005-1330: target re-anchored to 2R from fill -> 31316.25
+[2026-10-05 13:35:06] ENTRY FILLED GC-confluence_pb-20261005-1330: SELL 1 @ 4156.599999999999 (avg 4156.6000)
+[2026-10-05 13:40:06] EXIT FILLED GC-confluence_pb-20261005-1330 [sl]: 1 @ 4160.5
+[2026-10-05 13:40:06] CLOSED SHORT GC confluence_pb STOP entry 4156.6 exit 4160.5 qty 1 pnl $-394.84 (-1.03R, -0.09%) hold 0:05:00  (day $-1,299.68)
+[2026-10-05 13:45:06] EXIT FILLED NQ-confluence_pb-20261005-1330 [tp]: 1 @ 31316.25
+[2026-10-05 13:45:06] CLOSED LONG NQ confluence_pb TARGET entry 31277.75 exit 31316.25 qty 1 pnl $765.50 (2.0R, +0.12%) hold 0:10:00  (day $-534.18)
+[2026-10-05 14:05:06] ARMED NQ-confluence_pb-20261005-1400: LONG 1 NQSIM MKT stop 31275.25 target~31332.25 risk 19.00pt $380 exit_by 15:59:40  [orders 1337/1338/1339]
+[2026-10-05 14:05:06] ENTRY FILLED NQ-confluence_pb-20261005-1400: BUY 1 @ 31294.0 (avg 31294.0000)
+[2026-10-05 14:05:06] NQ-confluence_pb-20261005-1400: target re-anchored to 2R from fill -> 31331.5
+[2026-10-05 14:05:06] EXIT FILLED NQ-confluence_pb-20261005-1400 [sl]: 1 @ 31275.0
+[2026-10-05 14:05:06] CLOSED LONG NQ confluence_pb STOP entry 31294.0 exit 31275.0 qty 1 pnl $-384.50 (-1.01R, -0.06%) hold 0:00:00  (day $-918.68)
+[2026-10-05 14:10:06] ARMED NQ-confluence_pb-20261005-1405: LONG 1 NQSIM MKT stop 31274.25 target~31331.25 risk 19.00pt $380 exit_by 15:59:40  [orders 1340/1341/1342]
+[2026-10-05 14:10:06] ENTRY FILLED NQ-confluence_pb-20261005-1405: BUY 1 @ 31292.75 (avg 31292.7500)
+[2026-10-05 14:10:06] NQ-confluence_pb-20261005-1405: target re-anchored to 2R from fill -> 31329.75
+[2026-10-05 14:25:06] ARMED GC-confluence_pb-20261005-1420: SHORT 1 GCSIM MKT stop 4164.7 target~4154.8 risk 3.30pt $330 exit_by 15:59:40  [orders 1343/1344/1345]
+[2026-10-05 14:25:06] ENTRY FILLED GC-confluence_pb-20261005-1420: SELL 1 @ 4161.099999999999 (avg 4161.1000)
+[2026-10-05 14:25:06] GC-confluence_pb-20261005-1420: target re-anchored to 2R from fill -> 4153.9
+[2026-10-05 14:25:06] EXIT FILLED GC-confluence_pb-20261005-1420 [sl]: 1 @ 4164.8
+[2026-10-05 14:25:06] CLOSED SHORT GC confluence_pb STOP entry 4161.1 exit 4164.8 qty 1 pnl $-374.84 (-1.03R, -0.09%) hold 0:00:00  (day $-1,293.52)
+[2026-10-05 15:00:06] EXIT FILLED NQ-confluence_pb-20261005-1405 [tp]: 1 @ 31329.75
+[2026-10-05 15:00:06] CLOSED LONG NQ confluence_pb TARGET entry 31292.75 exit 31329.75 qty 1 pnl $735.50 (2.0R, +0.12%) hold 0:50:00  (day $-558.02)
+[2026-10-06 11:00:06] ARMED NQ-ib_trend-20261006-1055: LONG 1 NQSIM MKT stop 31519.5 target~31710.75 risk 63.75pt $1,275 exit_by 15:59:40  [orders 1346/1347/1348]
+[2026-10-06 11:00:06] ENTRY FILLED NQ-ib_trend-20261006-1055: BUY 1 @ 31584.0 (avg 31584.0000)
+[2026-10-06 11:00:06] NQ-ib_trend-20261006-1055: target re-anchored to 2R from fill -> 31713.0
+[2026-10-06 12:25:06] EXIT FILLED NQ-ib_trend-20261006-1055 [sl]: 1 @ 31519.25
+[2026-10-06 12:25:06] CLOSED LONG NQ ib_trend STOP entry 31584.0 exit 31519.25 qty 1 pnl $-1,299.50 (-1.0R, -0.21%) hold 1:25:00  (day $-1,299.50)
+[2026-10-06 14:05:06] ARMED NQ-confluence_pb-20261006-1400: LONG 1 NQSIM MKT stop 31533.25 target~31597.0 risk 21.25pt $425 exit_by 15:59:40  [orders 1349/1350/1351]
+[2026-10-06 14:05:06] ENTRY FILLED NQ-confluence_pb-20261006-1400: BUY 1 @ 31554.25 (avg 31554.2500)
+[2026-10-06 14:05:06] NQ-confluence_pb-20261006-1400: target re-anchored to 2R from fill -> 31596.25
+[2026-10-06 14:20:06] EXIT FILLED NQ-confluence_pb-20261006-1400 [sl]: 1 @ 31533.0
+[2026-10-06 14:20:06] CLOSED LONG NQ confluence_pb STOP entry 31554.25 exit 31533.0 qty 1 pnl $-429.50 (-1.01R, -0.07%) hold 0:15:00  (day $-1,729.00)
+[2026-10-08 10:20:06] ARMED NQ-orb2nd-20261008-1015: LONG 1 NQSIM MKT stop 31201.25 target~31439.75 risk 79.50pt $1,590 exit_by 11:29:40  [orders 1352/1353/1354]
+[2026-10-08 10:20:06] ENTRY FILLED NQ-orb2nd-20261008-1015: BUY 1 @ 31280.75 (avg 31280.7500)
+[2026-10-08 11:10:06] ARMED GC-orb2nd-20261008-1105: SHORT 1 GCSIM MKT stop 4152.3 target~4123.2 risk 9.70pt $970 exit_by 11:29:40  [orders 1355/1356/1357]
+[2026-10-08 11:10:06] ENTRY FILLED GC-orb2nd-20261008-1105: SELL 1 @ 4142.5 (avg 4142.5000)
+[2026-10-08 11:10:06] GC-orb2nd-20261008-1105: target re-anchored to 2R from fill -> 4122.9
+[2026-10-08 11:29:45] FLATTEN NQ-orb2nd-20261008-1015 [window]: SELL 1 at market
+[2026-10-08 11:29:45] FLATTEN GC-orb2nd-20261008-1105 [window]: BUY 1 at market
+[2026-10-08 11:29:45] EXIT FILLED NQ-orb2nd-20261008-1015 [window]: 1 @ 31239.75
+[2026-10-08 11:29:45] CLOSED LONG NQ orb2nd WINDOW entry 31280.75 exit 31239.75 qty 1 pnl $-824.50 (-0.52R, -0.13%) hold 1:09:39  (day $-824.50)
+[2026-10-08 11:29:45] EXIT FILLED GC-orb2nd-20261008-1105 [window]: 1 @ 4140.6
+[2026-10-08 11:29:45] CLOSED SHORT GC orb2nd WINDOW entry 4142.5 exit 4140.6 qty 1 pnl $185.16 (0.19R, +0.05%) hold 0:19:39  (day $-639.34)
+[2026-10-09 11:00:06] ARMED ES-ib_trend-20261009-1055: LONG 1 ESSIM MKT stop 7835.5 target~7876.0 risk 13.50pt $675 exit_by 15:59:40  [orders 1360/1361/1362]
+[2026-10-09 11:00:06] ENTRY FILLED ES-ib_trend-20261009-1055: BUY 1 @ 7849.0 (avg 7849.0000)
+[2026-10-09 11:25:06] ARMED NQ-h2l2_trend-20261009-1120: LONG 1 NQSIM STP@31072.75 stop 31018.75 target~31180.75 risk 54.00pt $1,080 exit_by 15:59:40  [orders 1363/1364/1365]
+[2026-10-09 11:25:06] ENTRY FILLED NQ-h2l2_trend-20261009-1120: BUY 1 @ 31073.0 (avg 31073.0000)
+[2026-10-09 11:25:06] NQ-h2l2_trend-20261009-1120: target re-anchored to 2R from fill -> 31181.5
+[2026-10-09 13:30:06] SIGNAL NQ-confluence_pb-20261009-1325 LONG skipped: symbol busy (another strategy in position)
+[2026-10-09 15:00:06] SIGNAL NQ-confluence_pb-20261009-1455 LONG skipped: symbol busy (another strategy in position)
+[2026-10-09 15:59:45] FLATTEN ES-ib_trend-20261009-1055 [eod]: SELL 1 at market
+[2026-10-09 15:59:45] FLATTEN NQ-h2l2_trend-20261009-1120 [eod]: SELL 1 at market
+[2026-10-09 15:59:45] EXIT FILLED NQ-h2l2_trend-20261009-1120 [eod]: 1 @ 31111.75
+[2026-10-09 15:59:45] CLOSED LONG NQ h2l2_trend EOD entry 31073.0 exit 31111.75 qty 1 pnl $770.50 (0.71R, +0.12%) hold 4:34:39  (day $770.50)
+[2026-10-09 15:59:45] EXIT FILLED ES-ib_trend-20261009-1055 [eod]: 1 @ 7860.75
+[2026-10-09 15:59:45] CLOSED LONG ES ib_trend EOD entry 7849.0 exit 7860.75 qty 1 pnl $583.00 (0.87R, +0.15%) hold 4:59:39  (day $1,353.50)

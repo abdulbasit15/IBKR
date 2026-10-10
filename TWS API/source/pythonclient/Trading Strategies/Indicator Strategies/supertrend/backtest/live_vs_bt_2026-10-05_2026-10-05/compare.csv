@@ -1,0 +1,4 @@
+symbol,strategy,live_entries,live_net,live_win%,bt_trades,bt_net,bt_win%,bt_pf,net_delta_live_minus_bt,live_carryover_pnl_exitbasis
+MNQ,Supertrend + DEMA,1,314,100.0,2,1466,100.0,inf,-1152,0
+MES,Supertrend,3,73,33.3,2,855,50.0,172.01,-782,-147
+MGC,Supertrend,3,-23,33.3,3,-366,33.3,0.07,343,-22

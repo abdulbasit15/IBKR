@@ -1,0 +1,145 @@
+{
+  "_comment": "Scalping v2 intraday bot (NQ/ES/GC full-size, RTH only). PAPER config. See configuration.html for every key.",
+  "paper": true,
+  "host": "127.0.0.1",
+  "port": 4002,
+  "client_id": 60,
+  "account": "",
+  "dry_run": false,
+  "reconnect_backoff_sec": 60,
+  "account_size_usd": 150000,
+  "history_days": 120,
+  "bar_delay_sec": 6,
+  "poll_seconds": 2,
+  "status_every_min": 30,
+  "session_start": "09:30",
+  "session_end": "16:00",
+  "flatten_lead_sec": 20,
+  "entry_tif": "DAY",
+  "one_position_per_symbol": true,
+  "daily_loss_limit_usd": 0,
+  "max_trades_per_day": 12,
+  "trade_log_csv": "scalping_v2_trades.csv",
+  "commission_per_side": {
+    "NQ": 2.25,
+    "ES": 2.25,
+    "GC": 2.42,
+    "YM": 2.25,
+    "CL": 2.35
+  },
+  "symbols": {
+    "NQ": {
+      "enabled": true,
+      "exchange": "CME",
+      "contracts": 1,
+      "max_risk_usd": 6000
+    },
+    "ES": {
+      "enabled": true,
+      "exchange": "CME",
+      "contracts": 1,
+      "max_risk_usd": 3000
+    },
+    "GC": {
+      "enabled": true,
+      "exchange": "COMEX",
+      "contracts": 1,
+      "max_risk_usd": 5000
+    },
+    "YM": {
+      "enabled": false,
+      "exchange": "CBOT",
+      "contracts": 1,
+      "max_risk_usd": 3000
+    },
+    "CL": {
+      "enabled": false,
+      "exchange": "NYMEX",
+      "contracts": 1,
+      "max_risk_usd": 3000,
+      "use_rth": false
+    }
+  },
+  "sizing": {
+    "mode": "fixed",
+    "risk_usd": 2000,
+    "max_contracts": 3
+  },
+  "strategies": {
+    "ib_trend": {
+      "enabled": true,
+      "symbols": [
+        "NQ",
+        "ES",
+        "GC"
+      ],
+      "window": [
+        "09:30",
+        "11:30"
+      ],
+      "mode": "hold",
+      "params": {
+        "trend": "e20",
+        "entry": "confirm",
+        "stop": "mid",
+        "nw": 9.9
+      }
+    },
+    "h2l2_trend": {
+      "enabled": true,
+      "symbols": [
+        "NQ",
+        "GC"
+      ],
+      "window": [
+        "09:30",
+        "11:30"
+      ],
+      "mode": "hold",
+      "params": {
+        "maxr": 3.0,
+        "dtf": true,
+        "max_trades": 3
+      }
+    },
+    "orb2nd": {
+      "enabled": true,
+      "symbols": [
+        "NQ",
+        "GC"
+      ],
+      "window": [
+        "09:30",
+        "11:30"
+      ],
+      "mode": "flat",
+      "params": {
+        "orm": 15,
+        "dtf": false
+      }
+    },
+    "confluence_pb": {
+      "enabled": true,
+      "symbols": [
+        "NQ",
+        "GC"
+      ],
+      "window": [
+        "13:30",
+        "16:00"
+      ],
+      "mode": "hold",
+      "params": {
+        "trig": "pb",
+        "k": 1.0,
+        "mx": 4
+      }
+    }
+  },
+  "strategy_priority": [
+    "ib_trend",
+    "orb2nd",
+    "h2l2_trend",
+    "confluence_pb"
+  ]
+}

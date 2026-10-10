@@ -1,0 +1,7 @@
+days simulated: 277 (2025-09-02 .. 2026-10-09)
+backtest trades 510 | bot trades 510 | matched entries 510 | matched with same exit (±1 tick) 507
+P&L backtest $125,640.87 | bot (sim broker, commission est.) $125,684.58
+  exit differs ('GC', 'confluence_pb', '2026-06-05', '14:05', 'Short'): bot 4407.6 [target] vs backtest 4407.70 [target]
+  exit differs ('GC', 'confluence_pb', '2025-10-20', '14:15', 'Long'): bot 4709.1 [target] vs backtest 4709.20 [target]
+  exit differs ('GC', 'confluence_pb', '2026-07-28', '14:10', 'Short'): bot 4083.4 [target] vs backtest 4083.50 [target]
+bot log -> sim_test_log.txt (6266 lines); temp dir C:\Users\abdbasit\AppData\Local\Temp\f2r_sim_6cgh96nm

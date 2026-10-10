@@ -1,0 +1,13 @@
+instrument,strategy,variant,trades,win%,pf,net$,maxdd$,rf,trades_vs_base_%,net_vs_base_$
+MNQ,Supertrend + DEMA,baseline,1085,32.3,1.28,95652,-18074,5.29,+0,+0
+MNQ,Supertrend + DEMA,flip_only,524,39.5,1.39,78347,-11191,7.00,-52,-17305
+MNQ,Supertrend + DEMA,cooldown_3,843,36.4,1.26,76703,-15878,4.83,-22,-18950
+MNQ,Supertrend + DEMA,flip+cooldown_3,377,39.0,1.33,49078,-12372,3.97,-65,-46574
+MES,Supertrend,baseline,1415,31.4,1.37,69303,-10720,6.46,+0,+0
+MES,Supertrend,flip_only,869,38.6,1.34,50754,-11454,4.43,-39,-18549
+MES,Supertrend,cooldown_3,1041,36.6,1.41,61187,-10805,5.66,-26,-8115
+MES,Supertrend,flip+cooldown_3,503,37.4,1.34,30254,-11605,2.61,-64,-39049
+MGC,Supertrend,baseline,1325,33.0,1.61,197713,-13453,14.70,+0,+0
+MGC,Supertrend,flip_only,805,39.8,1.60,144173,-10076,14.31,-39,-53540
+MGC,Supertrend,cooldown_3,997,37.2,1.70,187741,-10778,17.42,-25,-9972
+MGC,Supertrend,flip+cooldown_3,463,38.2,1.34,49148,-16252,3.02,-65,-148565

@@ -106,7 +106,7 @@ LONG, SHORT, FLAT = "LONG", "SHORT", "FLAT"
 
 # Build/version stamp, logged at startup so you can tell AT A GLANCE which code a running exe
 # contains (e.g. whether the stale-data guard + reconnect cap are present). Bump on code changes.
-BOT_VERSION = "2026-10-08.3 stale-guard+reconnect-cap+stop-from-fill+feed-state+ctrlc"
+BOT_VERSION = "2026-10-10.1 stale-guard+reconnect-cap+stop-from-fill+feed-state+ctrlc+pnl-multiplier"
 
 # Set on Ctrl+C (SIGINT) so every strategy thread's run() loop exits cleanly (disconnects IB) instead
 # of the main thread hanging forever in thread.join() — on Windows a no-timeout join swallows SIGINT.
@@ -1038,7 +1038,7 @@ class SupertrendBot:
                 self.log(f"[{p['ref']}] partial TP no fill -> retry next bar")
                 break
             fill = float(tr.orderStatus.avgFillPrice or t["target"])
-            pnl = (fill - entry) * f if side == LONG else (entry - fill) * f
+            pnl = ((fill - entry) if side == LONG else (entry - fill)) * f * self._contract_mult(p["contract"])
             ret = ((fill / entry - 1) if side == LONG else (entry / fill - 1)) * 100 if entry else 0.0
             self.record_trade({
                 "time": now_et().strftime("%Y-%m-%d %H:%M:%S"), "symbol": symbol, "side": side,
@@ -1149,7 +1149,7 @@ class SupertrendBot:
             new_fill = filled - int(tp.get("filled", 0))
             if new_fill > 0:
                 fill_px = float(getattr(os_, "avgFillPrice", 0) or tp["target"])
-                pnl = (fill_px - entry) * new_fill if side == LONG else (entry - fill_px) * new_fill
+                pnl = ((fill_px - entry) if side == LONG else (entry - fill_px)) * new_fill * self._contract_mult(p["contract"])
                 ret = ((fill_px / entry - 1) if side == LONG else (entry / fill_px - 1)) * 100 if entry else 0.0
                 self.record_trade({
                     "time": now_et().strftime("%Y-%m-%d %H:%M:%S"), "symbol": symbol, "side": side,
@@ -1701,11 +1701,12 @@ class SupertrendBot:
         if not p:
             return
         self._cancel_tps(p)   # kill any resting take-profit so it can't orphan into a new position
+        mult = self._contract_mult(p["contract"])   # $/point: 1 equities, 2 MNQ, 5 MES, 10 MGC
         if p["side"] == LONG:
-            pnl = (exit_px - p["entry"]) * p["qty"]
+            pnl = (exit_px - p["entry"]) * p["qty"] * mult
             ret = (exit_px / p["entry"] - 1) * 100 if p["entry"] else 0.0
         else:
-            pnl = (p["entry"] - exit_px) * p["qty"]
+            pnl = (p["entry"] - exit_px) * p["qty"] * mult
             ret = (p["entry"] / exit_px - 1) * 100 if exit_px else 0.0
         hold = str(now_et() - p["opened"]).split(".")[0]
         self.record_trade({

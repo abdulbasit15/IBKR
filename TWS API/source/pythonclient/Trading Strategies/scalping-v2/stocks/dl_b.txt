@@ -1,0 +1,18 @@
+IWM chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (101s)
+IWM chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (124s)
+IWM: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\IWM_5m_rth.csv
+DIA chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (116s)
+DIA chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (130s)
+DIA: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\DIA_5m_rth.csv
+META chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (112s)
+META chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (106s)
+META: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\META_5m_rth.csv
+GOOGL chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (118s)
+GOOGL chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (126s)
+GOOGL: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\GOOGL_5m_rth.csv
+AMD chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (181s)
+AMD chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (112s)
+AMD: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\AMD_5m_rth.csv
+AVGO chunk 1/2: 19506 bars 2025-10-10 13:30:00+00:00 .. 2026-10-09 19:55:00+00:00 (125s)
+AVGO chunk 2/2: 19392 bars 2024-10-10 13:30:00+00:00 .. 2025-10-09 19:55:00+00:00 (160s)
+AVGO: 38898 bars -> C:\Users\abdbasit\Downloads\Personal\Trade\IBKR\TWS API\source\pythonclient\Trading Strategies\Historical Data\data\equity_rth\AVGO_5m_rth.csv

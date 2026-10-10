@@ -1,0 +1,11 @@
+NQ ib_trend       backtest trades   43  live-replay trades   43  mismatched days 0  busy-flag errors 0
+NQ h2l2_trend     backtest trades   44  live-replay trades   44  mismatched days 0  busy-flag errors 0
+NQ orb2nd         backtest trades   46  live-replay trades   46  mismatched days 0  busy-flag errors 0
+NQ confluence_pb  backtest trades  163  live-replay trades  163  mismatched days 0  busy-flag errors 0
+ES ib_trend       backtest trades   47  live-replay trades   47  mismatched days 0  busy-flag errors 0
+GC ib_trend       backtest trades   45  live-replay trades   45  mismatched days 0  busy-flag errors 0
+GC h2l2_trend     backtest trades   36  live-replay trades   36  mismatched days 0  busy-flag errors 0
+GC orb2nd         backtest trades   52  live-replay trades   52  mismatched days 0  busy-flag errors 0
+GC confluence_pb  backtest trades  147  live-replay trades  147  mismatched days 0  busy-flag errors 0
+
+PARITY PASS: 623 backtest trades vs 623 live-replay trades, 0 mismatched day(s), 0 busy-flag error(s)
