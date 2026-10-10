@@ -1,0 +1,8 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+RIOT,qm_ep,RIOT-2,Long,905,2023-10-25,10.88,2023-10-26,10.25,Stop,0.58,-1.09R,-570.15
+RIOT,qm_ep,RIOT-3,Long,809,2023-12-05,15.01,2023-12-07,14.27,Stop,0.645,-1.15R,-598.66
+RIOT,qm_ep,RIOT-5,Long,206,2024-11-07,11.87,2024-11-14,11.865,Partial,1.26,-0.00R,-1.03
+RIOT,qm_ep,RIOT-5,Long,207,2024-11-07,11.87,2024-11-15,11.87,BE-Stop,1.26,+0.00R,0.0
+RIOT,qm_ep,RIOT-7,Long,243,2026-05-07,23.42,2026-05-14,24.62,Partial,1.09,+1.10R,291.6
+RIOT,qm_ep,RIOT-7,Long,243,2026-05-07,23.42,2026-05-15,23.42,BE-Stop,1.09,+0.00R,0.0
+RIOT,qm_ep,RIOT-9,Long,237,2026-08-12,21.58,2026-08-13,19.34,Stop,2.24,-1.00R,-530.88

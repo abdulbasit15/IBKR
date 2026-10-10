@@ -1,0 +1,2 @@
+date,time,symbol,setup,entry_id,shares,trigger,fill,stop,rps,risk_$,notional_$,score,perf3m,rs,adr,base_range_pct,voldry,off_high
+2026-10-09,09:48:59,IOVA,pullback,IOVA-20261009-094656,689,13.76,13.77,12.31,1.45,999.05,9487.53,148.7,237.6,232.2,7.03,43.3,0.79,-10.8

@@ -1,0 +1,12 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+AMAT,qm_breakout,AMAT-1,Long,254,2023-01-27,112.62,2023-01-30,110.69,Stop,0.35,-5.51R,-490.22
+AMAT,qm_breakout,AMAT-2,Long,28,2023-02-02,120.31,2023-02-09,116.08,Partial,8.4,-0.50R,-118.44
+AMAT,qm_breakout,AMAT-2,Long,28,2023-02-02,120.31,2023-02-10,114.8,BE-Stop,8.4,-0.66R,-154.28
+AMAT,qm_breakout,AMAT-3,Long,24,2025-11-26,242.83,2025-12-04,269.44,Partial,9.69,+2.75R,638.64
+AMAT,qm_breakout,AMAT-3,Long,24,2025-11-26,242.83,2025-12-17,248.27,Trail,9.69,+0.56R,130.56
+AMAT,qm_breakout,AMAT-4,Long,61,2026-01-29,340.74,2026-01-30,332.93,Stop,7.78,-1.00R,-476.41
+AMAT,qm_breakout,AMAT-5,Long,61,2026-02-26,391.8,2026-02-27,365.94,Stop,7.8,-3.32R,-1577.46
+AMAT,qm_breakout,AMAT-6,Long,31,2026-04-09,385.25,2026-04-16,389.9,Partial,7.47,+0.62R,144.15
+AMAT,qm_breakout,AMAT-6,Long,31,2026-04-09,385.25,2026-04-28,385.25,BE-Stop,7.47,+0.00R,0.0
+AMAT,qm_breakout,AMAT-7,Long,54,2026-05-07,426.36,2026-05-12,417.75,Stop,8.61,-1.00R,-464.94
+AMAT,qm_breakout,AMAT-8,Long,17,2026-06-03,487.95,2026-06-05,461.45,Stop,26.5,-1.00R,-450.5

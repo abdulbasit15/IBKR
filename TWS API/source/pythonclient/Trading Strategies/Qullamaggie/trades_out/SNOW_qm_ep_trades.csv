@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+SNOW,qm_ep,SNOW-1,Long,54,2022-08-26,196.0,2022-08-29,184.12,Stop,11.88,-1.00R,-641.52
+SNOW,qm_ep,SNOW-3,Long,92,2022-11-11,146.64,2022-11-16,154.15,Trail,6.94,+1.08R,690.92
+SNOW,qm_ep,SNOW-8,Long,34,2025-08-29,236.93,2025-09-04,218.09,Stop,18.84,-1.00R,-640.56
+SNOW,qm_ep,SNOW-10,Long,28,2026-05-29,240.69,2026-06-05,238.26,Partial,11.2,-0.22R,-68.04
+SNOW,qm_ep,SNOW-10,Long,29,2026-05-29,240.69,2026-06-08,239.8,BE-Stop,11.2,-0.08R,-25.81

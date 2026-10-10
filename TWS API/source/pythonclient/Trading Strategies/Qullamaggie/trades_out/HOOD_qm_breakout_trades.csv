@@ -1,0 +1,15 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+HOOD,qm_breakout,HOOD-2,Long,1188,2022-09-12,10.76,2022-09-14,10.29,Stop,0.47,-1.00R,-558.36
+HOOD,qm_breakout,HOOD-4,Long,366,2024-06-07,22.52,2024-06-14,22.42,Partial,0.776,-0.13R,-36.6
+HOOD,qm_breakout,HOOD-4,Long,367,2024-06-07,22.52,2024-06-17,22.32,BE-Stop,0.776,-0.26R,-73.4
+HOOD,qm_breakout,HOOD-5,Long,437,2024-07-16,24.06,2024-07-18,22.76,Stop,1.3,-1.00R,-568.1
+HOOD,qm_breakout,HOOD-6,Long,764,2024-10-29,28.25,2024-10-31,26.02,Stop,0.74,-3.01R,-1703.72
+HOOD,qm_breakout,HOOD-8,Long,143,2025-01-16,45.61,2025-01-24,51.12,Partial,1.967,+2.80R,787.93
+HOOD,qm_breakout,HOOD-8,Long,143,2025-01-16,45.61,2025-02-21,51.6,Trail,1.967,+3.05R,856.57
+HOOD,qm_breakout,HOOD-9,Long,63,2025-06-03,69.9,2025-06-10,72.51,Partial,4.52,+0.58R,164.43
+HOOD,qm_breakout,HOOD-9,Long,63,2025-06-03,69.9,2025-08-01,99.9,Trail,4.52,+6.64R,1890.0
+HOOD,qm_breakout,HOOD-10,Long,142,2025-08-08,111.5,2025-08-13,107.4,Stop,4.1,-1.00R,-582.2
+HOOD,qm_breakout,HOOD-11,Long,45,2025-09-09,116.53,2025-09-16,117.38,Partial,6.41,+0.13R,38.25
+HOOD,qm_breakout,HOOD-11,Long,45,2025-09-09,116.53,2025-09-17,116.53,BE-Stop,6.41,+0.00R,0.0
+HOOD,qm_breakout,HOOD-12,Long,24,2025-09-30,135.67,2025-10-07,145.0,Partial,11.89,+0.78R,223.92
+HOOD,qm_breakout,HOOD-12,Long,24,2025-09-30,135.67,2025-10-14,135.67,BE-Stop,11.89,+0.00R,0.0

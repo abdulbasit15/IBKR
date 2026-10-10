@@ -5,7 +5,7 @@
   "_contract_selection_comment": "contract_selection: 'active' (default) picks IBKR's ContFuture active/liquid front month; 'quarterly' restricts to Mar/Jun/Sep/Dec (H/M/U/Z) so the instrument rolls on the SAME quarterly cycle as MNQ/MES (used for MGC to keep its expiry month in sync with the index futures); 'nearest' = legacy nearest calendar expiry. roll_buffer_days (0=off) skips any expiry within N days of expiring so it rolls BEFORE the contract thins into expiry. NEEDS REBUILD (code change).",
   "_expiry_pin_comment": "expiry (optional, HIGHEST priority) hard-pins one contract month: 'YYYYMM' (e.g. '202612'=Dec 2026) or 'YYYYMMDD'. Overrides contract_selection. Leave unset to auto-select/roll. NOTE on 'quarterly' for MGC: gold reliably lists only Jun/Dec among the quarterly months, so MGC matches MNQ/MES EXACTLY on Jun & Dec; in the Mar/Sep index quarters gold has no liquid Mar/Sep contract, so it uses the nearest listed quarterly (e.g. Jun) — always a liquid gold contract, but may lead the index month by one quarter then.",
 
-  "_stale_data_comment": "stale_data_max_bars: if the newest completed bar is older than N*bar_seconds (here 3*5min=15min), the bot SKIPS all decisions, re-wakes the HMDS data farm and lets the watchdog reconnect — prevents trading an 80-min-stale backlog replayed one bar per poll after a reconnect (10/5-10/6 lag). 0 disables. NEEDS REBUILD (code change).",
+  "_stale_data_comment": "stale_data_max_bars: if the newest completed bar is older than N*bar_seconds (3*5min=15min), SKIP all decisions (no entries/exits on stale signals; native stops still protect). stale_data_reconnect_evals: after this many stale cycles force a disconnect->reconnect (2=~10min). stale_reconnect_max_tries: cap those reconnects (3); a client reconnect CANNOT fix a GATEWAY-level HMDS farm zombie, so after the cap the bot stops churning and logs '*** DATA FARM STUCK: RESTART IB GATEWAY ***'. 0 disables each. NEEDS REBUILD.",
 
   "host": "127.0.0.1",
   "port": 4002,
@@ -14,6 +14,8 @@
   "default_account": "DU672616",
   "market_data_type": 1,
   "stale_data_max_bars": 3,
+  "stale_data_reconnect_evals": 2,
+  "stale_reconnect_max_tries": 1,
 
   "strategies": {
     "stocks": [],

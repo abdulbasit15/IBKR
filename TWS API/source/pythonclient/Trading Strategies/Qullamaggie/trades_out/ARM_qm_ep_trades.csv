@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ARM,qm_ep,ARM-4,Long,137,2026-05-07,222.395,2026-05-08,216.96,Stop,2.295,-2.37R,-744.59

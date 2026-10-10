@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+MU,qm_ep,MU-5,Long,174,2024-09-27,110.5,2024-09-30,106.08,Stop,2.97,-1.49R,-769.08

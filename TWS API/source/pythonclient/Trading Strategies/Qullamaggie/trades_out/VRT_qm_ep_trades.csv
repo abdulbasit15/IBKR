@@ -1,0 +1,9 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+VRT,qm_ep,VRT-2,Long,457,2023-02-23,15.9,2023-03-02,15.83,Partial,0.665,-0.11R,-31.99
+VRT,qm_ep,VRT-2,Long,457,2023-02-23,15.9,2023-03-03,15.88,BE-Stop,0.665,-0.03R,-9.14
+VRT,qm_ep,VRT-3,Long,323,2023-04-27,14.0,2023-05-04,14.31,Partial,0.94,+0.33R,100.13
+VRT,qm_ep,VRT-3,Long,323,2023-04-27,14.0,2023-07-26,25.34,Trail,0.94,+12.06R,3662.82
+VRT,qm_ep,VRT-13,Long,349,2024-08-01,79.75,2024-08-02,68.14,Stop,1.76,-6.60R,-4051.89
+VRT,qm_ep,VRT-16,Long,98,2025-04-24,80.25,2025-05-01,92.55,Partial,3.01,+4.09R,1205.4
+VRT,qm_ep,VRT-16,Long,98,2025-04-24,80.25,2025-07-10,120.72,Trail,3.01,+13.45R,3966.06
+VRT,qm_ep,VRT-19,Long,56,2026-02-12,243.95,2026-02-13,233.0,Stop,10.95,-1.00R,-613.2

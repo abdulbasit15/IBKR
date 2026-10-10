@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+APOG,qm_ep,APOG-20261006-094034,Long,274,2026-10-06,42.78,2026-10-07,38.73,Stop,3.64,-1.11R,-1109.7

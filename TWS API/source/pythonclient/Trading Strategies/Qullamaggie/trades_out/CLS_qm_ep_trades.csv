@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CLS,qm_ep,CLS-1,Long,1225,2022-10-26,11.23,2022-10-27,10.86,Stop,0.37,-1.00R,-453.25

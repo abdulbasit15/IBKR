@@ -1,0 +1,10 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+DDOG,qm_breakout,DDOG-2,Long,39,2023-07-12,108.215,2023-07-19,115.22,Partial,7.155,+0.98R,273.2
+DDOG,qm_breakout,DDOG-2,Long,39,2023-07-12,108.215,2023-07-26,108.215,BE-Stop,7.155,+0.00R,0.0
+DDOG,qm_breakout,DDOG-4,Long,203,2024-12-09,166.65,2024-12-10,161.65,Stop,1.88,-2.66R,-1015.0
+DDOG,qm_breakout,DDOG-5,Long,69,2025-07-07,155.0,2025-07-08,146.06,Stop,8.09,-1.11R,-616.86
+DDOG,qm_breakout,DDOG-6,Long,41,2025-11-07,184.29,2025-11-14,185.01,Partial,6.72,+0.11R,29.52
+DDOG,qm_breakout,DDOG-6,Long,41,2025-11-07,184.29,2025-11-17,184.18,BE-Stop,6.72,-0.02R,-4.51
+DDOG,qm_breakout,DDOG-8,Long,13,2026-06-29,245.0,2026-07-07,256.81,Partial,21.32,+0.55R,153.53
+DDOG,qm_breakout,DDOG-8,Long,13,2026-06-29,245.0,2026-07-22,245.0,BE-Stop,21.32,+0.00R,0.0
+DDOG,qm_breakout,DDOG-9,Long,28,2026-08-05,291.43,2026-08-06,227.45,Stop,19.83,-3.23R,-1791.44

@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+UEC,qm_ep,UEC-10,Long,447,2025-05-27,7.07,2025-06-02,5.76,Stop,1.31,-1.00R,-585.57

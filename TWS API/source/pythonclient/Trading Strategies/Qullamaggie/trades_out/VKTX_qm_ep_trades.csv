@@ -1,0 +1,8 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+VKTX,qm_ep,VKTX-7,Long,289,2023-12-05,15.05,2023-12-12,18.34,Partial,1.03,+3.19R,950.81
+VKTX,qm_ep,VKTX-7,Long,290,2023-12-05,15.05,2024-01-02,18.28,Trail,1.03,+3.14R,936.7
+VKTX,qm_ep,VKTX-11,Long,644,2025-04-15,24.55,2025-04-16,22.66,Stop,0.979,-1.93R,-1217.16
+VKTX,qm_ep,VKTX-13,Long,172,2025-10-24,35.0,2025-10-31,38.08,Partial,1.8,+1.71R,529.76
+VKTX,qm_ep,VKTX-13,Long,172,2025-10-24,35.0,2025-11-04,35.0,BE-Stop,1.8,+0.00R,0.0
+VKTX,qm_ep,VKTX-15,Long,1152,2026-02-13,30.72,2026-02-17,29.365,Stop,0.54,-2.51R,-1560.96
+VKTX,qm_ep,VKTX-16,Long,113,2026-09-23,41.76,2026-09-24,36.025,Stop,5.42,-1.06R,-648.05

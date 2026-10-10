@@ -1,0 +1,3 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CLSK,qm_breakout,CLSK-3,Long,305,2023-06-21,4.56,2023-06-28,4.23,Partial,0.71,-0.46R,-100.65
+CLSK,qm_breakout,CLSK-3,Long,305,2023-06-21,4.56,2023-06-29,4.33,BE-Stop,0.71,-0.32R,-70.15

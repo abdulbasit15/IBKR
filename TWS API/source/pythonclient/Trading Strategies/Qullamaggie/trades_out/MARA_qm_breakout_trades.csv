@@ -1,0 +1,5 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+MARA,qm_breakout,MARA-10,Long,154,2025-07-03,17.58,2025-07-11,19.14,Partial,1.71,+0.91R,240.24
+MARA,qm_breakout,MARA-10,Long,154,2025-07-03,17.58,2025-07-23,17.58,BE-Stop,1.71,+0.00R,0.0
+MARA,qm_breakout,MARA-11,Long,318,2026-05-26,14.24,2026-06-02,14.28,Partial,0.83,+0.05R,12.72
+MARA,qm_breakout,MARA-11,Long,319,2026-05-26,14.24,2026-06-03,14.0,BE-Stop,0.83,-0.29R,-76.56

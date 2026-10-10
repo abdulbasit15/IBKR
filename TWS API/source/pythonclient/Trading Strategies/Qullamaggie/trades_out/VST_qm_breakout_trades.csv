@@ -1,0 +1,12 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+VST,qm_breakout,VST-1,Long,162,2024-02-28,50.1,2024-03-06,60.9,Partial,1.88,+5.74R,1749.6
+VST,qm_breakout,VST-1,Long,162,2024-02-28,50.1,2024-04-15,68.22,Trail,1.88,+9.64R,2935.44
+VST,qm_breakout,VST-2,Long,65,2024-04-30,77.83,2024-05-07,81.74,Partial,4.85,+0.81R,254.15
+VST,qm_breakout,VST-2,Long,65,2024-04-30,77.83,2024-06-03,93.25,Trail,4.85,+3.18R,1002.3
+VST,qm_breakout,VST-3,Long,61,2024-11-08,135.24,2024-11-15,142.15,Partial,5.22,+1.32R,421.51
+VST,qm_breakout,VST-3,Long,61,2024-11-08,135.24,2024-12-09,148.31,Trail,5.22,+2.50R,797.27
+VST,qm_breakout,VST-4,Long,35,2025-01-22,192.99,2025-01-27,154.09,Stop,18.14,-2.14R,-1361.5
+VST,qm_breakout,VST-5,Long,44,2025-06-03,175.0,2025-06-10,160.59,Stop,14.41,-1.00R,-634.04
+VST,qm_breakout,VST-6,Long,57,2025-06-23,184.24,2025-06-30,193.81,Partial,5.48,+1.75R,545.49
+VST,qm_breakout,VST-6,Long,58,2025-06-23,184.24,2025-07-01,184.24,BE-Stop,5.48,+0.00R,0.0
+VST,qm_breakout,VST-7,Long,95,2025-08-05,214.95,2025-08-06,208.289,Stop,6.661,-1.00R,-632.79

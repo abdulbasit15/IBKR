@@ -1,0 +1,12 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+MRVL,qm_breakout,MRVL-2,Long,133,2023-07-13,63.85,2023-07-20,63.22,Partial,1.91,-0.33R,-83.79
+MRVL,qm_breakout,MRVL-2,Long,134,2023-07-13,63.85,2023-07-21,63.85,BE-Stop,1.91,+0.00R,0.0
+MRVL,qm_breakout,MRVL-3,Long,96,2024-03-04,78.74,2024-03-11,73.46,Stop,5.28,-1.00R,-506.88
+MRVL,qm_breakout,MRVL-5,Long,77,2024-11-07,91.72,2024-11-14,90.7,Partial,3.24,-0.31R,-78.54
+MRVL,qm_breakout,MRVL-5,Long,77,2024-11-07,91.72,2024-11-15,89.14,BE-Stop,3.24,-0.80R,-198.66
+MRVL,qm_breakout,MRVL-6,Long,87,2024-12-03,97.79,2024-12-10,106.68,Partial,2.84,+3.13R,773.43
+MRVL,qm_breakout,MRVL-6,Long,88,2024-12-03,97.79,2024-12-31,110.45,Trail,2.84,+4.46R,1114.08
+MRVL,qm_breakout,MRVL-7,Long,67,2025-01-06,122.29,2025-01-10,114.74,Stop,7.55,-1.00R,-505.85
+MRVL,qm_breakout,MRVL-8,Long,78,2025-01-21,125.85,2025-01-27,108.03,Stop,6.45,-2.76R,-1389.96
+MRVL,qm_breakout,MRVL-9,Long,228,2025-07-31,82.75,2025-08-01,77.07,Stop,2.18,-2.61R,-1295.04
+MRVL,qm_breakout,MRVL-11,Long,41,2026-05-14,180.88,2026-05-18,168.91,Stop,11.97,-1.00R,-490.77

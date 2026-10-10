@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+TSM,qm_breakout,TSM-2,Long,45,2026-02-25,390.21,2026-02-26,376.05,Stop,14.16,-1.00R,-637.2
+TSM,qm_breakout,TSM-3,Long,17,2026-06-22,476.09,2026-06-23,438.39,Stop,37.7,-1.00R,-640.9
+TSM,qm_breakout,TSM-4,Long,43,2026-07-01,467.67,2026-07-02,450.54,Stop,14.67,-1.17R,-736.59

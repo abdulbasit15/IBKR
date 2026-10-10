@@ -1,0 +1,8 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+TTD,qm_breakout,TTD-3,Long,325,2023-06-29,78.29,2023-07-05,76.34,Stop,1.95,-1.00R,-633.75
+TTD,qm_breakout,TTD-4,Long,88,2024-05-03,89.27,2024-05-10,87.26,Partial,3.57,-0.56R,-176.88
+TTD,qm_breakout,TTD-4,Long,88,2024-05-03,89.27,2024-05-13,87.91,BE-Stop,3.57,-0.38R,-119.68
+TTD,qm_breakout,TTD-5,Long,42,2024-12-03,135.0,2024-12-10,132.66,Partial,7.5,-0.31R,-98.28
+TTD,qm_breakout,TTD-5,Long,42,2024-12-03,135.0,2024-12-11,133.93,BE-Stop,7.5,-0.14R,-44.94
+TTD,qm_breakout,TTD-7,Long,121,2025-07-10,76.34,2025-07-17,81.44,Partial,2.59,+1.97R,617.1
+TTD,qm_breakout,TTD-7,Long,122,2025-07-10,76.34,2025-08-08,56.64,BE-Stop,2.59,-7.61R,-2403.4

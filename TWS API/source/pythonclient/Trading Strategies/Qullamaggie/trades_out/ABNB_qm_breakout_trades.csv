@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ABNB,qm_breakout,ABNB-1,Long,86,2023-02-16,135.65,2023-02-21,129.77,Stop,5.8,-1.01R,-505.68
+ABNB,qm_breakout,ABNB-2,Long,200,2024-02-13,149.21,2024-02-14,146.16,Stop,0.87,-3.51R,-610.0
+ABNB,qm_breakout,ABNB-4,Long,155,2026-08-25,190.13,2026-08-26,188.53,Stop,1.6,-1.00R,-248.0

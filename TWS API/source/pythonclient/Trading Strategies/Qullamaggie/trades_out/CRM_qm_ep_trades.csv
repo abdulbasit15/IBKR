@@ -1,0 +1,5 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CRM,qm_ep,CRM-1,Long,63,2022-06-02,175.0,2022-06-09,187.11,Partial,0.63,+19.22R,762.93
+CRM,qm_ep,CRM-1,Long,64,2022-06-02,175.0,2022-06-13,170.55,BE-Stop,0.63,-7.06R,-284.8
+CRM,qm_ep,CRM-2,Long,119,2023-03-03,188.07,2023-03-06,185.07,Stop,2.87,-1.05R,-357.0
+CRM,qm_ep,CRM-3,Long,62,2024-12-05,360.78,2024-12-09,356.65,Stop,4.13,-1.00R,-256.06

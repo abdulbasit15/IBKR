@@ -1,0 +1,11 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+RDDT,qm_breakout,RDDT-1,Long,19,2024-10-31,117.405,2024-11-07,131.44,Partial,13.295,+1.06R,266.67
+RDDT,qm_breakout,RDDT-1,Long,20,2024-10-31,117.405,2024-12-31,163.44,Trail,13.295,+3.46R,920.7
+RDDT,qm_breakout,RDDT-2,Long,44,2025-01-22,187.47,2025-01-27,174.22,Stop,11.87,-1.12R,-583.0
+RDDT,qm_breakout,RDDT-3,Long,73,2025-07-03,159.0,2025-07-07,151.8,Stop,7.2,-1.00R,-525.6
+RDDT,qm_breakout,RDDT-4,Long,9,2025-08-01,182.0,2025-08-08,215.44,Partial,27.17,+1.23R,300.96
+RDDT,qm_breakout,RDDT-4,Long,10,2025-08-01,182.0,2025-08-27,211.1,Trail,27.17,+1.07R,291.0
+RDDT,qm_breakout,RDDT-5,Long,17,2025-09-08,245.09,2025-09-15,263.64,Partial,14.85,+1.25R,315.35
+RDDT,qm_breakout,RDDT-5,Long,18,2025-09-08,245.09,2025-09-23,245.09,BE-Stop,14.85,+0.00R,0.0
+RDDT,qm_breakout,RDDT-7,Long,13,2026-07-02,194.01,2026-07-10,195.34,Partial,19.0,+0.07R,17.29
+RDDT,qm_breakout,RDDT-7,Long,14,2026-07-02,194.01,2026-07-13,194.01,BE-Stop,19.0,+0.00R,0.0

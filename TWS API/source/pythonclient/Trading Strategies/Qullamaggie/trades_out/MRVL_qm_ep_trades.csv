@@ -1,0 +1,5 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+MRVL,qm_ep,MRVL-1,Long,57,2023-05-30,67.49,2023-05-31,58.58,Stop,8.91,-1.00R,-507.87
+MRVL,qm_ep,MRVL-4,Long,271,2024-09-03,74.58,2024-09-04,69.08,Stop,1.87,-2.94R,-1490.5
+MRVL,qm_ep,MRVL-10,Long,54,2026-03-09,87.93,2026-03-16,91.58,Partial,4.53,+0.81R,197.1
+MRVL,qm_ep,MRVL-10,Long,54,2026-03-09,87.93,2026-03-18,87.93,BE-Stop,4.53,+0.00R,0.0

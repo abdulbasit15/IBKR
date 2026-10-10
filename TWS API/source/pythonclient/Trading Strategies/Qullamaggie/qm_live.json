@@ -11,14 +11,16 @@
   "max_positions": 10,
   "min_quality_score": 0,
   "min_quality_score_by_setup": {
-    "breakout": 100
+    "breakout": 100,
+    "pullback": 100
   },
   "max_position_pct": 0.3,
   "capital_override": 0,
   "strategy_capital_by_setup": {
     "breakout": 10000,
     "ep": 10000,
-    "parabolic_long": 10000
+    "parabolic_long": 10000,
+    "pullback": 10000
   },
   "daily_loss_limit_pct": 0.05,
   "state_file": "qm_live_state.json",
@@ -35,7 +37,8 @@
   "setups": [
     "breakout",
     "parabolic_long",
-    "ep"
+    "ep",
+    "pullback"
   ],
   "min_move_pct": 30,
   "max_move_pct": 300,
@@ -74,12 +77,14 @@
   "trail_sma_by_setup": {
     "breakout": 20,
     "ep": 50,
-    "parabolic_long": 10
+    "parabolic_long": 10,
+    "pullback": 20
   },
   "exit_mode_by_setup": {
     "breakout": "trail",
     "ep": "trail",
-    "parabolic_long": "target_ma"
+    "parabolic_long": "target_ma",
+    "pullback": "trail"
   },
   "target_ma2": 20,
   "target_max_days": 15,
@@ -93,5 +98,11 @@
   "status_every_min": 60,
   "entry_tif": "DAY",
   "max_ext_pct": 30,
-  "partial_min_r": 0.5
+  "partial_min_r": 0.5,
+  "partial_ext_adr": 4,
+  "be_stop_r": -99,
+  "pb_ma": 10,
+  "pb_lookback": 8,
+  "pb_near": 2.0,
+  "pb_max_ext": 5.0
 }

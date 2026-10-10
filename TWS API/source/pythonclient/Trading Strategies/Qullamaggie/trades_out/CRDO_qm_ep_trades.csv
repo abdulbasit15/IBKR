@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CRDO,qm_ep,CRDO-15,Long,120,2026-02-11,134.35,2026-02-12,131.06,Stop,3.09,-1.06R,-394.8
+CRDO,qm_ep,CRDO-16,Long,11,2026-04-15,164.54,2026-04-22,189.49,Partial,15.54,+1.61R,274.45
+CRDO,qm_ep,CRDO-16,Long,12,2026-04-15,164.54,2026-05-14,184.54,Trail,15.54,+1.29R,240.0

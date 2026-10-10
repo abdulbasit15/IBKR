@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+AMD,qm_ep,AMD-11,Long,39,2026-04-27,346.32,2026-04-28,311.86,Stop,11.78,-2.93R,-1343.94
+AMD,qm_ep,AMD-12,Long,15,2026-05-07,417.07,2026-05-14,449.7,Partial,15.03,+2.17R,489.45
+AMD,qm_ep,AMD-12,Long,15,2026-05-07,417.07,2026-05-18,417.07,BE-Stop,15.03,+0.00R,0.0

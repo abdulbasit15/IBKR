@@ -1,0 +1,5 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+NET,qm_ep,NET-1,Long,30,2022-08-08,74.425,2022-08-15,78.08,Partial,8.425,+0.43R,109.65
+NET,qm_ep,NET-1,Long,31,2022-08-08,74.425,2022-08-16,74.425,BE-Stop,8.425,+0.00R,0.0
+NET,qm_ep,NET-11,Long,148,2026-01-28,206.0,2026-01-29,186.27,Stop,0.8,-24.66R,-2920.04
+NET,qm_ep,NET-12,Long,93,2026-02-12,191.0,2026-02-13,185.73,Stop,5.27,-1.00R,-490.11

@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ARM,qm_breakout,ARM-1,Long,22,2024-07-08,181.04,2024-07-15,177.53,Partial,11.44,-0.31R,-77.22
+ARM,qm_breakout,ARM-1,Long,23,2024-07-08,181.04,2024-07-16,180.0,BE-Stop,11.44,-0.09R,-23.92
+ARM,qm_breakout,ARM-2,Long,62,2025-06-30,166.965,2025-07-01,158.76,Stop,8.205,-1.00R,-508.71
+ARM,qm_breakout,ARM-3,Long,141,2026-04-15,161.22,2026-04-16,157.6,Stop,3.62,-1.00R,-510.42
+ARM,qm_breakout,ARM-5,Long,6,2026-05-21,266.895,2026-05-29,353.29,Partial,40.81,+2.12R,518.37
+ARM,qm_breakout,ARM-5,Long,6,2026-05-21,266.895,2026-06-10,307.43,Trail,40.81,+0.99R,243.21

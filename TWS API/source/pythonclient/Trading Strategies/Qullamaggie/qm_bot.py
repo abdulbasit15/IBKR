@@ -341,7 +341,109 @@ def analyze_parabolic_long(sym: str, bars: list, p: SimpleNamespace):
     }
 
 
-ANALYZERS = {"breakout": analyze_breakout, "parabolic_long": analyze_parabolic_long}
+def analyze_pullback(sym: str, bars: list, p: SimpleNamespace):
+    """Qullamaggie MA-PULLBACK / continuation: a strong leader (same quality universe as the
+    breakout) in an established uptrend that has pulled back to a RISING 10/20-day MA and is about
+    to resume. We place a BUY-STOP at the PRIOR day's high (the reclaim trigger); the protective
+    stop is the pullback swing low. This lets the bot join leaders it missed on the first breakout
+    (the late-entry gap) at a lower-risk, higher-win-rate entry. Daily-bar approximation of his
+    intraday 'buy the bounce off the 10/20MA' continuation entry. Scored on the same quality scale
+    as the breakout so its floor/sleeve are directly comparable."""
+    n = len(bars)
+    if n < p.warmup:
+        return None
+    closes = [b["c"] for b in bars]
+    highs = [b["h"] for b in bars]
+    lows = [b["l"] for b in bars]
+    vols = [b["v"] for b in bars]
+    price = closes[-1]
+    if price < p.min_price:
+        return None
+
+    sma20 = sum(closes[-20:]) / 20
+    sma50 = sum(closes[-50:]) / 50
+    if not (price > sma20 > sma50):                      # uptrend
+        return None
+    above_200 = n >= 200 and price > (sum(closes[-200:]) / 200)
+
+    base_c = closes[-1 - 63] if n > 63 else closes[0]
+    perf3m = (price / base_c - 1.0) * 100.0 if base_c else 0.0
+    if perf3m < p.min_move_pct or perf3m > p.max_move_pct:   # same leader filter as breakout
+        return None
+
+    pb_ma = int(getattr(p, "pb_ma", 10))
+    def ma_at(k):                                        # rolling mean of the reference MA at bar k
+        return (sum(closes[k - pb_ma + 1:k + 1]) / pb_ma) if k >= pb_ma - 1 else None
+    ma_now = ma_at(n - 1)
+    ma_prev = ma_at(n - 6)
+    if ma_now is None or ma_prev is None or ma_now <= ma_prev:   # the MA must be RISING
+        return None
+
+    lb = int(getattr(p, "pb_lookback", 8))
+    near = getattr(p, "pb_near", 2.0)
+    tagged = False                                       # a recent low pulled back to the MA
+    for k in range(max(pb_ma - 1, n - 1 - lb), n - 1):   # exclude today
+        m = ma_at(k)
+        if m is not None and lows[k] <= m * (1.0 + near / 100.0):
+            tagged = True
+            break
+    if not tagged:
+        return None
+
+    adr = adr_pct_at(bars, n - 1, 20)
+    if adr is None or adr < p.min_adr_pct:
+        return None
+
+    hi_52 = max(highs[-252:])
+    off_high = (price / hi_52 - 1.0) * 100.0
+    if off_high < -p.near_high_pct:
+        return None
+
+    dollar_vol_m = (sum(b["c"] * b["v"] for b in bars[-20:]) / min(20, n)) / 1e6
+    if dollar_vol_m < p.min_dollar_vol_m:
+        return None
+
+    # reclaim trigger = prior day's high (buy-stop) — the resumption must still be ahead (not already
+    # reclaimed), and we don't chase if the trigger is already far above the MA.
+    trigger = round_cent(highs[-1] * (1.0 + p.breakout_buffer_pct / 100.0))
+    if price > trigger:
+        return None
+    if (trigger / ma_now - 1.0) * 100.0 > getattr(p, "pb_max_ext", 5.0):
+        return None
+
+    pb_low = min(lows[max(0, n - 1 - lb):n])             # pullback swing low
+    stop = round_cent(apply_adr_stop(trigger, pb_low, adr,
+                                     getattr(p, "adr_stop", False), getattr(p, "adr_stop_mult", 1.0)))
+    rps = trigger - stop
+    if rps <= 0 or (rps / trigger) > p.max_risk_frac:
+        return None
+
+    # ---- quality factors (same scale as breakout, computed over the cons-day window) ----
+    cons = p.cons_days
+    base_hi = max(highs[-cons:])
+    base_lo = min(lows[-cons:])
+    base_range_pct = (base_hi / base_lo - 1.0) * 100.0 if base_lo > 0 else 0.0
+    base_vol = sum(vols[-cons:]) / cons
+    ref_slice = vols[-(cons + 50):-cons] if n >= cons + 50 else vols[:-cons] or vols
+    ref_vol = (sum(ref_slice) / len(ref_slice)) if ref_slice else base_vol
+    pre_base_low = min(lows[-(cons + 20):-cons]) if n >= cons + 20 else base_lo
+    higher_lows = base_lo > pre_base_low
+    score, comp = _breakout_quality(price, perf3m, adr, base_range_pct, off_high, base_vol, ref_vol,
+                                    above_200, higher_lows, getattr(p, "spy_perf3m", 0.0),
+                                    p.quality_weights, p.max_base_range_pct)
+
+    return {
+        "sym": sym, "setup": "pullback", "price": price, "trigger": trigger, "stop": stop,
+        "rps": rps, "perf3m": perf3m, "adr": adr, "off_high": off_high,
+        "rs": perf3m - (getattr(p, "spy_perf3m", 0.0) or 0.0),
+        "dollar_vol_m": dollar_vol_m, "base_range_pct": base_range_pct,
+        "voldry": (ref_vol / base_vol) if base_vol else 0.0, "above_200": above_200,
+        "higher_lows": higher_lows, "score": score, "score_parts": comp,
+    }
+
+
+ANALYZERS = {"breakout": analyze_breakout, "parabolic_long": analyze_parabolic_long,
+             "pullback": analyze_pullback}
 
 
 def market_regime(cfg: dict):
@@ -378,6 +480,9 @@ def scan_setups(cfg: dict, limit: int = None):
         pl_drop_days=cfg.get("pl_drop_days", 15),
         pl_bounce_within=cfg.get("pl_bounce_within", 5),
         pl_max_bounce=cfg.get("pl_max_bounce", 30.0),
+        # pullback / continuation params
+        pb_ma=cfg.get("pb_ma", 10), pb_lookback=cfg.get("pb_lookback", 8),
+        pb_near=cfg.get("pb_near", 2.0), pb_max_ext=cfg.get("pb_max_ext", 5.0),
         # quality-ranking weights (breakout); cfg override merges over the defaults
         quality_weights={**QUALITY_WEIGHTS, **(cfg.get("quality_weights") or {})},
         adr_stop=cfg.get("adr_stop", False), adr_stop_mult=cfg.get("adr_stop_mult", 1.0),
@@ -570,7 +675,7 @@ class QMBot:
     def _trail_sma_for(self, setup: str) -> int:
         """Per-setup moving average (trail length, or 1st take-profit MA for parabolic). His defaults:
         breakout 20, EP 50, parabolic 10. Override via cfg['trail_sma_by_setup']."""
-        defaults = {"breakout": 20, "ep": 50, "parabolic_long": 10}
+        defaults = {"breakout": 20, "ep": 50, "parabolic_long": 10, "pullback": 20}
         m = self.cfg.get("trail_sma_by_setup") or {}
         return int(m.get(setup, defaults.get(setup, self.cfg.get("trail_sma", 20))))
 
@@ -1153,8 +1258,8 @@ class QMBot:
                         pos["partial_done"] = True
                         held -= half
                         pos["shares_left"] = held
-                        if pos.get("entry_price"):
-                            self._move_stop(sym, pos, round_cent(pos["entry_price"]))
+                        if pos.get("entry_price"):   # parabolic: BE after TP1 (mean-reverting; be_stop_r not applied here)
+                            self._move_stop(sym, pos, round_cent(pos["entry_price"]), note="(break-even)")
                         save_state(self.state)
                 # 2) second target: sell the remainder into SMA(ma2_n)
                 if pos.get("partial_done") and ma2 is not None and price >= ma2 and held > 0:
@@ -1184,16 +1289,39 @@ class QMBot:
                 rps = pos.get("rps")
                 cur_r = ((price - epx) / rps) if (epx and rps) else None
                 min_r = self.cfg.get("partial_min_r", 0.5)
-                if (not pos.get("partial_done")) and days_held >= self.cfg["partial_days"] \
-                        and cur_r is not None and cur_r >= min_r:
+                # Qullamaggie sells INTO STRENGTH: fire the partial when price is EXTENDED >= partial_ext_adr
+                # ADRs above the trail MA (a climax — can trigger EARLY, catching fast rippers), OR fall back
+                # to the time rule (days_held >= partial_days). Both still require up >= partial_min_r, so a
+                # loser is never scaled. partial_ext_adr=0 -> pure time rule (unchanged behaviour).
+                ext_adr = float(self.cfg.get("partial_ext_adr", 0) or 0)
+                adr_now = adr_pct_at(bars, len(bars) - 1, 20)
+                ext_fire = bool(ext_adr and ma and adr_now and
+                                ((price / ma - 1.0) * 100.0) / adr_now >= ext_adr)
+                time_fire = days_held >= self.cfg["partial_days"]
+                if (not pos.get("partial_done")) and cur_r is not None and cur_r >= min_r \
+                        and (ext_fire or time_fire):
                     half = int(held * self.cfg["partial_fraction"])
                     if half >= 1:
-                        self._sell(sym, half, "PARTIAL", ref_price=price)
+                        self._sell(sym, half, "PARTIAL-EXT" if ext_fire else "PARTIAL", ref_price=price)
                         pos["partial_done"] = True
                         held -= half
-                        pos["shares_left"] = held       # so the BE stop resizes to the remainder
-                        if pos.get("entry_price"):
-                            self._move_stop(sym, pos, round_cent(pos["entry_price"]))
+                        pos["shares_left"] = held       # the protective stop must resize to the remainder
+                        # POST-PARTIAL STOP placement, config-driven via `be_stop_r` (entry + be_stop_r*R):
+                        #   <= -90 (e.g. -99) -> DON'T reprice (trail-only: keep the original setup stop and
+                        #     let the MA trail catch up — best in backtest), 0 -> break-even, >0 -> lock profit.
+                        # We ALWAYS call _move_stop so the resting child stop is resized to `held`; only the
+                        # PRICE differs. See backtest_results.html §3 + configuration.html.
+                        be_r = self.cfg.get("be_stop_r", 0)
+                        epx2 = pos.get("entry_price")
+                        rps2 = pos.get("rps") or 0
+                        if be_r is not None and be_r > -90 and epx2:
+                            new_stop = round_cent(epx2 + (be_r or 0) * rps2)
+                            note = "(break-even)" if not be_r else f"(lock {be_r:+g}R)"
+                        else:
+                            new_stop = pos.get("initial_stop") or pos.get("stop")   # trail-only: keep level
+                            note = "(trail-only: keep original stop, resized)"
+                        if new_stop:
+                            self._move_stop(sym, pos, round_cent(new_stop), note=note)
                         save_state(self.state)
                 # 2) TRAIL: first close below the per-setup trail SMA exits the remainder
                 if ma is not None and price < ma and held > 0:
@@ -1202,7 +1330,12 @@ class QMBot:
                     del st[sym]
                     save_state(self.state)
                     continue
+                adrs_above = (((price / ma - 1.0) * 100.0) / adr_now) if (ma and adr_now) else None
                 log(f"HOLD {sym}: {held}sh held={days_held}d price={price:.2f} "
+                    f"trailSMA{ma_n}={ma:.2f} ext={adrs_above:.1f}ADR "
+                    f"partial={'Y' if pos.get('partial_done') else 'N'}"
+                    if adrs_above is not None else
+                    f"HOLD {sym}: {held}sh held={days_held}d price={price:.2f} "
                     f"trailSMA{ma_n}={ma:.2f} partial={'Y' if pos.get('partial_done') else 'N'}",
                     setup=setup)
                 save_state(self.state)
@@ -1388,8 +1521,8 @@ class QMBot:
         except OSError as e:
             log(f"trade-csv write failed for {sym}: {e}", setup=setup)
 
-    def _move_stop(self, sym: str, pos: dict, new_stop: float):
-        msg = f"MOVE STOP {sym} -> {new_stop:.2f} (break-even)"
+    def _move_stop(self, sym: str, pos: dict, new_stop: float, note: str = ""):
+        msg = f"MOVE STOP {sym} -> {new_stop:.2f}{(' ' + note) if note else ''}"
         if self.dry:
             log("[DRY] " + msg)
             pos["stop"] = new_stop

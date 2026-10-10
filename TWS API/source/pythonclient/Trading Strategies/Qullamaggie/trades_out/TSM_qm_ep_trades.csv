@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+TSM,qm_ep,TSM-1,Long,487,2022-11-16,80.56,2022-11-17,79.3,Stop,0.55,-2.29R,-613.62

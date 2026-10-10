@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+LRCX,qm_ep,LRCX-10,Long,25,2026-07-31,315.37,2026-08-03,283.34,Stop,21.12,-1.52R,-800.75

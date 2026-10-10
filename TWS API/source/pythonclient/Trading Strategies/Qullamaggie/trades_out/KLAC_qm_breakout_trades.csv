@@ -1,0 +1,8 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+KLAC,qm_breakout,KLAC-1,Long,275,2025-10-28,120.668,2025-10-30,120.0,Stop,0.668,-1.00R,-183.7
+KLAC,qm_breakout,KLAC-2,Long,76,2025-12-04,120.256,2025-12-11,124.618,Partial,3.634,+1.20R,331.51
+KLAC,qm_breakout,KLAC-2,Long,76,2025-12-04,120.256,2025-12-12,120.256,BE-Stop,3.634,+0.00R,0.0
+KLAC,qm_breakout,KLAC-3,Long,69,2026-01-28,163.446,2026-01-30,154.0,Stop,7.946,-1.19R,-651.77
+KLAC,qm_breakout,KLAC-4,Long,214,2026-02-26,154.511,2026-02-27,149.701,Stop,0.4,-12.02R,-1029.34
+KLAC,qm_breakout,KLAC-5,Long,41,2026-05-27,204.663,2026-05-28,191.433,Stop,13.23,-1.00R,-542.43
+KLAC,qm_breakout,KLAC-6,Long,17,2026-06-30,280.28,2026-07-02,249.32,Stop,30.96,-1.00R,-526.32

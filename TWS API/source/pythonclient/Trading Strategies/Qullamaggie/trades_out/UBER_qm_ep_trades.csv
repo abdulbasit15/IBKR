@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+UBER,qm_ep,UBER-1,Long,118,2022-08-03,29.72,2022-08-10,32.8,Partial,2.62,+1.18R,363.44
+UBER,qm_ep,UBER-1,Long,118,2022-08-03,29.72,2022-08-19,29.5,BE-Stop,2.62,-0.08R,-25.96
+UBER,qm_ep,UBER-3,Long,1256,2022-11-02,29.57,2022-11-03,28.03,Stop,0.45,-3.42R,-1934.24

@@ -1,0 +1,10 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+UBER,qm_breakout,UBER-2,Long,336,2022-09-15,32.95,2022-09-16,30.96,Stop,1.85,-1.08R,-668.64
+UBER,qm_breakout,UBER-4,Long,143,2023-06-16,43.07,2023-06-26,44.42,Partial,2.13,+0.63R,193.05
+UBER,qm_breakout,UBER-4,Long,143,2023-06-16,43.07,2023-06-29,43.07,BE-Stop,2.13,+0.00R,0.0
+UBER,qm_breakout,UBER-5,Long,475,2023-07-14,45.905,2023-07-17,44.622,Stop,1.283,-1.00R,-609.42
+UBER,qm_breakout,UBER-6,Long,172,2023-07-19,47.1,2023-07-26,47.31,Partial,1.76,+0.12R,36.12
+UBER,qm_breakout,UBER-6,Long,173,2023-07-19,47.1,2023-07-27,47.1,BE-Stop,1.76,+0.00R,0.0
+UBER,qm_breakout,UBER-7,Long,748,2023-08-01,48.67,2023-08-02,46.055,Stop,0.52,-5.03R,-1956.02
+UBER,qm_breakout,UBER-8,Long,63,2024-02-15,79.0,2024-02-23,78.2,Partial,4.69,-0.17R,-50.4
+UBER,qm_breakout,UBER-8,Long,64,2024-02-15,79.0,2024-02-26,78.28,BE-Stop,4.69,-0.15R,-46.08

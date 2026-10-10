@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+AVGO,qm_breakout,AVGO-1,Long,131,2023-06-15,88.441,2023-06-21,84.722,Stop,3.719,-1.00R,-487.19
+AVGO,qm_breakout,AVGO-4,Long,70,2025-06-03,250.08,2025-06-09,243.19,Stop,6.89,-1.00R,-482.3
+AVGO,qm_breakout,AVGO-5,Long,36,2025-10-30,386.4,2025-10-31,373.19,Stop,13.21,-1.00R,-475.56
+AVGO,qm_breakout,AVGO-6,Long,27,2026-05-15,432.81,2026-05-18,415.59,Stop,17.22,-1.00R,-464.94
+AVGO,qm_breakout,AVGO-7,Long,25,2026-06-01,450.09,2026-06-04,408.99,Stop,18.62,-2.21R,-1027.5

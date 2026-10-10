@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+NBIS,qm_ep,NBIS-1,Long,72,2025-07-15,52.325,2025-07-22,51.01,Partial,3.525,-0.37R,-94.68
+NBIS,qm_ep,NBIS-1,Long,72,2025-07-15,52.325,2025-07-23,51.2,BE-Stop,3.525,-0.32R,-81.0
+NBIS,qm_ep,NBIS-4,Long,16,2026-07-31,200.935,2026-08-06,189.88,Trail,31.855,-0.35R,-176.88

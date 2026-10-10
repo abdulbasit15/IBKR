@@ -1,0 +1,8 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+PANW,qm_breakout,PANW-3,Long,249,2023-06-20,122.105,2023-06-21,120.61,Stop,1.07,-1.40R,-372.26
+PANW,qm_breakout,PANW-4,Long,59,2023-06-23,123.42,2023-06-30,127.755,Partial,4.24,+1.02R,255.76
+PANW,qm_breakout,PANW-4,Long,60,2023-06-23,123.42,2023-07-11,123.42,BE-Stop,4.24,+0.00R,0.0
+PANW,qm_breakout,PANW-6,Long,17,2026-05-11,207.79,2026-05-18,247.55,Partial,14.36,+2.77R,675.92
+PANW,qm_breakout,PANW-6,Long,18,2026-05-11,207.79,2026-07-22,335.28,Trail,14.36,+8.88R,2294.82
+PANW,qm_breakout,PANW-7,Long,20,2026-08-05,373.87,2026-08-06,349.07,Stop,24.8,-1.00R,-496.0
+PANW,qm_breakout,PANW-8,Long,28,2026-09-24,392.44,2026-09-25,374.74,EndOfData,18.24,-0.97R,-495.6

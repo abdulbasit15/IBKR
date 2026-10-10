@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+FSLR,qm_ep,FSLR-1,Long,94,2022-07-29,90.43,2022-08-05,101.9,Partial,3.09,+3.71R,1078.18
+FSLR,qm_ep,FSLR-1,Long,94,2022-07-29,90.43,2022-09-23,129.85,Trail,3.09,+12.76R,3705.48
+FSLR,qm_ep,FSLR-4,Long,24,2023-05-15,228.08,2023-05-19,203.4,Stop,24.68,-1.00R,-592.32
+FSLR,qm_ep,FSLR-5,Long,37,2023-07-31,210.08,2023-08-02,194.22,Stop,15.86,-1.00R,-586.82
+FSLR,qm_ep,FSLR-8,Long,39,2025-05-14,190.48,2025-05-19,171.4,Stop,15.24,-1.25R,-744.12

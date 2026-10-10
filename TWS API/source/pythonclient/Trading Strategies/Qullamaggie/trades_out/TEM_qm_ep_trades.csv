@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+TEM,qm_ep,TEM-1,Long,451,2026-01-13,69.73,2026-01-14,66.84,Stop,1.41,-2.05R,-1303.39
+TEM,qm_ep,TEM-2,Long,44,2026-08-20,61.83,2026-08-27,70.69,Partial,7.02,+1.26R,389.84
+TEM,qm_ep,TEM-2,Long,45,2026-08-20,61.83,2026-08-31,61.83,BE-Stop,7.02,+0.00R,0.0

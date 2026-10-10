@@ -1,0 +1,15 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+LRCX,qm_breakout,LRCX-1,Long,66,2023-02-02,53.904,2023-02-09,51.552,Partial,4.055,-0.58R,-155.23
+LRCX,qm_breakout,LRCX-1,Long,67,2023-02-02,53.904,2023-02-10,51.096,BE-Stop,4.055,-0.69R,-188.14
+LRCX,qm_breakout,LRCX-2,Long,33,2025-10-27,156.14,2025-11-03,161.24,Partial,8.14,+0.63R,168.3
+LRCX,qm_breakout,LRCX-2,Long,33,2025-10-27,156.14,2025-11-04,155.63,BE-Stop,8.14,-0.06R,-16.83
+LRCX,qm_breakout,LRCX-3,Long,206,2025-12-03,156.89,2025-12-04,155.66,Stop,1.23,-1.00R,-253.38
+LRCX,qm_breakout,LRCX-4,Long,124,2025-12-10,165.09,2025-12-11,160.75,Stop,4.34,-1.00R,-538.16
+LRCX,qm_breakout,LRCX-5,Long,27,2025-12-22,175.68,2025-12-30,173.78,Partial,9.6,-0.20R,-51.3
+LRCX,qm_breakout,LRCX-5,Long,28,2025-12-22,175.68,2025-12-31,174.49,BE-Stop,9.6,-0.12R,-33.32
+LRCX,qm_breakout,LRCX-6,Long,34,2026-01-06,197.79,2026-01-13,214.38,Partial,7.67,+2.16R,564.06
+LRCX,qm_breakout,LRCX-6,Long,35,2026-01-06,197.79,2026-02-04,209.78,Trail,7.67,+1.56R,419.65
+LRCX,qm_breakout,LRCX-7,Long,48,2026-05-07,297.03,2026-05-12,285.85,Stop,11.18,-1.00R,-536.64
+LRCX,qm_breakout,LRCX-8,Long,24,2026-05-27,331.67,2026-05-28,309.65,Stop,22.02,-1.00R,-528.48
+LRCX,qm_breakout,LRCX-9,Long,11,2026-06-12,359.39,2026-06-22,409.54,Partial,23.19,+2.16R,551.65
+LRCX,qm_breakout,LRCX-9,Long,12,2026-06-12,359.39,2026-07-02,359.39,BE-Stop,23.19,+0.00R,0.0

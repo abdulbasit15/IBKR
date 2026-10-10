@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+RXRX,qm_ep,RXRX-2,Long,154,2023-07-13,11.98,2023-07-20,14.81,Partial,1.85,+1.53R,435.82
+RXRX,qm_ep,RXRX-2,Long,155,2023-07-13,11.98,2023-08-03,12.375,Trail,1.85,+0.21R,61.23
+RXRX,qm_ep,RXRX-3,Long,299,2024-02-16,12.15,2024-02-26,14.76,Partial,0.96,+2.72R,780.39
+RXRX,qm_ep,RXRX-3,Long,299,2024-02-16,12.15,2024-03-04,12.15,BE-Stop,0.96,+0.00R,0.0
+RXRX,qm_ep,RXRX-4,Long,535,2025-04-14,5.94,2025-04-16,5.32,Trail,1.08,-0.57R,-331.7

@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+AMZN,qm_ep,AMZN-1,Long,90,2022-08-01,134.96,2022-08-08,139.41,Partial,2.55,+1.75R,400.5
+AMZN,qm_ep,AMZN-1,Long,90,2022-08-01,134.96,2022-08-22,134.96,BE-Stop,2.55,+0.00R,0.0
+AMZN,qm_ep,AMZN-2,Long,40,2025-11-03,255.36,2025-11-06,243.98,Stop,11.38,-1.00R,-455.2
+AMZN,qm_ep,AMZN-3,Long,14,2026-08-03,278.29,2026-08-10,278.09,Partial,16.28,-0.01R,-2.8
+AMZN,qm_ep,AMZN-3,Long,14,2026-08-03,278.29,2026-08-11,278.29,BE-Stop,16.28,+0.00R,0.0

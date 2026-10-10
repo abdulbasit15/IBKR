@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qullamaggie LONG Bot — Backtest Results</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --border:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834; --good:#006300; --bad:#c0392b;
+    --k:#4a3aa7; --str:#008300; --num:#2a78d6; --cmt:#898781;
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926; --good:#0ca30c; --bad:#e05a47;
+    --k:#9085e9; --str:#5cc98c; --num:#86b6ef; --cmt:#898781;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 96px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:19px;margin:44px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:22px 0 4px}
+  p,li{color:var(--ink2);font-size:14.5px}
+  .sub{color:var(--muted);font-size:13px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .callout{border-left:3px solid var(--s2);background:var(--surface);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:16px 0;font-size:14px}
+  .callout.v1{border-left-color:var(--s1)}
+  .callout.warn{border-left-color:#c0392b}
+  .callout.good{border-left-color:var(--good)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td:first-child{white-space:nowrap}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12.5px}
+  td code{background:transparent;border:none;padding:0;color:var(--k)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;vertical-align:middle}
+  .tag.b{background:color-mix(in srgb,var(--s1) 18%,transparent);color:var(--s1)}
+  .tag.o{background:color-mix(in srgb,var(--s2) 18%,transparent);color:var(--s2)}
+  .pos{color:var(--good);font-weight:600} .neg{color:var(--bad);font-weight:600}
+  tr.best td{background:color-mix(in srgb,var(--good) 12%,transparent)}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--border);padding-top:14px}
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 18px;margin:16px 0}
+  .toc a{margin-right:16px;font-size:13px;white-space:nowrap;display:inline-block}
+  .meta{font-size:12px;color:var(--muted);margin:2px 0 8px}
+  .win{font-weight:700;color:var(--good)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Qullamaggie <b>LONG</b> Bot — Backtest Results</h1>
+    <p class="sub">All backtests behind the strategy &amp; trade-management choices. Companion to
+      <a href="configuration.html">configuration.html</a>.</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<div class="callout warn"><strong>Read the absolute numbers with suspicion.</strong> This is a <em>mechanical daily-bar</em>
+approximation of a discretionary intraday method, on a <em>survivorship-biased</em> universe (only names still listed
+today). It enters on the close-of-breakout → next open, so it is systematically later and worse than the real
+discretionary trade. <strong>Only RELATIVE comparisons within one experiment (same run date, same universe) are
+meaningful</strong> — never compare a dollar figure in one section to a dollar figure in another (they were run on
+different dates / windows). Treat every "+$X" as "setting A beat setting B by this much, that day," not as expected P&amp;L.</div>
+
+<div class="toc">
+  <a href="#setup">1 · Setup comparison</a><a href="#mgmt">2 · Trade management</a>
+  <a href="#matrix">3 · Trim × breakeven</a><a href="#hist">4 · Earlier tuning</a>
+  <a href="#live">5 · Live vs backtest</a><a href="#cfg">6 · Current config</a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="setup">1 · Setup comparison — breakout vs pullback vs combined</h2>
+<p class="meta">Run 2026-10-07 · universe=us (2,080 symbols) · range=2y · risk 1%/sleeve · max-pos 30% · trail SMA20 · ext-filter 30 · partial 5d/0.5R</p>
+<p>Which entry is more profitable — the fresh <span class="tag b">breakout</span> or the
+  <span class="tag b">pullback</span> (MA continuation)? Each run in isolation, then combined.</p>
+<table>
+  <thead><tr><th>Setup</th><th class="num">Trades</th><th class="num">Win%</th><th class="num">Net P&amp;L</th><th class="num">PF</th><th class="num">Avg win / loss</th><th class="num">Max DD</th></tr></thead>
+  <tbody>
+    <tr><td>Breakout-only</td><td class="num">3,079</td><td class="num">36.5%</td><td class="num neg">−$50,334</td><td class="num">0.97</td><td class="num">$1,493 / −$883</td><td class="num">−$181k</td></tr>
+    <tr class="best"><td>Pullback-only</td><td class="num">3,042</td><td class="num">38.2%</td><td class="num pos">+$95,700</td><td class="num">1.05</td><td class="num">$1,610 / −$946</td><td class="num">−$154k</td></tr>
+    <tr><td>Breakout + Pullback</td><td class="num">4,524</td><td class="num">37.3%</td><td class="num pos">+$58,296</td><td class="num">1.01</td><td class="num">$2,375 / −$1,391</td><td class="num">−$388k</td></tr>
+  </tbody>
+</table>
+<div class="callout good"><strong>Pullback &gt; breakout on every metric</strong> (P&amp;L, win%, PF, drawdown) — the only
+net-positive single setup. This matches Qullamaggie: the MA-pullback continuation is the lower-risk, higher-hit entry.
+<strong>Caveats:</strong> (1) survivorship bias flatters dip-buying more than breakouts — the real edge is smaller than
++$95k. (2) The combined run's huge −$388k drawdown is an <em>artifact</em>: this harness has no portfolio cap, so it takes
+all 4,524 signals at once; the live bot's max-10 cap + quality floor never would. Conclusion used: <strong>run both as
+independent sleeves</strong> and let the cap pick — breakout catches fresh leaders, pullback recovers the ones joined late.</div>
+
+<h3>1b · All four setups ranked (standalone)</h3>
+<p class="meta">Run 2026-10-09 · universe=us (~2,148 symbols) · range=2y · each setup alone · current mgmt config (4-ADR trim · trail-only · 0.5R gate · SMA20 · 1% risk · 30% max-pos)</p>
+<table>
+  <thead><tr><th>Rank</th><th>Setup</th><th class="num">Net P&amp;L</th><th class="num">PF</th><th class="num">Win%</th><th class="num">Trades</th><th class="num">Max DD</th></tr></thead>
+  <tbody>
+    <tr class="best"><td>1</td><td><span class="tag b">pullback</span></td><td class="num pos">+$82,605</td><td class="num">1.05</td><td class="num">37.1%</td><td class="num">2,969</td><td class="num">−$161k</td></tr>
+    <tr><td>2</td><td><span class="tag b">ep</span> <span class="sub">(gap+vol proxy)</span></td><td class="num pos">+$8,500</td><td class="num">1.02</td><td class="num">37.5%</td><td class="num">902</td><td class="num">−$88k</td></tr>
+    <tr><td>3</td><td><span class="tag o">parabolic_long</span></td><td class="num neg">−$4,362</td><td class="num">0.71</td><td class="num">37.5%</td><td class="num">32</td><td class="num">−$9k</td></tr>
+    <tr><td>4</td><td><span class="tag b">breakout</span></td><td class="num neg">−$50,751</td><td class="num">0.97</td><td class="num">33.5%</td><td class="num">3,000</td><td class="num">−$195k</td></tr>
+  </tbody>
+</table>
+<div class="callout"><strong>Pullback → EP → Parabolic → Breakout</strong> by net P&amp;L. Read with care:
+<strong>(1)</strong> Pullback is the clear breadwinner (only strongly net-positive, best PF, high volume).
+<strong>(2)</strong> EP here is only a <em>gap+volume proxy</em> — no earnings-calendar/intraday opening-range like the live
+bot — so the real, more-selective EP is likely <em>better</em> than +$8.5k. <strong>(3)</strong> Parabolic is <em>32 trades
+in 2 years</em> (rare by design) and the harness uses the trail exit, not its real target-MA exit — too small to rank, not
+a verdict. <strong>(4)</strong> Breakout last is the <em>harness penalty</em>: the mechanical close→next-open entry is
+systematically late (live, breakout's fresh entries beat the backtest); its PF is 0.97 (near break-even/dollar), it just
+trades the most and pays the late-entry tax. By profit factor the order is pullback 1.05 › ep 1.02 › breakout 0.97 ›
+parabolic 0.71. <strong>Why run all four:</strong> independent sleeves + the quality floor concentrate capital into
+whichever setup is firing that day.</div>
+
+<!-- ===================================================================== -->
+<h2 id="mgmt">2 · Trade management — the extension ("sell into strength") partial</h2>
+<p class="meta">Run 2026-10-08 · universe=us (2,080 symbols) · range=2y · setup=breakout+pullback · ext-filter 30 · partial-min-r 0.5 · time-fallback 5d · trail SMA20 · breakeven at partial</p>
+<p>Qullamaggie sells ⅓–½ <em>into strength</em>, not on a fixed day. <code>partial_ext_adr</code> fires the half-sell when
+  price is ≥ N ADRs above the trailing MA (a climax, can trigger early), with the 5-day/0.5R rule as the fallback.
+  <code>0</code> = pure time rule (the old behaviour).</p>
+<table>
+  <thead><tr><th>partial_ext_adr</th><th class="num">Trades</th><th class="num">Win%</th><th class="num">Net P&amp;L</th><th class="num">PF</th><th class="num">Avg win / loss</th><th class="num">Max DD</th></tr></thead>
+  <tbody>
+    <tr><td>0 · time-only (old)</td><td class="num">4,510</td><td class="num">37.2%</td><td class="num pos">+$12,889</td><td class="num">1.00</td><td class="num">$2,038 / −$1,202</td><td class="num">−$336k</td></tr>
+    <tr><td>3 ADR</td><td class="num">4,556</td><td class="num">39.2%</td><td class="num pos">+$9,254</td><td class="num">1.00</td><td class="num">$1,667 / −$1,072</td><td class="num">−$302k</td></tr>
+    <tr><td>3.5 ADR</td><td class="num">4,534</td><td class="num">38.3%</td><td class="num pos">+$17,679</td><td class="num">1.01</td><td class="num">$1,904 / −$1,175</td><td class="num">−$331k</td></tr>
+    <tr class="best"><td>4 ADR &nbsp;← chosen</td><td class="num">4,520</td><td class="num">37.9%</td><td class="num pos">+$31,023</td><td class="num">1.01</td><td class="num">$2,143 / −$1,294</td><td class="num">−$361k</td></tr>
+    <tr><td>4.5 ADR</td><td class="num">4,516</td><td class="num">37.5%</td><td class="num pos">+$14,486</td><td class="num">1.00</td><td class="num">$2,015 / −$1,202</td><td class="num">−$339k</td></tr>
+    <tr><td>5 ADR</td><td class="num">4,515</td><td class="num">37.3%</td><td class="num pos">+$15,261</td><td class="num">1.00</td><td class="num">$2,026 / −$1,200</td><td class="num">−$339k</td></tr>
+  </tbody>
+</table>
+<div class="callout"><strong>4 ADRs above the MA is the sweet spot.</strong> 3 trims too early (shrinks the average winner →
+cuts runners short); 4.5–5 is too rare to help. At 4 the average winner actually <em>grows</em> ($2,038 → $2,143) on the
+same trade count — real climax-banking, not churn. The peak is sharp, so the honest read is "≈4 ADR modestly-to-strongly
+beats the time rule, downside ≈ baseline," not "expect +$31k live." <code>partial_ext_adr=4</code> is set in all configs.</div>
+
+<!-- ===================================================================== -->
+<h2 id="matrix">3 · Trim trigger × breakeven placement</h2>
+<p class="meta">Run 2026-10-08 · universe=us (2,080 symbols) · range=2y · setup=breakout+pullback · ext-filter 30 · partial-min-r 0.5 · trail SMA20</p>
+<p>The two independent knobs: <strong>when to trim</strong> (time vs extension vs both) and <strong>where to put the stop
+  after the partial</strong> (breakeven is conventional but notorious for shaking you out). <code>be_stop_r</code> = stop
+  placement after the partial, in R from entry (0 = break-even, &lt;0 = below entry/looser, &gt;0 = lock profit; "don't
+  move" keeps the original setup-low stop and lets the MA trail catch up).</p>
+
+<h3>3a · Trim trigger <span class="sub">(breakeven fixed at entry)</span></h3>
+<table id="tbl-trim">
+  <thead><tr><th>Trim rule</th><th class="num">Trades</th><th class="num">Win%</th><th class="num">Net P&amp;L</th><th class="num">PF</th><th class="num">Avg win / loss</th><th class="num">Max DD</th></tr></thead>
+  <tbody>
+    <tr><td>A1 · time-only 5d/0.5R <span class="sub">(current)</span></td><td class="num">4,510</td><td class="num">37.2%</td><td class="num pos">+$12,889</td><td class="num">1.00</td><td class="num">$2,038 / −$1,202</td><td class="num">−$336k</td></tr>
+    <tr><td>A2 · ext-4 only <span class="sub">(Qullamaggie-purest)</span></td><td class="num">4,389</td><td class="num">28.9%</td><td class="num pos">+$18,426</td><td class="num">1.00</td><td class="num">$3,017 / −$1,221</td><td class="num">−$410k</td></tr>
+    <tr class="best"><td>A3 · ext-4 OR 5d hybrid <span class="sub">(wired)</span></td><td class="num">4,520</td><td class="num">37.9%</td><td class="num pos">+$31,023</td><td class="num">1.01</td><td class="num">$2,143 / −$1,294</td><td class="num">−$361k</td></tr>
+  </tbody>
+</table>
+<p class="sub">Hybrid wins the trim contest. Ext-only banks bigger average winners ($3,017) but its win-rate craters to
+  28.9% (many names never trim and ride to the full stop) — the day-5 fallback is a useful safety net.</p>
+
+<h3>3b · Breakeven sweet spot <span class="sub">(trim = ext-4 hybrid)</span></h3>
+<table id="tbl-be">
+  <thead><tr><th>Post-partial stop</th><th class="num">Trades</th><th class="num">Win%</th><th class="num">Net P&amp;L</th><th class="num">PF</th><th class="num">Avg win / loss</th><th class="num">Max DD</th></tr></thead>
+  <tbody>
+    <tr class="best"><td>B1 · don't move <span class="sub">(trail-only)</span></td><td class="num">4,364</td><td class="num">35.4%</td><td class="num pos">+$62,898</td><td class="num">1.01</td><td class="num">$2,837 / −$1,529</td><td class="num">−$429k</td></tr>
+    <tr><td>B2 · entry −0.5R <span class="sub">(looser)</span></td><td class="num">4,388</td><td class="num">37.6%</td><td class="num pos">+$59,730</td><td class="num">1.01</td><td class="num">$2,743 / −$1,628</td><td class="num">−$459k</td></tr>
+    <tr><td>· entry = break-even <span class="sub">(= A3, conventional)</span></td><td class="num">4,520</td><td class="num">37.9%</td><td class="num pos">+$31,023</td><td class="num">1.01</td><td class="num">$2,143 / −$1,294</td><td class="num">−$361k</td></tr>
+    <tr><td>B3 · entry +0.5R <span class="sub">(lock profit, tighter)</span></td><td class="num">4,918</td><td class="num">38.3%</td><td class="num pos">+$47,288</td><td class="num">1.01</td><td class="num">$2,255 / −$1,383</td><td class="num">−$371k</td></tr>
+  </tbody>
+</table>
+<p class="sub">The conventional "move to break-even" is the <strong>worst</strong> option. Keeping the original stop (trail-only)
+  nearly <strong>doubles</strong> P&amp;L — at the cost of a ~19% deeper drawdown.</p>
+
+<h3>3c · Is breakeven the lever regardless of trim? <span class="sub">(trim = time-only)</span></h3>
+<table id="tbl-cross">
+  <thead><tr><th>Variant</th><th class="num">Trades</th><th class="num">Win%</th><th class="num">Net P&amp;L</th><th class="num">PF</th><th class="num">Avg win / loss</th><th class="num">Max DD</th></tr></thead>
+  <tbody>
+    <tr><td>Reference: time-only + break-even <span class="sub">(= A1, current)</span></td><td class="num">4,510</td><td class="num">37.2%</td><td class="num pos">+$12,889</td><td class="num">1.00</td><td class="num">$2,038 / −$1,202</td><td class="num">−$336k</td></tr>
+    <tr class="best"><td>C1 · time-only + don't-move stop</td><td class="num">4,364</td><td class="num">35.1%</td><td class="num pos">+$51,536</td><td class="num">1.01</td><td class="num">$2,749 / −$1,467</td><td class="num">−$410k</td></tr>
+    <tr><td>C2 · time-only + stop at −0.5R</td><td class="num">4,386</td><td class="num">36.9%</td><td class="num pos">+$40,982</td><td class="num">1.01</td><td class="num">$2,607 / −$1,512</td><td class="num">−$426k</td></tr>
+  </tbody>
+</table>
+<p class="sub">Yes — dropping break-even adds +$38.6k even on the old time-only trim (+$12.9k → +$51.5k). The break-even move,
+  not the trim trigger, is the single biggest drag in the whole system.</p>
+
+<div class="callout good" id="matrix-verdict"><strong>Verdict — two levers, breakeven is the bigger one.</strong>
+  Decomposing from the current rule (time-only + break-even, +$12.9k): the <strong>extension trim</strong> adds ~+$18k,
+  and <strong>dropping the immediate break-even</strong> adds ~+$38.6k; together <strong>ext-4 hybrid + trail-only (no BE)
+  = +$62,898</strong>, roughly 5× the current rule. The conventional "move to break-even after the partial" is actively
+  harmful — it stops you flat on a normal pullback, then the name resumes without you. <strong>Tradeoff:</strong> looser
+  post-partial stops deepen drawdown (−$429k vs −$336k). A drawdown-conscious middle ground is <strong>+0.5R lock</strong>
+  (+$47k at the shallowest DD of the winners, −$371k). <em>Faithfulness note:</em> Qullamaggie does say he moves to
+  break-even — but his is discretionary/structural; the crude "snap to entry the day after the partial" is what tests
+  badly. Trailing the MA (also his method) and leaving the stop alone tests far better.</div>
+
+<!-- ===================================================================== -->
+<h2 id="hist">4 · Earlier tuning history</h2>
+<p class="meta">Breakout-only, earlier runs (~2026-10-06). Superseded for absolute numbers by the current breakout+pullback runs above; the relative conclusions still hold and are baked into the config.</p>
+<h3>Partial profit-gate (<code>partial_min_r</code>) — only scale out a winner</h3>
+<table>
+  <thead><tr><th>Gate</th><th class="num">Net P&amp;L</th><th class="num">PF</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>no gate</td><td class="num neg">−$2,820</td><td class="num">0.99</td><td>partial fired on losers too (break-even-above-market flush)</td></tr>
+    <tr><td>≥ 0 R</td><td class="num neg">−$28</td><td class="num">—</td><td>any gain</td></tr>
+    <tr class="best"><td>≥ 0.5 R ← chosen</td><td class="num pos">+$4,817</td><td class="num">1.01</td><td>net-positive; avoids trivial-gain trims</td></tr>
+    <tr><td>≥ 1.0 R</td><td class="num pos">+$1,385</td><td class="num">—</td><td>too strict</td></tr>
+  </tbody>
+</table>
+<h3>Extension entry filter (<code>max_ext_pct</code>) — don't chase extended breakouts</h3>
+<table>
+  <thead><tr><th>Filter</th><th class="num">Net P&amp;L</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>off</td><td class="num neg">−$18,501</td><td>baseline</td></tr>
+    <tr class="best"><td>skip &gt; 30% above SMA50 ← chosen</td><td class="num neg">−$2,820</td><td>U-shaped; 30 optimal (~$16k better than off)</td></tr>
+  </tbody>
+</table>
+<h3>Hold-till-exit vs rotation</h3>
+<p>Rotating capital into fresher/higher-quality names added only <strong>~+5R over 2 years</strong> (9 rotations) — negligible.
+  <strong>Decision: keep hold-till-exit</strong> (trail the winners), don't rotate.</p>
+
+<!-- ===================================================================== -->
+<h2 id="live">5 · Live vs backtest (entry-timing checks)</h2>
+<p class="meta">Small-sample checks on the names actually traded live, to see whether the bot enters when the backtest does.</p>
+<ul>
+  <li><strong>Fresh breakouts — on time or better.</strong> 10/7: HTFL live @51.45 vs backtest @54.00; FET live @85.39 vs
+    @87.00 — live entered <em>earlier &amp; cheaper</em>. No late-entry problem on new bases.</li>
+  <li><strong>Established leaders — still joined late by breakout.</strong> VEON live @75.08 (10/1) vs backtest @69.12
+    (9/11, +partial already); JILL live @25.04 (10/2) vs @22.11 (9/10, +1.95R); MTW live @23.58 (10/5) vs @20.67 (9/3).
+    This is exactly the gap the <span class="tag b">pullback</span> setup was added to close.</li>
+  <li><strong>Pullback selection validated.</strong> 10/8 the pullback picked <code>QMCO</code> (score 159, +222% 3-mo) — the
+    backtest shows QMCO caught 3× as a continuation leader (+5.29R, +2.26R). Correct name; it just needs the reclaim to
+    trigger (didn't fill that day).</li>
+</ul>
+
+<!-- ===================================================================== -->
+<h2 id="cfg">6 · What's set in the config (from these results)</h2>
+<table>
+  <thead><tr><th>Key</th><th>Value</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td><code>setups</code></td><td>breakout, parabolic_long, ep, <strong>pullback</strong></td><td>§1 — run both entries</td></tr>
+    <tr><td><code>max_ext_pct</code></td><td>30</td><td>§4 — extension filter</td></tr>
+    <tr><td><code>partial_min_r</code></td><td>0.5</td><td>§4 — profit-gate</td></tr>
+    <tr><td><code>partial_ext_adr</code></td><td>4</td><td>§2 — sell into strength</td></tr>
+    <tr><td><code>partial_days</code></td><td>5 <span class="sub">(fallback)</span></td><td>§2 — time fallback</td></tr>
+    <tr><td><code>be_stop_r</code></td><td><strong>-99 (trail-only, no break-even)</strong></td><td>§3 — biggest lever; +$62.9k vs +$31k break-even</td></tr>
+    <tr><td><code>trail_sma_by_setup</code></td><td>breakout 20 · ep 50 · parabolic 10 · pullback 20</td><td>per-setup trail</td></tr>
+  </tbody>
+</table>
+
+<p class="foot">Generated from the qm_long_backtest.py runs. Numbers are relative, not predictive — see the caveat at the top.
+  Last updated 2026-10-08.</p>
+</div>
+<script>
+function tog(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';}
+if(matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.dataset.theme='dark';}
+</script>
+</body>
+</html>

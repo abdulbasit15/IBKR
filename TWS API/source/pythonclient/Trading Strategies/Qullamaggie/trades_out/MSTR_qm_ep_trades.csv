@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+MSTR,qm_ep,MSTR-1,Long,741,2022-05-16,20.0,2022-05-17,22.487,Trail,0.67,+3.71R,1842.87

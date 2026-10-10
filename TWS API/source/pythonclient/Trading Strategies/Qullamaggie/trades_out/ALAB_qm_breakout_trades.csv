@@ -1,0 +1,13 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ALAB,qm_breakout,ALAB-1,Long,297,2024-10-28,72.94,2024-10-31,71.35,Stop,1.59,-1.00R,-472.23
+ALAB,qm_breakout,ALAB-2,Long,39,2024-11-06,90.0,2024-11-13,89.3,Partial,5.89,-0.12R,-27.3
+ALAB,qm_breakout,ALAB-2,Long,40,2024-11-06,90.0,2024-11-14,89.95,BE-Stop,5.89,-0.01R,-2.0
+ALAB,qm_breakout,ALAB-3,Long,123,2024-11-22,105.12,2024-11-27,101.32,Stop,3.8,-1.00R,-467.4
+ALAB,qm_breakout,ALAB-4,Long,72,2024-12-26,143.76,2024-12-30,135.27,Stop,6.48,-1.31R,-611.28
+ALAB,qm_breakout,ALAB-6,Long,53,2025-06-20,101.3,2025-06-23,92.45,Stop,8.8,-1.01R,-469.05
+ALAB,qm_breakout,ALAB-7,Long,48,2025-07-10,103.21,2025-07-14,93.535,Stop,9.675,-1.00R,-464.4
+ALAB,qm_breakout,ALAB-8,Long,43,2025-07-22,116.0,2025-07-29,118.41,Partial,5.33,+0.45R,103.63
+ALAB,qm_breakout,ALAB-8,Long,44,2025-07-22,116.0,2025-09-02,174.24,Trail,5.33,+10.93R,2562.56
+ALAB,qm_breakout,ALAB-9,Long,12,2025-09-09,213.305,2025-09-16,238.79,Partial,19.295,+1.32R,305.82
+ALAB,qm_breakout,ALAB-9,Long,12,2025-09-09,213.305,2025-09-24,212.0,BE-Stop,19.295,-0.07R,-15.66
+ALAB,qm_breakout,ALAB-10,Long,21,2026-05-06,229.75,2026-05-07,207.325,Stop,22.425,-1.00R,-470.93

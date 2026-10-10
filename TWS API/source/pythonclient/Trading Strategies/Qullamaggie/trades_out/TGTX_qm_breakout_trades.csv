@@ -1,0 +1,12 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+TGTX,qm_breakout,TGTX-1,Long,297,2023-06-09,29.04,2023-06-12,26.9,Stop,2.14,-1.00R,-635.58
+TGTX,qm_breakout,TGTX-3,Long,294,2024-01-08,19.71,2024-01-10,17.56,Stop,2.15,-1.00R,-632.1
+TGTX,qm_breakout,TGTX-5,Long,350,2024-07-09,19.67,2024-07-16,22.52,Partial,0.9,+3.17R,997.5
+TGTX,qm_breakout,TGTX-5,Long,350,2024-07-09,19.67,2024-07-24,19.67,BE-Stop,0.9,+0.00R,0.0
+TGTX,qm_breakout,TGTX-7,Long,275,2024-11-07,27.3,2024-11-14,30.845,Partial,1.15,+3.08R,974.88
+TGTX,qm_breakout,TGTX-7,Long,276,2024-11-07,27.3,2024-12-09,32.84,Trail,1.15,+4.82R,1529.04
+TGTX,qm_breakout,TGTX-8,Long,525,2025-04-29,42.18,2025-05-05,39.755,Stop,1.23,-1.97R,-1273.12
+TGTX,qm_breakout,TGTX-10,Long,56,2026-05-07,41.95,2026-05-14,40.79,Partial,5.7,-0.20R,-64.96
+TGTX,qm_breakout,TGTX-10,Long,56,2026-05-07,41.95,2026-05-15,40.35,BE-Stop,5.7,-0.28R,-89.6
+TGTX,qm_breakout,TGTX-11,Long,176,2026-06-10,43.37,2026-06-17,51.5,Partial,1.82,+4.47R,1430.88
+TGTX,qm_breakout,TGTX-11,Long,177,2026-06-10,43.37,2026-07-16,54.93,Trail,1.82,+6.35R,2046.12

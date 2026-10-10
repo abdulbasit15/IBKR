@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+RXRX,qm_breakout,RXRX-1,Long,974,2022-10-05,11.7,2022-10-07,11.11,Stop,0.59,-1.00R,-574.66

@@ -258,11 +258,53 @@ def parabolic_long_signal(bars, i, a):
     return {"stop": stop}
 
 
+def pullback_signal(bars, i, sma10, sma20, sma50, a):
+    """Qullamaggie MA-pullback / continuation: a strong leader (same quality universe as the
+    breakout) in an established uptrend that pulls back to a RISING 10/20-day MA and then resumes.
+    Lets us join leaders that already broke out (the late-entry gap) at a lower-risk entry.
+
+    Mechanical daily-bar approximation:
+      - uptrend + leader: close > sma20 > sma50, big 3-month move (same min/max as breakout)
+      - the reference MA (10 by default) is RISING (established trend, not a first base)
+      - within the last `pb_lookback` bars a bar's LOW tagged the MA (came within pb_near%)
+      - today = resumption: a green bar that closes back above the PRIOR day's high (reclaim)
+      - not chasing: entry close is within pb_max_ext% of the MA (buy near the MA, not after it ran)
+      - stop = the pullback swing low (tight, just under the MA)."""
+    if i < a.warmup or sma10[i] is None or sma20[i] is None or sma50[i] is None:
+        return None
+    c = bars[i]["c"]
+    if not (c > sma20[i] > sma50[i]):                      # uptrend
+        return None
+    base_c = bars[i - 63]["c"]                             # big prior ~3-month move (leader)
+    perf3m = (c / base_c - 1.0) * 100.0 if base_c else 0.0
+    if perf3m < a.min_move or perf3m > a.max_move:
+        return None
+    ma = sma10 if a.pb_ma == 10 else sma20
+    if ma[i] is None or ma[i - 5] is None or ma[i] <= ma[i - 5]:   # MA must be rising
+        return None
+    lb = a.pb_lookback
+    tagged = any(ma[k] is not None and bars[k]["l"] <= ma[k] * (1.0 + a.pb_near / 100.0)
+                 for k in range(i - lb, i))                # a recent low pulled back to the MA
+    if not tagged:
+        return None
+    if not (bars[i]["c"] > bars[i - 1]["h"] and bars[i]["c"] > bars[i]["o"]):  # green reclaim today
+        return None
+    if (c / ma[i] - 1.0) * 100.0 > a.pb_max_ext:           # don't chase far above the MA
+        return None
+    adr = adr_pct_at(bars, i)
+    if adr is not None and adr < a.min_adr:
+        return None
+    stop = min(bars[k]["l"] for k in range(i - lb, i + 1))  # pullback swing low
+    return {"stop": stop}
+
+
 def enabled_setups(name):
     if name == "both":
         return ("breakout", "ep")
     if name == "all":
         return ("breakout", "ep", "parabolic_long")
+    if name == "bp":                                        # breakout + pullback (continuation)
+        return ("breakout", "pullback")
     return (name,)
 
 
@@ -271,6 +313,7 @@ def enabled_setups(name):
 # ----------------------------------------------------------------------------
 def backtest_symbol(sym, bars, a, equity_ref):
     closes = [b["c"] for b in bars]
+    sma10 = sma_series(closes, 10)
     sma20 = sma_series(closes, 20)
     sma50 = sma_series(closes, 50)
     trail = sma_series(closes, a.trail_sma)
@@ -294,6 +337,9 @@ def backtest_symbol(sym, bars, a, equity_ref):
             if sig is None and "parabolic_long" in es:
                 sig = parabolic_long_signal(bars, i, a)
                 strat = "qm_parabolic_long"
+            if sig is None and "pullback" in es:
+                sig = pullback_signal(bars, i, sma10, sma20, sma50, a)
+                strat = "qm_pullback"
             if sig:
                 j = i + 1                      # fill next open (no lookahead)
                 entry = bars[j]["o"]
@@ -327,16 +373,32 @@ def backtest_symbol(sym, bars, a, equity_ref):
             exit_all = (min(b["o"], pos["stop"]) if b["o"] < pos["stop"] else pos["stop"],
                         "BE-Stop" if pos["partial"] else "Stop")
 
-        # 2) partial (profit-gated) + move to break-even — only scale out a WINNER up >= partial_min_r
+        # 2) partial — scale HALF out of a WINNER, then move to break-even. Qullamaggie sells "INTO
+        #    STRENGTH": fire when the move is EXTENDED above the trail MA (a climax — can trigger early,
+        #    day 1+), OR fall back to the time rule (held >= partial_days). Both require the position be
+        #    up >= partial_min_r so we never scale out of a loser. partial_ext_adr=0 -> pure time rule.
         cur_r = (b["c"] - pos["entry"]) / pos["risk"] if pos["risk"] else 0
-        if (exit_all is None and (not pos["partial"]) and pos["held"] >= a.partial_days
-                and cur_r >= getattr(a, "partial_min_r", 0.5)):
+        min_r = getattr(a, "partial_min_r", 0.5)
+        ext_adr = getattr(a, "partial_ext_adr", 0.0)
+        ext_fire = False
+        if ext_adr and trail[i] is not None and trail[i] > 0:
+            adr_now = adr_pct_at(bars, i)
+            if adr_now:
+                adrs_above = ((b["c"] / trail[i] - 1.0) * 100.0) / adr_now   # ADRs above the trail MA
+                ext_fire = adrs_above >= ext_adr
+        time_fire = pos["held"] >= a.partial_days
+        if (exit_all is None and (not pos["partial"]) and cur_r >= min_r and (ext_fire or time_fire)):
             half = pos["left"] // 2
             if half >= 1:
-                _emit(legs, sym, pos, half, b["c"], b["d"], "Partial")
+                _emit(legs, sym, pos, half, b["c"], b["d"], "Partial-Ext" if ext_fire else "Partial")
                 pos["left"] -= half
                 pos["partial"] = True
-                pos["stop"] = pos["entry"]      # break-even
+                # post-partial stop placement = entry + be_stop_r * risk. 0 = break-even (classic),
+                # <0 = below entry (looser, fewer shakeouts), >0 = lock in profit (tighter). A sentinel
+                # <= -90 means DON'T move the stop (keep the original, let the MA trail catch up).
+                be_r = getattr(a, "be_stop_r", 0.0)
+                if be_r is None or be_r > -90:
+                    pos["stop"] = pos["entry"] + (be_r or 0.0) * pos["risk"]
 
         # 3) trail: first close below trail SMA exits the remainder
         if exit_all is None and trail[i] is not None and b["c"] < trail[i]:
@@ -435,7 +497,7 @@ def main():
     p.add_argument("--max-symbols", type=int, default=0, help="cap number tested (0=all)")
     p.add_argument("--source", choices=["auto", "yahoo", "stooq"], default="auto")
     p.add_argument("--range", dest="rng", default="2y", help="Yahoo range: 1y,2y,5y,max")
-    p.add_argument("--setup", choices=["breakout", "ep", "parabolic_long", "both", "all"],
+    p.add_argument("--setup", choices=["breakout", "ep", "parabolic_long", "pullback", "both", "bp", "all"],
                    default="breakout", help="both=breakout+ep, all=+parabolic_long")
     # entry
     p.add_argument("--min-move", type=float, default=30.0, help="min 3-month %% gain")
@@ -456,8 +518,18 @@ def main():
     p.add_argument("--pl-bounce-within", type=int, default=5, help="enter within N days of the low")
     p.add_argument("--pl-max-bounce", type=float, default=30.0, help="max %% above the low (no chase)")
     # exits / sizing
+    p.add_argument("--pb-ma", type=int, default=10, choices=[10, 20], help="pullback reference MA")
+    p.add_argument("--pb-lookback", type=int, default=8, help="bars to look back for a pullback tag/swing low")
+    p.add_argument("--pb-near", type=float, default=2.0, help="a low within this %% of the MA counts as a pullback tag")
+    p.add_argument("--pb-max-ext", type=float, default=5.0, help="skip if entry close is >this %% above the MA (no chase)")
     p.add_argument("--partial-days", type=int, default=5)
     p.add_argument("--partial-min-r", type=float, default=0.5, help="only take partial if position up >= this R")
+    p.add_argument("--partial-ext-adr", type=float, default=0.0,
+                   help="sell the partial INTO STRENGTH when close is >= this many ADRs above the trail MA "
+                        "(0=off -> pure time rule). Still profit-gated by --partial-min-r; time rule is the fallback")
+    p.add_argument("--be-stop-r", type=float, default=0.0,
+                   help="post-partial stop = entry + this*risk (0=break-even, <0=below entry/looser, "
+                        ">0=lock profit/tighter). Use -99 to NOT move the stop (keep original, trail-only)")
     p.add_argument("--trail-sma", type=int, default=20, help="trail on 10 or 20-day SMA")
     p.add_argument("--risk-pct", type=float, default=0.5, help="%% equity risked per trade")
     p.add_argument("--max-pos-pct", type=float, default=30.0)

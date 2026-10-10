@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+AVGO,qm_ep,AVGO-2,Long,141,2024-06-14,168.686,2024-06-21,165.252,Stop,3.434,-1.00R,-484.19
+AVGO,qm_ep,AVGO-3,Long,11,2024-12-16,231.79,2024-12-23,232.35,Partial,20.68,+0.03R,6.16
+AVGO,qm_ep,AVGO-3,Long,12,2024-12-16,231.79,2024-12-30,231.79,BE-Stop,20.68,+0.00R,0.0

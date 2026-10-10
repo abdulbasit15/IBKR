@@ -128,6 +128,14 @@
       <li>Opening range = first <strong>1</strong>×5-min bar (<code>ep_or_bars</code> 1) · volume surge</li>
       <li>Runs at the open <strong>09:40 ET</strong> (<code>ep_entry_time</code>)</li>
     </ul>
+    <p class="sub" style="margin:10px 0 6px"><span class="tag b">pullback</span> (defaults shown)</p>
+    <ul class="cell">
+      <li>Same leader filter as breakout (3-month move, uptrend, liquid)</li>
+      <li>Pulled back to a <strong>rising <code>pb_ma</code> (10)</strong>-day MA — a recent low within <strong><code>pb_near</code> (2%)</strong></li>
+      <li>Now <strong>resuming</strong>: buy-STOP at the prior day's high (the reclaim)</li>
+      <li>Not chased: trigger within <strong><code>pb_max_ext</code> (5%)</strong> of the MA</li>
+      <li>Joins leaders it <em>missed on the first breakout</em> (the late-entry gap)</li>
+    </ul>
     <p class="sub">So the universe is the <em>haystack</em>; the setup filters find the ~handful of needles each day.</p>
   </div>
 </div>
@@ -226,11 +234,25 @@ into his sweet spot.</div>
       <td>BUY-STOP at the <strong>opening-range high</strong> (first <code>ep_or_bars</code>×5-min bars, from intraday).</td>
       <td>The <strong>opening-range low</strong>.</td>
     </tr>
+    <tr>
+      <td><span class="tag b">pullback</span></td>
+      <td>
+        <ul class="cell">
+          <li>A strong leader (same quality universe as breakout) in an uptrend</li>
+          <li><strong>Pulled back to a rising <code>pb_ma</code>-day MA</strong> (a low within <code>pb_near</code>% of it)</li>
+          <li>Now <strong>resuming</strong> — reclaims the prior day's high</li>
+          <li>Not chased: trigger within <code>pb_max_ext</code>% of the MA</li>
+          <li>Catches leaders missed on the first breakout (continuation)</li>
+        </ul>
+      </td>
+      <td>BUY-STOP at the <strong>prior day's high</strong> (the reclaim trigger).</td>
+      <td>The <strong>pullback swing low</strong>.</td>
+    </tr>
   </tbody>
 </table>
-<p class="sub">Enable any of the three via <code>"setups"</code>, e.g. <code>["breakout","parabolic_long","ep"]</code>.
-EP additionally needs the Nasdaq earnings calendar + 5-min intraday (both fetched automatically). The parabolic
-<b>short</b> is intentionally excluded.</p>
+<p class="sub">Enable any of the four via <code>"setups"</code>, e.g. <code>["breakout","parabolic_long","ep","pullback"]</code>.
+Each runs independently with its own position cap, capital sleeve and quality floor. EP additionally needs the
+Nasdaq earnings calendar + 5-min intraday (both fetched automatically). The parabolic <b>short</b> is intentionally excluded.</p>
 
 <h3>How candidates are ranked (quality)</h3>
 <p>Everything that passes the filters is scored and the best fill the slots. The breakout score is a
@@ -263,12 +285,12 @@ EP additionally needs the Nasdaq earnings calendar + 5-min intraday (both fetche
   <li><strong>Morning cancel-and-refresh:</strong> at the start of the entry window the bot cancels any leftover <em>unfilled</em> entry (BUY-STOP) orders and clears their pending state, so each day re-arms from a clean slate on the fresh ranking + today's levels (works even if <code>entry_tif</code> is GTC). Protective SELL stops of <em>filled</em> positions are never touched.</li>
   <li>Size = <code>floor(capital × risk_per_trade_pct / (trigger − stop))</code>, capped so one name ≤ <code>max_position_pct</code> of capital.</li>
 </ul>
-<div class="callout warn"><strong>Aggregate risk.</strong> At the <code>max_positions</code> ceiling of 20: 20 × 3 strategies × 1% = up to <strong>~60% of capital at risk</strong> if every position stopped at once. The <code>min_quality_score</code> floor is what keeps you well below that (you rarely hit the ceiling) — set it. Otherwise lower <code>max_positions</code>/<code>risk_per_trade_pct</code> or run fewer <code>setups</code>.</div>
+<div class="callout warn"><strong>Aggregate risk.</strong> Each of the <strong>four</strong> setups has its OWN <code>max_positions</code> cap (10) and risks 1% of its OWN sleeve per trade. At the ceiling that's 10 × 4 × 1% = up to <strong>~$40k risk</strong> across $400k of sleeves if every position stopped at once. The <code>min_quality_score</code> floor is what keeps you well below that (you rarely hit the ceiling) — set it. Otherwise lower <code>max_positions</code>/<code>risk_per_trade_pct</code> or run fewer <code>setups</code>.</div>
 
 <h3>When it exits (per-setup, matches his method)</h3>
 <ul>
   <li><strong>Hard stop</strong> (always resting, server-side): the initial protective stop at the base / opening-range / crash low.</li>
-  <li><strong>Breakout &amp; EP — trend trail:</strong> after <code>partial_days</code> (5) held, sell <code>partial_fraction</code> (half) and move the stop to break-even, then trail the remainder on that setup's MA and exit on the first daily <strong>close below</strong> it. Trail length is <strong>per-setup</strong> (<code>trail_sma_by_setup</code>): breakout <strong>20</strong>, EP <strong>50</strong>.</li>
+  <li><strong>Breakout / EP / pullback — trend trail:</strong> sell <code>partial_fraction</code> (half) <strong>into strength</strong> — when price is ≥ <code>partial_ext_adr</code> (4) ADRs above the trail MA (a climax, can fire early), or after <code>partial_days</code> (5) held as a fallback — both only once up ≥ <code>partial_min_r</code> (0.5R); then handle the remaining stop per <code>be_stop_r</code> (default <strong>-99 = trail-only</strong>: keep the original stop, don't snap to break-even — backtest shows break-even nearly halves returns); and trail the remainder on that setup's MA, exiting on the first daily <strong>close below</strong> it. Trail length is <strong>per-setup</strong> (<code>trail_sma_by_setup</code>): breakout <strong>20</strong>, EP <strong>50</strong>, pullback <strong>20</strong>.</li>
   <li><strong>Parabolic long — take-profit into the MA:</strong> it's a fast mean-reversion bounce, so instead of trailing it <strong>sells into strength</strong>: half when price reaches the <strong>10-day MA</strong> (then stop → break-even), the rest at the <strong>20-day MA</strong> (<code>target_ma2</code>). A stall is time-exited after <code>target_max_days</code> (15). The crash-low hard stop guards the downside throughout.</li>
 </ul>
 <p class="sub">Exit style per setup is set by <code>exit_mode_by_setup</code> (<code>trail</code> vs <code>target_ma</code>) and the MA lengths by <code>trail_sma_by_setup</code> / <code>target_ma2</code>.</p>
@@ -320,7 +342,7 @@ that the equity/supertrend bots use. Launch each in its own window (or its own <
     <tr><td><code>account</code></td><td>Account to trade. Blank → adopts the login's sole managed account.</td></tr>
     <tr><td><code>reconnect_backoff_sec</code></td><td>Steady reconnect retry interval in seconds (default 60). The bot survives an IB Gateway restart / a competing login: it retries fast (5s ×3) then every this-many seconds, indefinitely, and re-reconciles state on reconnect. Positions rest on their server-side stops meanwhile.</td></tr>
     <tr><td><code>capital_override</code></td><td><code>0</code> → use live <code>NetLiquidation</code> for sizing. &gt;0 → size off this fixed number instead.</td></tr>
-    <tr><td><code>strategy_capital_by_setup</code></td><td><strong>Per-strategy capital sleeve.</strong> Each setup sizes off its OWN allocation, e.g. <code>{breakout:100000, ep:100000, parabolic_long:100000}</code>. Risk-per-trade (<code>risk_per_trade_pct</code>, 1% → <strong>$1,000</strong>) and the position notional cap (<code>max_position_pct</code>, 30% → <strong>$30k/name</strong>) are both computed off that sleeve, so the three strategies are independent. Omit → falls back to <code>strategy_capital</code>, then NetLiquidation/override. <strong>Scale up by raising these numbers</strong> once proven.</td></tr>
+    <tr><td><code>strategy_capital_by_setup</code></td><td><strong>Per-strategy capital sleeve.</strong> Each setup sizes off its OWN allocation, e.g. <code>{breakout:100000, ep:100000, parabolic_long:100000, pullback:100000}</code>. Risk-per-trade (<code>risk_per_trade_pct</code>, 1% → <strong>$1,000</strong>) and the position notional cap (<code>max_position_pct</code>, 30% → <strong>$30k/name</strong>) are both computed off that sleeve, so the four strategies are independent. Omit → falls back to <code>strategy_capital</code>, then NetLiquidation/override. <strong>Scale up by raising these numbers</strong> once proven.</td></tr>
     <tr><td><code>daily_loss_limit_pct</code></td><td>Daily-loss <strong>circuit breaker</strong> (<code>0</code> = off). If account equity (NetLiquidation) is down ≥ this fraction from the <strong>start-of-day</strong> equity, ALL new entries are halted for the day; exits/management continue. E.g. <code>0.05</code> = stop opening new trades after a 5% down day.</td></tr>
     <tr><td><code>state_file</code> / <code>log_dir</code></td><td>Optional path overrides so a live config keeps its state + logs separate from paper (e.g. <code>qm_live_state.json</code> / <code>logs_live</code>). <code>trade_log_csv</code> likewise (e.g. <code>qm_live_trades.csv</code>).</td></tr>
     <tr><td><code>regime_filter</code></td><td><code>true</code> (default) = block trend entries in a bad market. His rule: index <code>regime_fast_ma</code> (10) above <code>regime_slow_ma</code> (20) of <code>regime_symbol</code> (QQQ) = GOOD. Fail-open if no data.</td></tr>
@@ -335,7 +357,7 @@ trade share <code>entry_id</code> (e.g. a <code>PARTIAL</code> leg + the final <
 
 <!-- ───────────────────────── SETUPS ───────────────────────── -->
 <h2 id="setups">Setup parameters</h2>
-<p><code>"setups"</code> selects which long setups are active, e.g. <code>["breakout","parabolic_long"]</code>.</p>
+<p><code>"setups"</code> selects which long setups are active, e.g. <code>["breakout","parabolic_long","ep","pullback"]</code>. Each runs independently with its own cap, sleeve and quality floor.</p>
 
 <h3>Breakout <span class="tag b">momentum continuation</span></h3>
 <table>
@@ -367,6 +389,19 @@ trade share <code>entry_id</code> (e.g. a <code>PARTIAL</code> leg + the final <
 parabolic is uncommon, especially in liquid large-caps. Expect few/none in a large-cap band; point the universe at
 small caps (<code>min_cap_m 300</code>, <code>max_cap_m 5000</code>) to surface them.</div>
 
+<h3>Pullback <span class="tag b">MA continuation</span></h3>
+<p class="sub">A strong leader (same quality universe as breakout) in an established uptrend that pulls back to a <strong>rising 10-day MA</strong> and resumes. Buy-STOP at the prior day's high (the reclaim), stop = the pullback swing low. Lets the bot <strong>join leaders it missed on the first breakout</strong> (the late-entry gap). Scored on the same scale as breakout, so its <code>min_quality_score_by_setup.pullback</code> floor and <code>strategy_capital_by_setup.pullback</code> sleeve work the same way. Trend-following → the regime filter blocks it (not exempt). Backtest: <code>--setup pullback</code> or <code>--setup bp</code> (breakout+pullback).</p>
+<table>
+  <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>pb_ma</code></td><td>Reference MA the pullback must tag and that must be rising — <code>10</code> or <code>20</code> (default 10).</td></tr>
+    <tr><td><code>pb_lookback</code></td><td>Bars to look back for a pullback tag, and the window for the swing-low stop (default 8).</td></tr>
+    <tr><td><code>pb_near</code></td><td>A recent low within this % of the MA counts as a pullback "tag" (default 2.0%).</td></tr>
+    <tr><td><code>pb_max_ext</code></td><td>Skip if the entry trigger is more than this % above the MA (default 5.0%) — don't chase, buy near the MA.</td></tr>
+  </tbody>
+</table>
+<div class="callout"><strong>Runs with or without breakout.</strong> Add/remove <code>"pullback"</code> in <code>"setups"</code> independently. It gets its OWN cap of <code>max_positions</code>, its own sleeve and quality floor — e.g. <code>["pullback"]</code> for pullback-only, or <code>["breakout","pullback"]</code> to run both. 2-yr full-universe backtest: pullback-only beat breakout-only (PF 1.05 vs 0.97) — relative ranking only (mechanical harness + survivorship bias flatters dip-buying).</div>
+
 <h3>Episodic Pivot <span class="tag b">earnings gap</span></h3>
 <table>
   <thead><tr><th>Key</th><th>Meaning</th></tr></thead>
@@ -393,11 +428,14 @@ schedule slot (<code>ep_entry_time</code>), separate from the breakout/parabolic
     <tr><td><code>min_quality_score</code> / <code>min_quality_score_by_setup</code></td><td><strong>Quality floor</strong> — only enter candidates whose score clears the bar (0 = off → fill to the ceiling). Scores scale differently per setup, so prefer the per-setup map, e.g. <code>{"breakout": 95}</code>. Calibrate from the ranked-candidate logs / <code>qm_entries_*.csv</code>. This is the lever that makes selection quality-driven and keeps aggregate risk low.</td></tr>
     <tr><td><code>quality_weights</code></td><td>Optional override of the breakout ranking weights (keys: <code>rs</code>, <code>adr</code>, <code>tight</code>, <code>voldry</code>, <code>near</code>, <code>trend</code>, <code>hl</code>). Merges over the defaults — omit to use them.</td></tr>
     <tr><td><code>max_position_pct</code></td><td>Cap on any single position as a fraction of capital (default 0.30 — his overnight max).</td></tr>
-    <tr><td><code>partial_days</code></td><td>Days held before the partial sell (default 5; his "3–5 days").</td></tr>
-    <tr><td><code>partial_fraction</code></td><td>Fraction sold at the partial (default 0.5 = half). Stop then moves to break-even.</td></tr>
+    <tr><td><code>partial_days</code></td><td>Days held before the time-based partial sell (default 5; his "3–5 days"). This is the <em>fallback</em> trigger when <code>partial_ext_adr</code> hasn't fired.</td></tr>
+    <tr><td><code>partial_min_r</code></td><td>Only take the partial if the position is up at least this many R (default 0.5). Guards against scaling out of a loser (and the break-even-above-market bug).</td></tr>
+    <tr><td><code>partial_ext_adr</code></td><td><strong>Sell INTO STRENGTH</strong> (Qullamaggie's real rule). Fire the partial when the close is ≥ this many <strong>ADRs above the trail MA</strong> — a climax — which can trigger <em>early</em> (day 1+), not just on day 5. Default <strong>4</strong> (backtest sweet-spot; 3 trims too early and caps winners, 5+ too rare). <code>0</code> = off → pure time rule. Still gated by <code>partial_min_r</code>; the <code>partial_days</code> time rule remains the fallback. Same flag in the backtest (<code>--partial-ext-adr</code>).</td></tr>
+    <tr><td><code>be_stop_r</code></td><td><strong>Where the stop goes AFTER the partial</strong>, in R from entry (R = entry − initial stop). <code>-99</code> (default, <strong>trail-only</strong>) = <em>don't reprice</em> the stop — keep the original setup-low stop and let the per-setup MA trail catch up. <code>0</code> = break-even (entry). <code>+0.5</code> = lock ½R profit (tighter). <code>-0.5</code> = ½R below entry (looser). <strong>Backtest (2y): trail-only +$62.9k vs break-even +$31.0k — moving to break-even nearly halves returns</strong> (it stops you flat on a normal pullback, then the name resumes without you); the cost is a deeper drawdown. The remaining stop order is <em>always</em> resized to the leftover shares regardless. Applies to the trail setups (breakout/ep/pullback); parabolic keeps break-even after its TP1. Same flag in the backtest (<code>--be-stop-r</code>; use <code>-99</code> for trail-only).</td></tr>
+    <tr><td><code>partial_fraction</code></td><td>Fraction sold at the partial (default 0.5 = half). The remaining stop is then handled per <code>be_stop_r</code> above.</td></tr>
     <tr><td><code>trail_sma</code></td><td>Fallback trail MA if a setup isn't in <code>trail_sma_by_setup</code> (default 20).</td></tr>
-    <tr><td><code>trail_sma_by_setup</code></td><td>Per-setup MA length. Default <code>{breakout:20, ep:50, parabolic_long:10}</code>. For trail setups it's the trailing MA; for parabolic it's the <em>first</em> take-profit MA.</td></tr>
-    <tr><td><code>exit_mode_by_setup</code></td><td>Per-setup exit style: <code>"trail"</code> (breakout/ep — trail an MA) or <code>"target_ma"</code> (parabolic — take profit into the MA). Default picks <code>target_ma</code> for parabolic_long, <code>trail</code> otherwise.</td></tr>
+    <tr><td><code>trail_sma_by_setup</code></td><td>Per-setup MA length. Default <code>{breakout:20, ep:50, parabolic_long:10, pullback:20}</code>. For trail setups it's the trailing MA; for parabolic it's the <em>first</em> take-profit MA.</td></tr>
+    <tr><td><code>exit_mode_by_setup</code></td><td>Per-setup exit style: <code>"trail"</code> (breakout/ep/pullback — trail an MA) or <code>"target_ma"</code> (parabolic — take profit into the MA). Default picks <code>target_ma</code> for parabolic_long, <code>trail</code> otherwise.</td></tr>
     <tr><td><code>target_ma2</code> / <code>target_max_days</code></td><td>Parabolic only: the 2nd take-profit MA (default 20) and a time-exit if the bounce stalls (default 15 days).</td></tr>
   </tbody>
 </table>
@@ -469,7 +507,7 @@ cd dist
 </ul>
 <div class="callout warn"><strong>Keep sleeves ≤ your real account.</strong> <code>strategy_capital_by_setup</code> is a FIXED notional
 the bot sizes off — it does not know your balance. If total sleeves exceed your live NetLiquidation you'll be
-over-leveraged / get margin rejects. On a $30k live account, keep the three sleeves ≤ ~$10k each. (Ask me to add a
+over-leveraged / get margin rejects. On a $40k live account, keep the four sleeves ≤ ~$10k each. (Ask me to add a
 hard over-allocation guard if you want the bot to refuse when sleeves &gt; NetLiquidation.)</div>
 
 <!-- ───────────────────────── CLI ───────────────────────── -->

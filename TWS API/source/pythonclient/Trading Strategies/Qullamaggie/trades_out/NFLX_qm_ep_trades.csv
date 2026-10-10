@@ -1,0 +1,9 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+NFLX,qm_ep,NFLX-3,Long,248,2022-10-20,27.278,2022-10-27,29.694,Partial,1.012,+2.39R,599.17
+NFLX,qm_ep,NFLX-3,Long,249,2022-10-20,27.278,2022-11-03,27.125,BE-Stop,1.012,-0.15R,-38.1
+NFLX,qm_ep,NFLX-8,Long,189,2023-10-20,40.563,2023-10-27,39.787,Partial,1.337,-0.58R,-146.66
+NFLX,qm_ep,NFLX-8,Long,190,2023-10-20,40.563,2023-10-30,40.235,BE-Stop,1.337,-0.25R,-62.32
+NFLX,qm_ep,NFLX-9,Long,158,2025-01-23,95.781,2025-01-30,97.324,Partial,0.705,+2.19R,243.79
+NFLX,qm_ep,NFLX-9,Long,159,2025-01-23,95.781,2025-02-21,100.315,Trail,0.705,+6.43R,720.91
+NFLX,qm_ep,NFLX-10,Long,54,2026-03-02,95.26,2026-03-09,98.32,Partial,4.68,+0.65R,165.24
+NFLX,qm_ep,NFLX-10,Long,55,2026-03-02,95.26,2026-03-11,95.26,BE-Stop,4.68,+0.00R,0.0

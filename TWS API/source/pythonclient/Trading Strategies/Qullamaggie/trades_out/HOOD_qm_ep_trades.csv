@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+HOOD,qm_ep,HOOD-1,Long,701,2022-05-16,10.64,2022-05-17,9.84,Stop,0.8,-1.00R,-560.8
+HOOD,qm_ep,HOOD-3,Long,437,2024-02-15,13.4,2024-02-23,14.48,Partial,0.635,+1.70R,471.96
+HOOD,qm_ep,HOOD-3,Long,438,2024-02-15,13.4,2024-04-05,18.4,Trail,0.635,+7.87R,2190.0
+HOOD,qm_ep,HOOD-7,Long,120,2024-11-07,29.06,2024-11-14,32.22,Partial,2.32,+1.36R,379.2
+HOOD,qm_ep,HOOD-7,Long,120,2024-11-07,29.06,2024-12-18,37.08,Trail,2.32,+3.46R,962.4

@@ -1,0 +1,3 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CRSP,qm_breakout,CRSP-2,Long,88,2025-10-01,64.75,2025-10-08,76.78,Partial,2.13,+5.65R,1058.64
+CRSP,qm_breakout,CRSP-2,Long,89,2025-10-01,64.75,2025-10-22,66.52,Trail,2.13,+0.83R,157.53

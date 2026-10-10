@@ -1,0 +1,16 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+MDB,qm_breakout,MDB-2,Long,57,2023-06-05,379.22,2023-06-07,370.0,Stop,9.22,-1.00R,-525.54
+MDB,qm_breakout,MDB-3,Long,20,2023-06-29,400.0,2023-07-07,388.62,Partial,12.99,-0.88R,-227.6
+MDB,qm_breakout,MDB-3,Long,20,2023-06-29,400.0,2023-07-07,388.62,Trail,12.99,-0.88R,-227.6
+MDB,qm_breakout,MDB-4,Long,23,2023-07-19,429.55,2023-07-24,407.41,Stop,22.14,-1.00R,-509.22
+MDB,qm_breakout,MDB-5,Long,14,2024-02-08,457.85,2024-02-15,474.21,Partial,17.585,+0.93R,229.04
+MDB,qm_breakout,MDB-5,Long,15,2024-02-08,457.85,2024-02-20,457.13,BE-Stop,17.585,-0.04R,-10.8
+MDB,qm_breakout,MDB-8,Long,66,2025-07-10,218.0,2025-07-11,207.93,Stop,7.875,-1.28R,-664.62
+MDB,qm_breakout,MDB-9,Long,26,2025-07-18,219.99,2025-07-25,241.37,Partial,9.97,+2.14R,555.88
+MDB,qm_breakout,MDB-9,Long,26,2025-07-18,219.99,2025-08-01,219.99,BE-Stop,9.97,+0.00R,0.0
+MDB,qm_breakout,MDB-10,Long,10,2025-08-28,299.49,2025-09-05,324.74,Partial,23.83,+1.06R,252.5
+MDB,qm_breakout,MDB-10,Long,11,2025-08-28,299.49,2025-09-24,315.3,Trail,23.83,+0.66R,173.91
+MDB,qm_breakout,MDB-11,Long,14,2025-10-31,354.5,2025-11-07,361.04,Partial,17.55,+0.37R,91.56
+MDB,qm_breakout,MDB-11,Long,15,2025-10-31,354.5,2025-11-13,354.5,BE-Stop,17.55,+0.00R,0.0
+MDB,qm_breakout,MDB-12,Long,65,2025-12-23,439.0,2025-12-29,431.0,Stop,8.0,-1.00R,-520.0
+MDB,qm_breakout,MDB-13,Long,23,2026-09-23,429.34,2026-09-25,410.44,EndOfData,22.68,-0.83R,-434.7

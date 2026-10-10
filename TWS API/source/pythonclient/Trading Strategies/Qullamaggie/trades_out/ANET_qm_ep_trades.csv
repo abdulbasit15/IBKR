@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ANET,qm_ep,ANET-1,Long,921,2022-10-28,29.8575,2022-11-01,29.5525,Stop,0.305,-1.00R,-280.91
+ANET,qm_ep,ANET-2,Long,71,2023-08-02,45.7775,2023-08-09,44.365,Partial,3.2025,-0.44R,-100.29
+ANET,qm_ep,ANET-2,Long,71,2023-08-02,45.7775,2023-08-10,44.7325,BE-Stop,3.2025,-0.33R,-74.2
+ANET,qm_ep,ANET-4,Long,59,2023-11-01,50.7325,2023-11-08,52.4,Partial,3.8125,+0.44R,98.38
+ANET,qm_ep,ANET-4,Long,59,2023-11-01,50.7325,2023-12-06,53.35,Trail,3.8125,+0.69R,154.43
+ANET,qm_ep,ANET-11,Long,142,2026-08-06,192.41,2026-08-07,191.01,Stop,1.4,-1.00R,-198.8

@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+TSLA,qm_ep,TSLA-4,Long,118,2024-04-25,158.96,2024-05-02,180.01,Partial,1.45,+14.52R,2483.9
+TSLA,qm_ep,TSLA-4,Long,119,2024-04-25,158.96,2024-05-23,173.74,Trail,1.45,+10.19R,1758.82
+TSLA,qm_ep,TSLA-6,Long,24,2024-10-25,256.01,2024-11-01,248.98,Partial,13.36,-0.53R,-168.72
+TSLA,qm_ep,TSLA-6,Long,24,2024-10-25,256.01,2024-11-04,244.56,BE-Stop,13.36,-0.86R,-274.8
+TSLA,qm_ep,TSLA-7,Long,24,2024-11-07,288.89,2024-11-14,311.18,Partial,13.27,+1.68R,534.96
+TSLA,qm_ep,TSLA-7,Long,24,2024-11-07,288.89,2024-12-31,403.84,Trail,13.27,+8.66R,2758.8

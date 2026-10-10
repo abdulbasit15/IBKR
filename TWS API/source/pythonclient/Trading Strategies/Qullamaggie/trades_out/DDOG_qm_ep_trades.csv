@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+DDOG,qm_ep,DDOG-1,Long,225,2022-11-11,77.01,2022-11-14,78.12,Trail,2.47,+0.45R,249.75
+DDOG,qm_ep,DDOG-3,Long,50,2023-11-08,101.7,2023-11-15,109.44,Partial,5.53,+1.40R,387.0
+DDOG,qm_ep,DDOG-3,Long,51,2023-11-08,101.7,2024-01-02,115.08,Trail,5.53,+2.42R,682.38
+DDOG,qm_ep,DDOG-7,Long,46,2026-05-08,185.5,2026-05-15,207.98,Partial,6.03,+3.73R,1034.08
+DDOG,qm_ep,DDOG-7,Long,46,2026-05-08,185.5,2026-06-10,227.63,Trail,6.03,+6.99R,1937.98

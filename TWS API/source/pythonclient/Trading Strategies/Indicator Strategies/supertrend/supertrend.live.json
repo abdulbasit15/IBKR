@@ -14,6 +14,8 @@
   "default_account": "REPLACE_WITH_LIVE_ACCOUNT",
   "market_data_type": 1,
   "stale_data_max_bars": 3,
+  "stale_data_reconnect_evals": 2,
+  "stale_reconnect_max_tries": 1,
 
   "strategies": {
     "stocks": [],

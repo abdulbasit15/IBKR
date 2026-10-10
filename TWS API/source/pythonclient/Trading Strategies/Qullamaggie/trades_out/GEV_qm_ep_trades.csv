@@ -1,0 +1,2 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+GEV,qm_ep,GEV-9,Long,17,2025-12-11,711.15,2025-12-12,679.0,Stop,32.15,-1.00R,-546.55

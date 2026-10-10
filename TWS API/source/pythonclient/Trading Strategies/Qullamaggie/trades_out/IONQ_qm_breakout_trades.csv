@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+IONQ,qm_breakout,IONQ-2,Long,2063,2023-03-28,5.12,2023-03-29,4.82,Stop,0.28,-1.07R,-618.9
+IONQ,qm_breakout,IONQ-3,Long,281,2023-04-03,6.27,2023-04-11,6.78,Partial,1.02,+0.50R,143.31
+IONQ,qm_breakout,IONQ-3,Long,282,2023-04-03,6.27,2023-04-18,6.27,BE-Stop,1.02,+0.00R,0.0
+IONQ,qm_breakout,IONQ-4,Long,487,2024-09-30,9.76,2024-10-01,8.58,Stop,1.18,-1.00R,-574.66
+IONQ,qm_breakout,IONQ-5,Long,443,2025-07-01,42.37,2025-07-02,41.08,Stop,1.29,-1.00R,-571.47
+IONQ,qm_breakout,IONQ-6,Long,175,2025-08-12,44.65,2025-08-13,41.41,Stop,3.24,-1.00R,-567.0

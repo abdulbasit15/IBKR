@@ -1,0 +1,12 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+AFRM,qm_breakout,AFRM-4,Long,1595,2023-08-02,18.68,2023-08-03,17.41,Stop,0.16,-7.94R,-2025.65
+AFRM,qm_breakout,AFRM-5,Long,412,2023-09-19,25.08,2023-09-20,23.9,Stop,1.18,-1.00R,-486.16
+AFRM,qm_breakout,AFRM-7,Long,120,2024-10-14,47.2,2024-10-18,43.21,Stop,3.99,-1.00R,-478.8
+AFRM,qm_breakout,AFRM-8,Long,128,2024-11-07,51.42,2024-11-08,47.68,Stop,3.74,-1.00R,-478.72
+AFRM,qm_breakout,AFRM-9,Long,407,2024-12-17,70.24,2024-12-18,69.43,Stop,0.81,-1.00R,-329.67
+AFRM,qm_breakout,AFRM-10,Long,131,2025-06-26,66.9,2025-07-03,69.19,Partial,1.808,+1.27R,299.99
+AFRM,qm_breakout,AFRM-10,Long,132,2025-06-26,66.9,2025-07-08,66.9,BE-Stop,1.808,+0.00R,0.0
+AFRM,qm_breakout,AFRM-11,Long,32,2025-08-05,75.05,2025-08-12,76.885,Partial,7.445,+0.25R,58.72
+AFRM,qm_breakout,AFRM-11,Long,32,2025-08-05,75.05,2025-08-14,75.05,BE-Stop,7.445,+0.00R,0.0
+AFRM,qm_breakout,AFRM-12,Long,406,2026-05-28,70.44,2026-06-03,69.4,Stop,1.04,-1.00R,-422.24
+AFRM,qm_breakout,AFRM-13,Long,176,2026-07-02,84.555,2026-07-08,81.86,Stop,2.695,-1.00R,-474.32

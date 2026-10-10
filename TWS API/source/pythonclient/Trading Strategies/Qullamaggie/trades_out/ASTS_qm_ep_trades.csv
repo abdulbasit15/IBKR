@@ -1,0 +1,5 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ASTS,qm_ep,ASTS-1,Long,2395,2022-11-15,8.12,2022-11-16,7.46,Stop,0.21,-3.14R,-1580.7
+ASTS,qm_ep,ASTS-3,Long,906,2023-04-26,4.55,2023-05-03,4.74,Partial,0.27,+0.70R,172.14
+ASTS,qm_ep,ASTS-3,Long,907,2023-04-26,4.55,2023-06-28,4.55,BE-Stop,0.27,+0.00R,0.0
+ASTS,qm_ep,ASTS-6,Long,492,2025-08-13,50.495,2025-08-14,49.5,Stop,0.995,-1.00R,-489.54

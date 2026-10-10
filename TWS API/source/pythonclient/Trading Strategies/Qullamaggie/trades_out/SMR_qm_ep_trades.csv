@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+SMR,qm_ep,SMR-1,Long,533,2024-03-05,4.15,2024-03-12,6.27,Partial,0.6,+3.53R,1129.96
+SMR,qm_ep,SMR-1,Long,534,2024-03-05,4.15,2024-03-20,4.88,Trail,0.6,+1.22R,389.82
+SMR,qm_ep,SMR-2,Long,88,2025-05-27,30.37,2025-06-03,31.79,Partial,3.66,+0.39R,124.96
+SMR,qm_ep,SMR-2,Long,89,2025-05-27,30.37,2025-06-04,30.37,BE-Stop,3.66,+0.00R,0.0
+SMR,qm_ep,SMR-3,Long,144,2026-01-06,19.58,2026-01-13,19.23,Partial,2.24,-0.16R,-50.4
+SMR,qm_ep,SMR-3,Long,145,2026-01-06,19.58,2026-01-14,18.99,BE-Stop,2.24,-0.26R,-85.55

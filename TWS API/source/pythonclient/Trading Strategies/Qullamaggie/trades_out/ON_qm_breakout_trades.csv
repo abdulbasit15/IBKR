@@ -1,0 +1,11 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ON,qm_breakout,ON-1,Long,71,2022-08-15,70.02,2022-08-22,68.8,Partial,3.57,-0.34R,-86.62
+ON,qm_breakout,ON-1,Long,71,2022-08-15,70.02,2022-08-23,69.13,BE-Stop,3.57,-0.25R,-63.19
+ON,qm_breakout,ON-2,Long,117,2022-08-26,76.43,2022-08-29,70.73,Stop,4.31,-1.32R,-666.9
+ON,qm_breakout,ON-3,Long,280,2023-08-01,107.73,2023-08-02,106.89,Stop,0.65,-1.29R,-235.2
+ON,qm_breakout,ON-4,Long,101,2025-07-03,56.39,2025-07-11,59.73,Partial,2.48,+1.35R,337.34
+ON,qm_breakout,ON-4,Long,101,2025-07-03,56.39,2025-07-24,56.06,BE-Stop,2.48,-0.13R,-33.33
+ON,qm_breakout,ON-5,Long,49,2026-02-11,69.24,2026-02-19,68.09,Partial,5.09,-0.23R,-56.35
+ON,qm_breakout,ON-5,Long,49,2026-02-11,69.24,2026-02-20,67.79,BE-Stop,5.09,-0.28R,-71.05
+ON,qm_breakout,ON-6,Long,107,2026-05-12,104.82,2026-05-19,106.02,Partial,2.34,+0.51R,128.4
+ON,qm_breakout,ON-6,Long,107,2026-05-12,104.82,2026-06-09,117.0,Trail,2.34,+5.21R,1303.26

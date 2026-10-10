@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+COIN,qm_breakout,COIN-2,Long,119,2023-04-12,70.77,2023-04-17,67.12,Stop,3.53,-1.03R,-434.35
+COIN,qm_breakout,COIN-3,Long,52,2023-11-21,104.0,2023-11-29,127.82,Partial,3.99,+5.97R,1238.64
+COIN,qm_breakout,COIN-3,Long,53,2023-11-21,104.0,2024-01-03,152.24,Trail,3.99,+12.09R,2556.72
+COIN,qm_breakout,COIN-6,Long,4,2025-06-20,303.58,2025-06-27,353.43,Partial,51.7,+0.96R,199.4
+COIN,qm_breakout,COIN-6,Long,4,2025-06-20,303.58,2025-07-28,379.49,Trail,51.7,+1.47R,303.64

@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+DASH,qm_breakout,DASH-2,Long,121,2023-06-12,72.0,2023-06-20,73.0,Partial,2.32,+0.43R,121.0
+DASH,qm_breakout,DASH-2,Long,121,2023-06-12,72.0,2023-06-21,72.0,BE-Stop,2.32,+0.00R,0.0
+DASH,qm_breakout,DASH-4,Long,37,2024-03-04,132.01,2024-03-11,128.77,Partial,7.51,-0.43R,-119.88
+DASH,qm_breakout,DASH-4,Long,37,2024-03-04,132.01,2024-03-12,128.77,BE-Stop,7.51,-0.43R,-119.88
+DASH,qm_breakout,DASH-5,Long,30,2026-08-25,229.28,2026-09-01,225.66,Partial,9.3,-0.39R,-108.6
+DASH,qm_breakout,DASH-5,Long,30,2026-08-25,229.28,2026-09-02,225.73,BE-Stop,9.3,-0.38R,-106.5

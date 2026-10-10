@@ -1,0 +1,3 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+META,qm_ep,META-5,Long,30,2024-02-05,469.88,2024-02-06,453.01,Stop,16.87,-1.00R,-506.1
+META,qm_ep,META-6,Long,34,2026-01-30,727.5,2026-02-02,712.55,Stop,14.95,-1.00R,-508.3

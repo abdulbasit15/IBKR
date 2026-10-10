@@ -1,0 +1,8 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+SOFI,qm_ep,SOFI-1,Long,289,2022-08-04,8.17,2022-08-11,7.42,Partial,1.12,-0.67R,-216.75
+SOFI,qm_ep,SOFI-1,Long,290,2022-08-04,8.17,2022-08-12,7.53,BE-Stop,1.12,-0.57R,-185.6
+SOFI,qm_ep,SOFI-2,Long,6846,2022-11-02,5.675,2022-11-03,5.03,Stop,0.005,-129.00R,-4415.67
+SOFI,qm_ep,SOFI-3,Long,1078,2023-01-31,6.66,2023-02-07,7.38,Partial,0.29,+2.48R,776.16
+SOFI,qm_ep,SOFI-3,Long,1078,2023-01-31,6.66,2023-02-10,6.66,BE-Stop,0.29,+0.00R,0.0
+SOFI,qm_ep,SOFI-5,Long,1737,2023-10-31,7.04,2023-11-01,7.58,Trail,0.36,+1.50R,937.98
+SOFI,qm_ep,SOFI-6,Long,1536,2024-01-30,9.03,2024-01-31,8.09,Stop,0.41,-2.29R,-1443.84

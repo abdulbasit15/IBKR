@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+OKLO,qm_ep,OKLO-1,Long,2899,2024-05-29,10.51,2024-05-30,10.39,Stop,0.12,-1.00R,-347.88
+OKLO,qm_ep,OKLO-2,Long,62,2024-10-17,16.36,2024-10-24,18.06,Partial,4.06,+0.42R,105.4
+OKLO,qm_ep,OKLO-2,Long,62,2024-10-17,16.36,2024-11-15,18.0,Trail,4.06,+0.40R,101.68

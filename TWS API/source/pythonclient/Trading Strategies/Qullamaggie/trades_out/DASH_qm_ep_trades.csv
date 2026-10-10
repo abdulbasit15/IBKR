@@ -1,0 +1,4 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+DASH,qm_ep,DASH-1,Long,54,2022-11-07,53.45,2022-11-14,62.02,Partial,5.14,+1.67R,462.78
+DASH,qm_ep,DASH-1,Long,54,2022-11-07,53.45,2022-11-22,53.45,BE-Stop,5.14,+0.00R,0.0
+DASH,qm_ep,DASH-3,Long,153,2023-11-03,88.05,2023-11-09,84.39,Stop,3.66,-1.00R,-559.98

@@ -1,0 +1,13 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CEG,qm_breakout,CEG-1,Long,156,2022-08-26,82.74,2022-08-29,79.65,Stop,2.975,-1.04R,-482.04
+CEG,qm_breakout,CEG-2,Long,119,2022-10-25,87.5,2022-11-01,95.52,Partial,1.93,+4.16R,954.38
+CEG,qm_breakout,CEG-2,Long,120,2022-10-25,87.5,2022-11-08,87.5,BE-Stop,1.93,+0.00R,0.0
+CEG,qm_breakout,CEG-3,Long,22,2024-03-26,189.9,2024-04-03,190.26,Partial,10.36,+0.03R,7.92
+CEG,qm_breakout,CEG-3,Long,23,2024-03-26,189.9,2024-04-04,189.9,BE-Stop,10.36,+0.00R,0.0
+CEG,qm_breakout,CEG-4,Long,23,2024-05-06,197.75,2024-05-13,213.59,Partial,9.75,+1.62R,364.32
+CEG,qm_breakout,CEG-4,Long,24,2024-05-06,197.75,2024-06-03,208.26,Trail,9.75,+1.08R,252.24
+CEG,qm_breakout,CEG-7,Long,49,2024-10-07,285.0,2024-10-08,275.6,Stop,9.4,-1.00R,-460.6
+CEG,qm_breakout,CEG-9,Long,57,2025-02-19,323.81,2025-02-20,315.815,Stop,7.995,-1.00R,-455.71
+CEG,qm_breakout,CEG-10,Long,34,2025-06-24,317.94,2025-07-01,304.69,Stop,13.25,-1.00R,-450.5
+CEG,qm_breakout,CEG-11,Long,25,2025-07-31,349.48,2025-08-01,331.5,Stop,17.98,-1.00R,-449.5
+CEG,qm_breakout,CEG-12,Long,61,2025-08-05,352.03,2025-08-06,343.62,Stop,7.454,-1.13R,-513.01

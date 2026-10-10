@@ -104,6 +104,14 @@ from Indicators.momentum.macd import macd_value            # noqa: E402
 ET = ZoneInfo("America/New_York")
 LONG, SHORT, FLAT = "LONG", "SHORT", "FLAT"
 
+# Build/version stamp, logged at startup so you can tell AT A GLANCE which code a running exe
+# contains (e.g. whether the stale-data guard + reconnect cap are present). Bump on code changes.
+BOT_VERSION = "2026-10-08.3 stale-guard+reconnect-cap+stop-from-fill+feed-state+ctrlc"
+
+# Set on Ctrl+C (SIGINT) so every strategy thread's run() loop exits cleanly (disconnects IB) instead
+# of the main thread hanging forever in thread.join() — on Windows a no-timeout join swallows SIGINT.
+_STOP = threading.Event()
+
 
 # ───────────────────────── time helpers (ET) ─────────────────────────
 def now_et() -> datetime:
@@ -382,12 +390,20 @@ class SupertrendBot:
         # protect open positions while we wait for fresh data.
         self.stale_data_max_bars = int(cfg.get("stale_data_max_bars", 3) or 0)
         self._last_stale_log: dict[str, datetime] = {}   # per-symbol throttle for the stale warning
+        self._feed_state: dict[str, str] = {}            # per-symbol LIVE/DELAYED/FROZEN (log on change)
         # A stale feed means the HMDS data farm went into a zombie state (socket still up, no 1100)
         # and is serving an old cached bar. Only a full reconnect rebuilds the farm (a throwaway
         # "wake" pull does not). So after this many consecutive stale eval cycles, force the
         # disconnect->reconnect directly instead of waiting out the slower generic no-data watchdog.
         self.stale_data_reconnect_evals = int(cfg.get("stale_data_reconnect_evals", 2) or 0)
         self._cycle_stale = False     # any symbol reported stale data this eval cycle
+        # A client reconnect to the SAME gateway cannot fix a gateway-level HMDS farm zombie (the
+        # gateway's own link to IB's data servers is dead). So cap the forced reconnects: after this
+        # many consecutive attempts fail to restore fresh bars, STOP the churn and raise a loud,
+        # throttled operator alert to RESTART/RE-LOGIN the IB Gateway. Resets once data is current.
+        self.stale_reconnect_max_tries = int(cfg.get("stale_reconnect_max_tries", 3) or 0)
+        self._stale_reconnects = 0
+        self._last_farm_alert: datetime | None = None
         self.contracts: dict[str, object] = {}
         self._on_contracts: dict[str, object] = {}   # OVERNIGHT-venue contracts (24H), cached
         self.positions: dict[str, dict] = {}     # symbol -> live position state
@@ -644,13 +660,19 @@ class SupertrendBot:
         on ANY error (incl. the BaseException CancelledError) fall back to a plain sleep. The next
         ensure_connected() then does a fresh reconnect."""
         import time as _t
-        try:
-            if self.ib is not None and self.ib.isConnected():
-                self.ib.sleep(secs)
-            else:
-                _t.sleep(secs)
-        except (asyncio.CancelledError, Exception):
-            _t.sleep(secs)
+        # Sleep in short slices so a Ctrl+C (which sets _STOP) wakes the loop within ~1s instead of
+        # waiting out the full poll interval.
+        remaining = float(secs)
+        while remaining > 0 and not _STOP.is_set():
+            step = min(1.0, remaining)
+            remaining -= step
+            try:
+                if self.ib is not None and self.ib.isConnected():
+                    self.ib.sleep(step)
+                else:
+                    _t.sleep(step)
+            except (asyncio.CancelledError, Exception):
+                _t.sleep(step)
 
     # ----------------------------------------------------------------- data
     def qualify(self, symbol: str):
@@ -2037,6 +2059,31 @@ class SupertrendBot:
         if self.stale_data_max_bars and self._session_active():
             bar_age = (now_et() - bar_time).total_seconds()
             max_age = self.stale_data_max_bars * self._bar_seconds()
+            # ---- FEED STATE (LIVE / DELAYED / FROZEN): make it obvious in the log whether the
+            # paper session is actually on the real-time feed, or on a delayed/dead feed because a
+            # LIVE-account login took the shared market-data line. Logged only on a state CHANGE.
+            #   LIVE    = newest bar within the freshness window (trading enabled)
+            #   DELAYED = bars ARE arriving but N min behind (delayed feed, or catching up) -> paused
+            #   FROZEN  = newest bar not advancing at all (no live data reaching paper)      -> paused
+            if bar_age <= max_age:
+                feed = "LIVE"
+            elif fresh_bar:
+                feed = "DELAYED"
+            else:
+                feed = "FROZEN"
+            if self._feed_state.get(symbol) != feed:
+                self._feed_state[symbol] = feed
+                if feed == "LIVE":
+                    self.log(f"{symbol} MARKET DATA: LIVE — feed current ({bar_age/60:.0f} min behind); "
+                             f"trading enabled")
+                elif feed == "DELAYED":
+                    self.log(f"{symbol} MARKET DATA: DELAYED/LAGGING ~{bar_age/60:.0f} min behind — if you "
+                             f"are logged into your LIVE account, LOG OUT (it takes the paper live feed). "
+                             f"Trading paused until the feed is current.")
+                else:
+                    self.log(f"{symbol} MARKET DATA: FROZEN — no new bars (newest {bar_time}); the live "
+                             f"feed is not reaching the paper session (LIVE-account login, or gateway/farm "
+                             f"down). Trading paused.")
             if bar_age > max_age:
                 self._cycle_data_ok = False      # treat like no-data for the watchdog
                 self._cycle_stale = True          # trip the FAST stale-reconnect path
@@ -2229,6 +2276,8 @@ class SupertrendBot:
                     except Exception as e:
                         self.log(f"idle reconnect: {e}")
                 self.log("session open (ET) — starting up")
+            self.log(f"BUILD {BOT_VERSION} | stale_data_max_bars={self.stale_data_max_bars} "
+                     f"stale_reconnect_max_tries={self.stale_reconnect_max_tries}")
             self.contracts = {s: self.qualify(s) for s in self.symbols}
             self.log(f"direction={self.direction} symbols={self.symbols} "
                      f"sec_type={self.sec_type}{'@' + self.exchange if self.is_future else ''} "
@@ -2251,6 +2300,9 @@ class SupertrendBot:
             self._last_eval_bar = None
             while True:
                 try:
+                    if _STOP.is_set():
+                        self.log("shutdown requested (Ctrl+C) — exiting strategy loop")
+                        break
                     if not self.ensure_connected():
                         self.log("CRITICAL: cannot reconnect; positions protected by server-side stops. Exiting.")
                         break
@@ -2291,6 +2343,7 @@ class SupertrendBot:
                         # must NOT force needless reconnect churn.
                         if self._cycle_data_ok:
                             self._data_fail = 0
+                            self._stale_reconnects = 0   # data is current again -> re-arm reconnects
                         elif self._session_active():
                             self._data_fail += 1
                             # STALE feed (farm zombie) trips FAST: a reconnect is the only cure, so
@@ -2298,13 +2351,28 @@ class SupertrendBot:
                             stale_trip = (self._cycle_stale and self.stale_data_reconnect_evals
                                           and self._data_fail >= self.stale_data_reconnect_evals)
                             if self._data_fail >= self.data_fail_reconnect_cycles or stale_trip:
-                                why = ("stale data farm" if stale_trip else "no market data")
-                                self.log(f"{why} for {self._data_fail} evals while connected during "
-                                         f"the session; forcing session reset (disconnect -> reconnect)")
-                                try:
-                                    self.ib.disconnect()
-                                except Exception:
-                                    pass
+                                if (not self.stale_reconnect_max_tries
+                                        or self._stale_reconnects < self.stale_reconnect_max_tries):
+                                    self._stale_reconnects += 1
+                                    why = ("stale data farm" if stale_trip else "no market data")
+                                    self.log(f"{why} for {self._data_fail} evals while connected during "
+                                             f"the session; forcing session reset (disconnect -> reconnect "
+                                             f"{self._stale_reconnects}/{self.stale_reconnect_max_tries})")
+                                    try:
+                                        self.ib.disconnect()
+                                    except Exception:
+                                        pass
+                                else:
+                                    # client reconnects aren't clearing it: GATEWAY-level farm zombie.
+                                    # Stop churning; raise a loud throttled alert. Positions stay
+                                    # protected by native server-side stops; no new entries meanwhile.
+                                    last = self._last_farm_alert
+                                    if last is None or (now_et() - last).total_seconds() >= 600:
+                                        self._last_farm_alert = now_et()
+                                        self.log(f"*** DATA FARM STUCK: {self._stale_reconnects} reconnects "
+                                                 f"did not restore fresh bars — RESTART / RE-LOGIN IB GATEWAY. "
+                                                 f"Holding flat (native stops protect open positions); no new "
+                                                 f"entries until data is current. ***")
                                 self._data_fail = 0
                         else:
                             self._data_fail = 0   # outside the session: no new bars expected, not a fault
@@ -2388,10 +2456,25 @@ def main():
                                        name=name, daemon=True)
             threads.append(thread)
             thread.start()
-        for thread in threads:
-            thread.join()
+        # Join with a timeout in a loop so the MAIN thread stays interruptible: on Windows a
+        # no-timeout join() blocks SIGINT delivery, so Ctrl+C was being ignored. Now Ctrl+C sets
+        # _STOP, each strategy loop breaks and disconnects cleanly, and we join them out.
+        try:
+            while any(t.is_alive() for t in threads):
+                for t in threads:
+                    t.join(timeout=0.5)
+        except KeyboardInterrupt:
+            print("\nCtrl+C — stopping all strategies (disconnecting)...")
+            _STOP.set()
+            for t in threads:
+                t.join(timeout=15)
+            print("stopped.")
     else:
-        SupertrendBot(cfg, base).run()
+        try:
+            SupertrendBot(cfg, base).run()
+        except KeyboardInterrupt:
+            print("\nCtrl+C — stopping...")
+            _STOP.set()
 
 
 if __name__ == "__main__":

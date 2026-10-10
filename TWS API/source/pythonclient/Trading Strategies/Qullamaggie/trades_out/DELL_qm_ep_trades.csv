@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+DELL,qm_ep,DELL-1,Long,287,2022-05-31,49.43,2022-06-07,51.15,Partial,0.98,+1.76R,493.64
+DELL,qm_ep,DELL-1,Long,288,2022-05-31,49.43,2022-06-10,49.43,BE-Stop,0.98,+0.00R,0.0
+DELL,qm_ep,DELL-3,Long,68,2023-09-05,68.05,2023-09-12,70.73,Partial,4.19,+0.64R,182.24
+DELL,qm_ep,DELL-3,Long,69,2023-09-05,68.05,2023-09-21,68.05,BE-Stop,4.19,+0.00R,0.0
+DELL,qm_ep,DELL-12,Long,26,2026-03-02,146.76,2026-03-09,146.51,Partial,10.65,-0.02R,-6.5
+DELL,qm_ep,DELL-12,Long,27,2026-03-02,146.76,2026-03-10,146.29,BE-Stop,10.65,-0.04R,-12.69

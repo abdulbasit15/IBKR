@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CEG,qm_ep,CEG-5,Long,88,2024-08-01,188.292,2024-08-02,174.47,Stop,5.292,-2.61R,-1216.34
+CEG,qm_ep,CEG-6,Long,8,2024-09-23,259.56,2024-09-30,260.02,Partial,26.56,+0.02R,3.68
+CEG,qm_ep,CEG-6,Long,9,2024-09-23,259.56,2024-10-01,259.1,BE-Stop,26.56,-0.02R,-4.14
+CEG,qm_ep,CEG-8,Long,13,2025-01-13,297.495,2025-01-21,323.64,Partial,17.365,+1.51R,339.89
+CEG,qm_ep,CEG-8,Long,13,2025-01-13,297.495,2025-01-27,292.46,BE-Stop,17.365,-0.29R,-65.46

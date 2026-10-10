@@ -1,0 +1,3 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+CRM,qm_breakout,CRM-4,Long,9,2026-08-28,250.47,2026-09-04,259.23,Partial,20.42,+0.43R,78.84
+CRM,qm_breakout,CRM-4,Long,9,2026-08-28,250.47,2026-09-08,250.47,BE-Stop,20.42,+0.00R,0.0

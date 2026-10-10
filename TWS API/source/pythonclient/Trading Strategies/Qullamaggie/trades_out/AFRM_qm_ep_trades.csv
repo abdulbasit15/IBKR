@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+AFRM,qm_ep,AFRM-1,Long,201,2022-05-16,23.65,2022-05-17,25.24,Trail,2.44,+0.65R,319.59
+AFRM,qm_ep,AFRM-2,Long,307,2022-11-11,14.97,2022-11-14,16.28,Trail,1.6,+0.82R,402.17
+AFRM,qm_ep,AFRM-3,Long,633,2023-06-08,16.52,2023-06-15,17.28,Partial,0.39,+1.95R,481.08
+AFRM,qm_ep,AFRM-3,Long,634,2023-06-08,16.52,2023-06-16,16.52,BE-Stop,0.39,+0.00R,0.0
+AFRM,qm_ep,AFRM-6,Long,60,2024-08-30,41.5,2024-09-09,38.17,Partial,3.98,-0.84R,-199.8
+AFRM,qm_ep,AFRM-6,Long,61,2024-08-30,41.5,2024-09-10,38.17,BE-Stop,3.98,-0.84R,-203.13

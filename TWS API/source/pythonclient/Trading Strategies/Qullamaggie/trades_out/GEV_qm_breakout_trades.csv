@@ -1,0 +1,17 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+GEV,qm_breakout,GEV-1,Long,64,2024-11-01,305.0,2024-11-04,296.02,Stop,8.98,-1.00R,-574.72
+GEV,qm_breakout,GEV-2,Long,10,2024-11-06,321.16,2024-11-13,333.26,Partial,26.29,+0.46R,121.0
+GEV,qm_breakout,GEV-2,Long,11,2024-11-06,321.16,2024-11-19,320.01,BE-Stop,26.29,-0.04R,-12.65
+GEV,qm_breakout,GEV-3,Long,7,2025-01-06,369.75,2025-01-14,382.26,Partial,38.25,+0.33R,87.57
+GEV,qm_breakout,GEV-3,Long,7,2025-01-06,369.75,2025-01-27,339.6,BE-Stop,38.25,-0.79R,-211.05
+GEV,qm_breakout,GEV-4,Long,73,2025-05-28,468.54,2025-05-29,466.0,Stop,2.54,-1.00R,-185.42
+GEV,qm_breakout,GEV-5,Long,65,2025-06-04,493.73,2025-06-05,485.0,Stop,8.73,-1.00R,-567.45
+GEV,qm_breakout,GEV-6,Long,10,2025-06-24,505.96,2025-07-01,506.0,Partial,26.92,+0.00R,0.4
+GEV,qm_breakout,GEV-6,Long,11,2025-06-24,505.96,2025-07-02,502.58,BE-Stop,26.92,-0.13R,-37.18
+GEV,qm_breakout,GEV-7,Long,33,2025-07-15,556.81,2025-07-22,540.0,Stop,16.81,-1.00R,-554.73
+GEV,qm_breakout,GEV-8,Long,5,2025-07-24,632.27,2025-07-31,660.29,Partial,47.27,+0.59R,140.1
+GEV,qm_breakout,GEV-8,Long,6,2025-07-24,632.27,2025-08-13,632.27,BE-Stop,47.27,+0.00R,0.0
+GEV,qm_breakout,GEV-10,Long,13,2026-02-03,775.0,2026-02-04,733.0,Stop,42.0,-1.00R,-546.0
+GEV,qm_breakout,GEV-11,Long,8,2026-02-25,887.96,2026-03-03,824.9,Stop,63.06,-1.00R,-504.48
+GEV,qm_breakout,GEV-12,Long,8,2026-04-10,973.11,2026-04-17,1002.75,Partial,32.35,+0.92R,237.12
+GEV,qm_breakout,GEV-12,Long,9,2026-04-10,973.11,2026-05-07,1045.63,Trail,32.35,+2.24R,652.68

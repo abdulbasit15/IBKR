@@ -1,0 +1,7 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+RBLX,qm_ep,RBLX-2,Long,203,2022-10-18,43.03,2022-10-24,40.51,Stop,2.52,-1.00R,-511.56
+RBLX,qm_ep,RBLX-3,Long,432,2023-01-18,37.19,2023-01-19,33.0,Stop,1.18,-3.55R,-1810.08
+RBLX,qm_ep,RBLX-4,Long,209,2023-02-16,44.29,2023-02-17,41.9,Stop,2.39,-1.00R,-499.51
+RBLX,qm_ep,RBLX-10,Long,80,2024-11-01,51.11,2024-11-08,52.4,Partial,3.11,+0.41R,103.2
+RBLX,qm_ep,RBLX-10,Long,80,2024-11-01,51.11,2024-11-15,51.11,BE-Stop,3.11,+0.00R,0.0
+RBLX,qm_ep,RBLX-18,Long,62,2026-02-09,68.76,2026-02-10,71.94,Trail,8.42,+0.38R,197.16

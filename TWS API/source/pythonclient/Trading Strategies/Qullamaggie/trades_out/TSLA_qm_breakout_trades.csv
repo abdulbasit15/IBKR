@@ -1,0 +1,11 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+TSLA,qm_breakout,TSLA-1,Long,56,2023-03-22,199.3,2023-03-24,188.04,Stop,11.26,-1.00R,-630.56
+TSLA,qm_breakout,TSLA-2,Long,136,2023-07-05,278.82,2023-07-06,275.11,Stop,3.71,-1.00R,-504.56
+TSLA,qm_breakout,TSLA-3,Long,96,2023-07-18,290.15,2023-07-20,279.56,Stop,6.58,-1.61R,-1016.64
+TSLA,qm_breakout,TSLA-5,Long,26,2024-09-24,254.08,2024-10-01,258.02,Partial,12.16,+0.32R,102.44
+TSLA,qm_breakout,TSLA-5,Long,27,2024-09-24,254.08,2024-10-02,247.55,BE-Stop,12.16,-0.54R,-176.31
+TSLA,qm_breakout,TSLA-8,Long,37,2025-01-16,423.49,2025-01-22,415.11,Trail,17.83,-0.47R,-310.06
+TSLA,qm_breakout,TSLA-9,Long,23,2025-06-24,356.17,2025-06-25,327.48,Stop,28.69,-1.00R,-659.87
+TSLA,qm_breakout,TSLA-10,Long,22,2025-10-02,470.54,2025-10-03,440.75,Stop,29.79,-1.00R,-655.38
+TSLA,qm_breakout,TSLA-11,Long,20,2025-10-28,454.78,2025-11-04,444.26,Partial,16.09,-0.65R,-210.4
+TSLA,qm_breakout,TSLA-11,Long,20,2025-10-28,454.78,2025-11-05,452.05,BE-Stop,16.09,-0.17R,-54.6

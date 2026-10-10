@@ -1,0 +1,6 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+MDB,qm_ep,MDB-1,Long,17,2022-12-08,182.7,2022-12-15,203.71,Partial,15.19,+1.38R,357.17
+MDB,qm_ep,MDB-1,Long,17,2022-12-08,182.7,2023-01-03,190.75,Trail,15.19,+0.53R,136.85
+MDB,qm_ep,MDB-6,Long,16,2024-09-03,290.79,2024-09-10,291.49,Partial,15.63,+0.04R,11.2
+MDB,qm_ep,MDB-6,Long,17,2024-09-03,290.79,2024-09-11,290.79,BE-Stop,15.63,+0.00R,0.0
+MDB,qm_ep,MDB-7,Long,93,2025-06-06,227.65,2025-06-09,222.06,Stop,5.59,-1.00R,-519.87

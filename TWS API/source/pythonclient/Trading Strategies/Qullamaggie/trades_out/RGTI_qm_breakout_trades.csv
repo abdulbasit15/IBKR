@@ -1,0 +1,5 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+RGTI,qm_breakout,RGTI-4,Long,176,2025-07-03,12.915,2025-07-11,12.18,Partial,1.485,-0.49R,-129.36
+RGTI,qm_breakout,RGTI-4,Long,176,2025-07-03,12.915,2025-07-14,12.3,BE-Stop,1.485,-0.41R,-108.24
+RGTI,qm_breakout,RGTI-5,Long,108,2025-09-15,19.075,2025-09-22,28.37,Partial,2.415,+3.85R,1003.86
+RGTI,qm_breakout,RGTI-5,Long,108,2025-09-15,19.075,2025-10-21,40.0,Trail,2.415,+8.66R,2259.9

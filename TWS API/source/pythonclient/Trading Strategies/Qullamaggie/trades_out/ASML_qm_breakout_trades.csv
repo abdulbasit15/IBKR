@@ -1,0 +1,5 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+ASML,qm_breakout,ASML-1,Long,21,2026-02-19,1439.04,2026-02-26,1427.38,Stop,11.66,-1.00R,-244.86
+ASML,qm_breakout,ASML-2,Long,3,2026-06-12,1847.62,2026-06-22,1929.25,Partial,72.52,+1.13R,244.89
+ASML,qm_breakout,ASML-2,Long,4,2026-06-12,1847.62,2026-06-23,1777.7,BE-Stop,72.52,-0.96R,-279.68
+ASML,qm_breakout,ASML-3,Long,15,2026-07-01,1916.28,2026-07-02,1843.98,Stop,2.4,-30.12R,-1084.5

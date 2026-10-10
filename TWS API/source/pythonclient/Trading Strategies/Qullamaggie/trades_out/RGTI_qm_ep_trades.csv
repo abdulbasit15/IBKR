@@ -1,0 +1,8 @@
+symbol,strat,entry_id,side,qty,entry_time_et,entry_price,exit_time_et,exit_price,reason,R_points,R_result,pnl
+RGTI,qm_ep,RGTI-1,Long,3235,2023-02-07,1.2,2023-02-09,1.04,Stop,0.16,-1.00R,-517.6
+RGTI,qm_ep,RGTI-2,Long,5150,2023-05-26,0.81,2023-06-05,0.912,Partial,0.05,+2.04R,525.3
+RGTI,qm_ep,RGTI-2,Long,5151,2023-05-26,0.81,2023-06-21,0.975,Trail,0.05,+3.30R,849.92
+RGTI,qm_ep,RGTI-3,Long,745,2024-02-16,1.55,2024-02-26,1.86,Partial,0.35,+0.89R,230.95
+RGTI,qm_ep,RGTI-3,Long,746,2024-02-16,1.55,2024-03-05,1.55,BE-Stop,0.35,+0.00R,0.0
+RGTI,qm_ep,RGTI-6,Long,59,2026-05-22,22.96,2026-06-01,25.63,Partial,4.56,+0.59R,157.53
+RGTI,qm_ep,RGTI-6,Long,59,2026-05-22,22.96,2026-06-04,22.96,BE-Stop,4.56,+0.00R,0.0
