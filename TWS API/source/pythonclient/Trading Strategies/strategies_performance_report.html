@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategy Performance Report — Scalping-v2 · Supertrend 5m · Qullamaggie</title>
+<style>
+  :root{
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --border:rgba(11,11,11,.12); --s1:#2a78d6; --s2:#eb6834;
+    --good:#1a7f37; --goodbg:rgba(26,127,55,.12); --bad:#c0362c; --badbg:rgba(192,54,44,.12);
+    --warn:#9a6700; --warnbg:#fff8e6; --gold:#b58100; --row:rgba(42,120,214,.05);
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#8f8d85;
+    --border:rgba(255,255,255,.14); --s1:#5b9be8; --s2:#e07a4d;
+    --good:#4bbd6b; --goodbg:rgba(75,189,107,.14); --bad:#f07068; --badbg:rgba(240,112,104,.14);
+    --warn:#e0b84d; --warnbg:rgba(224,184,77,.10); --gold:#e0b84d; --row:rgba(91,155,232,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 100px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:25px;margin:0 0 4px}
+  h2{font-size:19px;margin:40px 0 8px;padding-top:10px;border-top:1px solid var(--border)}
+  h3{font-size:15px;margin:18px 0 4px;color:var(--ink2)}
+  p,li{color:var(--ink2);font-size:14px}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:0}
+  a{color:var(--s1)}
+  .toggle{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .callout{border-left:3px solid var(--warn);background:var(--warnbg);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:16px 0;font-size:13.5px}
+  .callout.b{border-left-color:var(--s1);background:var(--row)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  tbody tr:hover{background:var(--row)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .grp td{background:var(--surface);font-weight:700;font-size:12px;color:var(--ink);
+    text-transform:uppercase;letter-spacing:.03em}
+  .port td{font-weight:700}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px}
+  .pill.g{background:var(--goodbg);color:var(--good)} .pill.r{background:var(--badbg);color:var(--bad)}
+  .pill.n{background:var(--row);color:var(--s1)}
+  code{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:12px}
+  .foot{color:var(--muted);font-size:12px;margin-top:36px;border-top:1px solid var(--border);padding-top:14px}
+  /* ranking */
+  ol.rank{list-style:none;padding:0;counter-reset:r}
+  ol.rank li{counter-increment:r;position:relative;padding:11px 14px 11px 46px;margin:7px 0;
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--ink2)}
+  ol.rank li::before{content:counter(r);position:absolute;left:12px;top:11px;width:22px;height:22px;
+    border-radius:50%;background:var(--row);color:var(--s1);font-weight:700;font-size:12px;
+    display:flex;align-items:center;justify-content:center}
+  ol.rank li.t1::before{background:var(--gold);color:#fff}
+  ol.rank li b{color:var(--ink)}
+  .tierlbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 2px}
+  /* yearly bars */
+  .yr{display:grid;grid-template-columns:52px 1fr 70px;gap:10px;align-items:center;margin:3px 0;font-size:12.5px}
+  .bar{position:relative;height:16px;background:var(--border);border-radius:3px}
+  .bar .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted);opacity:.5}
+  .bar i{position:absolute;top:0;height:16px;border-radius:3px;display:block}
+  .bar i.p{background:var(--good);left:50%} .bar i.n{background:var(--bad);right:50%}
+  .yv{text-align:right;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Strategy Performance Report</h1>
+    <p class="sub">Scalping-v2 · Supertrend 5-min · Qullamaggie — backtest metrics, yearly returns, drawdown &amp; ranking. Generated 2026-10-10.</p>
+  </div>
+  <button class="toggle" onclick="tog()">◐ Theme</button>
+</header>
+
+<div class="callout">
+  <strong>⚠️ Not an apples-to-apples comparison.</strong> The three systems use different instruments, sample
+  lengths, and cost assumptions, so the cross-ranking below is <em>judgment</em>, not a fair race:
+  <ul style="margin:6px 0 0">
+    <li><b>Scalping-v2</b> — full-size NQ/ES/GC, <b>~1.1 yr</b>, <b>slippage included (1 tick)</b>; strategies were <em>selected</em> from a 260-cell search (t≈1.3, statistically thin).</li>
+    <li><b>Supertrend 5m</b> — 4 micro contracts, <b>~1.5 yr</b>, <b>frictionless</b> headline. With real costs the edge thins toward PF≈1.0 (see note).</li>
+    <li><b>Qullamaggie</b> — US stocks, <b>~4.4 yr</b> but a <b>survivorship-biased</b> 72-name universe, daily-bar approximation, 0.5% risk/trade.</li>
+  </ul>
+</div>
+
+<h2>Master table — all strategies</h2>
+<p class="sub">RF = net profit ÷ max drawdown. "—" = metric not produced by that backtest. Returns normalized per the source backtest's account basis.</p>
+<table>
+  <thead>
+    <tr><th>Strategy</th><th>Ticker(s)</th><th>TF</th><th>Period</th>
+      <th class="num">Win%</th><th class="num">PF</th><th class="num">Max DD</th>
+      <th class="num">Net / Return</th><th class="num">RF</th><th class="num">Sharpe</th></tr>
+  </thead>
+  <tbody>
+    <tr class="grp"><td colspan="10">Scalping-v2 &nbsp;·&nbsp; full-size, 1-tick slippage, $150k account &nbsp;·&nbsp; 5-min RTH &nbsp;·&nbsp; 2025-09 → 2026-10 (~1.1 yr)</td></tr>
+    <tr><td>ORB 2nd Break</td><td>NQ, GC</td><td>5m</td><td>13 mo</td>
+      <td class="num">69%</td><td class="num"><b>2.65</b></td><td class="num">4.9%</td><td class="num pos">+34.2%/yr</td><td class="num">7.7</td><td class="num">3.11</td></tr>
+    <tr><td>H2/L2 Trend Pullback</td><td>NQ, GC</td><td>5m</td><td>13 mo</td>
+      <td class="num">44%</td><td class="num">1.70</td><td class="num">5.1%</td><td class="num pos">+14.2%/yr</td><td class="num">3.1</td><td class="num">1.61</td></tr>
+    <tr><td>Trend-Confluence Pullback</td><td>NQ, GC</td><td>5m</td><td>13 mo</td>
+      <td class="num">39%</td><td class="num">1.28</td><td class="num">4.7%</td><td class="num pos">+14.7%/yr</td><td class="num">3.4</td><td class="num">1.38</td></tr>
+    <tr><td>IB Trend Breakout <span class="pill r">NQ leg loses</span></td><td>NQ, ES, GC</td><td>5m</td><td>13 mo</td>
+      <td class="num">48%</td><td class="num">1.32</td><td class="num">13.5%</td><td class="num pos">+12.6%/yr</td><td class="num">1.0</td><td class="num">0.91</td></tr>
+    <tr class="port"><td>▸ Portfolio (all 4, as bot trades)</td><td>NQ/ES/GC</td><td>5m</td><td>13 mo</td>
+      <td class="num">47%</td><td class="num">1.57</td><td class="num">10.3%</td><td class="num pos">+75.7%/yr</td><td class="num">8.1</td><td class="num">3.03</td></tr>
+
+    <tr class="grp"><td colspan="10">Supertrend 5-min &nbsp;·&nbsp; 4 micro contracts, FRICTIONLESS, $100k/instrument &nbsp;·&nbsp; RTH &nbsp;·&nbsp; ~1.5 yr</td></tr>
+    <tr><td>MGC · plain Supertrend</td><td>MGC</td><td>5m</td><td>1.69 yr</td>
+      <td class="num">32.7%</td><td class="num"><b>1.61</b></td><td class="num">$13.5k</td><td class="num pos">+$196k (~+116%/yr)</td><td class="num"><b>14.6</b></td><td class="num">—</td></tr>
+    <tr><td>MES · plain Supertrend</td><td>MES</td><td>5m</td><td>1.49 yr</td>
+      <td class="num">31.5%</td><td class="num">1.38</td><td class="num">$10.7k</td><td class="num pos">+$68.9k (~+46%/yr)</td><td class="num">6.4</td><td class="num">—</td></tr>
+    <tr><td>MNQ · Supertrend + DEMA(200)</td><td>MNQ</td><td>5m</td><td>1.49 yr</td>
+      <td class="num">32.3%</td><td class="num">1.29</td><td class="num">$18.1k</td><td class="num pos">+$95.9k (~+64%/yr)</td><td class="num">5.3</td><td class="num">—</td></tr>
+
+    <tr class="grp"><td colspan="10">Qullamaggie &nbsp;·&nbsp; US stocks, 0.5% risk, $100k &nbsp;·&nbsp; daily bars &nbsp;·&nbsp; 2022 → 2026 (~4.4 yr) &nbsp;·&nbsp; builtin 72-name universe</td></tr>
+    <tr><td>EP (Episodic Pivot)</td><td>~72 names</td><td>1d</td><td>4.4 yr</td>
+      <td class="num">43.2%</td><td class="num"><b>1.57</b></td><td class="num">11.9%</td><td class="num pos">+43% tot (~+8.6%/yr)</td><td class="num">2.3</td><td class="num">—</td></tr>
+    <tr><td>Pullback (continuation) <span class="pill n">backtest-only · not in live config</span></td><td>~72 names</td><td>1d</td><td>4.4 yr</td>
+      <td class="num">45.2%</td><td class="num"><b>1.52</b></td><td class="num">19.0%</td><td class="num pos">+65.5% tot (~+11.9%/yr)</td><td class="num">3.5</td><td class="num">—</td></tr>
+    <tr><td>Breakout</td><td>~72 names</td><td>1d</td><td>4.4 yr</td>
+      <td class="num">35.2%</td><td class="num neg"><b>0.91</b></td><td class="num">35.9%</td><td class="num neg">−17.5% tot</td><td class="num neg">−0.5</td><td class="num">—</td></tr>
+    <tr><td>parabolic_long <span class="pill n">no backtest trades</span></td><td>—</td><td>1d</td><td>—</td>
+      <td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+    <tr class="port"><td>▸ Combined (breakout + ep)</td><td>stocks</td><td>1d</td><td>4.4 yr</td>
+      <td class="num">37.3%</td><td class="num">1.09</td><td class="num">30.9%</td><td class="num pos">+25.7% tot</td><td class="num">0.6</td><td class="num">—</td></tr>
+  </tbody>
+</table>
+<p class="sub">Supertrend %/yr is annualized net on the $100k/instrument start (frictionless). Qullamaggie EP avg-R screens ~0 despite PF 1.57 due to partial-leg R accounting; use $ expectancy (EP +$234/trade) as the reliable per-trade figure. Scalping per-strategy avg-R: ORB +0.30, H2/L2 +0.26, Confluence +0.09, IB Trend +0.08.</p>
+
+<h2>Yearly returns (Qullamaggie — the only multi-year sample)</h2>
+<p class="sub">Computed from the <code>trades_out/</code> per-trade CSVs, as % of the $100k starting equity, bucketed by exit year. Scale: each cell spans −30%…+55%.</p>
+
+<h3>EP (Episodic Pivot) — 4 of 5 years positive</h3>
+<div id="ep">
+  <div class="yr"><span>2022</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:8.5%"></i></span><span class="yv pos">+7.2%</span></div>
+  <div class="yr"><span>2023</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:27.2%"></i></span><span class="yv pos">+23.1%</span></div>
+  <div class="yr"><span>2024</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:26.6%"></i></span><span class="yv pos">+22.6%</span></div>
+  <div class="yr"><span>2025</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:4.8%"></i></span><span class="yv pos">+4.1%</span></div>
+  <div class="yr"><span>2026</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:19.2%;width:16.1%"></i></span><span class="yv neg">−13.7%</span></div>
+</div>
+<h3>Pullback (continuation) — positive &amp; accelerating 2024–26 (best Qullamaggie setup; not deployed live)</h3>
+<div id="pb">
+  <div class="yr"><span>2022</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:26.0%;width:9.3%"></i></span><span class="yv neg">−7.9%</span></div>
+  <div class="yr"><span>2023</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:29.8%;width:5.5%"></i></span><span class="yv neg">−4.7%</span></div>
+  <div class="yr"><span>2024</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:46.6%"></i></span><span class="yv pos">+39.6%</span></div>
+  <div class="yr"><span>2025</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:32.9%"></i></span><span class="yv pos">+28.0%</span></div>
+  <div class="yr"><span>2026</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:12.4%"></i></span><span class="yv pos">+10.5%</span></div>
+</div>
+<h3>Breakout — net negative on this universe</h3>
+<div id="bo">
+  <div class="yr"><span>2022</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:24.5%;width:10.8%"></i></span><span class="yv neg">−9.2%</span></div>
+  <div class="yr"><span>2023</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:6.0%;width:29.3%"></i></span><span class="yv neg">−24.9%</span></div>
+  <div class="yr"><span>2024</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:36.8%"></i></span><span class="yv pos">+31.3%</span></div>
+  <div class="yr"><span>2025</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:16.1%;width:19.2%"></i></span><span class="yv neg">−16.3%</span></div>
+  <div class="yr"><span>2026</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:2.0%"></i></span><span class="yv pos">+1.7%</span></div>
+</div>
+<h3>Combined (breakout + ep) — "2024 made the whole thing"</h3>
+<div id="cb">
+  <div class="yr"><span>2022</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:32.9%;width:2.4%"></i></span><span class="yv neg">−2.0%</span></div>
+  <div class="yr"><span>2023</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:33.1%;width:2.2%"></i></span><span class="yv neg">−1.9%</span></div>
+  <div class="yr"><span>2024</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="p" style="left:35.3%;width:63.4%"></i></span><span class="yv pos">+53.9%</span></div>
+  <div class="yr"><span>2025</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:20.9%;width:14.4%"></i></span><span class="yv neg">−12.2%</span></div>
+  <div class="yr"><span>2026</span><span class="bar"><span class="mid" style="left:35.3%"></span><i class="n" style="left:21.2%;width:14.1%"></i></span><span class="yv neg">−12.0%</span></div>
+</div>
+
+<div class="callout b">
+  <strong>Scalping-v2</strong> has only ~1 year, so no multi-year table — but it held out-of-sample:
+  <b>in-sample → OOS profit factor 1.85 → 1.27</b> (edge weakened, stayed &gt;1). The last two months (Sep/Oct 2026) were both negative.
+  <strong>Supertrend 5m</strong> produces <b>no yearly or %-return breakdown at all</b> in its backtest outputs — only $ net, PF, DD, RF. (Can be computed from its per-trade CSVs on request.)
+</div>
+
+<h2>Ranking — top to bottom</h2>
+<p class="sub">Weighted for edge strength <em>and</em> robustness (sample length, out-of-sample behavior, whether costs are included).</p>
+<ol class="rank">
+  <li class="t1"><b>Qullamaggie — EP</b> — longest real track record (4.4 yr), positive in 4/5 years, PF 1.57, moderate 12% DD. The most <em>evidenced</em> edge, despite survivorship bias.</li>
+  <li class="t1"><b>Qullamaggie — Pullback (continuation)</b> — same 4.4-yr multi-regime basis, PF 1.52, best RF among the stock setups (3.5), and <em>positive &amp; accelerating</em> in 2024/25/26. <b>Not in the live bot config</b> — worth adding.</li>
+  <li class="t1"><b>Scalping — ORB 2nd Break</b> — best PF (2.65) and Sharpe (3.11) <em>with slippage included</em>, tiny 4.9% DD. Dinged only for the short, selection-biased 13-month sample.</li>
+  <li class="t1"><b>Supertrend — MGC 5m</b> — standout of the ST family (PF 1.61, RF 14.6) and the one instrument that stayed positive even in the with-costs check. Frictionless headline inflates it.</li>
+  <li><b>Scalping — H2/L2 Trend Pullback</b> — PF 1.70, hits its 2R target 41% of the time, and OOS PF <em>improved</em> (1.66→1.77).</li>
+  <li><b>Scalping — Confluence Pullback</b> — thin per-trade edge (+0.09R) but high volume, positive OOS (1.09), low DD.</li>
+  <li><b>Supertrend — MES 5m</b> — PF 1.38 frictionless, RF 6.4; costs pull it toward ~1.06–1.13.</li>
+  <li><b>Supertrend — MNQ 5m (ST+DEMA)</b> — PF 1.29 frictionless and weakest under costs (plain-ST MNQ failed both data halves, PF→0.95). DEMA kept for lower DD, not more profit.</li>
+  <li><b>Scalping — IB Trend Breakout</b> — RF ≈ 1.0, the <b>NQ leg loses money</b> (PF 0.92), OOS PF 0.96. Weak leg of the scalping portfolio.</li>
+  <li><b>Qullamaggie — Breakout</b> — negative expectancy (−17.5%, PF 0.91) with a brutal 36% drawdown on this universe.</li>
+</ol>
+<p class="sub"><b>Unrated — Qullamaggie parabolic_long:</b> no trades in the backtest dataset. Run <code>qm_long_backtest.py --setup all --range 5y</code> to generate it.</p>
+
+<h2>Caveats behind the ranking</h2>
+<ul>
+  <li><b>Costs flip conclusions.</b> Supertrend's frictionless PFs (1.29–1.61) drop toward ~1.0 once commission + slippage are applied (reality-check: MNQ 1.10 / MES 1.13 / MGC 1.02, Sharpe 0.69 / 0.90 / 0.16). Scalping-v2's figures already include slippage, so it is judged on a harder standard.</li>
+  <li><b>Sample length is wildly uneven.</b> Supertrend and scalping cover ~1–1.5 yr (one regime); only Qullamaggie spans multiple regimes — and even there, 2024 dominates (combined +53.9% that year vs losses in 3 of the other 4).</li>
+  <li><b>Qullamaggie's universe is survivorship-biased</b> (today's winners), so live numbers would be lower. Scalping-v2's own stock cross-check warned its edge "largely vanished" in the unseen 2024–25 year.</li>
+  <li><b>Qullamaggie drawdown is approximate</b> — computed on realized P&amp;L in exit-date order from a $100k base; it ignores open-position mark-to-market and uses 0.5% risk (live bot uses 1%, so live $ P&amp;L and DD would be roughly double).</li>
+</ul>
+
+<h2>Sources &amp; how to regenerate</h2>
+<table>
+  <thead><tr><th>System</th><th>Primary result source</th><th>Regenerate</th></tr></thead>
+  <tbody>
+    <tr><td>Scalping-v2</td><td><code>scalping-v2\backtest_results.html</code>, <code>backtest_out\scalping_v2_bt_summary.csv</code></td><td><code>python scalping_v2_backtest.py --html</code></td></tr>
+    <tr><td>Supertrend 5m</td><td><code>Indicator Strategies\supertrend\backtest\5min_rth_2y\summary.csv</code></td><td><code>py -3.12 Historical Data\Futures\scripts\backtest_4strats_5m.py</code></td></tr>
+    <tr><td>Supertrend (w/ costs, Sharpe)</td><td><code>Historical Data\Futures\results\intraday_strategy_research_2026-10-01.html</code></td><td>(output only — no committed generator)</td></tr>
+    <tr><td>Qullamaggie (EP, breakout)</td><td><code>Qullamaggie\trades_out\*.csv</code> (per-trade files; yearly/DD computed here)</td><td><code>python qm_long_backtest.py --setup both --range 5y --out trades_out</code></td></tr>
+    <tr><td>Qullamaggie (Pullback)</td><td>generated this session (builtin universe, 5y); yearly/DD computed from per-trade CSVs</td><td><code>python qm_long_backtest.py --setup pullback --range 5y --out &lt;dir&gt;</code></td></tr>
+  </tbody>
+</table>
+
+<p class="foot">All figures taken from the user's own backtest outputs on the dates noted; Qullamaggie yearly return &amp; drawdown computed from the per-trade CSVs (realized-P&amp;L equity curve, $100k base). Frictionless / cost / sample caveats as stated above. This report is for research review, not investment advice.</p>
+</div>
+<script>
+function tog(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';}
+</script>
+</body>
+</html>

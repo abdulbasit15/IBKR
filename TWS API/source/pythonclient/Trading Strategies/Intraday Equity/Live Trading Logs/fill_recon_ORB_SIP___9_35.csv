@@ -1,0 +1,3 @@
+Date,Time,Strategy,Ticker,Event,Reason,Qty,Intended,Actual,SlipBps,ExecTime
+2026-10-05,10:22:10,ORB SIP - 9.35,DKNG,ENTRY_NOFILL,LMT no-fill (price ran past chase cap),1845,19.6519,,,
+2026-10-05,10:28:00,ORB SIP - 9.35,DKNG,ENTRY_NOFILL,LMT no-fill (price ran past chase cap),1844,19.6522,,,

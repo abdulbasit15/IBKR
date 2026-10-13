@@ -157,7 +157,7 @@
       "universe": {"min_price": 20, "max_price": 200, "min_dollar_adv": 25000000,
                    "min_premarket_rvol": 1.5},
       "breakout_buffer_pct": 0.001,
-      "vol_mult": 1.5,
+      "vol_mult": 1.1,
       "entry_offset_pct": 0.0005,
       "stop_pct": 0.0005,
       "stop_limit_pct": 0.0025,

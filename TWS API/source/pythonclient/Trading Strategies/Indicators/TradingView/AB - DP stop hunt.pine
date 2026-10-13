@@ -1,0 +1,434 @@
+//@version=6
+// ─────────────────────────────────────────────────────────────────────────────
+//  David Paul – "Put your entries where the masses put their stops"  (v2)
+//
+//  Rule 1  A good trade is a hard trade → buy into weakness, sell into strength.
+//  Rule 2  Fade the short-term trend in the direction of the longer-term trend
+//          → 1H trend filter (55/89 EMA, must be fanned out, not tangled)
+//            + short-term pullback check on the sweep bar.
+//  Rule 3  Enter where the crowd puts its stops
+//          → Stop pools a small buffer beyond each swing. Signal when price runs
+//            the pool and reclaims the level (or, in limit mode, when it's hit).
+//
+//  v2 discipline rules: New York session window, EOD flatten, optional news
+//  blackout, minimum EMA separation, one attempt per area, max losing trades
+//  per day, one trade at a time. Trades are tracked "virtually" so the daily
+//  loss limit works without a strategy – the strategy script is the source of
+//  truth for performance.
+// ─────────────────────────────────────────────────────────────────────────────
+indicator("AB - DP stop hunt", shorttitle = "AB - DP stop hunt", overlay = true, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
+
+TZ = "America/New_York"
+
+// ───── Inputs ─────
+G_LVL = "Stop pools (Rule 3)"
+int    pivLen         = input.int(5, "Swing strength (bars each side)", minval = 1, group = G_LVL, tooltip = "A swing low/high needs this many bars on each side. Larger = more obvious swings = bigger stop pools.")
+string bufType        = input.string("ATR", "Stop buffer type", options = ["ATR", "Ticks"], group = G_LVL)
+float  bufAtrMul      = input.float(0.10, "Buffer – ATR multiple", minval = 0.0, step = 0.05, group = G_LVL)
+int    bufTicks       = input.int(2, "Buffer – ticks", minval = 0, group = G_LVL)
+int    maxLevels      = input.int(6, "Max live pools per side", minval = 1, maxval = 50, group = G_LVL)
+int    maxAge         = input.int(150, "Expire pool after N bars", minval = 10, group = G_LVL)
+bool   poolsOvernight = input.bool(true, "Build pools from overnight swings too", group = G_LVL, tooltip = "Overnight highs/lows are often watched levels. Turn off to use only swings formed inside the entry window.")
+
+G_TR = "Trend filter (Rule 2)"
+bool   useTrend = input.bool(true, "Only trade with the longer-term trend", group = G_TR)
+string trendTf  = input.timeframe("60", "Trend timeframe", group = G_TR, tooltip = "Must be HIGHER than the chart. 60 (1H) for a 5m chart, 240 (4H) for a 15m chart.")
+int    lenMid   = input.int(55, "Mid EMA", minval = 2, group = G_TR)
+int    lenSlow  = input.int(89, "Slow EMA", minval = 2, group = G_TR)
+float  minSep   = input.float(0.25, "Min 55/89 EMA gap (× trend-TF ATR)", minval = 0.0, step = 0.05, group = G_TR, tooltip = "Blocks trades when the EMAs are flat or tangled. 0 = off.")
+bool   usePull  = input.bool(true, "Require short-term pullback against the trend", group = G_TR, tooltip = "Long: sweep bar closes below the fast EMA or the fast EMA is falling. Mirror for shorts.")
+int    lenFast  = input.int(21, "Fast EMA (chart TF)", minval = 2, group = G_TR)
+
+G_EN = "Entry & management"
+string entryMode   = input.string("Sweep & reclaim", "Entry style", options = ["Sweep & reclaim", "Limit at stop pool"], group = G_EN, tooltip = "Sweep & reclaim: wait for price to run the stops, then close back beyond the swing.\nLimit at stop pool: signal the moment the pool is hit.")
+int    reclaimBars = input.int(2, "Bars allowed to reclaim the level", minval = 0, maxval = 20, group = G_EN)
+float  rrTarget    = input.float(2.0, "Target (R multiple, 0 = none)", minval = 0.0, step = 0.5, group = G_EN)
+bool   moveBE      = input.bool(true, "Move stop to breakeven at trigger", group = G_EN)
+float  tp1R        = input.float(1.0, "Breakeven / partial trigger (R)", minval = 0.1, step = 0.1, group = G_EN)
+
+G_RULE = "Session & discipline rules"
+bool   useSess    = input.bool(true, "Only signal inside entry window (New York time)", group = G_RULE)
+string entrySess  = input.session("0930-1545", "Entry window", group = G_RULE)
+string flatSess   = input.session("1550-1600", "Flatten window (closes open trades)", group = G_RULE)
+bool   useBlack   = input.bool(false, "Use news blackout window", group = G_RULE, tooltip = "Switch on manually on news days, e.g. FOMC at 14:00 ET.")
+string blackSess  = input.session("1355-1415", "Blackout window", group = G_RULE)
+bool   onePerArea = input.bool(true, "One attempt per area", group = G_RULE, tooltip = "After a long signal, no new long until a fresh swing low forms. Mirror for shorts.")
+int    maxLosses  = input.int(2, "Max losing trades per day (0 = off)", minval = 0, group = G_RULE)
+
+G_VOL = "Volume"
+bool   useVol  = input.bool(false, "Require above-average volume on the sweep bar", group = G_VOL)
+int    volLen  = input.int(89, "Volume average length", minval = 2, group = G_VOL)
+float  volMult = input.float(1.5, "Volume multiple", minval = 0.1, step = 0.1, group = G_VOL)
+
+G_VIS = "Display"
+bool  showEmas    = input.bool(true, "Show EMAs (fast = chart TF, 55/89 = trend TF)", group = G_VIS)
+bool  showBg      = input.bool(false, "Shade trend background", group = G_VIS)
+bool  showTable   = input.bool(true, "Show status panel", group = G_VIS)
+color colLowPool  = input.color(color.new(color.teal, 80), "Sell-stop pool (below lows)", group = G_VIS)
+color colHighPool = input.color(color.new(color.orange, 80), "Buy-stop pool (above highs)", group = G_VIS)
+color colSwept    = input.color(color.new(color.gray, 85), "Swept pool", group = G_VIS)
+
+G_ST = "Performance table"
+bool   showStats  = input.bool(true, "Show performance table", group = G_ST)
+int    statsStart = input.time(timestamp("2000-01-01 00:00"), "Count trades from", group = G_ST, tooltip = "Leave far in the past to use all loaded chart history.")
+string statsPosIn = input.string("Middle right", "Position", options = ["Top right", "Middle right", "Bottom right"], group = G_ST)
+string statsSzIn  = input.string("Small", "Text size", options = ["Tiny", "Small", "Normal"], group = G_ST)
+
+// ───── Core series ─────
+bool  intraday = timeframe.isintraday
+float atr      = ta.atr(14)
+float buf      = bufType == "ATR" ? atr * bufAtrMul : bufTicks * syminfo.mintick
+float emaF     = ta.ema(close, lenFast)
+bool  volOK    = volume > ta.sma(volume, volLen) * volMult
+bool  pullDown = close < emaF or emaF < emaF[1]
+bool  pullUp   = close > emaF or emaF > emaF[1]
+
+bool sessBar = intraday and not na(time(timeframe.period, entrySess, TZ))
+bool inEntry = not useSess or not intraday or sessBar
+bool inFlat  = useSess and intraday and not na(time(timeframe.period, flatSess, TZ))
+bool inBlack = useBlack and intraday and not na(time(timeframe.period, blackSess, TZ))
+
+// ───── Trend (Rule 2) ─────
+trendData(int off) =>
+    float m   = ta.ema(close, lenMid)
+    float s   = ta.ema(close, lenSlow)
+    float a   = ta.atr(14)
+    bool  sep = math.abs(m - s) >= minSep * a
+    int   d   = close > s and m > s and s > s[1] and sep ? 1 : close < s and m < s and s < s[1] and sep ? -1 : 0
+    [m[off], s[off], d[off]]
+
+bool htfOn = trendTf != "" and trendTf != timeframe.period
+[mCh, sCh, dCh] = trendData(0)
+// [1] + lookahead_on = last COMPLETED trend-TF bar only (no repainting)
+[mHt, sHt, dHt] = request.security(syminfo.tickerid, trendTf, trendData(1), lookahead = barmerge.lookahead_on)
+float tMid  = htfOn ? mHt : mCh
+float tSlow = htfOn ? sHt : sCh
+int   trend = htfOn ? dHt : dCh
+
+// ───── Stop pools (Rule 3) ─────
+type Pool
+    float level
+    float stopPx
+    int   bornBar
+    box   zone
+
+var array<Pool> lowPools  = array.new<Pool>()
+var array<Pool> highPools = array.new<Pool>()
+
+scanPools(array<Pool> pools, bool isLow) =>
+    float hitLevel = na
+    float hitStop  = na
+    int n = pools.size()
+    if n > 0
+        for i = n - 1 to 0
+            Pool p = pools.get(i)
+            bool swept   = isLow ? low <= p.stopPx : high >= p.stopPx
+            bool expired = bar_index - p.bornBar > maxAge
+            if swept
+                p.zone.set_right(bar_index)
+                p.zone.set_bgcolor(colSwept)
+                p.zone.set_border_color(colSwept)
+                bool further = na(hitLevel) or (isLow ? p.level < hitLevel : p.level > hitLevel)
+                if further
+                    hitLevel := p.level
+                    hitStop  := p.stopPx
+                pools.remove(i)
+            else if expired
+                p.zone.delete()
+                pools.remove(i)
+            else
+                p.zone.set_right(bar_index)
+    [hitLevel, hitStop]
+
+[sweptLow, sweptLowStop]   = scanPools(lowPools, true)
+[sweptHigh, sweptHighStop] = scanPools(highPools, false)
+
+float pl     = ta.pivotlow(low, pivLen, pivLen)
+float ph     = ta.pivothigh(high, pivLen, pivLen)
+bool  poolOK = poolsOvernight or not intraday or sessBar[pivLen]
+
+if not na(pl) and not na(buf) and poolOK
+    float sp = pl - buf
+    box b = box.new(bar_index - pivLen, pl, bar_index, sp, border_color = color.new(colLowPool, 30), bgcolor = colLowPool)
+    lowPools.unshift(Pool.new(pl, sp, bar_index - pivLen, b))
+    if lowPools.size() > maxLevels
+        Pool old = lowPools.pop()
+        old.zone.delete()
+
+if not na(ph) and not na(buf) and poolOK
+    float sp = ph + buf
+    box b = box.new(bar_index - pivLen, sp, bar_index, ph, border_color = color.new(colHighPool, 30), bgcolor = colHighPool)
+    highPools.unshift(Pool.new(ph, sp, bar_index - pivLen, b))
+    if highPools.size() > maxLevels
+        Pool old = highPools.pop()
+        old.zone.delete()
+
+// ───── One attempt per area ─────
+var bool lockLong    = false
+var bool lockShort   = false
+var int  lastLongBar = na
+var int  lastShortBar = na
+if not na(pl) and not na(lastLongBar) and bar_index - pivLen > lastLongBar
+    lockLong := false
+if not na(ph) and not na(lastShortBar) and bar_index - pivLen > lastShortBar
+    lockShort := false
+
+// ───── Performance stats (measured in R, before commissions) ─────
+type Stats
+    int   trades     = 0
+    int   wins       = 0
+    int   losses     = 0
+    int   scratches  = 0
+    float grossWinR  = 0.0
+    float grossLossR = 0.0
+    int   longT      = 0
+    int   longW      = 0
+    int   shortT     = 0
+    int   shortW     = 0
+    array<int> hrT
+    array<int> hrW
+
+// Hour buckets by entry time (NY): 0 = 09:30-10:30 … 5 = 14:30-15:30, 6 = 15:30-16:00, 7 = outside RTH
+hourBucket(int t) =>
+    int mins = hour(t, TZ) * 60 + minute(t, TZ)
+    int b = mins >= 570 and mins < 960 ? int(math.floor((mins - 570) / 60)) : 7
+    b
+
+method record(Stats s, float r, int dir, int bucket) =>
+    bool w = r > 0
+    s.trades += 1
+    if r > 0
+        s.wins      += 1
+        s.grossWinR += r
+    else if r < 0
+        s.losses     += 1
+        s.grossLossR += -r
+    else
+        s.scratches += 1
+    if dir == 1
+        s.longT += 1
+        s.longW += w ? 1 : 0
+    else
+        s.shortT += 1
+        s.shortW += w ? 1 : 0
+    s.hrT.set(bucket, s.hrT.get(bucket) + 1)
+    s.hrW.set(bucket, s.hrW.get(bucket) + (w ? 1 : 0))
+    s
+
+var Stats st = Stats.new(hrT = array.new<int>(8, 0), hrW = array.new<int>(8, 0))
+var int firstTime = time
+
+// ───── Virtual trade tracking (daily loss limit, one trade at a time, stats) ─────
+var int   vBucket   = 7
+var bool  vCount    = false
+var int   dayLosses = 0
+var int   vDir      = 0
+var float vEntry    = na
+var float vStop     = na
+var float vTgt      = na
+var float vRisk     = na
+var bool  vAtBE     = false
+
+if timeframe.change("D")
+    dayLosses := 0
+
+if vDir != 0
+    bool stopHit = vDir == 1 ? low <= vStop : high >= vStop
+    bool tgtHit  = not na(vTgt) and (vDir == 1 ? high >= vTgt : low <= vTgt)
+    if stopHit
+        if not vAtBE
+            dayLosses += 1
+        if vCount
+            st.record((vStop - vEntry) * vDir / vRisk, vDir, vBucket)
+        vDir := 0
+    else if tgtHit
+        if vCount
+            st.record((vTgt - vEntry) * vDir / vRisk, vDir, vBucket)
+        vDir := 0
+    else
+        float fav = vDir == 1 ? high - vEntry : vEntry - low
+        if moveBE and not vAtBE and fav >= tp1R * vRisk
+            vStop := vEntry
+            vAtBE := true
+        if inFlat
+            if (close - vEntry) * vDir <= -0.5 * vRisk
+                dayLosses += 1
+            if vCount
+                st.record((close - vEntry) * vDir / vRisk, vDir, vBucket)
+            vDir := 0
+
+// ───── Setup state ─────
+var int   lBar     = na
+var float lLevel   = na
+var float lEntryPx = na
+var float lExtreme = na
+var bool  lVolOK   = false
+var bool  lPullOK  = false
+
+var int   sBar     = na
+var float sLevel   = na
+var float sEntryPx = na
+var float sExtreme = na
+var bool  sVolOK   = false
+var bool  sPullOK  = false
+
+if not na(sweptLow)
+    lBar     := bar_index
+    lLevel   := sweptLow
+    lEntryPx := sweptLowStop
+    lExtreme := low
+    lVolOK   := volOK
+    lPullOK  := pullDown
+else if not na(lBar)
+    lExtreme := math.min(lExtreme, low)
+
+if not na(sweptHigh)
+    sBar     := bar_index
+    sLevel   := sweptHigh
+    sEntryPx := sweptHighStop
+    sExtreme := high
+    sVolOK   := volOK
+    sPullOK  := pullUp
+else if not na(sBar)
+    sExtreme := math.max(sExtreme, high)
+
+// ───── Signals ─────
+bool limitMode = entryMode == "Limit at stop pool"
+bool stopDay   = maxLosses > 0 and dayLosses >= maxLosses
+bool canTrade  = inEntry and not inBlack and not stopDay and vDir == 0
+
+bool lLive = not na(lBar) and bar_index - lBar <= reclaimBars
+bool lFilt = (not useTrend or trend == 1) and (not usePull or lPullOK) and (not useVol or lVolOK)
+bool lRaw  = limitMode ? (not na(lBar) and lBar == bar_index) : (lLive and close > lLevel)
+bool longSig = canTrade and lFilt and lRaw and (not onePerArea or not lockLong)
+
+bool sLive = not na(sBar) and bar_index - sBar <= reclaimBars
+bool sFilt = (not useTrend or trend == -1) and (not usePull or sPullOK) and (not useVol or sVolOK)
+bool sRaw  = limitMode ? (not na(sBar) and sBar == bar_index) : (sLive and close < sLevel)
+bool shortSig = canTrade and sFilt and sRaw and (not onePerArea or not lockShort) and not longSig
+
+// ───── Drawing ─────
+drawTrade(bool isLong, float entry, float stop) =>
+    float risk = math.abs(entry - stop)
+    float tgt  = rrTarget > 0 ? (isLong ? entry + risk * rrTarget : entry - risk * rrTarget) : na
+    string txt = (isLong ? "LONG" : "SHORT") + "\nEntry " + str.tostring(entry, format.mintick) + "\nStop " + str.tostring(stop, format.mintick) + (na(tgt) ? "" : "\nTarget " + str.tostring(tgt, format.mintick))
+    label.new(bar_index, isLong ? low : high, txt, style = isLong ? label.style_label_up : label.style_label_down, color = isLong ? color.teal : color.orange, textcolor = color.white, size = size.small)
+    line.new(bar_index, entry, bar_index + 15, entry, color = color.gray, style = line.style_dotted)
+    line.new(bar_index, stop, bar_index + 15, stop, color = color.red, style = line.style_dashed)
+    if not na(tgt)
+        line.new(bar_index, tgt, bar_index + 15, tgt, color = color.green, style = line.style_dashed)
+    risk
+
+if longSig
+    float e  = limitMode ? lEntryPx : close
+    float st = lExtreme - buf
+    drawTrade(true, e, st)
+    vDir   := 1
+    vEntry := e
+    vStop  := st
+    vRisk  := e - st
+    vTgt   := rrTarget > 0 ? e + rrTarget * vRisk : na
+    vAtBE  := false
+    vBucket := hourBucket(time_close)
+    vCount  := time >= statsStart
+    lockLong    := onePerArea
+    lastLongBar := bar_index
+
+if shortSig
+    float e  = limitMode ? sEntryPx : close
+    float st = sExtreme + buf
+    drawTrade(false, e, st)
+    vDir   := -1
+    vEntry := e
+    vStop  := st
+    vRisk  := st - e
+    vTgt   := rrTarget > 0 ? e - rrTarget * vRisk : na
+    vAtBE  := false
+    vBucket := hourBucket(time_close)
+    vCount  := time >= statsStart
+    lockShort    := onePerArea
+    lastShortBar := bar_index
+
+// Clear setups once they fire or their reclaim window closes
+if longSig or (not na(lBar) and (limitMode or bar_index - lBar >= reclaimBars))
+    lBar := na
+if shortSig or (not na(sBar) and (limitMode or bar_index - sBar >= reclaimBars))
+    sBar := na
+
+// ───── Plots ─────
+plot(showEmas ? emaF : na, "Fast EMA", color.new(color.blue, 30))
+plot(showEmas ? tMid : na, "Mid EMA (trend TF)", color.new(color.purple, 30), style = plot.style_stepline)
+plot(showEmas ? tSlow : na, "Slow EMA (trend TF)", color.new(color.red, 20), linewidth = 2, style = plot.style_stepline)
+bgcolor(showBg ? (trend == 1 ? color.new(color.teal, 93) : trend == -1 ? color.new(color.orange, 93) : na) : na, title = "Trend background")
+
+// ───── Status panel ─────
+var table tbl = table.new(position.bottom_right, 2, 4, bgcolor = color.new(#131722, 10), border_color = color.new(color.gray, 70), border_width = 1)
+if showTable and barstate.islast
+    string tfName = trendTf == "60" ? "1H" : trendTf == "240" ? "4H" : trendTf
+    string tTxt   = trend == 1 ? "UP" : trend == -1 ? "DOWN" : "FLAT – no trades"
+    color  tCol   = trend == 1 ? color.teal : trend == -1 ? color.orange : color.gray
+    string stTxt  = stopDay ? "DONE FOR DAY" : vDir == 1 ? "In long" : vDir == -1 ? "In short" : not inEntry ? "Outside session" : inBlack ? "News blackout" : "Ready"
+    color  stCol  = stopDay ? color.red : vDir != 0 ? color.yellow : (inEntry and not inBlack) ? color.lime : color.gray
+    string lkTxt  = lockLong and lockShort ? "Long + short" : lockLong ? "Long" : lockShort ? "Short" : "None"
+    table.cell(tbl, 0, 0, "Trend " + (htfOn ? tfName : "chart"), text_color = color.silver, text_size = size.small)
+    table.cell(tbl, 1, 0, tTxt, text_color = tCol, text_size = size.small)
+    table.cell(tbl, 0, 1, "Losses today", text_color = color.silver, text_size = size.small)
+    table.cell(tbl, 1, 1, str.tostring(dayLosses) + (maxLosses > 0 ? " / " + str.tostring(maxLosses) : ""), text_color = color.white, text_size = size.small)
+    table.cell(tbl, 0, 2, "Locked", text_color = color.silver, text_size = size.small)
+    table.cell(tbl, 1, 2, lkTxt, text_color = color.white, text_size = size.small)
+    table.cell(tbl, 0, 3, "Status", text_color = color.silver, text_size = size.small)
+    table.cell(tbl, 1, 3, stTxt, text_color = stCol, text_size = size.small)
+
+// ───── Performance table ─────
+pct(int w, int t) =>
+    t > 0 ? str.tostring(100.0 * w / t, "#.0") + "%  (" + str.tostring(w) + "/" + str.tostring(t) + ")" : "–"
+
+var table perf = table.new(statsPosIn == "Top right" ? position.top_right : statsPosIn == "Bottom right" ? position.bottom_right : position.middle_right, 2, 22, bgcolor = color.new(#131722, 5), border_color = color.new(color.gray, 75), border_width = 1)
+
+if showStats and barstate.islast
+    string sz = statsSzIn == "Tiny" ? size.tiny : statsSzIn == "Normal" ? size.normal : size.small
+    color  hd = color.new(color.blue, 60)
+    float  pf = st.grossLossR > 0 ? st.grossWinR / st.grossLossR : na
+    float  net = st.grossWinR - st.grossLossR
+    string pfTxt = st.grossLossR > 0 ? str.tostring(pf, "#.00") : st.grossWinR > 0 ? "∞" : "–"
+    color  pfCol = na(pf) ? color.white : pf >= 1.3 ? color.lime : pf >= 1.0 ? color.yellow : color.red
+    array<string> hrNames = array.from("09:30–10:30", "10:30–11:30", "11:30–12:30", "12:30–13:30", "13:30–14:30", "14:30–15:30", "15:30–16:00", "Outside RTH")
+
+    table.cell(perf, 0, 0, "AB - DP stop hunt", text_color = color.white, text_size = sz, bgcolor = hd)
+    table.cell(perf, 1, 0, "Results (R)", text_color = color.white, text_size = sz, bgcolor = hd)
+    table.cell(perf, 0, 1, "Start", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 1, str.format_time(math.max(firstTime, statsStart), "yyyy-MM-dd", TZ), text_color = color.white, text_size = sz)
+    table.cell(perf, 0, 2, "End", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 2, str.format_time(time_close, "yyyy-MM-dd", TZ), text_color = color.white, text_size = sz)
+    table.cell(perf, 0, 3, "Trades / W / L / BE", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 3, str.tostring(st.trades) + " / " + str.tostring(st.wins) + " / " + str.tostring(st.losses) + " / " + str.tostring(st.scratches), text_color = color.white, text_size = sz)
+    table.cell(perf, 0, 4, "Wins", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 4, str.tostring(st.wins), text_color = color.lime, text_size = sz)
+    table.cell(perf, 0, 5, "Losses", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 5, str.tostring(st.losses), text_color = color.red, text_size = sz)
+    table.cell(perf, 0, 6, "Win rate", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 6, pct(st.wins, st.trades), text_color = color.white, text_size = sz)
+    table.cell(perf, 0, 7, "Long win rate", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 7, pct(st.longW, st.longT), text_color = color.teal, text_size = sz)
+    table.cell(perf, 0, 8, "Short win rate", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 8, pct(st.shortW, st.shortT), text_color = color.orange, text_size = sz)
+    table.cell(perf, 0, 9, "Gross profit", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 9, "+" + str.tostring(st.grossWinR, "#.00") + " R", text_color = color.lime, text_size = sz)
+    table.cell(perf, 0, 10, "Gross loss", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 10, "-" + str.tostring(st.grossLossR, "#.00") + " R", text_color = color.red, text_size = sz)
+    table.cell(perf, 0, 11, "Net", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 11, (net >= 0 ? "+" : "") + str.tostring(net, "#.00") + " R", text_color = net >= 0 ? color.lime : color.red, text_size = sz)
+    table.cell(perf, 0, 12, "Profit factor", text_color = color.silver, text_size = sz)
+    table.cell(perf, 1, 12, pfTxt, text_color = pfCol, text_size = sz)
+    table.cell(perf, 0, 13, "Entry hour (NY)", text_color = color.white, text_size = sz, bgcolor = hd)
+    table.cell(perf, 1, 13, "Win rate (wins/trades)", text_color = color.white, text_size = sz, bgcolor = hd)
+    int nRows = st.hrT.get(7) > 0 ? 8 : 7
+    for i = 0 to nRows - 1
+        table.cell(perf, 0, 14 + i, hrNames.get(i), text_color = color.silver, text_size = sz)
+        table.cell(perf, 1, 14 + i, pct(st.hrW.get(i), st.hrT.get(i)), text_color = color.white, text_size = sz)
+
+// ───── Alerts ─────
+alertcondition(longSig, "DP Long", "David Paul stop-hunt LONG on {{ticker}} ({{interval}}) at {{close}}")
+alertcondition(shortSig, "DP Short", "David Paul stop-hunt SHORT on {{ticker}} ({{interval}}) at {{close}}")
+alertcondition(not na(sweptLow), "Sell-stop pool swept", "Stops below a swing low were run on {{ticker}} ({{interval}})")
+alertcondition(not na(sweptHigh), "Buy-stop pool swept", "Stops above a swing high were run on {{ticker}} ({{interval}})")
