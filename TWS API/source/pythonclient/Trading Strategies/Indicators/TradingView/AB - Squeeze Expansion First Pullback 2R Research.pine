@@ -1,0 +1,540 @@
+//@version=6
+indicator("AB - Squeeze Expansion First Pullback 2R+ Research", shorttitle="AB SQZ Pullback 2R+", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// ============================================================================
+// PURPOSE
+// Volatility compression -> squeeze release -> directional breakout -> FIRST pullback.
+// No VWAP dependency. Close-confirmed / HTF-confirmed research indicator.
+// Virtual fills are intentionally conservative; when TP and SL are both touched on the
+// same post-entry bar, SL is assumed first.
+// ============================================================================
+
+TZ = "America/New_York"
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inputs
+// ─────────────────────────────────────────────────────────────────────────────
+G_PROFILE = "1. Market / Research"
+profileIn = input.string("Auto", "Profile", options=["Auto","MNQ","MES","MGC","Custom"], group=G_PROFILE)
+targetMode = input.string("Auto", "Target R", options=["Auto","2.0R","2.5R","3.0R"], group=G_PROFILE)
+startDate = input.time(timestamp("01 Jan 2023 00:00 +0000"), "Research start", group=G_PROFILE)
+endDate = input.time(timestamp("31 Dec 2099 23:59 +0000"), "Research end", group=G_PROFILE)
+maxTradesDay = input.int(3, "Maximum filled trades / NY day", minval=1, maxval=20, group=G_PROFILE)
+
+G_SQZ = "2. Squeeze / Momentum"
+bbLen = input.int(20, "BB length", minval=5, group=G_SQZ)
+kcLen = input.int(20, "KC / momentum length", minval=5, group=G_SQZ)
+kcMult = input.float(1.5, "KC multiplier", minval=0.5, step=0.1, group=G_SQZ)
+minSqzBars = input.int(3, "Minimum consecutive squeeze bars", minval=1, maxval=30, group=G_SQZ)
+releaseMaxBars = input.int(8, "Release -> breakout max bars", minval=1, maxval=30, group=G_SQZ)
+minBreakATR = input.float(0.03, "Minimum breakout beyond compression (ATR)", minval=0, step=0.01, group=G_SQZ)
+
+G_PULL = "3. First Pullback"
+pullEmaLen = input.int(20, "Pullback EMA", minval=2, group=G_PULL)
+pullbackMaxBars = input.int(12, "Breakout -> pullback max bars", minval=2, maxval=40, group=G_PULL)
+minRetrace = input.float(0.30, "Minimum retracement of breakout impulse", minval=0.05, maxval=0.90, step=0.05, group=G_PULL)
+maxRetrace = input.float(0.70, "Maximum retracement of breakout impulse", minval=0.10, maxval=0.95, step=0.05, group=G_PULL)
+emaTouchATR = input.float(0.15, "EMA touch tolerance (ATR)", minval=0, step=0.05, group=G_PULL)
+minBodyFrac = input.float(0.25, "Trigger minimum body / range", minval=0.05, maxval=0.95, step=0.05, group=G_PULL)
+closeStrength = input.float(0.60, "Trigger close strength", minval=0.50, maxval=0.95, step=0.05, group=G_PULL)
+
+G_TREND = "4. Confirmed HTF Trend"
+useHTF = input.bool(true, "Require HTF EMA trend", group=G_TREND)
+htfFastLen = input.int(50, "HTF fast EMA", minval=2, group=G_TREND)
+htfSlowLen = input.int(200, "HTF slow EMA", minval=10, group=G_TREND)
+requireHTFSlope = input.bool(true, "Require HTF fast EMA slope", group=G_TREND)
+
+G_RISK = "5. Entry / Risk"
+entryBufferTicks = input.int(1, "Stop-entry buffer (ticks)", minval=0, maxval=20, group=G_RISK)
+stopBufferATR = input.float(0.10, "Stop beyond pullback (ATR)", minval=0, step=0.05, group=G_RISK)
+maxStopATR = input.float(1.50, "Maximum initial risk (ATR)", minval=0.25, step=0.05, group=G_RISK)
+pendingBars = input.int(3, "Entry order expiry bars", minval=1, maxval=10, group=G_RISK)
+flattenEOD = input.bool(true, "Flatten at profile cutoff", group=G_RISK)
+
+G_VIS = "6. Visuals"
+showEMA = input.bool(true, "Show pullback EMA", group=G_VIS)
+showCompression = input.bool(true, "Show active compression range", group=G_VIS)
+showTradeLevels = input.bool(true, "Show Entry / TP / SL lines", group=G_VIS)
+showEntryBox = input.bool(true, "Show trade signal box", group=G_VIS)
+showResultLabels = input.bool(true, "Show WIN / LOSS / TIME labels", group=G_VIS)
+showTable = input.bool(true, "Show research table", group=G_VIS)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Profile
+// ─────────────────────────────────────────────────────────────────────────────
+root = str.upper(syminfo.root)
+autoProfile = str.contains(root, "MNQ") or str.contains(root, "NQ") ? "MNQ" :
+              str.contains(root, "MES") or root == "ES" ? "MES" :
+              str.contains(root, "MGC") or root == "GC" ? "MGC" : "Custom"
+profile = profileIn == "Auto" ? autoProfile : profileIn
+
+htfTf = profile == "MGC" ? "60" : "15"
+recommendedTf = profile == "MGC" ? "15" : "5"
+rthSession = profile == "MGC" ? "0820-1330:23456" : "0930-1600:23456"
+entrySession = profile == "MGC" ? "0820-1130:23456" : "0935-1130:23456"
+flatSession = profile == "MGC" ? "1325-1330:23456" : "1550-1600:23456"
+autoR = profile == "MES" ? 2.0 : 2.5
+targetR = targetMode == "2.0R" ? 2.0 : targetMode == "2.5R" ? 2.5 : targetMode == "3.0R" ? 3.0 : autoR
+
+inResearch = time >= startDate and time <= endDate
+inRTH = not na(time(timeframe.period, rthSession, TZ))
+inEntryWindow = not na(time(timeframe.period, entrySession, TZ))
+inFlatWindow = not na(time(timeframe.period, flatSession, TZ))
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+f_pad2(int n) =>
+    n < 10 ? "0" + str.tostring(n) : str.tostring(n)
+
+f_date(int ts) =>
+    na(ts) ? "—" : str.tostring(year(ts, TZ)) + "-" + f_pad2(month(ts, TZ)) + "-" + f_pad2(dayofmonth(ts, TZ))
+
+f_pct(int w, int n) =>
+    n > 0 ? str.tostring(100.0 * w / n, "#.0") + "%" : "—"
+
+f_bucket() =>
+    h = hour(time, TZ)
+    m = minute(time, TZ)
+    mins = h * 60 + m
+    mins < 600 ? 0 : mins < 660 ? 1 : 2
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Core calculations
+// ─────────────────────────────────────────────────────────────────────────────
+atr = ta.atr(14)
+pullEMA = ta.ema(close, pullEmaLen)
+
+// Faithful to the user's Python LazyBear port: BB deviation uses KC multiplier.
+basis = ta.sma(close, bbLen)
+dev = kcMult * ta.stdev(close, bbLen)
+upperBB = basis + dev
+lowerBB = basis - dev
+
+maKC = ta.sma(close, kcLen)
+rangeMA = ta.sma(ta.tr(true), kcLen)
+upperKC = maKC + rangeMA * kcMult
+lowerKC = maKC - rangeMA * kcMult
+
+squeezeOn = lowerBB > lowerKC and upperBB < upperKC
+squeezeOff = lowerBB < lowerKC and upperBB > upperKC
+
+hhKC = ta.highest(high, kcLen)
+llKC = ta.lowest(low, kcLen)
+momSrc = close - (((hhKC + llKC) / 2.0 + maKC) / 2.0)
+mom = ta.linreg(momSrc, kcLen, 0)
+momRising = mom > mom[1]
+momFalling = mom < mom[1]
+
+// Last COMPLETED HTF bar only.
+htfFast = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfFastLen)[1], lookahead=barmerge.lookahead_on)
+htfSlow = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfSlowLen)[1], lookahead=barmerge.lookahead_on)
+htfFastPrev = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfFastLen)[2], lookahead=barmerge.lookahead_on)
+htfClose = request.security(syminfo.tickerid, htfTf, close[1], lookahead=barmerge.lookahead_on)
+
+htfBull = not useHTF or (htfClose > htfSlow and htfFast > htfSlow and (not requireHTFSlope or htfFast > htfFastPrev))
+htfBear = not useHTF or (htfClose < htfSlow and htfFast < htfSlow and (not requireHTFSlope or htfFast < htfFastPrev))
+
+barRange = math.max(high - low, syminfo.mintick)
+bodyFrac = math.abs(close - open) / barRange
+longCloseStrength = (close - low) / barRange
+shortCloseStrength = (high - close) / barRange
+strongBull = close > open and bodyFrac >= minBodyFrac and longCloseStrength >= closeStrength
+strongBear = close < open and bodyFrac >= minBodyFrac and shortCloseStrength >= closeStrength
+
+plot(showEMA ? pullEMA : na, "Pullback EMA", color=color.orange, linewidth=1)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Daily discipline
+// ─────────────────────────────────────────────────────────────────────────────
+nyDay = year(time, TZ) * 10000 + month(time, TZ) * 100 + dayofmonth(time, TZ)
+newNYDay = bar_index == 0 or nyDay != nyDay[1]
+var int tradesToday = 0
+if newNYDay
+    tradesToday := 0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Squeeze state -> release -> breakout -> first pullback
+// ─────────────────────────────────────────────────────────────────────────────
+var int sqzRun = 0
+var float sqzHigh = na
+var float sqzLow = na
+
+var int releaseDir = 0
+var int releaseBar = na
+var float releaseHigh = na
+var float releaseLow = na
+var bool breakSeen = false
+var int breakBar = na
+var float breakLevel = na
+var float moveExtreme = na
+
+var int releases = 0
+var int rawBreaks = 0
+var int rawPullbacks = 0
+var int qualified = 0
+var int armedCount = 0
+var int ambiguousSkips = 0
+
+if barstate.isconfirmed
+    if squeezeOn
+        sqzRun += 1
+        sqzHigh := sqzRun == 1 ? high : math.max(sqzHigh, high)
+        sqzLow := sqzRun == 1 ? low : math.min(sqzLow, low)
+    else
+        released = squeezeOn[1] and sqzRun >= minSqzBars
+        if released and inResearch
+            bullRelease = mom > 0 and momRising and htfBull
+            bearRelease = mom < 0 and momFalling and htfBear
+            if bullRelease or bearRelease
+                releaseDir := bullRelease ? 1 : -1
+                releaseBar := bar_index
+                releaseHigh := sqzHigh
+                releaseLow := sqzLow
+                breakSeen := false
+                breakBar := na
+                breakLevel := na
+                moveExtreme := na
+                releases += 1
+        sqzRun := 0
+        sqzHigh := na
+        sqzLow := na
+
+    if releaseDir != 0 and not breakSeen and bar_index - releaseBar > releaseMaxBars
+        releaseDir := 0
+
+    if releaseDir == 1 and not breakSeen and close > releaseHigh + minBreakATR * atr
+        breakSeen := true
+        breakBar := bar_index
+        breakLevel := releaseHigh
+        moveExtreme := high
+        rawBreaks += 1
+    if releaseDir == -1 and not breakSeen and close < releaseLow - minBreakATR * atr
+        breakSeen := true
+        breakBar := bar_index
+        breakLevel := releaseLow
+        moveExtreme := low
+        rawBreaks += 1
+
+    if breakSeen
+        moveExtreme := releaseDir == 1 ? math.max(moveExtreme, high) : math.min(moveExtreme, low)
+
+    if releaseDir == 1 and close < releaseLow
+        releaseDir := 0
+        breakSeen := false
+    if releaseDir == -1 and close > releaseHigh
+        releaseDir := 0
+        breakSeen := false
+    if breakSeen and bar_index - breakBar > pullbackMaxBars
+        releaseDir := 0
+        breakSeen := false
+
+plot(showCompression and squeezeOn ? sqzHigh : na, "Compression High", color=color.new(color.aqua, 20), style=plot.style_linebr)
+plot(showCompression and squeezeOn ? sqzLow : na, "Compression Low", color=color.new(color.aqua, 20), style=plot.style_linebr)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pending order / trade state
+// ─────────────────────────────────────────────────────────────────────────────
+var int pendingDir = 0
+var int pendingBar = na
+var float pendingEntry = na
+var float pendingStop = na
+var float pendingTP = na
+var string pendingSetup = ""
+
+var bool inTrade = false
+var int tradeDir = 0
+var int tradeEntryBar = na
+var float entryPrice = na
+var float stopPrice = na
+var float targetPrice = na
+var float riskDistance = na
+var int tradeBucket = na
+var string tradeSetup = ""
+
+var line entryLine = na
+var line stopLine = na
+var line targetLine = na
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Statistics
+// ─────────────────────────────────────────────────────────────────────────────
+var int totalTrades = 0
+var int wins = 0
+var int losses = 0
+var int breakEvens = 0
+var int longTrades = 0
+var int shortTrades = 0
+var int longWins = 0
+var int shortWins = 0
+var float grossProfitR = 0.0
+var float grossLossR = 0.0
+var float equityR = 0.0
+var float peakR = 0.0
+var float maxDDR = 0.0
+var int firstTradeTime = na
+var int timeExits = 0
+var array<int> bucketTrades = array.new_int(3, 0)
+var array<int> bucketWins = array.new_int(3, 0)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Qualify first pullback and arm stop-entry
+// ─────────────────────────────────────────────────────────────────────────────
+canArm = pendingDir == 0 and not inTrade and tradesToday < maxTradesDay and inEntryWindow and inResearch
+
+if barstate.isconfirmed and breakSeen and canArm and bar_index > breakBar
+    if releaseDir == 1
+        impulse = moveExtreme - breakLevel
+        retr = impulse > syminfo.mintick ? (moveExtreme - low) / impulse : 0.0
+        retrOK = retr >= minRetrace and retr <= maxRetrace
+        emaOK = low <= pullEMA + emaTouchATR * atr and close > pullEMA
+        touchOK = retrOK or emaOK
+        if touchOK
+            rawPullbacks += 1
+        momentumOK = mom > 0 and mom >= mom[1]
+        triggerOK = touchOK and strongBull and momentumOK and htfBull
+        if triggerOK
+            qualified += 1
+            e = high + entryBufferTicks * syminfo.mintick
+            s = low - stopBufferATR * atr
+            r = e - s
+            if r > syminfo.mintick and r <= maxStopATR * atr
+                pendingDir := 1
+                pendingBar := bar_index
+                pendingEntry := e
+                pendingStop := s
+                pendingTP := e + r * targetR
+                pendingSetup := "SQZ EXPANSION PULLBACK"
+                armedCount += 1
+                releaseDir := 0
+                breakSeen := false
+
+    if releaseDir == -1
+        impulse = breakLevel - moveExtreme
+        retr = impulse > syminfo.mintick ? (high - moveExtreme) / impulse : 0.0
+        retrOK = retr >= minRetrace and retr <= maxRetrace
+        emaOK = high >= pullEMA - emaTouchATR * atr and close < pullEMA
+        touchOK = retrOK or emaOK
+        if touchOK
+            rawPullbacks += 1
+        momentumOK = mom < 0 and mom <= mom[1]
+        triggerOK = touchOK and strongBear and momentumOK and htfBear
+        if triggerOK
+            qualified += 1
+            e = low - entryBufferTicks * syminfo.mintick
+            s = high + stopBufferATR * atr
+            r = s - e
+            if r > syminfo.mintick and r <= maxStopATR * atr
+                pendingDir := -1
+                pendingBar := bar_index
+                pendingEntry := e
+                pendingStop := s
+                pendingTP := e - r * targetR
+                pendingSetup := "SQZ EXPANSION PULLBACK"
+                armedCount += 1
+                releaseDir := 0
+                breakSeen := false
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fill pending entry on a LATER bar. If entry+stop are both touched, skip.
+// ─────────────────────────────────────────────────────────────────────────────
+if barstate.isconfirmed and pendingDir != 0 and not inTrade and bar_index > pendingBar
+    expired = bar_index - pendingBar > pendingBars
+    fill = pendingDir == 1 ? high >= pendingEntry : low <= pendingEntry
+    stopAlsoTouched = pendingDir == 1 ? low <= pendingStop : high >= pendingStop
+
+    if expired
+        pendingDir := 0
+    else if fill and stopAlsoTouched
+        ambiguousSkips += 1
+        pendingDir := 0
+    else if fill
+        inTrade := true
+        tradeDir := pendingDir
+        tradeEntryBar := bar_index
+        entryPrice := pendingEntry
+        stopPrice := pendingStop
+        targetPrice := pendingTP
+        riskDistance := math.abs(entryPrice - stopPrice)
+        tradeSetup := pendingSetup
+        tradeBucket := f_bucket()
+        totalTrades += 1
+        tradesToday += 1
+        if tradeDir == 1
+            longTrades += 1
+        else
+            shortTrades += 1
+        array.set(bucketTrades, tradeBucket, array.get(bucketTrades, tradeBucket) + 1)
+        if na(firstTradeTime)
+            firstTradeTime := time
+
+        if showTradeLevels
+            entryLine := line.new(bar_index, entryPrice, bar_index + 1, entryPrice, extend=extend.right, color=color.gray, style=line.style_dotted, width=2)
+            stopLine := line.new(bar_index, stopPrice, bar_index + 1, stopPrice, extend=extend.right, color=color.red, style=line.style_dotted, width=2)
+            targetLine := line.new(bar_index, targetPrice, bar_index + 1, targetPrice, extend=extend.right, color=color.lime, style=line.style_dotted, width=2)
+
+        if showEntryBox
+            txt = (tradeDir == 1 ? "LONG - " : "SHORT - ") + tradeSetup +
+                  "\nEntry " + str.tostring(entryPrice, format.mintick) +
+                  "\nSL " + str.tostring(stopPrice, format.mintick) +
+                  "\n" + str.tostring(targetR, "#.##") + "R TP " + str.tostring(targetPrice, format.mintick)
+            label.new(bar_index, tradeDir == 1 ? low : high, txt,
+                      style=tradeDir == 1 ? label.style_label_up : label.style_label_down,
+                      color=tradeDir == 1 ? color.green : color.red, textcolor=color.white, size=size.small)
+
+        pendingDir := 0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trade management
+// ─────────────────────────────────────────────────────────────────────────────
+if barstate.isconfirmed and inTrade and bar_index > tradeEntryBar
+    tpHit = tradeDir == 1 ? high >= targetPrice : low <= targetPrice
+    slHit = tradeDir == 1 ? low <= stopPrice : high >= stopPrice
+    timeExit = flattenEOD and inFlatWindow
+
+    float resultR = na
+    string resultText = ""
+    bool closed = false
+
+    if slHit and tpHit
+        resultR := -1.0
+        resultText := "LOSS -1R"
+        closed := true
+    else if slHit
+        resultR := -1.0
+        resultText := "LOSS -1R"
+        closed := true
+    else if tpHit
+        resultR := targetR
+        resultText := "WIN +" + str.tostring(targetR, "#.##") + "R"
+        closed := true
+    else if timeExit
+        resultR := tradeDir == 1 ? (close - entryPrice) / riskDistance : (entryPrice - close) / riskDistance
+        resultText := "TIME " + str.tostring(resultR, "#.##") + "R"
+        closed := true
+        timeExits += 1
+
+    if closed
+        if resultR > 0
+            wins += 1
+            grossProfitR += resultR
+            if tradeDir == 1
+                longWins += 1
+            else
+                shortWins += 1
+            array.set(bucketWins, tradeBucket, array.get(bucketWins, tradeBucket) + 1)
+        else if resultR < 0
+            losses += 1
+            grossLossR += resultR
+        else
+            breakEvens += 1
+
+        equityR += resultR
+        peakR := math.max(peakR, equityR)
+        maxDDR := math.max(maxDDR, peakR - equityR)
+
+        if showTradeLevels
+            line.set_x2(entryLine, bar_index)
+            line.set_x2(stopLine, bar_index)
+            line.set_x2(targetLine, bar_index)
+            line.set_extend(entryLine, extend.none)
+            line.set_extend(stopLine, extend.none)
+            line.set_extend(targetLine, extend.none)
+            if tpHit and not slHit
+                line.set_style(targetLine, line.style_solid)
+                line.set_width(targetLine, 3)
+            if slHit
+                line.set_style(stopLine, line.style_solid)
+                line.set_width(stopLine, 3)
+
+        if showResultLabels
+            y = tpHit and not slHit ? targetPrice : slHit ? stopPrice : close
+            label.new(bar_index, y, resultText,
+                      style=tradeDir == 1 ? label.style_label_down : label.style_label_up,
+                      color=resultR > 0 ? color.green : resultR < 0 ? color.red : color.gray,
+                      textcolor=color.white, size=size.tiny)
+
+        inTrade := false
+        tradeDir := 0
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alerts
+// ─────────────────────────────────────────────────────────────────────────────
+newLong = barstate.isconfirmed and inTrade and tradeEntryBar == bar_index and tradeDir == 1
+newShort = barstate.isconfirmed and inTrade and tradeEntryBar == bar_index and tradeDir == -1
+alertcondition(newLong, "AB SQZ Pullback LONG", "AB Squeeze Expansion Pullback LONG on {{ticker}} {{interval}}")
+alertcondition(newShort, "AB SQZ Pullback SHORT", "AB Squeeze Expansion Pullback SHORT on {{ticker}} {{interval}}")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Research table
+// ─────────────────────────────────────────────────────────────────────────────
+var table stats = table.new(position.top_right, 2, 27, border_width=1, frame_width=1)
+headerBg = color.rgb(18, 52, 100)
+bodyBg = color.rgb(20, 24, 35)
+altBg = color.rgb(28, 32, 45)
+
+if barstate.islast and showTable
+    closedTrades = wins + losses + breakEvens
+    netR = grossProfitR + grossLossR
+    pf = grossLossR != 0 ? grossProfitR / math.abs(grossLossR) : na
+    trendTxt = htfBull ? "BULL" : htfBear ? "BEAR" : "NEUTRAL"
+    periodTxt = na(firstTradeTime) ? "No trades yet" : f_date(firstTradeTime) + " → " + f_date(timenow)
+
+    table.cell(stats, 0, 0, "AB - SQZ Pullback", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 1, 0, profile + " | " + str.tostring(targetR, "#.##") + "R", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 0, 1, "Trade Period", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 1, periodTxt, bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 2, "Trades / W / L / BE", bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 1, 2, str.tostring(totalTrades) + " / " + str.tostring(wins) + " / " + str.tostring(losses) + " / " + str.tostring(breakEvens), bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 0, 3, "Win Rate", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 3, f_pct(wins, closedTrades), bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 4, "Long / Short WR", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 4, f_pct(longWins, longTrades) + " / " + f_pct(shortWins, shortTrades), bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 5, "Gross Profit", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 5, "+" + str.tostring(grossProfitR, "#.##") + " R", bgcolor=bodyBg, text_color=color.lime)
+    table.cell(stats, 0, 6, "Gross Loss", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 6, str.tostring(grossLossR, "#.##") + " R", bgcolor=bodyBg, text_color=color.rgb(255,80,80))
+    table.cell(stats, 0, 7, "Net", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 7, str.tostring(netR, "#.##") + " R", bgcolor=bodyBg, text_color=netR >= 0 ? color.lime : color.red)
+    table.cell(stats, 0, 8, "Profit Factor", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 8, na(pf) ? "—" : str.tostring(pf, "#.##"), bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 9, "Max Drawdown", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 9, str.tostring(maxDDR, "#.##") + " R", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 10, "Time exits", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 10, str.tostring(timeExits), bgcolor=bodyBg, text_color=color.white)
+
+    table.cell(stats, 0, 11, "DIAGNOSTICS", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 1, 11, "Count", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 0, 12, "Qualified releases", bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 1, 12, str.tostring(releases), bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 0, 13, "Compression breaks", bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 1, 13, str.tostring(rawBreaks), bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 0, 14, "First-pullback touches", bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 1, 14, str.tostring(rawPullbacks), bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 0, 15, "Qualified triggers", bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 1, 15, str.tostring(qualified), bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 0, 16, "Armed / Ambiguous", bgcolor=altBg, text_color=color.white)
+    table.cell(stats, 1, 16, str.tostring(armedCount) + " / " + str.tostring(ambiguousSkips), bgcolor=altBg, text_color=color.white)
+
+    table.cell(stats, 0, 17, "ENTRY TIME", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 1, 17, "WR (W/T)", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 0, 18, "< 10:00 ET", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 18, f_pct(array.get(bucketWins,0), array.get(bucketTrades,0)) + " (" + str.tostring(array.get(bucketWins,0)) + "/" + str.tostring(array.get(bucketTrades,0)) + ")", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 19, "10:00-11:00 ET", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 19, f_pct(array.get(bucketWins,1), array.get(bucketTrades,1)) + " (" + str.tostring(array.get(bucketWins,1)) + "/" + str.tostring(array.get(bucketTrades,1)) + ")", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 20, ">= 11:00 ET", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 20, f_pct(array.get(bucketWins,2), array.get(bucketTrades,2)) + " (" + str.tostring(array.get(bucketWins,2)) + "/" + str.tostring(array.get(bucketTrades,2)) + ")", bgcolor=bodyBg, text_color=color.white)
+
+    table.cell(stats, 0, 21, "SETTINGS / STATE", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 1, 21, "Value", bgcolor=headerBg, text_color=color.white)
+    table.cell(stats, 0, 22, "Chart / Recommended", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 22, timeframe.period + " / " + recommendedTf, bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 23, "HTF / Regime", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 23, htfTf + " / " + trendTxt, bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 24, "Squeeze / Momentum", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 24, (squeezeOn ? "ON" : squeezeOff ? "OFF" : "NEUTRAL") + " / " + str.tostring(mom, "#.##"), bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 25, "State", bgcolor=bodyBg, text_color=color.white)
+    stateTxt = inTrade ? (tradeDir == 1 ? "IN LONG" : "IN SHORT") : pendingDir != 0 ? "ARMED" : breakSeen ? "WAIT PULLBACK" : releaseDir != 0 ? "WAIT BREAK" : "SCAN"
+    table.cell(stats, 1, 25, stateTxt, bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 0, 26, "Entries today", bgcolor=bodyBg, text_color=color.white)
+    table.cell(stats, 1, 26, str.tostring(tradesToday) + " / " + str.tostring(maxTradesDay), bgcolor=bodyBg, text_color=color.white)
