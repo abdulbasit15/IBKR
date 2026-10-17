@@ -1,0 +1,351 @@
+//@version=6
+indicator("AB - Regime Confluence Pullback 2R+ Research", overlay = true, max_lines_count = 450, max_boxes_count = 150, max_labels_count = 150)
+// Research approximation; not a replication of an identified published model.
+// Standard time-based OHLC only. No security(), pivots, future data, or VWAP.
+// Signals/entries at confirmed close. Entry-bar extremes NEVER resolve a trade.
+// Three independent fixed brackets share entries; wait until ALL lanes are flat.
+// Stop-first on ambiguous bars; adverse opening gaps fill at open, favorable
+// target gaps fill at target. Time exits fill at close. Costs deducted in R.
+// Historical close fills are idealized; alerts cannot guarantee that fill.
+// Statistics cover loaded chart data only. No partial exits or moving stops.
+
+string G1 = "Research / execution"
+int startDate = input.time(timestamp("01 Jan 2024 00:00 +0000"), "Research start", group = G1)
+string tz = input.string("America/New_York", "Session / date timezone", group = G1)
+bool sessionOnly = input.bool(true, "Limit entries to session", group = G1)
+string sess = input.session("0930-1545", "Entry session", group = G1)
+int flatHour = input.int(16, "Daily flatten hour", minval = 0, maxval = 23, group = G1)
+int flatMinute = input.int(0, "Daily flatten minute", minval = 0, maxval = 59, group = G1)
+bool flattenDaily = input.bool(true, "Flatten at daily cutoff", group = G1)
+int maxHold = input.int(36, "Maximum holding bars", minval = 1, maxval = 500, group = G1)
+int cooldown = input.int(3, "Cooldown bars after all exits", minval = 0, group = G1)
+float costTicks = input.float(2.0, "Round-trip friction in ticks", minval = 0, step = 0.25, group = G1, tooltip = "Commission + spread + slippage expressed as total price ticks. Deducted from every result, including gap losses. Adapt to contract and broker.")
+string chosen = input.string("2R", "Chart / diagnostic target", options = ["2R", "2.5R", "3R"], group = G1)
+float beTol = input.float(0.01, "Breakeven tolerance in net R", minval = 0, maxval = 0.1, step = 0.01, group = G1)
+string G2 = "Regime / confluence (MNQ 5m starting values)"
+int atrLen = input.int(14, "ATR length", minval = 2, group = G2)
+int baseLen = input.int(100, "Normalized ATR baseline", minval = 20, group = G2)
+float minVol = input.float(0.65, "Minimum ATR / baseline", minval = 0.1, group = G2)
+float maxVol = input.float(1.8, "Maximum ATR / baseline", minval = 0.2, group = G2)
+int effLen = input.int(12, "Efficiency / persistence length", minval = 3, group = G2)
+float effMin = input.float(0.25, "Minimum directional efficiency", minval = 0, maxval = 1, group = G2)
+int fastLen = input.int(20, "Pullback EMA", minval = 2, group = G2)
+int slowLen = input.int(50, "Trend EMA", minval = 3, group = G2)
+int dmiLen = input.int(14, "DMI / ADX length", minval = 2, group = G2)
+float adxMin = input.float(18, "Minimum ADX", minval = 1, group = G2)
+int volumeLen = input.int(50, "Relative volume z-score baseline", minval = 10, group = G2)
+bool requireVolume = input.bool(true, "Require valid volume", group = G2)
+float zMin = input.float(-0.25, "Minimum entry volume z-score", step = 0.25, group = G2)
+int transitionBars = input.int(8, "Transition bonus lasts N bars", minval = 1, group = G2)
+float scoreMin = input.float(65, "Minimum confluence score / 100", minval = 0, maxval = 100, group = G2)
+string G3 = "Controlled pullback / trigger"
+int setupLife = input.int(12, "Setup expiration bars", minval = 3, maxval = 100, group = G3)
+int minPullBars = input.int(2, "Minimum pullback bars", minval = 1, maxval = 20, group = G3)
+float minDepth = input.float(0.35, "Minimum retracement / ATR at arm", minval = 0.05, group = G3)
+float maxDepth = input.float(1.8, "Maximum retracement / ATR at arm", minval = 0.1, group = G3)
+float buffer = input.float(0.15, "Stop buffer / ATR at entry", minval = 0, group = G3)
+float minRisk = input.float(0.3, "Minimum stop / ATR", minval = 0.01, group = G3)
+float maxRisk = input.float(2.5, "Maximum stop / ATR", minval = 0.1, group = G3)
+float bodyMin = input.float(0.25, "Resumption candle body / ATR", minval = 0, group = G3)
+string G4 = "Visuals"
+bool showTable = input.bool(true, "Performance table", group = G4)
+bool showEMA = input.bool(true, "Trend EMAs", group = G4)
+bool shade = input.bool(false, "Regime background", group = G4)
+int keep = input.int(60, "Retain latest trade drawings", minval = 1, maxval = 120, group = G4)
+
+f_num(float v) => na(v) ? "n/a" : str.tostring(v, "#.##")
+f_wr(int w, int n) => n > 0 ? str.tostring(100.0 * w / n, "#.0") + "%" : "n/a"
+f_clamp(float x) => math.max(0.0, math.min(1.0, x))
+float atr = ta.atr(atrLen)
+float atrBase = ta.sma(atr, baseLen)
+float normATR = atrBase > 0 ? atr / atrBase : na
+float fast = ta.ema(close, fastLen)
+float slow = ta.ema(close, slowLen)
+float path = math.sum(math.abs(ta.change(close)), effLen)
+float efficiency = path > 0 ? math.abs(close - close[effLen]) / path : 0
+float persistence = ta.sma(close > close[1] ? 1.0 : close < close[1] ? -1.0 : 0.0, effLen)
+[diPlus, diMinus, adx] = ta.dmi(dmiLen, dmiLen)
+float vMean = ta.sma(volume, volumeLen)[1]
+float vSd = ta.stdev(volume, volumeLen)[1]
+bool volumeOK = not na(volume) and volume > 0 and not na(vSd) and vSd > 0
+float volZ = volumeOK ? (volume - vMean) / vSd : na
+bool volRegime = normATR >= minVol and normATR <= maxVol
+bool ready = not na(adx) and not na(normATR) and not na(close[effLen]) and bar_index > math.max(baseLen + atrLen, slowLen)
+int direction = fast > slow and slow > slow[3] and diPlus > diMinus ? 1 : fast < slow and slow < slow[3] and diMinus > diPlus ? -1 : 0
+bool trending = ready and direction != 0 and volRegime and efficiency >= effMin and adx >= adxMin and persistence * direction > 0
+int regime = trending ? direction : 0
+var int transitionAt = na
+if barstate.isconfirmed and regime != 0 and regime != regime[1]
+    transitionAt := bar_index
+bool recentTransition = not na(transitionAt) and bar_index - transitionAt <= transitionBars
+float score = 20 * (volRegime ? 1 : 0) + 20 * f_clamp(efficiency / math.max(effMin * 2, 0.01)) + 15 * f_clamp(adx / math.max(adxMin * 1.5, 1)) + 15 * f_clamp(persistence * direction * 2) + 15 * (volumeOK ? f_clamp((volZ + 1) / 2) : requireVolume ? 0 : 0.5) + 10 * (direction != 0 ? 1 : 0) + 5 * (recentTransition ? 1 : 0)
+bool inSession = not sessionOnly or not na(time(timeframe.period, sess, tz))
+int closeMinutes = hour(time_close, tz) * 60 + minute(time_close, tz)
+int cutoff = flatHour * 60 + flatMinute
+bool atCutoff = flattenDaily and closeMinutes >= cutoff
+bool validChart = chart.is_standard and timeframe.isintraday
+bool permitted = validChart and time >= startDate and inSession and not atCutoff
+
+// Per-target ledger. Signals share a single opportunity cohort, avoiding
+// target-specific re-entry bias. Drawdown is realized closed-trade drawdown.
+var array<float> targets = array.from(2.0, 2.5, 3.0)
+var array<bool> active = array.new_bool(3, false)
+var array<int> trades = array.new_int(3, 0)
+var array<int> wins = array.new_int(3, 0)
+var array<int> losses = array.new_int(3, 0)
+var array<int> bes = array.new_int(3, 0)
+var array<int> longs = array.new_int(3, 0)
+var array<int> longWins = array.new_int(3, 0)
+var array<int> shorts = array.new_int(3, 0)
+var array<int> shortWins = array.new_int(3, 0)
+var array<float> gp = array.new_float(3, 0)
+var array<float> gl = array.new_float(3, 0)
+var array<float> net = array.new_float(3, 0)
+var array<float> peak = array.new_float(3, 0)
+var array<float> dd = array.new_float(3, 0)
+// Selected-target diagnostics: opening/midday/late; transition/established.
+var array<int> bucketN = array.new_int(5, 0)
+var array<int> bucketW = array.new_int(5, 0)
+var array<float> bucketR = array.new_float(5, 0)
+var int armed = 0
+var int armBar = na
+var float anchor = na
+var float armATR = na
+var float extreme = na
+var int pullStart = na
+var int setups = 0
+var int expired = 0
+var int riskRejects = 0
+var int signals = 0
+var int ambiguities = 0
+var int timeExits = 0
+var int lastExit = na
+var int firstTrade = na
+var int lastTrade = na
+var int tradeBar = na
+var int tradeDir = 0
+var float entry = na
+var float stop = na
+var float risk = na
+var float frictionR = na
+var int tod = 0
+var int regimeBucket = 0
+var float entryScore = na
+var float sumScores = 0
+var float sumRiskATR = 0
+int selected = chosen == "2R" ? 0 : chosen == "2.5R" ? 1 : 2
+var line entryLine = na
+var line stopLine = na
+var line targetLine = na
+var box tradeBox = na
+var label tradeLabel = na
+var array<line> lineHistory = array.new<line>()
+var array<box> boxHistory = array.new<box>()
+var array<label> labelHistory = array.new<label>()
+bool longSignal = false
+bool shortSignal = false
+bool targetEvent = false
+bool stopEvent = false
+bool timeEvent = false
+bool anyActive = array.get(active, 0) or array.get(active, 1) or array.get(active, 2)
+
+if barstate.isconfirmed
+    // Existing positions resolve before new setup processing.
+    if anyActive and bar_index > tradeBar
+        for i = 0 to 2
+            if array.get(active, i)
+                float tp = math.round_to_mintick(entry + tradeDir * risk * array.get(targets, i))
+                bool gapStop = tradeDir == 1 ? open <= stop : open >= stop
+                bool stopHit = tradeDir == 1 ? low <= stop : high >= stop
+                bool tpHit = tradeDir == 1 ? high >= tp : low <= tp
+                bool dateChanged = year(time, tz) != year(time[1], tz) or month(time, tz) != month(time[1], tz) or dayofmonth(time, tz) != dayofmonth(time[1], tz)
+                bool timed = atCutoff or bar_index - tradeBar >= maxHold or (flattenDaily and dateChanged)
+                // If data skips the cutoff, next available bar exits at OPEN.
+                bool missedCutoff = flattenDaily and dateChanged
+                bool done = stopHit or tpHit or timed
+                if done
+                    float exitPrice = gapStop ? open : missedCutoff ? open : stopHit ? stop : tpHit ? tp : close
+                    float result = tradeDir * (exitPrice - entry) / risk - frictionR
+                    bool won = result > beTol
+                    bool lost = result < -beTol
+                    array.set(active, i, false)
+                    array.set(trades, i, array.get(trades, i) + 1)
+                    array.set(wins, i, array.get(wins, i) + (won ? 1 : 0))
+                    array.set(losses, i, array.get(losses, i) + (lost ? 1 : 0))
+                    array.set(bes, i, array.get(bes, i) + (not won and not lost ? 1 : 0))
+                    array.set(longs, i, array.get(longs, i) + (tradeDir == 1 ? 1 : 0))
+                    array.set(shorts, i, array.get(shorts, i) + (tradeDir == -1 ? 1 : 0))
+                    array.set(longWins, i, array.get(longWins, i) + (tradeDir == 1 and won ? 1 : 0))
+                    array.set(shortWins, i, array.get(shortWins, i) + (tradeDir == -1 and won ? 1 : 0))
+                    array.set(gp, i, array.get(gp, i) + math.max(result, 0))
+                    array.set(gl, i, array.get(gl, i) + math.max(-result, 0))
+                    float equity = array.get(net, i) + result
+                    array.set(net, i, equity)
+                    array.set(peak, i, math.max(array.get(peak, i), equity))
+                    array.set(dd, i, math.max(array.get(dd, i), array.get(peak, i) - equity))
+                    if i == selected
+                        for b in array.from(tod, regimeBucket)
+                            array.set(bucketN, b, array.get(bucketN, b) + 1)
+                            array.set(bucketW, b, array.get(bucketW, b) + (won ? 1 : 0))
+                            array.set(bucketR, b, array.get(bucketR, b) + result)
+                        ambiguities += stopHit and tpHit and not gapStop and not missedCutoff ? 1 : 0
+                        timeExits += not stopHit and not tpHit or missedCutoff ? 1 : 0
+                        targetEvent := not gapStop and not missedCutoff and not stopHit and tpHit
+                        stopEvent := gapStop or (not missedCutoff and stopHit)
+                        timeEvent := not targetEvent and not stopEvent
+                        color resultColor = won ? color.lime : lost ? color.red : color.silver
+                        line.set_style(entryLine, line.style_solid)
+                        line.set_style(stopLine, stopEvent ? line.style_solid : line.style_dotted)
+                        line.set_style(targetLine, targetEvent ? line.style_solid : line.style_dotted)
+                        line.set_x2(entryLine, bar_index)
+                        line.set_x2(stopLine, bar_index)
+                        line.set_x2(targetLine, bar_index)
+                        box.set_right(tradeBox, bar_index)
+                        box.set_border_color(tradeBox, resultColor)
+                        label.set_text(tradeLabel, label.get_text(tradeLabel) + "\n" + (stopEvent ? "SL" : targetEvent ? "TP" : "TIME") + " | " + f_num(result) + "R net")
+                        label.set_color(tradeLabel, color.new(resultColor, 75))
+        bool stillActive = array.get(active, 0) or array.get(active, 1) or array.get(active, 2)
+        if not stillActive
+            lastExit := bar_index
+        if array.get(active, selected)
+            line.set_x2(entryLine, bar_index + 1)
+            line.set_x2(stopLine, bar_index + 1)
+            line.set_x2(targetLine, bar_index + 1)
+            box.set_right(tradeBox, bar_index + 1)
+    bool flat = not array.get(active, 0) and not array.get(active, 1) and not array.get(active, 2)
+    bool available = flat and (na(lastExit) or bar_index - lastExit > cooldown)
+    if armed != 0
+        bool invalid = not permitted or not available or direction != armed or bar_index - armBar > setupLife
+        if invalid
+            expired += 1
+            armed := 0
+        else
+            if na(pullStart)
+                anchor := armed == 1 ? math.max(anchor, high) : math.min(anchor, low)
+            float depth = armed == 1 ? (anchor - low) / armATR : (high - anchor) / armATR
+            bool touching = armed == 1 ? low <= fast and close < close[1] : high >= fast and close > close[1]
+            if na(pullStart) and touching and depth >= minDepth
+                pullStart := bar_index
+                extreme := armed == 1 ? low : high
+            if not na(pullStart)
+                extreme := armed == 1 ? math.min(extreme, low) : math.max(extreme, high)
+                float fullDepth = armed == 1 ? (anchor - extreme) / armATR : (extreme - anchor) / armATR
+                bool tooDeep = fullDepth > maxDepth or (armed == 1 ? close < slow - atr * 0.25 : close > slow + atr * 0.25)
+                bool resume = armed == 1 ? close > high[1] and close > fast and close - open >= bodyMin * atr : close < low[1] and close < fast and open - close >= bodyMin * atr
+                bool volumePass = volumeOK ? volZ >= zMin : not requireVolume
+                if tooDeep
+                    expired += 1
+                    armed := 0
+                else if bar_index - pullStart >= minPullBars and resume and volRegime and score >= scoreMin and volumePass
+                    float proposedSL = armed == 1 ? math.floor((extreme - buffer * atr) / syminfo.mintick) * syminfo.mintick : math.ceil((extreme + buffer * atr) / syminfo.mintick) * syminfo.mintick
+                    float proposedRisk = math.abs(close - proposedSL)
+                    if proposedRisk >= minRisk * atr and proposedRisk <= maxRisk * atr and proposedRisk >= syminfo.mintick * 2
+                        tradeDir := armed
+                        entry := close
+                        stop := proposedSL
+                        risk := proposedRisk
+                        frictionR := costTicks * syminfo.mintick / risk
+                        tradeBar := bar_index
+                        firstTrade := na(firstTrade) ? time_close : firstTrade
+                        lastTrade := time_close
+                        entryScore := score
+                        sumScores += score
+                        sumRiskATR += risk / atr
+                        int m = hour(time_close, tz) * 60 + minute(time_close, tz)
+                        tod := m < 660 ? 0 : m < 840 ? 1 : 2
+                        regimeBucket := recentTransition ? 3 : 4
+                        signals += 1
+                        for i = 0 to 2
+                            array.set(active, i, true)
+                        longSignal := armed == 1
+                        shortSignal := armed == -1
+                        float selectedTP = math.round_to_mintick(entry + tradeDir * risk * array.get(targets, selected))
+                        color sideColor = armed == 1 ? color.teal : color.orange
+                        entryLine := line.new(bar_index, entry, bar_index + 1, entry, color = color.silver, style = line.style_dotted)
+                        stopLine := line.new(bar_index, stop, bar_index + 1, stop, color = color.red, style = line.style_dotted)
+                        targetLine := line.new(bar_index, selectedTP, bar_index + 1, selectedTP, color = color.lime, style = line.style_dotted)
+                        tradeBox := box.new(bar_index, math.max(stop, selectedTP), bar_index + 1, math.min(stop, selectedTP), border_color = sideColor, bgcolor = color.new(sideColor, 93))
+                        string txt = (armed == 1 ? "LONG" : "SHORT") + " | RCP " + chosen + "\nSetup: " + (recentTransition ? "Transition" : "Established") + " | Score " + f_num(score) + "\nEntry " + str.tostring(entry, format.mintick) + "\nSL " + str.tostring(stop, format.mintick) + " | TP " + str.tostring(selectedTP, format.mintick)
+                        tradeLabel := label.new(bar_index, stop, txt, style = armed == 1 ? label.style_label_up : label.style_label_down, color = color.new(sideColor, 25), textcolor = color.white, size = size.small)
+                        array.push(lineHistory, entryLine)
+                        array.push(lineHistory, stopLine)
+                        array.push(lineHistory, targetLine)
+                        array.push(boxHistory, tradeBox)
+                        array.push(labelHistory, tradeLabel)
+                        if array.size(boxHistory) > keep
+                            box.delete(array.shift(boxHistory))
+                            label.delete(array.shift(labelHistory))
+                            for j = 0 to 2
+                                line.delete(array.shift(lineHistory))
+                    else
+                        riskRejects += 1
+                    armed := 0
+    // Arm only after qualifying expansion. A later pullback must then develop.
+    if armed == 0 and available and permitted and trending and score >= scoreMin and not longSignal and not shortSignal
+        armed := direction
+        armBar := bar_index
+        anchor := direction == 1 ? high : low
+        armATR := atr
+        extreme := na
+        pullStart := na
+        setups += 1
+
+plot(showEMA ? fast : na, "Pullback EMA", color = color.aqua)
+plot(showEMA ? slow : na, "Trend EMA", color = color.orange)
+bgcolor(shade and barstate.isconfirmed ? regime == 1 ? color.new(color.teal, 92) : regime == -1 ? color.new(color.red, 92) : na : na)
+plotshape(longSignal, "LONG", shape.triangleup, location.belowbar, color.lime, size = size.small)
+plotshape(shortSignal, "SHORT", shape.triangledown, location.abovebar, color.red, size = size.small)
+plot(barstate.isconfirmed ? score : score[1], "Confirmed confluence score", display = display.data_window)
+plot(barstate.isconfirmed ? normATR : normATR[1], "Confirmed normalized ATR", display = display.data_window)
+plot(barstate.isconfirmed ? efficiency : efficiency[1], "Confirmed efficiency", display = display.data_window)
+plot(barstate.isconfirmed ? persistence : persistence[1], "Confirmed signed persistence", display = display.data_window)
+plot(barstate.isconfirmed ? volZ : volZ[1], "Confirmed relative-volume z", display = display.data_window)
+plot(barstate.isconfirmed ? adx : adx[1], "Confirmed ADX", display = display.data_window)
+alertcondition(longSignal, "RCP LONG", "RCP LONG confirmed close entry model: {{ticker}} {{interval}} close={{close}}. See chart for SL/TP.")
+alertcondition(shortSignal, "RCP SHORT", "RCP SHORT confirmed close entry model: {{ticker}} {{interval}} close={{close}}. See chart for SL/TP.")
+alertcondition(targetEvent, "RCP Target", "Selected RCP target reached; confirmed bar-close notification.")
+alertcondition(stopEvent, "RCP Stop", "Selected RCP stop reached; confirmed bar-close notification.")
+alertcondition(timeEvent, "RCP Time exit", "Selected RCP holding-time / daily-cutoff exit; confirmed bar-close notification.")
+if longSignal or shortSignal
+    alert((longSignal ? "LONG" : "SHORT") + " " + syminfo.ticker + " " + timeframe.period + " | RCP " + chosen + " | Entry " + str.tostring(entry, format.mintick) + " SL " + str.tostring(stop, format.mintick) + " TP " + str.tostring(math.round_to_mintick(entry + tradeDir * risk * array.get(targets, selected)), format.mintick), alert.freq_once_per_bar_close)
+
+var table dashboard = table.new(position.top_right, 4, 29, border_width = 1)
+if barstate.isfirst
+    for r = 21 to 28
+        table.merge_cells(dashboard, 1, r, 3, r)
+f_cell(int c, int r, string textValue, color bg) =>
+    table.cell(dashboard, c, r, textValue, text_color = color.white, bgcolor = bg, text_size = size.small)
+if barstate.islast and showTable
+    color base = color.new(color.black, 15)
+    color header = color.new(color.blue, 55)
+    f_cell(0, 0, "AB RCP | " + syminfo.ticker + " " + timeframe.period, header)
+    for i = 0 to 2
+        f_cell(i + 1, 0, f_num(array.get(targets, i)) + "R", header)
+    string period = na(firstTrade) ? "No actual trades" : str.format_time(firstTrade, "yyyy-MM-dd", tz) + " to " + str.format_time(timenow, "yyyy-MM-dd", tz)
+    array<string> names = array.from("Trade Period", "Last entry / loaded through", "Closed / open", "W / L / BE", "Win rate (BE included)", "Long WR / closed", "Short WR / closed", "Gross profit R*", "Gross loss R*", "Net R", "Profit factor", "Max drawdown R (realized)", "Avg closed R", "Open mark R (net est.)")
+    for r = 0 to array.size(names) - 1
+        f_cell(0, r + 1, array.get(names, r), base)
+    for i = 0 to 2
+        int n = array.get(trades, i)
+        float gLoss = array.get(gl, i)
+        float pf = gLoss > 0 ? array.get(gp, i) / gLoss : na
+        array<string> vals = array.from(period, (na(lastTrade) ? "n/a" : str.format_time(lastTrade, "yyyy-MM-dd", tz)) + " / " + str.format_time(time_close, "yyyy-MM-dd", tz), str.tostring(n) + " / " + (array.get(active, i) ? "1" : "0"), str.tostring(array.get(wins, i)) + " / " + str.tostring(array.get(losses, i)) + " / " + str.tostring(array.get(bes, i)), f_wr(array.get(wins, i), n), f_wr(array.get(longWins, i), array.get(longs, i)) + " / " + str.tostring(array.get(longs, i)), f_wr(array.get(shortWins, i), array.get(shorts, i)) + " / " + str.tostring(array.get(shorts, i)), f_num(array.get(gp, i)), f_num(array.get(gl, i)), f_num(array.get(net, i)), gLoss > 0 ? f_num(pf) : array.get(gp, i) > 0 ? "Inf" : "n/a", f_num(array.get(dd, i)), n > 0 ? f_num(array.get(net, i) / n) : "n/a", array.get(active, i) ? f_num(tradeDir * ((barstate.isconfirmed ? close : close[1]) - entry) / risk - frictionR) : "--")
+        for r = 0 to array.size(vals) - 1
+            f_cell(i + 1, r + 1, array.get(vals, r), base)
+    f_cell(0, 15, "Selected diagnostics", header)
+    f_cell(1, 15, chosen + " | Closed", header)
+    f_cell(2, 15, "WR", header)
+    f_cell(3, 15, "Net R", header)
+    array<string> buckets = array.from("Before 11:00", "11:00-13:59", "14:00 onward", "Recent transition", "Established regime")
+    for b = 0 to 4
+        f_cell(0, 16 + b, array.get(buckets, b), base)
+        f_cell(1, 16 + b, str.tostring(array.get(bucketN, b)), base)
+        f_cell(2, 16 + b, f_wr(array.get(bucketW, b), array.get(bucketN, b)), base)
+        f_cell(3, 16 + b, f_num(array.get(bucketR, b)), base)
+    array<string> footNames = array.from("Armed / invalidated / risk rejects", "Shared entries / mean score / stop ATR", "Selected ambiguous / time exits", "Current confirmed regime / score", "Model / friction", "Cohort / session timezone", "Chart / volume status", "Accounting / sample")
+    array<string> footVals = array.from(str.tostring(setups) + " / " + str.tostring(expired) + " / " + str.tostring(riskRejects), str.tostring(signals) + " / " + (signals > 0 ? f_num(sumScores / signals) + " / " + f_num(sumRiskATR / signals) : "n/a"), str.tostring(ambiguities) + " / " + str.tostring(timeExits), str.tostring(barstate.isconfirmed ? regime : regime[1]) + " / " + f_num(barstate.isconfirmed ? score : score[1]), "Close entry; stop-first; cost " + f_num(costTicks) + " ticks", "Wait all targets flat | " + tz, not validChart ? "USE STANDARD INTRADAY CANDLES" : not volumeOK ? "Volume unavailable/constant" : timeframe.period == "5" ? "5m starting preset" : "Adapt parameters to timeframe", "* GP/GL sum net-cost outcomes; loaded bars only")
+    for r = 0 to array.size(footNames) - 1
+        f_cell(0, 21 + r, array.get(footNames, r), base)
+        f_cell(1, 21 + r, array.get(footVals, r), base)
+
+
