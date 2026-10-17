@@ -1,0 +1,445 @@
+//@version=6
+indicator("AB - Gap Continuation 2R+ Research", overlay=true, max_lines_count=450, max_labels_count=150)
+// Research indicator: standard time-based chart OHLC simulation, not broker orders.
+// Signals confirmed at close; queued entries use NEXT contiguous bar open.
+// Fill-bar results are evaluated only at that bar's close. Fill alerts are retrospective.
+// Fixed 2R/2.5R/3R ledgers share entries, no overlapping sessions, one attempt/session.
+// Stop first if SL and TP touch together; adverse stop gaps filled at open.
+// Reference = last COMPLETE observed cash/custom session, not futures settlement.
+// Use extended-hours data. MNQ/MES default 09:30-16:00 New York; change for MGC.
+// Loaded history, feed revisions and continuous-contract roll adjustments affect results.
+string G1 = "Session and research"
+string tz = input.string("America/New_York", "Session timezone", group=G1)
+int oh = input.int(9, "Open hour", minval=0, maxval=23, group=G1)
+int om = input.int(30, "Open minute", minval=0, maxval=59, group=G1)
+int sessionMinutes = input.int(390, "Reference session length (minutes)", minval=30, maxval=720, group=G1)
+int rangeMinutes = input.int(15, "Opening range (minutes)", minval=5, maxval=60, group=G1)
+int entryMinutes = input.int(120, "Last entry (minutes after open)", minval=10, maxval=360, group=G1)
+int flatMinutes = input.int(385, "Flatten (minutes after open)", minval=30, maxval=720, group=G1)
+int fromDate = input.time(timestamp("01 Jan 2020 00:00 +0000"), "Research start", group=G1)
+int toDate = input.time(timestamp("31 Dec 2099 23:59 +0000"), "Last entry date", group=G1)
+float costR = input.float(0.03, "Round-trip costs (R)", minval=0, step=0.01, group=G1)
+string targetChoice = input.string("2.5R", "Chart target / diagnostics", options=["2R", "2.5R", "3R"], group=G1)
+int keepTrades = input.int(60, "Visible trade history", minval=1, maxval=100, group=G1)
+string G2 = "Gap context"
+int atrLen = input.int(14, "Chart ATR length", minval=2, group=G2)
+float minGapATR = input.float(0.6, "Minimum gap / pre-open chart ATR", minval=0.05, step=0.1, group=G2)
+float maxGapATR = input.float(8.0, "Maximum gap / pre-open chart ATR", minval=0.1, step=0.5, group=G2)
+int minGapTicks = input.int(20, "Minimum gap (ticks; adapt to instrument)", minval=1, group=G2)
+bool outsideOnly = input.bool(false, "Require open outside previous session range", group=G2)
+bool trendFilter = input.bool(false, "Require confirmed HTF trend alignment", group=G2)
+string htf = input.timeframe("15", "Trend timeframe", group=G2)
+int fastLen = input.int(20, "HTF fast EMA", minval=2, group=G2)
+int slowLen = input.int(50, "HTF slow EMA", minval=3, group=G2)
+float recoveryFrac = input.float(0.25, "Failed recovery: minimum fraction into gap", minval=0.05, maxval=1, step=0.05, group=G2)
+float driveATR = input.float(0.5, "Continuation: distance from open (ATR)", minval=0.1, step=0.1, group=G2)
+bool invalidateFill = input.bool(true, "Invalidate if prior close is touched before signal", group=G2)
+string G3 = "First higher-low / lower-high pullback"
+int maxPB = input.int(6, "Maximum pullback bars (includes trigger)", minval=2, maxval=20, group=G3)
+float minPB = input.float(0.15, "Minimum pullback depth (ATR)", minval=0.01, step=0.05, group=G3)
+float maxDepth = input.float(0.75, "Maximum fraction of impulse retraced", minval=0.1, maxval=0.95, step=0.05, group=G3)
+float triggerBody = input.float(0.45, "Trigger minimum body / range", minval=0.1, maxval=1, step=0.05, group=G3)
+int bufferTicks = input.int(2, "Structural stop buffer (ticks)", minval=1, group=G3)
+float minRiskATR = input.float(0.15, "Minimum entry risk (ATR)", minval=0.01, step=0.05, group=G3)
+float maxRiskATR = input.float(2.5, "Maximum entry risk (ATR)", minval=0.1, step=0.1, group=G3)
+float maxFillGapATR = input.float(0.35, "Maximum signal-to-fill gap (ATR)", minval=0, step=0.05, group=G3)
+int tfMillis = int(timeframe.in_seconds() * 1000)
+if barstate.isfirst
+    if not timeframe.isintraday or timeframe.in_seconds() > 900 or not chart.is_standard
+        runtime.error("Use a standard intraday chart up to 15m; designed first for MNQ 5m.")
+    if trendFilter and timeframe.in_seconds(htf) <= timeframe.in_seconds()
+        runtime.error("Trend timeframe must be higher than chart timeframe when enabled.")
+    if rangeMinutes >= entryMinutes or entryMinutes >= flatMinutes or flatMinutes > sessionMinutes or minGapATR >= maxGapATR or fromDate > toDate
+        runtime.error("Require range < entry < flatten <= session, min gap < max gap, and ordered dates.")
+    if (rangeMinutes * 60000) % tfMillis != 0 or (sessionMinutes * 60000) % tfMillis != 0
+        runtime.error("Opening range and reference session must contain whole chart bars.")
+    if oh * 60 + om + sessionMinutes > 1440
+        runtime.error("Reference session must end by midnight in the selected timezone.")
+float atr = ta.atr(atrLen)
+[hc, hf, hs, hfPrev] = request.security(syminfo.tickerid, htf, [close[1], ta.ema(close, fastLen)[1], ta.ema(close, slowLen)[1], ta.ema(close, fastLen)[2]], lookahead=barmerge.lookahead_on)
+bool bull = hc > hf and hf > hs and hf > hfPrev
+bool bear = hc < hf and hf < hs and hf < hfPrev
+int dayKey = year(time, tz) * 10000 + month(time, tz) * 100 + dayofmonth(time, tz)
+bool newDay = na(dayKey[1]) or dayKey != dayKey[1]
+int openTime = timestamp(tz, year(time, tz), month(time, tz), dayofmonth(time, tz), oh, om)
+float elapsed = (time - openTime) / 60000.0
+float closeElapsed = (time_close - openTime) / 60000.0
+bool weekday = dayofweek(time, tz) >= dayofweek.monday and dayofweek(time, tz) <= dayofweek.friday
+bool entryWindow = weekday and elapsed >= 0 and elapsed < entryMinutes and closeElapsed <= flatMinutes
+bool dateOK = time >= fromDate and time <= toDate
+int selected = targetChoice == "2R" ? 0 : targetChoice == "2.5R" ? 1 : 2
+var array<float> targets = array.from(2.0, 2.5, 3.0)
+type Ledger
+    bool active = false
+    float entry = na
+    float stop = na
+    float tp = na
+    float risk = na
+    int dir = 0
+    int born = na
+    int day = na
+    int trades = 0
+    int wins = 0
+    int losses = 0
+    int be = 0
+    int longs = 0
+    int longWins = 0
+    int shorts = 0
+    int shortWins = 0
+    float gp = 0.0
+    float gl = 0.0
+    float net = 0.0
+    float peak = 0.0
+    float dd = 0.0
+    int collisions = 0
+    int timed = 0
+    int first = na
+    int context = 0
+    int quality = 0
+    int bucket = 0
+    int zone = 0 // gap size bucket
+    line el = na
+    line sl = na
+    line tl = na
+var array<Ledger> books = array.new<Ledger>()
+if barstate.isfirst
+    for i = 0 to 2
+        array.push(books, Ledger.new())
+var array<int> diagN = array.new_int(10, 0)
+var array<int> diagW = array.new_int(10, 0)
+var array<float> diagR = array.new_float(10, 0.0)
+var array<line> historyLines = array.new<line>()
+var array<label> historyLabels = array.new<label>()
+var float refClose = na
+var float refHi = na
+var float refLo = na
+var int refStamp = na
+var float sessionHi = na
+var float sessionLo = na
+var int sessionN = 0
+var bool sessionComplete = false
+var int meaningful = 0
+var int missingRef = 0
+var int signals = 0
+var int rejected = 0
+var int gapReject = 0
+var int state = 4 // 0 opening range, 1 context, 2 extension, 3 first PB, 4 consumed
+var int direction = 0
+var float gapOpen = na
+var float gapRef = na
+var float gapRatio = na
+var int gapBucket = 0
+var int contextBucket = 0
+var float baseATR = na
+var float orHi = na
+var float orLo = na
+var int orN = 0
+var bool recoverySeen = false
+var float recoveryExtreme = na
+var float origin = na
+var float extreme = na
+var float pbExtreme = na
+var int pbN = 0
+var int setupKind = 0
+var bool pending = false
+var int pendingDir = 0
+var float pendingStop = na
+var float signalClose = na
+var float signalATR = na
+var int pendingDay = na
+var int pendingBarTime = na
+var int pendingQuality = 0
+var int pendingZone = 0
+var int pendingContext = 0
+bool longSignal = false
+bool shortSignal = false
+bool targetEvent = false
+bool stopEvent = false
+
+if barstate.isconfirmed
+    // Fill queued orders at this bar's open before evaluating this bar's range.
+    if pending
+        float r = pendingDir * (open - pendingStop)
+        bool validFill = time == pendingBarTime and dayKey == pendingDay and entryWindow and dateOK and r >= minRiskATR * signalATR and r <= maxRiskATR * signalATR and math.abs(open - signalClose) <= maxFillGapATR * signalATR
+        if validFill
+            for i = 0 to 2
+                Ledger b = array.get(books, i)
+                b.active := true
+                b.entry := open
+                b.stop := pendingStop
+                b.risk := r
+                b.dir := pendingDir
+                b.tp := math.round_to_mintick(open + pendingDir * r * array.get(targets, i))
+                b.born := bar_index
+                b.day := dayKey
+                b.quality := pendingQuality
+                b.zone := pendingZone
+                b.context := pendingContext
+                b.bucket := elapsed < 30 ? 0 : elapsed < 60 ? 1 : 2
+                if na(b.first)
+                    b.first := time
+                if i == selected
+                    color c = pendingDir == 1 ? color.teal : color.orange
+                    b.el := line.new(bar_index, open, bar_index + 1, open, color=color.gray, style=line.style_dotted)
+                    line.set_style(b.el, line.style_solid) // entry has actually filled
+                    b.sl := line.new(bar_index, b.stop, bar_index + 1, b.stop, color=color.red, style=line.style_dotted)
+                    b.tl := line.new(bar_index, b.tp, bar_index + 1, b.tp, color=color.lime, style=line.style_dotted)
+                    array.push(historyLines, b.el)
+                    array.push(historyLines, b.sl)
+                    array.push(historyLines, b.tl)
+                    string txt = (pendingDir == 1 ? "LONG" : "SHORT") + (pendingQuality == 0 ? " | Gap: failed recovery + first HL/LH\nEntry: " : " | Gap: OR breakout + first pullback\nEntry: ") + str.tostring(open, format.mintick) + "\nSL: " + str.tostring(b.stop, format.mintick) + "\nTP: " + str.tostring(b.tp, format.mintick) + " (" + targetChoice + ")"
+                    array.push(historyLabels, label.new(bar_index, open, txt, yloc=yloc.price, style=pendingDir == 1 ? label.style_label_up : label.style_label_down, color=c, textcolor=color.white, size=size.small))
+                    alert(txt + " | Research fill confirmed at bar close", alert.freq_once_per_bar_close)
+        else
+            gapReject += 1
+        pending := false
+    // Independent target ledgers. Stop first on any same-bar collision, including fill bar.
+    for i = 0 to 2
+        Ledger b = array.get(books, i)
+        if b.active
+            bool stale = b.day != dayKey
+            bool stopHit = b.dir == 1 ? low <= b.stop : high >= b.stop
+            bool tpHit = b.dir == 1 ? high >= b.tp : low <= b.tp
+            bool timedOut = closeElapsed >= flatMinutes
+            float exitPrice = na
+            int reason = 0
+            if stale
+                exitPrice := open
+                reason := 3
+            else if stopHit
+                exitPrice := b.dir == 1 ? math.min(open, b.stop) : math.max(open, b.stop)
+                reason := 1
+                if tpHit
+                    b.collisions += 1
+            else if tpHit
+                exitPrice := b.tp // no favorable gap improvement assumed
+                reason := 2
+            else if timedOut
+                exitPrice := close
+                reason := 3
+            if i == selected
+                line.set_x2(b.el, bar_index + 1)
+                line.set_x2(b.sl, bar_index + 1)
+                line.set_x2(b.tl, bar_index + 1)
+            if not na(exitPrice)
+                float result = b.dir * (exitPrice - b.entry) / b.risk - costR
+                bool win = result > 0.000001
+                bool loss = result < -0.000001
+                b.trades += 1
+                b.wins += win ? 1 : 0
+                b.losses += loss ? 1 : 0
+                b.be += not win and not loss ? 1 : 0
+                b.longs += b.dir == 1 ? 1 : 0
+                b.longWins += b.dir == 1 and win ? 1 : 0
+                b.shorts += b.dir == -1 ? 1 : 0
+                b.shortWins += b.dir == -1 and win ? 1 : 0
+                b.gp += math.max(result, 0)
+                b.gl += math.max(-result, 0)
+                b.net += result
+                b.peak := math.max(b.peak, b.net)
+                b.dd := math.max(b.dd, b.peak - b.net)
+                b.timed += reason == 3 ? 1 : 0
+                b.active := false
+                if i == selected
+                    for k in array.from(b.bucket, 3 + b.quality, 5 + b.zone, 8 + b.context)
+                        array.set(diagN, k, array.get(diagN, k) + 1)
+                        array.set(diagW, k, array.get(diagW, k) + (win ? 1 : 0))
+                        array.set(diagR, k, array.get(diagR, k) + result)
+                    line.set_style(b.el, line.style_solid)
+                    if reason == 1
+                        line.set_style(b.sl, line.style_solid)
+                        stopEvent := true
+                    else if reason == 2
+                        line.set_style(b.tl, line.style_solid)
+                        targetEvent := true
+                    else
+                        line.set_color(b.el, color.yellow)
+    if newDay
+        state := 4
+        sessionN := 0
+        sessionComplete := false
+    bool busy = false
+    for i = 0 to 2
+        Ledger b = array.get(books, i)
+        busy := busy or b.active
+    // Only exact opening bars qualify. Prior session must have every chart bar.
+    if weekday and time == openTime
+        state := 4
+        orN := 1
+        orHi := high
+        orLo := low
+        gapOpen := open
+        gapRef := refClose
+        baseATR := atr[1]
+        recoverySeen := false
+        float ageDays = na(refStamp) ? 99 : (time - refStamp) / 86400000.0
+        bool referenceOK = not na(refClose) and ageDays > 0 and ageDays <= 4 and not na(baseATR) and baseATR > 0
+        if dateOK and not busy
+            if referenceOK
+                float gap = open - refClose
+                direction := gap > 0 ? 1 : -1
+                gapRatio := math.abs(gap) / baseATR
+                bool outside = direction == 1 ? open > refHi : open < refLo
+                contextBucket := outside ? 1 : 0
+                gapBucket := gapRatio < 1 ? 0 : gapRatio < 2 ? 1 : 2
+                if math.abs(gap) >= minGapTicks * syminfo.mintick and gapRatio >= minGapATR and gapRatio <= maxGapATR and (not outsideOnly or outside)
+                    meaningful += 1
+                    state := 0
+            else
+                missingRef += 1
+        recoveryExtreme := direction == 1 ? low : high
+    else if state == 0 and entryWindow
+        orN += 1
+        orHi := math.max(orHi, high)
+        orLo := math.min(orLo, low)
+    if state < 4 and entryWindow and dateOK and not busy
+        float gapSize = math.abs(gapOpen - gapRef)
+        bool gapFilled = direction == 1 ? low <= gapRef : high >= gapRef
+        bool lostGap = direction == 1 ? close <= gapRef : close >= gapRef
+        bool recovery = direction == 1 ? low <= gapOpen - recoveryFrac * gapSize : high >= gapOpen + recoveryFrac * gapSize
+        recoverySeen := recoverySeen or recovery
+        recoveryExtreme := direction == 1 ? math.min(recoveryExtreme, low) : math.max(recoveryExtreme, high)
+        bool trendOK = not trendFilter or (direction == 1 ? bull : bear)
+        if lostGap or (invalidateFill and gapFilled) or (bar_index > 0 and elapsed > 0 and time != time_close[1])
+            state := 4
+            rejected += 1
+        else if state == 0
+            if closeElapsed >= rangeMinutes
+                if closeElapsed == rangeMinutes and orN == int(rangeMinutes * 60000 / tfMillis)
+                    state := 1
+                else
+                    state := 4
+                    rejected += 1
+        else if state == 1
+            // Context confirmation occurs AFTER opening range, never at opening print.
+            bool rejection = recoverySeen and (direction == 1 ? close > gapOpen and close > high[1] and close > open : close < gapOpen and close < low[1] and close < open)
+            bool drive = direction == 1 ? close > orHi and close - gapOpen >= driveATR * baseATR : close < orLo and gapOpen - close >= driveATR * baseATR
+            if trendOK and (rejection or drive)
+                setupKind := rejection ? 0 : 1
+                origin := rejection ? recoveryExtreme : direction == 1 ? orLo : orHi
+                extreme := direction == 1 ? high : low
+                state := 2
+        else if state == 2 or state == 3
+            bool counter = direction == 1 ? close < close[1] or close < open : close > close[1] or close > open
+            if state == 2 and not counter
+                extreme := direction == 1 ? math.max(extreme, high) : math.min(extreme, low)
+            else
+                if state == 2
+                    state := 3
+                    pbN := 0
+                    pbExtreme := direction == 1 ? low : high
+                pbN += 1
+                pbExtreme := direction == 1 ? math.min(pbExtreme, low) : math.max(pbExtreme, high)
+                float impulse = direction * (extreme - origin)
+                float depth = direction * (extreme - pbExtreme)
+                bool structureOK = direction == 1 ? pbExtreme > origin : pbExtreme < origin
+                bool invalid = not structureOK or impulse <= 0 or depth > maxDepth * impulse or pbN > maxPB or not trendOK
+                bool reversal = direction == 1 ? close > open and close > high[1] and close > gapOpen : close < open and close < low[1] and close < gapOpen
+                float body = math.abs(close - open) / math.max(high - low, syminfo.mintick)
+                if invalid
+                    state := 4
+                    rejected += 1
+                else if pbN >= 2 and depth >= minPB * baseATR and reversal and body >= triggerBody
+                    pending := true
+                    pendingDir := direction
+                    pendingStop := math.round_to_mintick(pbExtreme - direction * bufferTicks * syminfo.mintick)
+                    signalClose := close
+                    signalATR := baseATR
+                    pendingDay := dayKey
+                    pendingBarTime := time_close
+                    pendingQuality := setupKind
+                    pendingZone := gapBucket
+                    pendingContext := contextBucket
+                    signals += 1
+                    longSignal := direction == 1
+                    shortSignal := direction == -1
+                    state := 4
+                else if direction == 1 ? high > extreme : low < extreme
+                    // First pullback resumed without a clean trigger: no later chase.
+                    state := 4
+                    rejected += 1
+    if state < 4 and (not entryWindow or not dateOK)
+        state := 4
+        rejected += 1
+    // Update reference only AFTER evaluating current day's gap using older session.
+    // An observed partial session invalidates its reference for the next open.
+    // A holiday with no opening bar retains the prior complete session (max 4 days).
+    if weekday and elapsed >= 0 and closeElapsed <= sessionMinutes
+        if time == openTime
+            refClose := na
+            refHi := na
+            refLo := na
+            refStamp := na
+            sessionN := 1
+            sessionHi := high
+            sessionLo := low
+            sessionComplete := true
+        else if sessionComplete
+            sessionComplete := time == time_close[1]
+            sessionN += 1
+            sessionHi := math.max(sessionHi, high)
+            sessionLo := math.min(sessionLo, low)
+        if closeElapsed == sessionMinutes and sessionComplete and sessionN == int(sessionMinutes * 60000 / tfMillis)
+            refClose := close
+            refHi := sessionHi
+            refLo := sessionLo
+            refStamp := time_close
+    while array.size(historyLines) > keepTrades * 3
+        line.delete(array.shift(historyLines))
+    while array.size(historyLabels) > keepTrades
+        label.delete(array.shift(historyLabels))
+
+plot(elapsed >= 0 and elapsed < sessionMinutes ? gapOpen : na, "Session open", color=color.new(color.blue, 30), style=plot.style_linebr)
+plot(elapsed >= 0 and elapsed < sessionMinutes ? gapRef : na, "Previous complete session close", color=color.new(color.yellow, 30), style=plot.style_linebr)
+plot(state >= 1 and state < 4 ? orHi : na, "Opening range high", color=color.new(color.teal, 40), style=plot.style_linebr)
+plot(state >= 1 and state < 4 ? orLo : na, "Opening range low", color=color.new(color.orange, 40), style=plot.style_linebr)
+plotshape(longSignal, "Confirmed LONG setup", shape.triangleup, location.belowbar, color.teal, size=size.tiny)
+plotshape(shortSignal, "Confirmed SHORT setup", shape.triangledown, location.abovebar, color.orange, size=size.tiny)
+alertcondition(longSignal, "LONG gap continuation confirmed", "Gap Continuation LONG on {{ticker}} {{interval}}. Next bar open research fill subject to risk/gap validation.")
+alertcondition(shortSignal, "SHORT gap continuation confirmed", "Gap Continuation SHORT on {{ticker}} {{interval}}. Next bar open research fill subject to risk/gap validation.")
+alertcondition(targetEvent, "Chart target hit", "Gap Continuation selected target hit on {{ticker}}.")
+alertcondition(stopEvent, "Chart stop hit", "Gap Continuation selected stop hit on {{ticker}}.")
+
+f_num(float x) => str.tostring(x, "#.##")
+f_wr(int w, int n) => n > 0 ? str.tostring(100.0 * w / n, "#.0") + "%" : "—"
+f_pf(float p, float l) => l > 0 ? f_num(p / l) : p > 0 ? "∞" : "—"
+var table panel = table.new(position.top_right, 4, 33, border_width=1)
+f_row(int row, string key, string a, string b, string c) =>
+    table.cell(panel, 0, row, key, text_color=color.white, bgcolor=color.new(color.gray, 65), text_size=size.small)
+    table.cell(panel, 1, row, a, text_color=color.white, bgcolor=color.new(color.black, 20), text_size=size.small)
+    table.cell(panel, 2, row, b, text_color=color.white, bgcolor=color.new(color.black, 20), text_size=size.small)
+    table.cell(panel, 3, row, c, text_color=color.white, bgcolor=color.new(color.black, 20), text_size=size.small)
+if barstate.islast
+    f_row(0, "AB Gap Continuation • " + timeframe.period, "2R", "2.5R", "3R")
+    f_row(1, "Trade Period → today", "", "", "")
+    f_row(2, "Trades / W / L / BE", "", "", "")
+    f_row(3, "Win rate (BE included)", "", "", "")
+    f_row(4, "Long WR / trades", "", "", "")
+    f_row(5, "Short WR / trades", "", "", "")
+    f_row(6, "Gross profit R (after costs)", "", "", "")
+    f_row(7, "Gross loss R (after costs)", "", "", "")
+    f_row(8, "Net R", "", "", "")
+    f_row(9, "Profit factor", "", "", "")
+    f_row(10, "Max closed-trade DD R", "", "", "")
+    f_row(11, "Open / unrealized R*", "", "", "")
+    f_row(12, "Stop/TP collisions", "", "", "")
+    f_row(13, "Time / missing-session exits", "", "", "")
+    for i = 0 to 2
+        Ledger b = array.get(books, i)
+        string period = na(b.first) ? "No fills" : str.format_time(b.first, "yyyy-MM-dd", tz) + " → " + str.format_time(timenow, "yyyy-MM-dd", tz)
+        array<string> values = array.from(period, str.tostring(b.trades) + " / " + str.tostring(b.wins) + " / " + str.tostring(b.losses) + " / " + str.tostring(b.be), f_wr(b.wins, b.trades), f_wr(b.longWins, b.longs) + " / " + str.tostring(b.longs), f_wr(b.shortWins, b.shorts) + " / " + str.tostring(b.shorts), f_num(b.gp), f_num(b.gl), f_num(b.net), f_pf(b.gp, b.gl), f_num(b.dd), b.active ? "1 / " + f_num(b.dir * (close - b.entry) / b.risk - costR) : "0 / —", str.tostring(b.collisions), str.tostring(b.timed))
+        for j = 0 to array.size(values) - 1
+            table.cell(panel, i + 1, j + 1, array.get(values, j), text_color=color.white, bgcolor=i == selected ? color.new(color.teal, 70) : color.new(color.black, 20), text_size=size.small)
+    f_row(14, "Selected target diagnostics", targetChoice, "Trades / WR", "Net R")
+    array<string> names = array.from("Entry +0-29 min", "Entry +30-59 min", "Entry +60 min onward", "Failed recovery + HL/LH", "OR breakout + pullback", "Gap <1 pre-open ATR", "Gap 1-2 pre-open ATR", "Gap >=2 pre-open ATR", "Open inside prior range", "Open outside prior range")
+    for k = 0 to 9
+        f_row(15 + k, array.get(names, k), "", str.tostring(array.get(diagN, k)) + " / " + f_wr(array.get(diagW, k), array.get(diagN, k)), f_num(array.get(diagR, k)))
+    f_row(25, "Setup funnel", "Gaps " + str.tostring(meaningful), "Signals " + str.tostring(signals), "Rejected " + str.tostring(rejected))
+    f_row(26, "Skipped", "Fill/risk " + str.tostring(gapReject), "No reference " + str.tostring(missingRef), "1 attempt/session")
+    f_row(27, "Execution / costs", "Next open", "Stop first", f_num(costR) + "R")
+    f_row(28, "Flatten / reference", "+" + str.tostring(flatMinutes) + "m", "Full prior session", "No trailing / BE move")
+    f_row(29, "Coverage through", str.format_time(time_close, "yyyy-MM-dd HH:mm", tz), "Loaded bars only", tz)
+    f_row(30, "Research limits", "OHLC simulation", "No tick ordering", "No empirical claim")
+    f_row(31, "*Open trades excluded", "Closed equity DD", "Net-cost W/L/BE", "Date = first fill")
+    f_row(32, "Line result", "Entry solid on fill", "Hit SL/TP solid", "Other stays dotted")
+
