@@ -1,0 +1,580 @@
+//@version=6
+indicator("AB - Liquidity Sweep Reclaim 2R/3R Research v2", overlay = true, scale = scale.none, max_lines_count = 500, max_labels_count = 200)
+
+// Research simulator: confirmed chart bars, one shared entry cohort, three independent exits.
+// No VWAP dependency. Prices use standard OHLC; use a standard, time-based intraday chart.
+string g1 = "Profile and sessions"
+string profile = input.string("Auto", "Profile", options = ["Auto", "MNQ", "MES", "MGC", "Custom"], group = g1)
+string customHTF = input.timeframe("60", "Custom HTF", group = g1)
+string tz = input.string("America/New_York", "Session timezone", group = g1)
+string customTrade = input.session("0930-1600", "Custom entry session", group = g1)
+string customON = input.session("1800-0930", "Custom overnight session", group = g1)
+bool weekdays = input.bool(true, "Entries Monday–Friday only", group = g1)
+string g2 = "Setup"
+bool usePD = input.bool(true, "Previous exchange daily high / low", group = g2)
+bool useON = input.bool(true, "Completed overnight high / low", group = g2)
+bool useSwing = input.bool(true, "Confirmed swing high / low", group = g2)
+int pivotLen = input.int(3, "Swing left / right bars", minval = 1, maxval = 30, group = g2)
+int reclaimBars = input.int(3, "Maximum bars from sweep to reclaim", minval = 0, maxval = 20, group = g2)
+int confirmBars = input.int(4, "Maximum bars after reclaim to confirm", minval = 1, maxval = 30, group = g2)
+int sweepTicks = input.int(1, "Minimum sweep (ticks)", minval = 1, group = g2)
+int stopTicks = input.int(2, "Stop buffer (ticks)", minval = 1, group = g2)
+float bodyATR = input.float(0.5, "Displacement body / ATR", minval = 0.1, step = 0.1, group = g2)
+float closeFraction = input.float(0.7, "Displacement close location", minval = 0.5, maxval = 1, step = 0.05, group = g2)
+string regimeFilter = input.string("All", "Regime filter", options = ["All", "Aligned only", "Countertrend only"], group = g2)
+int fastLen = input.int(20, "HTF fast EMA", minval = 2, group = g2)
+int slowLen = input.int(50, "HTF slow EMA", minval = 3, group = g2)
+string g3 = "Entry and research"
+string entryMode = input.string("Confirmation close", "Entry", options = ["Confirmation close", "Retracement"], group = g3)
+float retrace = input.float(0.5, "Retracement of confirmation candle range", minval = 0.1, maxval = 0.9, step = 0.1, group = g3)
+int pendingBars = input.int(4, "Retracement order lifetime (bars)", minval = 1, maxval = 50, group = g3)
+bool flattenSession = input.bool(false, "Exit at entry-session close (compare separately)", group = g3)
+int maxHold = input.int(60, "Maximum holding bars (close exit)", minval = 1, maxval = 2000, group = g3)
+float costR = input.float(0.02, "Round-trip costs in R per completed trade", minval = 0, step = 0.01, group = g3)
+int startDate = input.time(timestamp("01 Jan 2020 00:00 +0000"), "Research start", group = g3)
+string displayTarget = input.string("2.5R", "Visuals / breakdown target", options = ["2R", "2.5R", "3R"], group = g3)
+int keepTrades = input.int(60, "Retain latest trade drawings", minval = 1, maxval = 150, group = g3)
+bool showLevels = input.bool(true, "Plot available liquidity", group = g3)
+bool showTable = input.bool(true, "Show performance table", group = g3)
+string dashboardFont = input.string("Tiny", "Table font", options = ["Tiny", "Small"], group = g3)
+
+string g4 = "V2 quality controls"
+string researchMode = input.string("Balanced v2", "Rule set", options = ["Balanced v2", "Original baseline"], group = g4)
+bool quality = researchMode == "Balanced v2"
+bool freshOnly = input.bool(true, "First sweep of each level only", group = g4)
+bool swingAligned = input.bool(true, "Swing setups require HTF alignment", group = g4)
+bool skipNeutral = input.bool(true, "Exclude neutral HTF", group = g4)
+int minSwingAge = input.int(6, "Minimum swing age from pivot (bars)", minval = 1, group = g4)
+int maxSwingAge = input.int(100, "Maximum swing age (bars)", minval = 2, group = g4)
+float minDepthATR = input.float(0.05, "Minimum sweep depth / ATR", minval = 0, step = 0.05, group = g4)
+float maxDepthATR = input.float(0.75, "Maximum sweep depth / ATR", minval = 0.1, step = 0.05, group = g4)
+float minRiskATR = input.float(0.25, "Minimum stop distance / setup ATR", minval = 0.05, step = 0.05, group = g4)
+float maxRiskATR = input.float(1.5, "Maximum stop distance / setup ATR", minval = 0.1, step = 0.1, group = g4)
+float maxChaseATR = input.float(1.0, "Maximum entry distance from swept level / ATR", minval = 0.1, step = 0.1, group = g4)
+bool useRoom = input.bool(true, "Require room to known opposing liquidity", group = g4)
+float minRoomR = input.float(2.0, "Minimum room (R)", minval = 0.5, step = 0.5, group = g4)
+bool preferRetracement = input.bool(true, "Use retracement instead of close entry", group = g4)
+int cooldownBars = input.int(3, "Cooldown after all targets close (bars)", minval = 0, group = g4)
+int maxDailyFills = input.int(4, "Maximum fills per local calendar day", minval = 1, group = g4)
+bool v2Flatten = input.bool(true, "Close v2 trades at entry-session end", group = g4)
+bool endDateOn = input.bool(false, "Use research entry cutoff date", group = g4)
+int endDate = input.time(timestamp("01 Oct 2026 00:00 +0000"), "Entry cutoff (exclusive; exits continue)", group = g4)
+int validationSplit = input.time(timestamp("01 Sep 2026 00:00 +0000"), "Earlier / later sample split (by entry time)", group = g4)
+string actualEntryMode = quality and preferRetracement ? "Retracement" : entryMode
+bool actualFlatten = quality ? v2Flatten : flattenSession
+int reclaimLimit = quality ? math.min(reclaimBars, 1) : reclaimBars
+int confirmLimit = quality ? math.min(confirmBars, 2) : confirmBars
+int orderLimit = quality ? math.min(pendingBars, 3) : pendingBars
+
+string root = syminfo.root
+string p = profile == "Auto" ? (str.contains(root, "NQ") ? "MNQ" : str.contains(root, "ES") ? "MES" : str.contains(root, "GC") ? "MGC" : "Custom") : profile
+string htf = p == "Custom" ? customHTF : p == "MGC" ? "60" : "30"
+string tradeSession = p == "Custom" ? customTrade : p == "MGC" ? "0820-1330" : "0930-1600"
+string overnight = p == "Custom" ? customON : p == "MGC" ? "1800-0820" : "1800-0930"
+int selected = displayTarget == "2R" ? 0 : displayTarget == "2.5R" ? 1 : 2
+float chosenR = selected == 0 ? 2.0 : selected == 1 ? 2.5 : 3.0
+bool validTF = timeframe.isintraday and timeframe.in_seconds() < timeframe.in_seconds(htf) and chart.is_standard
+if barstate.isfirst and not validTF
+    runtime.error("Use a standard intraday chart with timeframe strictly below the selected HTF.")
+if barstate.isfirst and quality and (minRiskATR > maxRiskATR or minDepthATR > maxDepthATR or minSwingAge > maxSwingAge)
+    runtime.error("V2 minimum settings must not exceed maximum settings.")
+
+// Every HTF expression is offset. lookahead_on therefore exposes only completed bars.
+[hc, hf, hs, hfPrev] = request.security(syminfo.tickerid, htf, [close[1], ta.ema(close, fastLen)[1], ta.ema(close, slowLen)[1], ta.ema(close, fastLen)[2]], lookahead = barmerge.lookahead_on)
+[pdH, pdL] = request.security(syminfo.tickerid, "D", [high[1], low[1]], lookahead = barmerge.lookahead_on)
+int regime = hc > hf and hf > hs and hf > hfPrev ? 1 : hc < hf and hf < hs and hf < hfPrev ? -1 : 0
+bool inSession = not na(time(timeframe.period, tradeSession, tz))
+bool inON = not na(time(timeframe.period, overnight, tz))
+bool newLocalDay = ta.change(time("D", "0000-0000", tz)) != 0
+int dow = dayofweek(time, tz)
+bool lastEntrySessionBar = inSession and na(time(timeframe.period, tradeSession, tz, bars_back = -1))
+bool eligible = time >= startDate and (not endDateOn or time < endDate) and inSession and (not actualFlatten or not lastEntrySessionBar) and (not weekdays or (dow >= dayofweek.monday and dow <= dayofweek.friday))
+float atr = ta.atr(14)
+float ph = ta.pivothigh(high, pivotLen, pivotLen)
+float pl = ta.pivotlow(low, pivotLen, pivotLen)
+var float sh = na
+var float sl = na
+var int shBar = na
+var int slBar = na
+var array<bool> usedLow = array.new_bool(3, false)
+var array<bool> usedHigh = array.new_bool(3, false)
+bool newExchangeDay = timeframe.change("D")
+var float onH = na
+var float onL = na
+var float buildH = na
+var float buildL = na
+var bool onComplete = false
+var bool onStarted = false
+var int observedONBars = 0
+var int completedONSessions = 0
+if barstate.isconfirmed
+    if newExchangeDay
+        array.set(usedLow, 0, false)
+        array.set(usedHigh, 0, false)
+    observedONBars += inON ? 1 : 0
+    if inON and not inON[1]
+        buildH := high
+        buildL := low
+        onStarted := bar_index > 0
+        onComplete := false
+    else if inON
+        buildH := na(buildH) ? high : math.max(buildH, high)
+        buildL := na(buildL) ? low : math.min(buildL, low)
+    if not inON and inON[1]
+        onH := onStarted ? buildH : na
+        onL := onStarted ? buildL : na
+        onComplete := onStarted
+        completedONSessions += onStarted ? 1 : 0
+        array.set(usedLow, 1, false)
+        array.set(usedHigh, 1, false)
+
+type Stats
+    int n = 0
+    int w = 0
+    int l = 0
+    int be = 0
+    int longs = 0
+    int longW = 0
+    int shorts = 0
+    int shortW = 0
+    float gp = 0.0
+    float gl = 0.0
+    float net = 0.0
+    float peak = 0.0
+    float dd = 0.0
+f_record(Stats s, float r, int direction) =>
+    s.n += 1
+    s.w += r > 0.000001 ? 1 : 0
+    s.l += r < -0.000001 ? 1 : 0
+    s.be += math.abs(r) <= 0.000001 ? 1 : 0
+    s.longs += direction == 1 ? 1 : 0
+    s.longW += direction == 1 and r > 0.000001 ? 1 : 0
+    s.shorts += direction == -1 ? 1 : 0
+    s.shortW += direction == -1 and r > 0.000001 ? 1 : 0
+    s.gp += math.max(r, 0)
+    s.gl += math.max(-r, 0)
+    s.net += r
+    s.peak := math.max(s.peak, s.net)
+    s.dd := math.max(s.dd, s.peak - s.net)
+f_num(float x) => str.tostring(x, "#.##")
+f_wr(int w, int n) => n > 0 ? f_num(100.0 * w / n) + "%" : "—"
+f_pf(Stats s) => s.gl > 0 ? f_num(s.gp / s.gl) : s.gp > 0 ? "∞" : "—"
+var array<Stats> totals = array.new<Stats>()
+var array<Stats> groups = array.new<Stats>()
+var array<Stats> sampleStats = array.new<Stats>()
+if barstate.isfirst
+    for i = 0 to 2
+        array.push(totals, Stats.new())
+    for i = 0 to 8
+        array.push(groups, Stats.new())
+    for i = 0 to 5
+        array.push(sampleStats, Stats.new())
+
+// State 0 idle, 1 swept, 2 reclaimed, 3 resting retracement order, 4 active cohort.
+var int state = 0
+var int dir = 0
+var int source = 0
+var int setup = 0
+var int tod = 0
+var float level = na
+var float extreme = na
+var float reclaimExtreme = na
+var int sweptBar = na
+var int reclaimedBar = na
+var int orderBar = na
+var int entryBar = na
+var int entryTime = na
+var float entry = na
+var float stop = na
+var float risk = na
+var array<bool> alive = array.new_bool(3, false)
+var int loadedStart = time
+var int firstTrade = na
+var int filled = 0
+var int sweeps = 0
+var int reclaims = 0
+var int confirms = 0
+var int expired = 0
+var int rejected = 0
+var int ambiguous = 0
+var int timedOut = 0
+var int gapStops = 0
+var int sessionExits = 0
+var int lastClosedBar = na
+var int fillsToday = 0
+var int depthRejected = 0
+var int riskRejected = 0
+var int roomRejected = 0
+var int regimeRejected = 0
+var int invalidated = 0
+var float setupATR = na
+var float roomAtConfirm = na
+var line eLine = na
+var line sLine = na
+var line tLine = na
+var label tradeLabel = na
+var array<line> lines = array.new<line>()
+var array<label> labels = array.new<label>()
+bool longSignal = false
+bool shortSignal = false
+bool exitSignal = false
+bool orderSignal = false
+f_source(int x) => x == 0 ? "Previous day" : x == 1 ? "Overnight" : "Swing"
+f_setup(int x) => x == 0 ? "Aligned" : x == 1 ? "Countertrend" : "Neutral"
+// Only levels currently ahead of entry are obstacles. No future swing information.
+f_room(int direction, float price, float a, float b, float c) =>
+    float distance = na
+    array<float> candidates = array.from(a, b, c)
+    for k = 0 to 2
+        float candidate = array.get(candidates, k)
+        float delta = direction * (candidate - price)
+        if not na(candidate) and delta > 0
+            distance := na(distance) ? delta : math.min(distance, delta)
+    distance
+
+if barstate.isconfirmed
+    if newLocalDay
+        fillsToday := 0
+    bool fillNow = false
+    bool wasIdle = state == 0
+    if state == 4
+        for i = 0 to 2
+            if array.get(alive, i)
+                float rr = i == 0 ? 2.0 : i == 1 ? 2.5 : 3.0
+                float target = math.round_to_mintick(entry + dir * risk * rr)
+                bool hitSL = dir == 1 ? low <= stop : high >= stop
+                bool hitTP = dir == 1 ? high >= target : low <= target
+                bool timeout = bar_index - entryBar >= maxHold
+                bool sessionEnd = actualFlatten and lastEntrySessionBar
+                if hitSL or hitTP or timeout or sessionEnd
+                    // Stop gaps fill at the worse open. Target gaps receive only target price.
+                    float exitPrice = hitSL ? (dir == 1 ? math.min(stop, open) : math.max(stop, open)) : hitTP ? target : close
+                    float result = dir * (exitPrice - entry) / risk - costR
+                    f_record(array.get(totals, i), result, dir)
+                    f_record(array.get(sampleStats, i + (entryTime >= validationSplit ? 3 : 0)), result, dir)
+                    array.set(alive, i, false)
+                    if i == selected
+                        f_record(array.get(groups, setup), result, dir)
+                        f_record(array.get(groups, 3 + source), result, dir)
+                        f_record(array.get(groups, 6 + tod), result, dir)
+                        ambiguous += hitSL and hitTP ? 1 : 0
+                        timedOut += not hitSL and not hitTP and timeout ? 1 : 0
+                        gapStops += hitSL and (dir == 1 ? open < stop : open > stop) ? 1 : 0
+                        sessionExits += not hitSL and not hitTP and sessionEnd ? 1 : 0
+                        line.set_x2(eLine, time)
+                        line.set_x2(sLine, time)
+                        line.set_x2(tLine, time)
+                        if hitSL
+                            line.set_style(sLine, line.style_solid)
+                        else if hitTP
+                            line.set_style(tLine, line.style_solid)
+                        label.set_text(tradeLabel, label.get_text(tradeLabel) + "\nClosed: " + f_num(result) + "R" + (hitSL and hitTP ? " (SL first)" : ""))
+                        exitSignal := true
+        if array.get(alive, selected)
+            line.set_x2(eLine, time)
+            line.set_x2(sLine, time)
+            line.set_x2(tLine, time)
+        if not array.get(alive, 0) and not array.get(alive, 1) and not array.get(alive, 2)
+            state := 0
+            lastClosedBar := bar_index
+    else if state == 3
+        bool touched = low <= entry and high >= entry
+        bool invalidOpen = dir == 1 ? open <= stop : open >= stop
+        bool crossedGap = dir == 1 ? open < entry : open > entry
+        bool lostReclaim = quality and (dir == 1 ? close <= level : close >= level)
+        // If touched, the resting order existed intrabar: adverse evidence must not erase a loss.
+        // Preserve the original cancellation only in baseline mode. In v2, an
+        // already-resting limit gapping through its stop is charged as a loss.
+        if not eligible or bar_index - orderBar > orderLimit or (invalidOpen and not quality)
+            state := 0
+            expired += 1
+        else if touched or crossedGap
+            // No favorable price improvement assumed for a limit entry.
+            fillNow := true
+        else if lostReclaim
+            state := 0
+            invalidated += 1
+    else if state == 1 or state == 2
+        extreme := dir == 1 ? math.min(extreme, low) : math.max(extreme, high)
+        bool reclaimed = dir == 1 ? close > level : close < level
+        if quality and state == 2 and (dir == 1 ? close <= level : close >= level)
+            state := 0
+            invalidated += 1
+        else if not eligible or (state == 1 and bar_index - sweptBar > reclaimLimit) or (state == 2 and bar_index - reclaimedBar > confirmLimit)
+            state := 0
+            expired += 1
+        else if state == 1 and reclaimed
+            state := 2
+            reclaimedBar := bar_index
+            reclaimExtreme := dir == 1 ? high : low
+            reclaims += 1
+        else if state == 2
+            float candleRange = high - low
+            bool displacement = candleRange > 0 and math.abs(close - open) >= atr * bodyATR and (dir == 1 ? close > open and close > reclaimExtreme and (close - low) / candleRange >= closeFraction : close < open and close < reclaimExtreme and (high - close) / candleRange >= closeFraction)
+            if displacement
+                setup := regime == dir ? 0 : regime == -dir ? 1 : 2
+                bool baseAccepted = regimeFilter == "All" or (regimeFilter == "Aligned only" and setup == 0) or (regimeFilter == "Countertrend only" and setup == 1)
+                bool accepted = baseAccepted and (not quality or ((not skipNeutral or setup != 2) and (not swingAligned or source != 2 or setup == 0)))
+                if accepted
+                    entry := actualEntryMode == "Confirmation close" ? close : dir == 1 ? high - candleRange * retrace : low + candleRange * retrace
+                    stop := math.round_to_mintick(extreme - dir * stopTicks * syminfo.mintick)
+                    entry := math.round_to_mintick(entry)
+                    risk := dir * (entry - stop)
+                    roomAtConfirm := dir == 1 ? f_room(dir, entry, usePD ? pdH : na, useON and onComplete ? onH : na, useSwing ? sh : na) : f_room(dir, entry, usePD ? pdL : na, useON and onComplete ? onL : na, useSwing ? sl : na)
+                    bool riskOK = not quality or (risk >= minRiskATR * setupATR and risk <= maxRiskATR * setupATR and math.abs(entry - level) <= maxChaseATR * setupATR and dir * (entry - level) >= syminfo.mintick and dir * (level - extreme) <= maxDepthATR * setupATR)
+                    bool roomOK = not quality or not useRoom or na(roomAtConfirm) or roomAtConfirm >= minRoomR * risk
+                    if risk >= syminfo.mintick and riskOK and roomOK
+                        confirms += 1
+                        orderBar := bar_index
+                        if actualEntryMode == "Confirmation close"
+                            fillNow := true
+                        else
+                            state := 3
+                            orderSignal := true
+                    else
+                        rejected += 1
+                        riskRejected += not riskOK or risk < syminfo.mintick ? 1 : 0
+                        roomRejected += not roomOK ? 1 : 0
+                        state := 0
+                else
+                    rejected += 1
+                    regimeRejected += 1
+                    state := 0
+    bool capacityOK = not quality or (fillsToday < maxDailyFills and (na(lastClosedBar) or bar_index - lastClosedBar > cooldownBars))
+    if wasIdle and eligible and capacityOK and not na(atr) and not na(hs)
+        // Fixed priority resolves simultaneous sources: previous day, overnight, swing.
+        bool lowAgeOK = not quality or (not na(slBar) and bar_index - slBar >= minSwingAge and bar_index - slBar <= maxSwingAge)
+        bool highAgeOK = not quality or (not na(shBar) and bar_index - shBar >= minSwingAge and bar_index - shBar <= maxSwingAge)
+        array<float> lows = array.from(usePD ? pdL : na, useON and onComplete ? onL : na, useSwing and lowAgeOK ? sl : na)
+        array<float> highs = array.from(usePD ? pdH : na, useON and onComplete ? onH : na, useSwing and highAgeOK ? sh : na)
+        bool found = false
+        for j = 0 to 2
+            float lo = array.get(lows, j)
+            float hi = array.get(highs, j)
+            bool ls = not na(lo) and close[1] >= lo and low <= lo - sweepTicks * syminfo.mintick and (not quality or not freshOnly or not array.get(usedLow, j))
+            bool ss = not na(hi) and close[1] <= hi and high >= hi + sweepTicks * syminfo.mintick and (not quality or not freshOnly or not array.get(usedHigh, j))
+            if not found and (ls or ss)
+                found := true
+                // A candle sweeping both directions is discarded.
+                if ls and ss
+                    rejected += 1
+                else
+                    float depth = ls ? lo - low : high - hi
+                    bool depthOK = not quality or (depth >= minDepthATR * atr and depth <= maxDepthATR * atr)
+                    dir := ls ? 1 : -1
+                    source := j
+                    level := ls ? lo : hi
+                    extreme := ls ? low : high
+                    sweptBar := bar_index
+                    setupATR := atr
+                    sweeps += 1
+                    bool reclaimed = ls ? close > level : close < level
+                    state := depthOK ? (reclaimed ? 2 : 1) : 0
+                    if not depthOK
+                        rejected += 1
+                        depthRejected += 1
+                    if reclaimed and depthOK
+                        reclaimedBar := bar_index
+                        reclaimExtreme := ls ? high : low
+                        reclaims += 1
+    if fillNow
+        state := 4
+        entryBar := bar_index
+        entryTime := actualEntryMode == "Confirmation close" ? time_close : time
+        filled += 1
+        fillsToday += 1
+        firstTrade := na(firstTrade) ? entryTime : firstTrade
+        int minutes = hour(time, tz) * 60 + minute(time, tz)
+        // Absolute New York bins: before 11:00, 11:00–13:00, 13:00 onward.
+        tod := minutes < 660 ? 0 : minutes < 780 ? 1 : 2
+        for i = 0 to 2
+            array.set(alive, i, true)
+        float target = math.round_to_mintick(entry + dir * risk * chosenR)
+        eLine := line.new(time, entry, time_close, entry, xloc = xloc.bar_time, force_overlay = true, color = color.blue, style = line.style_dotted)
+        sLine := line.new(time, stop, time_close, stop, xloc = xloc.bar_time, force_overlay = true, color = color.red, style = line.style_dotted)
+        tLine := line.new(time, target, time_close, target, xloc = xloc.bar_time, force_overlay = true, color = color.lime, style = line.style_dotted)
+        // Entry is an actual fill, so its dotted preview becomes solid immediately.
+        line.set_style(eLine, line.style_solid)
+        string signalText = (dir == 1 ? "LONG" : "SHORT") + " | " + f_setup(setup) + "\n" + f_source(source) + " | " + displayTarget + "\nEntry: " + str.tostring(entry, format.mintick) + "\nSL: " + str.tostring(stop, format.mintick) + "\nTP: " + str.tostring(target, format.mintick) + "\n" + researchMode
+        tradeLabel := label.new(time, dir == 1 ? low : high, signalText, xloc = xloc.bar_time, yloc = yloc.price, force_overlay = true, style = dir == 1 ? label.style_label_up : label.style_label_down, color = dir == 1 ? color.new(color.green, 15) : color.new(color.red, 15), textcolor = color.white, size = size.small)
+        array.push(lines, eLine)
+        array.push(lines, sLine)
+        array.push(lines, tLine)
+        array.push(labels, tradeLabel)
+        if array.size(labels) > keepTrades
+            label.delete(array.shift(labels))
+            for k = 0 to 2
+                line.delete(array.shift(lines))
+        longSignal := dir == 1
+        shortSignal := dir == -1
+        alert(signalText, alert.freq_once_per_bar_close)
+        // A retracement fill bar may stop out, but can never book a same-bar target.
+        bool fillStop = actualEntryMode == "Retracement" and (dir == 1 ? low <= stop : high >= stop)
+        if fillStop
+            float fillStopPrice = quality ? (dir == 1 ? math.min(stop, open) : math.max(stop, open)) : stop
+            float result = dir * (fillStopPrice - entry) / risk - costR
+            for i = 0 to 2
+                f_record(array.get(totals, i), result, dir)
+                f_record(array.get(sampleStats, i + (entryTime >= validationSplit ? 3 : 0)), result, dir)
+                array.set(alive, i, false)
+            f_record(array.get(groups, setup), result, dir)
+            f_record(array.get(groups, 3 + source), result, dir)
+            f_record(array.get(groups, 6 + tod), result, dir)
+            line.set_style(sLine, line.style_solid)
+            label.set_text(tradeLabel, signalText + "\nClosed: " + f_num(result) + "R (fill-bar SL)")
+            ambiguous += 1
+            gapStops += quality and (dir == 1 ? open < stop : open > stop) ? 1 : 0
+            exitSignal := true
+            state := 0
+            lastClosedBar := bar_index
+    // Consume levels on their first sweep even while another trade/setup is active.
+    // A confirmed pivot below replaces the old level only after this bar's checks.
+    array<float> availableLow = array.from(pdL, onComplete ? onL : na, sl)
+    array<float> availableHigh = array.from(pdH, onComplete ? onH : na, sh)
+    for k = 0 to 2
+        float lo = array.get(availableLow, k)
+        float hi = array.get(availableHigh, k)
+        if not na(lo) and low <= lo - sweepTicks * syminfo.mintick
+            array.set(usedLow, k, true)
+        if not na(hi) and high >= hi + sweepTicks * syminfo.mintick
+            array.set(usedHigh, k, true)
+    // Pivots become available only now and can first be swept on the next bar.
+    if not na(ph)
+        sh := ph
+        shBar := bar_index - pivotLen
+        array.set(usedHigh, 2, false)
+    if not na(pl)
+        sl := pl
+        slBar := bar_index - pivotLen
+        array.set(usedLow, 2, false)
+
+plot(showLevels and usePD ? pdH : na, "PDH", color.new(color.orange, 45), style = plot.style_stepline, force_overlay = true)
+plot(showLevels and usePD ? pdL : na, "PDL", color.new(color.orange, 45), style = plot.style_stepline, force_overlay = true)
+plot(showLevels and useON and onComplete ? onH : na, "ONH", color.new(color.purple, 45), style = plot.style_linebr, force_overlay = true)
+plot(showLevels and useON and onComplete ? onL : na, "ONL", color.new(color.purple, 45), style = plot.style_linebr, force_overlay = true)
+plot(showLevels and useSwing ? sh : na, "Confirmed swing high", color.new(color.gray, 60), style = plot.style_stepline, force_overlay = true)
+plot(showLevels and useSwing ? sl : na, "Confirmed swing low", color.new(color.gray, 60), style = plot.style_stepline, force_overlay = true)
+alertcondition(longSignal, "LONG filled", "AB Liquidity Sweep Reclaim: LONG filled. See trade box.")
+alertcondition(shortSignal, "SHORT filled", "AB Liquidity Sweep Reclaim: SHORT filled. See trade box.")
+alertcondition(orderSignal, "Retracement order ready", "AB Liquidity Sweep Reclaim: retracement order ready; not yet filled.")
+alertcondition(exitSignal, "Selected target trade closed", "AB Liquidity Sweep Reclaim: selected-target trade closed.")
+
+var table dashboard = table.new(position.top_right, 4, 44, bgcolor = color.new(color.black, 12), border_width = 1)
+f_cell(int c, int r, string txt) => table.cell(dashboard, c, r, txt, text_color = color.white, text_size = dashboardFont == "Tiny" ? size.tiny : size.small)
+if barstate.islast and showTable
+    f_cell(0, 0, "AB · LSR Research")
+    f_cell(1, 0, p + " | 5m suggested")
+    f_cell(2, 0, "HTF " + htf)
+    f_cell(3, 0, regime == 1 ? "Bull" : regime == -1 ? "Bear" : "Neutral / warming")
+    f_cell(0, 1, "Trade Period")
+    f_cell(1, 1, na(firstTrade) ? "No actual fills" : str.format_time(firstTrade, "yyyy-MM-dd", tz))
+    f_cell(2, 1, "through today")
+    f_cell(3, 1, str.format_time(timenow, "yyyy-MM-dd", tz))
+    array<string> names = array.from("Target", "Trades / W / L / BE", "Win rate", "Long WR (N)", "Short WR (N)", "Gross profit R", "Gross loss R", "Net R", "Profit factor", "Max closed DD R", "Open trades")
+    for r = 0 to 10
+        f_cell(0, r + 2, array.get(names, r))
+    for i = 0 to 2
+        Stats s = array.get(totals, i)
+        f_cell(i + 1, 2, i == 0 ? "2R" : i == 1 ? "2.5R" : "3R")
+        f_cell(i + 1, 3, str.tostring(s.n) + " / " + str.tostring(s.w) + " / " + str.tostring(s.l) + " / " + str.tostring(s.be))
+        f_cell(i + 1, 4, f_wr(s.w, s.n))
+        f_cell(i + 1, 5, f_wr(s.longW, s.longs) + " (" + str.tostring(s.longs) + ")")
+        f_cell(i + 1, 6, f_wr(s.shortW, s.shorts) + " (" + str.tostring(s.shorts) + ")")
+        f_cell(i + 1, 7, f_num(s.gp))
+        f_cell(i + 1, 8, f_num(s.gl))
+        f_cell(i + 1, 9, f_num(s.net))
+        f_cell(i + 1, 10, f_pf(s))
+        f_cell(i + 1, 11, f_num(s.dd))
+        f_cell(i + 1, 12, array.get(alive, i) ? "1" : "0")
+    f_cell(0, 13, "Breakdown " + displayTarget)
+    f_cell(1, 13, "Trades")
+    f_cell(2, 13, "WR")
+    f_cell(3, 13, "Net R")
+    array<string> bins = array.from("Aligned", "Countertrend", "Neutral", "Previous day", "Overnight", "Confirmed swing", "Before 11:00", "11:00–13:00", "13:00 onward")
+    for i = 0 to 8
+        Stats s = array.get(groups, i)
+        f_cell(0, 14 + i, array.get(bins, i))
+        f_cell(1, 14 + i, str.tostring(s.n))
+        f_cell(2, 14 + i, f_wr(s.w, s.n))
+        f_cell(3, 14 + i, f_num(s.net))
+    f_cell(0, 23, "Sweep / reclaim / confirm")
+    f_cell(1, 23, str.tostring(sweeps))
+    f_cell(2, 23, str.tostring(reclaims))
+    f_cell(3, 23, str.tostring(confirms))
+    f_cell(0, 24, "Fills / expired / rejected")
+    f_cell(1, 24, str.tostring(filled))
+    f_cell(2, 24, str.tostring(expired))
+    f_cell(3, 24, str.tostring(rejected))
+    f_cell(0, 25, "Conservative / time exits")
+    f_cell(1, 25, str.tostring(ambiguous))
+    f_cell(2, 25, str.tostring(timedOut))
+    f_cell(3, 25, "State " + str.tostring(state))
+    f_cell(0, 26, "Costs / round trip")
+    f_cell(1, 26, f_num(costR) + "R")
+    f_cell(2, 26, "Entries " + tradeSession)
+    f_cell(3, 26, tz)
+    f_cell(0, 27, "Loaded history from")
+    f_cell(1, 27, str.format_time(loadedStart, "yyyy-MM-dd", tz))
+    f_cell(2, 27, "Chart " + timeframe.period)
+    f_cell(3, 27, timeframe.in_seconds() == 300 ? "Suggested TF" : "5m recommended")
+    f_cell(0, 28, "Closed trades; net costs")
+    f_cell(1, 28, "SL first if both hit")
+    f_cell(2, 28, "No fill-bar TP")
+    f_cell(3, 28, "One entry cohort")
+    f_cell(0, 29, "PD = exchange daily")
+    f_cell(1, 29, "ON " + overnight)
+    f_cell(2, 29, observedONBars == 0 ? "NO ON DATA: use ETH" : onComplete ? "ON ready" : "ON building / partial")
+    f_cell(3, 29, "No BE stop move")
+
+
+
+
+
+    f_cell(0, 30, "ON bars / complete sessions")
+    f_cell(1, 30, str.tostring(observedONBars))
+    f_cell(2, 30, str.tostring(completedONSessions))
+    f_cell(3, 30, "Chart data only")
+    f_cell(0, 31, "Gap SL / session exits")
+    f_cell(1, 31, str.tostring(gapStops))
+    f_cell(2, 31, str.tostring(sessionExits))
+    f_cell(3, 31, actualFlatten ? "Session exit ON" : "Session exit OFF")
+    f_cell(0, 32, "Avg win / loss R")
+    f_cell(0, 33, "Expectancy R / trade")
+    f_cell(0, 34, researchMode)
+    for i = 0 to 2
+        Stats s = array.get(totals, i)
+        f_cell(i + 1, 32, (s.w > 0 ? f_num(s.gp / s.w) : "—") + " / " + (s.l > 0 ? f_num(s.gl / s.l) : "—"))
+        f_cell(i + 1, 33, s.n > 0 ? f_num(s.net / s.n) : "—")
+        f_cell(i + 1, 34, "Unvalidated rules")
+    f_cell(0, 35, "Rejected depth / risk / room")
+    f_cell(1, 35, str.tostring(depthRejected))
+    f_cell(2, 35, str.tostring(riskRejected))
+    f_cell(3, 35, str.tostring(roomRejected))
+    f_cell(0, 36, "Regime / lost reclaim / fills today")
+    f_cell(1, 36, str.tostring(regimeRejected))
+    f_cell(2, 36, str.tostring(invalidated))
+    f_cell(3, 36, str.tostring(fillsToday))
+    f_cell(0, 37, "Effective entry / split")
+    f_cell(1, 37, actualEntryMode)
+    f_cell(2, 37, str.format_time(validationSplit, "yyyy-MM-dd", tz))
+    f_cell(3, 37, "Split by fill time")
+    f_cell(0, 38, "Earlier: N / PF")
+    f_cell(0, 39, "Earlier: Net R / Exp R")
+    f_cell(0, 40, "Later: N / PF")
+    f_cell(0, 41, "Later: Net R / Exp R")
+    for i = 0 to 2
+        Stats early = array.get(sampleStats, i)
+        Stats later = array.get(sampleStats, i + 3)
+        f_cell(i + 1, 38, str.tostring(early.n) + " / " + f_pf(early))
+        f_cell(i + 1, 39, f_num(early.net) + " / " + (early.n > 0 ? f_num(early.net / early.n) : "—"))
+        f_cell(i + 1, 40, str.tostring(later.n) + " / " + f_pf(later))
+        f_cell(i + 1, 41, f_num(later.net) + " / " + (later.n > 0 ? f_num(later.net / later.n) : "—"))
+    f_cell(0, 42, "Cooldown / daily cap")
+    f_cell(1, 42, quality ? str.tostring(cooldownBars) : "OFF")
+    f_cell(2, 42, quality ? str.tostring(maxDailyFills) : "OFF")
+    f_cell(3, 42, "Three targets; same fills")
+    f_cell(0, 43, "Split is retrospective")
+    f_cell(1, 43, "Not untouched OOS")
+    f_cell(2, 43, "Forward test required")
+    f_cell(3, 43, "No proven edge yet")
+
