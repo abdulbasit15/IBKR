@@ -1,0 +1,2256 @@
+//@version=6
+indicator("AB - VWAP Research 2R V3.9.2 RTH Multi-TF",
+     overlay=true,
+     max_labels_count=500,
+     max_lines_count=500)
+
+// ============================================================================
+// BACKTEST PERIOD
+// ============================================================================
+
+groupBT = "Backtest Period"
+
+startDate = input.time(
+     timestamp("01 Jan 2023 00:00 +0000"),
+     "Backtest Filter Start",
+     group=groupBT)
+
+endDate = input.time(
+     timestamp("31 Dec 2026 23:59 +0000"),
+     "Backtest Filter End",
+     group=groupBT)
+
+inBacktest = time >= startDate and time <= endDate
+
+
+// ============================================================================
+// RTH SESSION ONLY
+// ============================================================================
+
+groupSession = "RTH Session"
+
+rthSession = input.session(
+     "0930-1600",
+     "RTH Session",
+     group=groupSession)
+
+sessionTimezone = input.string(
+     "America/New_York",
+     "Session Timezone",
+     group=groupSession)
+
+showVWAP = input.bool(
+     true,
+     "Show RTH VWAP",
+     group=groupSession)
+
+closeAtRTHEnd = input.bool(
+     true,
+     "Close Open Trade At RTH End",
+     group=groupSession)
+
+
+// ============================================================================
+// SETUP TYPES
+//
+// DEFAULT:
+// Break & Retest = OFF
+// Rejection      = ON
+// Bounce         = OFF
+// Reclaim        = OFF
+// ============================================================================
+
+groupSetup = "Setup Types"
+
+enableBreakRetest = input.bool(
+     false,
+     "Enable Break & Retest",
+     group=groupSetup)
+
+enableRejection = input.bool(
+     true,
+     "Enable Rejection",
+     group=groupSetup)
+
+enableBounce = input.bool(
+     false,
+     "Enable Bounce",
+     group=groupSetup)
+
+enableReclaim = input.bool(
+     false,
+     "Enable Reclaim",
+     group=groupSetup)
+
+
+// ============================================================================
+// TIMEFRAME ADAPTATION
+//
+// Research anchor = 5-minute.
+//
+// 5m defaults:
+// ATR       14 bars = ~70m
+// VWAP slope 3 bars = ~15m
+// Chop      12 bars = ~60m
+// Trigger    3 bars = ~15m
+//
+// Other intraday TFs are scaled by elapsed time.
+// ============================================================================
+
+groupScale = "Timeframe Adaptation"
+
+autoScaleByTime = input.bool(
+     true,
+     "Auto Scale From 5-Min Settings",
+     group=groupScale)
+
+atrWindowMinutes = input.int(
+     70,
+     "ATR Window Minutes",
+     minval=5,
+     group=groupScale)
+
+slopeWindowMinutes = input.int(
+     15,
+     "VWAP Slope Window Minutes",
+     minval=1,
+     group=groupScale)
+
+chopWindowMinutes = input.int(
+     60,
+     "VWAP Chop Window Minutes",
+     minval=5,
+     group=groupScale)
+
+triggerWindowMinutes = input.int(
+     15,
+     "Entry Trigger Window Minutes",
+     minval=1,
+     group=groupScale)
+
+manualATRLength = input.int(
+     14,
+     "Manual ATR Bars",
+     minval=1,
+     group=groupScale)
+
+manualSlopeBars = input.int(
+     3,
+     "Manual Slope Bars",
+     minval=1,
+     group=groupScale)
+
+manualChopBars = input.int(
+     12,
+     "Manual Chop Bars",
+     minval=2,
+     group=groupScale)
+
+manualTriggerBars = input.int(
+     3,
+     "Manual Trigger Bars",
+     minval=1,
+     group=groupScale)
+
+
+// ============================================================================
+// TREND / REGIME
+// ============================================================================
+
+groupTrend = "Trend / Regime"
+
+autoTrendTF = input.bool(
+     true,
+     "Auto Higher-Timeframe Trend",
+     group=groupTrend)
+
+manualTrendTF = input.timeframe(
+     "15",
+     "Manual Trend Timeframe",
+     group=groupTrend)
+
+fastEMALength = input.int(
+     20,
+     "HTF Fast EMA",
+     minval=1,
+     group=groupTrend)
+
+slowEMALength = input.int(
+     50,
+     "HTF Slow EMA",
+     minval=2,
+     group=groupTrend)
+
+requireEMARegime = input.bool(
+     true,
+     "Require HTF 20/50 EMA Trend",
+     group=groupTrend)
+
+requireHTFPriceSide = input.bool(
+     true,
+     "Require HTF Price Correct Side EMA20",
+     group=groupTrend)
+
+requireCurrentPriceVWAPSide = input.bool(
+     true,
+     "Require Price Correct Side Of VWAP",
+     group=groupTrend)
+
+useMomentumFilter = input.bool(
+     false,
+     "Require 60m Momentum Confirmation",
+     group=groupTrend)
+
+momentumLookback = input.int(
+     1,
+     "60m Momentum Lookback",
+     minval=1,
+     group=groupTrend)
+
+
+// ============================================================================
+// VWAP QUALITY FILTERS
+// ============================================================================
+
+groupVWAP = "VWAP Quality Filters"
+
+requireVWAPSlope = input.bool(
+     true,
+     "Require VWAP Slope",
+     group=groupVWAP)
+
+minVWAPSlopeATR = input.float(
+     0.00,
+     "Minimum VWAP Slope / ATR",
+     minval=0.0,
+     step=0.01,
+     group=groupVWAP)
+
+touchToleranceATR = input.float(
+     0.20,
+     "VWAP Touch Zone ATR",
+     minval=0.01,
+     step=0.01,
+     group=groupVWAP)
+
+limitTouchNumber = input.bool(
+     true,
+     "Trade Only Early VWAP Touches",
+     group=groupVWAP)
+
+maxTouchNumber = input.int(
+     2,
+     "Maximum VWAP Touch",
+     minval=1,
+     maxval=10,
+     group=groupVWAP)
+
+useChopFilter = input.bool(
+     true,
+     "Avoid Repeated VWAP Crosses",
+     group=groupVWAP)
+
+maxRecentCrosses = input.int(
+     3,
+     "Maximum Crosses In Chop Window",
+     minval=0,
+     maxval=20,
+     group=groupVWAP)
+
+
+// ============================================================================
+// BREAK & RETEST
+// ============================================================================
+
+groupBR = "Break & Retest Setup"
+
+breakCloseBufferATR = input.float(
+     0.05,
+     "Minimum Break Close Beyond VWAP ATR",
+     minval=0.0,
+     step=0.01,
+     group=groupBR)
+
+minBreakDistanceATR = input.float(
+     0.30,
+     "Minimum Separation From VWAP ATR",
+     minval=0.05,
+     step=0.05,
+     group=groupBR)
+
+breakRetestWindowMinutes = input.int(
+     30,
+     "Maximum Minutes From Break To Retest",
+     minval=5,
+     group=groupBR)
+
+breakRetestToleranceATR = input.float(
+     0.20,
+     "Retest Distance From VWAP ATR",
+     minval=0.01,
+     step=0.01,
+     group=groupBR)
+
+maxRetestOvershootATR = input.float(
+     0.10,
+     "Maximum VWAP Overshoot ATR",
+     minval=0.0,
+     step=0.01,
+     group=groupBR)
+
+breakRetestCloseLocation = input.float(
+     0.60,
+     "Confirmation Close Location",
+     minval=0.50,
+     maxval=0.95,
+     step=0.05,
+     group=groupBR)
+
+maxBreakRetestRangeATR = input.float(
+     1.50,
+     "Maximum Confirmation Candle Range ATR",
+     minval=0.25,
+     step=0.25,
+     group=groupBR)
+
+
+// ============================================================================
+// REJECTION
+// ============================================================================
+
+groupReject = "Rejection Setup"
+
+requireActualVWAPSweep = input.bool(
+     true,
+     "Require Candle To Reach/Cross VWAP",
+     group=groupReject)
+
+minWickBodyRatio = input.float(
+     0.50,
+     "Minimum Rejection Wick / Body",
+     minval=0.0,
+     step=0.10,
+     group=groupReject)
+
+rejectionCloseLocation = input.float(
+     0.60,
+     "Rejection Strong Close Location",
+     minval=0.50,
+     maxval=0.95,
+     step=0.05,
+     group=groupReject)
+
+maxRejectionRangeATR = input.float(
+     1.50,
+     "Maximum Rejection Candle Range ATR",
+     minval=0.25,
+     step=0.25,
+     group=groupReject)
+
+
+// ============================================================================
+// BOUNCE
+// ============================================================================
+
+groupBounce = "Bounce Setup"
+
+bounceCloseLocation = input.float(
+     0.60,
+     "Bounce Strong Close Location",
+     minval=0.50,
+     maxval=0.95,
+     step=0.05,
+     group=groupBounce)
+
+maxBounceRangeATR = input.float(
+     1.50,
+     "Maximum Bounce Candle Range ATR",
+     minval=0.25,
+     step=0.25,
+     group=groupBounce)
+
+
+// ============================================================================
+// RECLAIM
+// ============================================================================
+
+groupReclaim = "Reclaim Setup"
+
+reclaimCloseLocation = input.float(
+     0.55,
+     "Reclaim Strong Close Location",
+     minval=0.50,
+     maxval=0.95,
+     step=0.05,
+     group=groupReclaim)
+
+maxReclaimRangeATR = input.float(
+     1.75,
+     "Maximum Reclaim Candle Range ATR",
+     minval=0.25,
+     step=0.25,
+     group=groupReclaim)
+
+
+// ============================================================================
+// ENTRY CONFIRMATION
+// ============================================================================
+
+groupEntry = "Entry Confirmation"
+
+requireBreakout = input.bool(
+     true,
+     "Require Setup Candle Break",
+     group=groupEntry)
+
+entryBufferTicks = input.int(
+     1,
+     "Entry Buffer Ticks",
+     minval=0,
+     group=groupEntry)
+
+oneSetupPerTouch = input.bool(
+     true,
+     "Maximum One Setup Per VWAP Touch",
+     group=groupEntry)
+
+
+// ============================================================================
+// RISK MANAGEMENT
+// ============================================================================
+
+groupRisk = "Risk Management"
+
+targetR = input.float(
+     2.0,
+     "Profit Target R",
+     minval=2.0,
+     step=0.25,
+     group=groupRisk)
+
+stopBufferATR = input.float(
+     0.10,
+     "Stop Buffer ATR",
+     minval=0.0,
+     step=0.05,
+     group=groupRisk)
+
+minStopATR = input.float(
+     0.25,
+     "Minimum Stop ATR",
+     minval=0.05,
+     step=0.05,
+     group=groupRisk)
+
+maxStopATR = input.float(
+     1.50,
+     "Maximum Stop ATR",
+     minval=0.25,
+     step=0.05,
+     group=groupRisk)
+
+moveToBE = input.bool(
+     false,
+     "Move Stop To Breakeven",
+     group=groupRisk)
+
+beTriggerR = input.float(
+     1.0,
+     "Move Stop To BE At R",
+     minval=0.25,
+     step=0.25,
+     group=groupRisk)
+
+sameBarMode = input.string(
+     "Stop First",
+     "If TP And SL Hit Same Bar",
+     options=["Stop First", "Target First"],
+     group=groupRisk)
+
+
+// ============================================================================
+// DISPLAY
+// ============================================================================
+
+groupDisplay = "Display"
+
+showSetupMarker = input.bool(
+     true,
+     "Show Qualified Setup Marker",
+     group=groupDisplay)
+
+showEntryMarker = input.bool(
+     true,
+     "Show BUY / SELL Marker",
+     group=groupDisplay)
+
+showTradeLevels = input.bool(
+     true,
+     "Show Entry / TP / SL",
+     group=groupDisplay)
+
+showEntryBox = input.bool(
+     true,
+     "Show Entry Box",
+     group=groupDisplay)
+
+entryBoxSizeInput = input.string(
+     "Normal",
+     "Entry Box Size",
+     options=["Tiny", "Small", "Normal", "Large"],
+     group=groupDisplay)
+
+entryBoxOffsetATR = input.float(
+     0.30,
+     "Entry Box Offset ATR",
+     minval=0.0,
+     step=0.10,
+     group=groupDisplay)
+
+showResultLabels = input.bool(
+     true,
+     "Show WIN / LOSS / BE / EOD",
+     group=groupDisplay)
+
+showTable = input.bool(
+     true,
+     "Show Results Table",
+     group=groupDisplay)
+
+
+
+groupTable = "Results Table"
+tableFontSize = input.int(8, "Table Font Size", minval=6, maxval=24, group=groupTable)
+tableWidth = input.float(0.0, "Table Width % (0 = Auto)", minval=0, maxval=100, group=groupTable)
+tableRowHeight = input.float(0.0, "Row Height % (0 = Auto)", minval=0, maxval=10, step=0.1, group=groupTable)
+tablePosition = input.string("Top Right", "Table Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=groupTable)
+showTableDiagnostics = input.bool(false, "Include Diagnostics", group=groupTable)
+
+// ============================================================================
+// FUNCTIONS
+// ============================================================================
+
+getLabelSize(_name) =>
+    switch _name
+        "Tiny" => size.tiny
+        "Small" => size.small
+        "Normal" => size.normal
+        "Large" => size.large
+        => size.normal
+
+
+getSetupName(_type) =>
+    switch _type
+        1 => "BREAK + RETEST"
+        2 => "REJECTION"
+        3 => "BOUNCE"
+        4 => "RECLAIM"
+        => ""
+
+
+percentText(_wins, _closed) =>
+    string txt = "—"
+    if _closed > 0
+        txt := str.tostring(_wins * 100.0 / _closed, "#.0") + "% (" + str.tostring(_wins) + "/" + str.tostring(_closed) + ")"
+    txt
+
+
+dateNY(_timestamp) =>
+    str.format_time(_timestamp, "yyyy-MM-dd", "America/New_York")
+
+
+barsFromMinutes(_minutes, _seconds) =>
+    int bars = 1
+    if _seconds > 0
+        bars := int(math.max(1.0, math.round((_minutes * 60.0) / _seconds)))
+    bars
+
+
+getRTHBucket(_minutes) =>
+    int bucket = -1
+    if _minutes >= 570 and _minutes < 630
+        bucket := 0
+    else if _minutes >= 630 and _minutes < 690
+        bucket := 1
+    else if _minutes >= 690 and _minutes < 750
+        bucket := 2
+    else if _minutes >= 750 and _minutes < 810
+        bucket := 3
+    else if _minutes >= 810 and _minutes < 870
+        bucket := 4
+    else if _minutes >= 870 and _minutes < 930
+        bucket := 5
+    else if _minutes >= 930 and _minutes < 960
+        bucket := 6
+    bucket
+
+
+// ============================================================================
+// TIMEFRAME SCALING
+// ============================================================================
+
+chartSeconds = timeframe.in_seconds()
+
+atrLength = autoScaleByTime ? barsFromMinutes(atrWindowMinutes, chartSeconds) : manualATRLength
+slopeBars = autoScaleByTime ? barsFromMinutes(slopeWindowMinutes, chartSeconds) : manualSlopeBars
+chopBars = autoScaleByTime ? barsFromMinutes(chopWindowMinutes, chartSeconds) : manualChopBars
+triggerBars = autoScaleByTime ? barsFromMinutes(triggerWindowMinutes, chartSeconds) : manualTriggerBars
+breakRetestMaxBars = barsFromMinutes(breakRetestWindowMinutes, chartSeconds)
+
+
+// ============================================================================
+// AUTOMATIC TREND TIMEFRAME
+// ============================================================================
+
+string autoTrendName = "15"
+
+if chartSeconds <= 300
+    autoTrendName := "15"
+else if chartSeconds <= 900
+    autoTrendName := "60"
+else if chartSeconds <= 3600
+    autoTrendName := "240"
+else
+    autoTrendName := "D"
+
+
+// ============================================================================
+// TREND DATA
+// ============================================================================
+
+close15 = request.security(syminfo.tickerid, "15", close[1], lookahead=barmerge.lookahead_on)
+fast15 = request.security(syminfo.tickerid, "15", ta.ema(close, fastEMALength)[1], lookahead=barmerge.lookahead_on)
+slow15 = request.security(syminfo.tickerid, "15", ta.ema(close, slowEMALength)[1], lookahead=barmerge.lookahead_on)
+
+close60 = request.security(syminfo.tickerid, "60", close[1], lookahead=barmerge.lookahead_on)
+fast60 = request.security(syminfo.tickerid, "60", ta.ema(close, fastEMALength)[1], lookahead=barmerge.lookahead_on)
+slow60 = request.security(syminfo.tickerid, "60", ta.ema(close, slowEMALength)[1], lookahead=barmerge.lookahead_on)
+
+close240 = request.security(syminfo.tickerid, "240", close[1], lookahead=barmerge.lookahead_on)
+fast240 = request.security(syminfo.tickerid, "240", ta.ema(close, fastEMALength)[1], lookahead=barmerge.lookahead_on)
+slow240 = request.security(syminfo.tickerid, "240", ta.ema(close, slowEMALength)[1], lookahead=barmerge.lookahead_on)
+
+closeD = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_on)
+fastD = request.security(syminfo.tickerid, "D", ta.ema(close, fastEMALength)[1], lookahead=barmerge.lookahead_on)
+slowD = request.security(syminfo.tickerid, "D", ta.ema(close, slowEMALength)[1], lookahead=barmerge.lookahead_on)
+
+manualClose = request.security(syminfo.tickerid, manualTrendTF, close[1], lookahead=barmerge.lookahead_on)
+manualFast = request.security(syminfo.tickerid, manualTrendTF, ta.ema(close, fastEMALength)[1], lookahead=barmerge.lookahead_on)
+manualSlow = request.security(syminfo.tickerid, manualTrendTF, ta.ema(close, slowEMALength)[1], lookahead=barmerge.lookahead_on)
+
+
+// ============================================================================
+// SELECT TREND DATA
+// ============================================================================
+
+float autoClose = close15
+float autoFast = fast15
+float autoSlow = slow15
+
+if chartSeconds <= 300
+    autoClose := close15
+    autoFast := fast15
+    autoSlow := slow15
+else if chartSeconds <= 900
+    autoClose := close60
+    autoFast := fast60
+    autoSlow := slow60
+else if chartSeconds <= 3600
+    autoClose := close240
+    autoFast := fast240
+    autoSlow := slow240
+else
+    autoClose := closeD
+    autoFast := fastD
+    autoSlow := slowD
+
+
+htfClose = autoTrendTF ? autoClose : manualClose
+htfFastEMA = autoTrendTF ? autoFast : manualFast
+htfSlowEMA = autoTrendTF ? autoSlow : manualSlow
+trendTFText = autoTrendTF ? autoTrendName : manualTrendTF
+
+momentumROC = request.security(
+     syminfo.tickerid,
+     "60",
+     ta.roc(close, momentumLookback)[1],
+     lookahead=barmerge.lookahead_on)
+
+
+// ============================================================================
+// CORE
+// ============================================================================
+
+atr = ta.atr(atrLength)
+
+entryLabelSize = getLabelSize(entryBoxSizeInput)
+
+
+// ============================================================================
+// RTH SESSION DETECTION
+// ============================================================================
+
+inRTH = not na(time(timeframe.period, rthSession, sessionTimezone))
+
+nyDay = dayofmonth(time, sessionTimezone)
+nyMonth = month(time, sessionTimezone)
+nyYear = year(time, sessionTimezone)
+
+newNYDay = bar_index > 0 and (nyDay != nyDay[1] or nyMonth != nyMonth[1] or nyYear != nyYear[1])
+
+rthStart = inRTH and (bar_index == 0 or not inRTH[1] or newNYDay)
+
+closeHourNY = hour(time_close, sessionTimezone)
+closeMinuteNY = minute(time_close, sessionTimezone)
+
+rthLastBar = inRTH and closeHourNY == 16 and closeMinuteNY == 0
+
+
+// ============================================================================
+// RTH VWAP
+// ============================================================================
+
+var float cumulativePV = 0.0
+var float cumulativeVolume = 0.0
+
+if rthStart
+    cumulativePV := hlc3 * volume
+    cumulativeVolume := volume
+else if inRTH
+    cumulativePV += hlc3 * volume
+    cumulativeVolume += volume
+
+
+rthVWAP = inRTH and cumulativeVolume > 0 ? cumulativePV / cumulativeVolume : na
+
+
+plot(
+     showVWAP ? rthVWAP : na,
+     "RTH VWAP",
+     color=color.white,
+     linewidth=2)
+
+
+// ============================================================================
+// VWAP SLOPE
+// ============================================================================
+
+float vwapSlopeATR = na
+
+if not na(rthVWAP) and not na(rthVWAP[slopeBars]) and atr > 0
+    vwapSlopeATR := (rthVWAP - rthVWAP[slopeBars]) / atr
+
+
+longSlopeOK = not requireVWAPSlope or (not na(vwapSlopeATR) and vwapSlopeATR > minVWAPSlopeATR)
+shortSlopeOK = not requireVWAPSlope or (not na(vwapSlopeATR) and vwapSlopeATR < -minVWAPSlopeATR)
+
+
+// ============================================================================
+// TREND REGIME
+// ============================================================================
+
+longEMAOK = not requireEMARegime or htfFastEMA > htfSlowEMA
+shortEMAOK = not requireEMARegime or htfFastEMA < htfSlowEMA
+
+longHTFPriceOK = not requireHTFPriceSide or htfClose > htfFastEMA
+shortHTFPriceOK = not requireHTFPriceSide or htfClose < htfFastEMA
+
+longMomentumOK = not useMomentumFilter or momentumROC > 0
+shortMomentumOK = not useMomentumFilter or momentumROC < 0
+
+longRegime = inRTH and longEMAOK and longHTFPriceOK and longMomentumOK and longSlopeOK
+shortRegime = inRTH and shortEMAOK and shortHTFPriceOK and shortMomentumOK and shortSlopeOK
+
+
+// ============================================================================
+// VWAP TOUCH
+// ============================================================================
+
+touchTolerance = atr * touchToleranceATR
+
+inTouchZone = inRTH and not na(rthVWAP) and low <= rthVWAP + touchTolerance and high >= rthVWAP - touchTolerance
+
+touchEvent = inTouchZone and (rthStart or not inTouchZone[1])
+
+var int sessionTouchCount = 0
+var bool currentTouchUsed = false
+
+if rthStart
+    sessionTouchCount := 0
+    currentTouchUsed := false
+
+if touchEvent
+    sessionTouchCount += 1
+    currentTouchUsed := false
+
+
+touchNumberOK = not limitTouchNumber or (sessionTouchCount >= 1 and sessionTouchCount <= maxTouchNumber)
+
+
+// ============================================================================
+// VWAP CHOP FILTER
+// ============================================================================
+
+crossUp = inRTH and not rthStart and not na(rthVWAP[1]) and close > rthVWAP and close[1] <= rthVWAP[1]
+crossDown = inRTH and not rthStart and not na(rthVWAP[1]) and close < rthVWAP and close[1] >= rthVWAP[1]
+
+crossEvent = crossUp or crossDown
+
+var float sessionCrossCum = 0.0
+
+if rthStart
+    sessionCrossCum := 0.0
+else if crossEvent
+    sessionCrossCum += 1.0
+
+
+priorCrossCum = nz(sessionCrossCum[chopBars], 0.0)
+
+recentCrossCount = int(math.max(0.0, sessionCrossCum - priorCrossCum))
+
+chopOK = not useChopFilter or recentCrossCount <= maxRecentCrosses
+
+
+// ============================================================================
+// CANDLE VALUES
+// ============================================================================
+
+body = math.abs(close - open)
+safeBody = math.max(body, syminfo.mintick)
+
+candleRange = math.max(high - low, syminfo.mintick)
+
+lowerWick = math.min(open, close) - low
+upperWick = high - math.max(open, close)
+
+lowerWickRatio = lowerWick / safeBody
+upperWickRatio = upperWick / safeBody
+
+closeLocation = (close - low) / candleRange
+
+rangeATR = atr > 0 ? candleRange / atr : 999.0
+
+bullishCandle = close > open
+bearishCandle = close < open
+
+
+// ============================================================================
+// PRICE SIDE FILTER
+// ============================================================================
+
+longVWAPSideOK = not requireCurrentPriceVWAPSide or close > rthVWAP
+shortVWAPSideOK = not requireCurrentPriceVWAPSide or close < rthVWAP
+
+
+// ============================================================================
+// BREAK & RETEST STATE MACHINE
+//
+// LONG:
+// Below VWAP -> closes above VWAP -> separates higher -> returns to VWAP ->
+// holds/rejects VWAP -> confirmation.
+//
+// SHORT = opposite.
+// ============================================================================
+
+longBreakEvent = inBacktest and inRTH and not rthStart and not na(rthVWAP[1]) and close[1] <= rthVWAP[1] and close > rthVWAP + atr * breakCloseBufferATR
+
+shortBreakEvent = inBacktest and inRTH and not rthStart and not na(rthVWAP[1]) and close[1] >= rthVWAP[1] and close < rthVWAP - atr * breakCloseBufferATR
+
+
+var int brDirection = 0
+var int brBreakBar = na
+var bool brSeparated = false
+
+
+if rthStart
+    brDirection := 0
+    brBreakBar := na
+    brSeparated := false
+
+
+if longBreakEvent
+    brDirection := 1
+    brBreakBar := bar_index
+    brSeparated := false
+
+
+if shortBreakEvent
+    brDirection := -1
+    brBreakBar := bar_index
+    brSeparated := false
+
+
+bool longRawBreakRetest = false
+bool shortRawBreakRetest = false
+
+
+if brDirection == 1
+
+    brAge = bar_index - brBreakBar
+
+    if brAge > breakRetestMaxBars or not inRTH
+
+        brDirection := 0
+        brBreakBar := na
+        brSeparated := false
+
+    else
+
+        if high >= rthVWAP + atr * minBreakDistanceATR
+            brSeparated := true
+
+
+        if brSeparated and brAge > 0
+
+            longRetestZone = low <= rthVWAP + atr * breakRetestToleranceATR and low >= rthVWAP - atr * maxRetestOvershootATR
+
+            longRawBreakRetest := longRetestZone and bullishCandle and close > rthVWAP and closeLocation >= breakRetestCloseLocation and rangeATR <= maxBreakRetestRangeATR
+
+
+        if close < rthVWAP - atr * maxRetestOvershootATR
+
+            brDirection := 0
+            brBreakBar := na
+            brSeparated := false
+
+
+else if brDirection == -1
+
+    brAge = bar_index - brBreakBar
+
+    if brAge > breakRetestMaxBars or not inRTH
+
+        brDirection := 0
+        brBreakBar := na
+        brSeparated := false
+
+    else
+
+        if low <= rthVWAP - atr * minBreakDistanceATR
+            brSeparated := true
+
+
+        if brSeparated and brAge > 0
+
+            shortRetestZone = high >= rthVWAP - atr * breakRetestToleranceATR and high <= rthVWAP + atr * maxRetestOvershootATR
+
+            shortRawBreakRetest := shortRetestZone and bearishCandle and close < rthVWAP and closeLocation <= 1.0 - breakRetestCloseLocation and rangeATR <= maxBreakRetestRangeATR
+
+
+        if close > rthVWAP + atr * maxRetestOvershootATR
+
+            brDirection := 0
+            brBreakBar := na
+            brSeparated := false
+
+
+// ============================================================================
+// REJECTION
+// ============================================================================
+
+longSweepOK = not requireActualVWAPSweep or low <= rthVWAP
+shortSweepOK = not requireActualVWAPSweep or high >= rthVWAP
+
+
+longRawRejection = inTouchZone and bullishCandle and close > rthVWAP and longSweepOK and lowerWickRatio >= minWickBodyRatio and closeLocation >= rejectionCloseLocation and rangeATR <= maxRejectionRangeATR
+
+shortRawRejection = inTouchZone and bearishCandle and close < rthVWAP and shortSweepOK and upperWickRatio >= minWickBodyRatio and closeLocation <= 1.0 - rejectionCloseLocation and rangeATR <= maxRejectionRangeATR
+
+
+// ============================================================================
+// BOUNCE
+// ============================================================================
+
+longRawBounce = inTouchZone and low >= rthVWAP and low <= rthVWAP + touchTolerance and bullishCandle and close > rthVWAP and closeLocation >= bounceCloseLocation and rangeATR <= maxBounceRangeATR
+
+shortRawBounce = inTouchZone and high <= rthVWAP and high >= rthVWAP - touchTolerance and bearishCandle and close < rthVWAP and closeLocation <= 1.0 - bounceCloseLocation and rangeATR <= maxBounceRangeATR
+
+
+// ============================================================================
+// RECLAIM
+// ============================================================================
+
+longRawReclaim = not rthStart and inTouchZone and not na(rthVWAP[1]) and close[1] <= rthVWAP[1] and close > rthVWAP and bullishCandle and closeLocation >= reclaimCloseLocation and rangeATR <= maxReclaimRangeATR
+
+shortRawReclaim = not rthStart and inTouchZone and not na(rthVWAP[1]) and close[1] >= rthVWAP[1] and close < rthVWAP and bearishCandle and closeLocation <= 1.0 - reclaimCloseLocation and rangeATR <= maxReclaimRangeATR
+
+
+// ============================================================================
+// COMMON FILTERS
+// ============================================================================
+
+oneTouchOK = not oneSetupPerTouch or not currentTouchUsed
+
+commonLongOK = inBacktest and inRTH and longRegime and longVWAPSideOK and touchNumberOK and chopOK and oneTouchOK
+
+commonShortOK = inBacktest and inRTH and shortRegime and shortVWAPSideOK and touchNumberOK and chopOK and oneTouchOK
+
+
+// ============================================================================
+// QUALIFIED SETUPS
+// ============================================================================
+
+longBreakRetest = enableBreakRetest and longRawBreakRetest and commonLongOK
+shortBreakRetest = enableBreakRetest and shortRawBreakRetest and commonShortOK
+
+longRejection = enableRejection and longRawRejection and commonLongOK
+shortRejection = enableRejection and shortRawRejection and commonShortOK
+
+longBounce = enableBounce and longRawBounce and commonLongOK
+shortBounce = enableBounce and shortRawBounce and commonShortOK
+
+longReclaim = enableReclaim and longRawReclaim and commonLongOK
+shortReclaim = enableReclaim and shortRawReclaim and commonShortOK
+
+
+// ============================================================================
+// SETUP PRIORITY
+//
+// 1 = BREAK + RETEST
+// 2 = REJECTION
+// 3 = BOUNCE
+// 4 = RECLAIM
+// ============================================================================
+
+int setupDirection = 0
+int setupType = 0
+
+
+if longBreakRetest
+    setupDirection := 1
+    setupType := 1
+
+else if shortBreakRetest
+    setupDirection := -1
+    setupType := 1
+
+else if longRejection
+    setupDirection := 1
+    setupType := 2
+
+else if shortRejection
+    setupDirection := -1
+    setupType := 2
+
+else if longBounce
+    setupDirection := 1
+    setupType := 3
+
+else if shortBounce
+    setupDirection := -1
+    setupType := 3
+
+else if longReclaim
+    setupDirection := 1
+    setupType := 4
+
+else if shortReclaim
+    setupDirection := -1
+    setupType := 4
+
+
+// Consume B&R state after first valid retest event.
+
+if longRawBreakRetest or shortRawBreakRetest
+    brDirection := 0
+    brBreakBar := na
+    brSeparated := false
+
+
+// ============================================================================
+// DIAGNOSTICS
+// ============================================================================
+
+var int diagTouches = 0
+var int diagEarlyTouches = 0
+var int diagRawBreakRetests = 0
+var int diagRawRejections = 0
+var int diagRawBounces = 0
+var int diagRawReclaims = 0
+var int diagQualified = 0
+var int diagArmed = 0
+var int diagEntries = 0
+
+
+if inBacktest and touchEvent
+    diagTouches += 1
+
+    if sessionTouchCount <= maxTouchNumber
+        diagEarlyTouches += 1
+
+
+if inBacktest and (longRawBreakRetest or shortRawBreakRetest)
+    diagRawBreakRetests += 1
+
+
+if inBacktest and (longRawRejection or shortRawRejection)
+    diagRawRejections += 1
+
+
+if inBacktest and (longRawBounce or shortRawBounce)
+    diagRawBounces += 1
+
+
+if inBacktest and (longRawReclaim or shortRawReclaim)
+    diagRawReclaims += 1
+
+
+if setupDirection != 0
+    diagQualified += 1
+
+
+// ============================================================================
+// PENDING SETUP
+// ============================================================================
+
+var int pendingDirection = 0
+var int pendingSetupType = 0
+var int pendingBar = na
+var int pendingTouchNo = na
+var float pendingEntry = na
+var float pendingStop = na
+
+
+if rthStart
+    pendingDirection := 0
+    pendingSetupType := 0
+    pendingBar := na
+    pendingTouchNo := na
+    pendingEntry := na
+    pendingStop := na
+
+
+// ============================================================================
+// ACTIVE TRADE
+// ============================================================================
+
+var bool inTrade = false
+var int tradeDirection = 0
+var int tradeSetupType = 0
+var int tradeEntryBar = na
+var int tradeTouchGroup = na
+var int tradeTimeBucket = na
+
+var float entryPrice = na
+var float stopPrice = na
+var float targetPrice = na
+var float riskDistance = na
+var float beTriggerPrice = na
+
+var bool beActivated = false
+var int beActivatedBar = na
+
+var line entryLine = na
+var line stopLine = na
+var line targetLine = na
+
+
+// ============================================================================
+// STATISTICS
+// ============================================================================
+
+var int firstTradeTime = na
+var int lastTradeTime = na
+
+var int totalTrades = 0
+var int wins = 0
+var int losses = 0
+var int breakEvens = 0
+var int eodExits = 0
+
+var float grossProfitR = 0.0
+var float grossLossR = 0.0
+
+var int longWins = 0
+var int longLosses = 0
+var int longBEs = 0
+
+var int shortWins = 0
+var int shortLosses = 0
+var int shortBEs = 0
+
+
+var setupWins = array.new_int(4, 0)
+var setupLosses = array.new_int(4, 0)
+var setupBE = array.new_int(4, 0)
+
+var touchWins = array.new_int(3, 0)
+var touchLosses = array.new_int(3, 0)
+var touchBE = array.new_int(3, 0)
+
+var timeWins = array.new_int(7, 0)
+var timeLosses = array.new_int(7, 0)
+var timeBE = array.new_int(7, 0)
+
+
+// ============================================================================
+// SETUP MARKERS
+// ============================================================================
+
+plotshape(
+     showSetupMarker and setupDirection == 1 and not inTrade,
+     title="Long Qualified Setup",
+     style=shape.circle,
+     location=location.belowbar,
+     color=color.lime,
+     size=size.tiny)
+
+
+plotshape(
+     showSetupMarker and setupDirection == -1 and not inTrade,
+     title="Short Qualified Setup",
+     style=shape.circle,
+     location=location.abovebar,
+     color=color.red,
+     size=size.tiny)
+
+
+// ============================================================================
+// ENTRY VARIABLES
+// ============================================================================
+
+bool enterLong = false
+bool enterShort = false
+
+bool actualLongEntry = false
+bool actualShortEntry = false
+
+int entrySetupType = 0
+int entryTouchNo = 0
+
+float proposedEntry = na
+float proposedStop = na
+
+
+// ============================================================================
+// MANAGE PENDING BREAKOUT
+// ============================================================================
+
+if requireBreakout and pendingDirection != 0 and not inTrade
+
+    pendingAge = bar_index - pendingBar
+
+
+    if pendingAge > triggerBars or not inRTH
+
+        pendingDirection := 0
+        pendingSetupType := 0
+        pendingBar := na
+        pendingTouchNo := na
+        pendingEntry := na
+        pendingStop := na
+
+
+    else if pendingAge > 0
+
+        if pendingDirection == 1
+
+            triggerHit = high >= pendingEntry
+            invalidated = low <= pendingStop
+
+
+            if triggerHit and not invalidated
+
+                enterLong := true
+                entrySetupType := pendingSetupType
+                entryTouchNo := pendingTouchNo
+                proposedEntry := pendingEntry
+                proposedStop := pendingStop
+
+
+            else if invalidated
+
+                pendingDirection := 0
+                pendingSetupType := 0
+                pendingBar := na
+                pendingTouchNo := na
+                pendingEntry := na
+                pendingStop := na
+
+
+        else if pendingDirection == -1
+
+            triggerHit = low <= pendingEntry
+            invalidated = high >= pendingStop
+
+
+            if triggerHit and not invalidated
+
+                enterShort := true
+                entrySetupType := pendingSetupType
+                entryTouchNo := pendingTouchNo
+                proposedEntry := pendingEntry
+                proposedStop := pendingStop
+
+
+            else if invalidated
+
+                pendingDirection := 0
+                pendingSetupType := 0
+                pendingBar := na
+                pendingTouchNo := na
+                pendingEntry := na
+                pendingStop := na
+
+
+// ============================================================================
+// DIRECT ENTRY
+// ============================================================================
+
+if not requireBreakout and not inTrade and setupDirection != 0
+
+    proposedEntry := close
+
+
+    if setupDirection == 1
+
+        rawStop = low - atr * stopBufferATR
+        rawRisk = proposedEntry - rawStop
+
+        adjustedRisk = math.max(rawRisk, atr * minStopATR)
+
+        proposedStop := proposedEntry - adjustedRisk
+
+        enterLong := true
+
+
+    else
+
+        rawStop = high + atr * stopBufferATR
+        rawRisk = rawStop - proposedEntry
+
+        adjustedRisk = math.max(rawRisk, atr * minStopATR)
+
+        proposedStop := proposedEntry + adjustedRisk
+
+        enterShort := true
+
+
+    entrySetupType := setupType
+    entryTouchNo := sessionTouchCount
+
+
+    if oneSetupPerTouch
+        currentTouchUsed := true
+
+
+// ============================================================================
+// ARM LONG SETUP
+// ============================================================================
+
+if requireBreakout and not inTrade and pendingDirection == 0 and setupDirection == 1
+
+    candidateEntry = high + entryBufferTicks * syminfo.mintick
+
+    rawStop = low - atr * stopBufferATR
+    rawRisk = candidateEntry - rawStop
+
+    adjustedRisk = math.max(rawRisk, atr * minStopATR)
+
+    candidateStop = candidateEntry - adjustedRisk
+
+    riskATR = atr > 0 ? adjustedRisk / atr : 999.0
+
+
+    if riskATR <= maxStopATR
+
+        pendingDirection := 1
+        pendingSetupType := setupType
+        pendingBar := bar_index
+        pendingTouchNo := sessionTouchCount
+        pendingEntry := candidateEntry
+        pendingStop := candidateStop
+
+        diagArmed += 1
+
+
+        if oneSetupPerTouch
+            currentTouchUsed := true
+
+
+// ============================================================================
+// ARM SHORT SETUP
+// ============================================================================
+
+if requireBreakout and not inTrade and pendingDirection == 0 and setupDirection == -1
+
+    candidateEntry = low - entryBufferTicks * syminfo.mintick
+
+    rawStop = high + atr * stopBufferATR
+    rawRisk = rawStop - candidateEntry
+
+    adjustedRisk = math.max(rawRisk, atr * minStopATR)
+
+    candidateStop = candidateEntry + adjustedRisk
+
+    riskATR = atr > 0 ? adjustedRisk / atr : 999.0
+
+
+    if riskATR <= maxStopATR
+
+        pendingDirection := -1
+        pendingSetupType := setupType
+        pendingBar := bar_index
+        pendingTouchNo := sessionTouchCount
+        pendingEntry := candidateEntry
+        pendingStop := candidateStop
+
+        diagArmed += 1
+
+
+        if oneSetupPerTouch
+            currentTouchUsed := true
+
+
+// ============================================================================
+// CREATE LONG TRADE
+// ============================================================================
+
+if enterLong and not inTrade and inRTH
+
+    risk = proposedEntry - proposedStop
+
+    riskATR = atr > 0 ? risk / atr : 999.0
+
+
+    if risk > 0 and riskATR <= maxStopATR
+
+        actualLongEntry := true
+
+        inTrade := true
+        tradeDirection := 1
+        tradeSetupType := entrySetupType
+        tradeEntryBar := bar_index
+
+        entryPrice := proposedEntry
+        stopPrice := proposedStop
+        riskDistance := risk
+
+        targetPrice := entryPrice + riskDistance * targetR
+        beTriggerPrice := entryPrice + riskDistance * beTriggerR
+
+        beActivated := false
+        beActivatedBar := na
+
+
+        if entryTouchNo <= 1
+            tradeTouchGroup := 0
+        else if entryTouchNo == 2
+            tradeTouchGroup := 1
+        else
+            tradeTouchGroup := 2
+
+
+        tradeMinutes = hour(time, sessionTimezone) * 60 + minute(time, sessionTimezone)
+
+        tradeTimeBucket := getRTHBucket(tradeMinutes)
+
+
+        if na(firstTradeTime)
+            firstTradeTime := time
+
+
+        lastTradeTime := time
+
+        totalTrades += 1
+        diagEntries += 1
+
+
+        if showTradeLevels
+
+            entryLine := line.new(
+                 bar_index,
+                 entryPrice,
+                 bar_index + 1,
+                 entryPrice,
+                 extend=extend.right,
+                 color=color.green,
+                 style=line.style_dotted,
+                 width=2)
+
+
+            targetLine := line.new(
+                 bar_index,
+                 targetPrice,
+                 bar_index + 1,
+                 targetPrice,
+                 extend=extend.right,
+                 color=color.green,
+                 style=line.style_dotted,
+                 width=2)
+
+
+            stopLine := line.new(
+                 bar_index,
+                 stopPrice,
+                 bar_index + 1,
+                 stopPrice,
+                 extend=extend.right,
+                 color=color.red,
+                 style=line.style_dotted,
+                 width=2)
+
+
+        if showEntryBox
+
+            boxY = low - atr * entryBoxOffsetATR
+
+            labelText =
+                 "LONG - " +
+                 getSetupName(tradeSetupType) +
+                 "\nTouch #" +
+                 str.tostring(entryTouchNo) +
+                 "\nEntry " +
+                 str.tostring(entryPrice, format.mintick) +
+                 "\nSL " +
+                 str.tostring(stopPrice, format.mintick) +
+                 "\n" +
+                 str.tostring(targetR, "#.##") +
+                 "R TP " +
+                 str.tostring(targetPrice, format.mintick)
+
+
+            label.new(
+                 bar_index,
+                 boxY,
+                 labelText,
+                 yloc=yloc.price,
+                 style=label.style_label_up,
+                 color=color.green,
+                 textcolor=color.white,
+                 size=entryLabelSize)
+
+
+        pendingDirection := 0
+        pendingSetupType := 0
+        pendingBar := na
+        pendingTouchNo := na
+        pendingEntry := na
+        pendingStop := na
+
+
+// ============================================================================
+// CREATE SHORT TRADE
+// ============================================================================
+
+if enterShort and not inTrade and inRTH
+
+    risk = proposedStop - proposedEntry
+
+    riskATR = atr > 0 ? risk / atr : 999.0
+
+
+    if risk > 0 and riskATR <= maxStopATR
+
+        actualShortEntry := true
+
+        inTrade := true
+        tradeDirection := -1
+        tradeSetupType := entrySetupType
+        tradeEntryBar := bar_index
+
+        entryPrice := proposedEntry
+        stopPrice := proposedStop
+        riskDistance := risk
+
+        targetPrice := entryPrice - riskDistance * targetR
+        beTriggerPrice := entryPrice - riskDistance * beTriggerR
+
+        beActivated := false
+        beActivatedBar := na
+
+
+        if entryTouchNo <= 1
+            tradeTouchGroup := 0
+        else if entryTouchNo == 2
+            tradeTouchGroup := 1
+        else
+            tradeTouchGroup := 2
+
+
+        tradeMinutes = hour(time, sessionTimezone) * 60 + minute(time, sessionTimezone)
+
+        tradeTimeBucket := getRTHBucket(tradeMinutes)
+
+
+        if na(firstTradeTime)
+            firstTradeTime := time
+
+
+        lastTradeTime := time
+
+        totalTrades += 1
+        diagEntries += 1
+
+
+        if showTradeLevels
+
+            entryLine := line.new(
+                 bar_index,
+                 entryPrice,
+                 bar_index + 1,
+                 entryPrice,
+                 extend=extend.right,
+                 color=color.red,
+                 style=line.style_dotted,
+                 width=2)
+
+
+            targetLine := line.new(
+                 bar_index,
+                 targetPrice,
+                 bar_index + 1,
+                 targetPrice,
+                 extend=extend.right,
+                 color=color.green,
+                 style=line.style_dotted,
+                 width=2)
+
+
+            stopLine := line.new(
+                 bar_index,
+                 stopPrice,
+                 bar_index + 1,
+                 stopPrice,
+                 extend=extend.right,
+                 color=color.red,
+                 style=line.style_dotted,
+                 width=2)
+
+
+        if showEntryBox
+
+            boxY = high + atr * entryBoxOffsetATR
+
+            labelText =
+                 "SHORT - " +
+                 getSetupName(tradeSetupType) +
+                 "\nTouch #" +
+                 str.tostring(entryTouchNo) +
+                 "\nEntry " +
+                 str.tostring(entryPrice, format.mintick) +
+                 "\nSL " +
+                 str.tostring(stopPrice, format.mintick) +
+                 "\n" +
+                 str.tostring(targetR, "#.##") +
+                 "R TP " +
+                 str.tostring(targetPrice, format.mintick)
+
+
+            label.new(
+                 bar_index,
+                 boxY,
+                 labelText,
+                 yloc=yloc.price,
+                 style=label.style_label_down,
+                 color=color.red,
+                 textcolor=color.white,
+                 size=entryLabelSize)
+
+
+        pendingDirection := 0
+        pendingSetupType := 0
+        pendingBar := na
+        pendingTouchNo := na
+        pendingEntry := na
+        pendingStop := na
+
+
+// ============================================================================
+// ENTRY MARKERS
+// ============================================================================
+
+plotshape(
+     showEntryMarker and actualLongEntry,
+     title="BUY",
+     style=shape.triangleup,
+     location=location.belowbar,
+     color=color.lime,
+     size=size.small,
+     text="BUY",
+     textcolor=color.white)
+
+
+plotshape(
+     showEntryMarker and actualShortEntry,
+     title="SELL",
+     style=shape.triangledown,
+     location=location.abovebar,
+     color=color.red,
+     size=size.small,
+     text="SELL",
+     textcolor=color.white)
+
+
+// ============================================================================
+// TRADE MANAGEMENT
+// ============================================================================
+
+bool targetHit = false
+bool stopHit = false
+bool beHit = false
+bool triggerBE = false
+
+bool tradeWon = false
+bool tradeLost = false
+bool tradeBE = false
+bool tradeEOD = false
+
+float eodR = 0.0
+
+
+if inTrade and inRTH and bar_index > tradeEntryBar
+
+    if tradeDirection == 1
+
+        targetHit := high >= targetPrice
+
+        if not beActivated
+            stopHit := low <= stopPrice
+
+        if beActivated and bar_index > beActivatedBar
+            beHit := low <= entryPrice
+
+        if moveToBE and not beActivated and high >= beTriggerPrice
+            triggerBE := true
+
+
+    else
+
+        targetHit := low <= targetPrice
+
+        if not beActivated
+            stopHit := high >= stopPrice
+
+        if beActivated and bar_index > beActivatedBar
+            beHit := high >= entryPrice
+
+        if moveToBE and not beActivated and low <= beTriggerPrice
+            triggerBE := true
+
+
+    if targetHit and stopHit
+
+        if sameBarMode == "Target First"
+            tradeWon := true
+        else
+            tradeLost := true
+
+
+    else if targetHit
+
+        tradeWon := true
+
+
+    else if stopHit
+
+        tradeLost := true
+
+
+    else if beHit
+
+        tradeBE := true
+
+
+    else if closeAtRTHEnd and rthLastBar
+
+        tradeEOD := true
+
+        if tradeDirection == 1
+            eodR := (close - entryPrice) / riskDistance
+        else
+            eodR := (entryPrice - close) / riskDistance
+
+
+// ============================================================================
+// MOVE TO BREAKEVEN
+// ============================================================================
+
+if inTrade and triggerBE and not tradeWon and not tradeLost
+
+    beActivated := true
+    beActivatedBar := bar_index
+
+    stopPrice := entryPrice
+
+
+    if showTradeLevels and not na(stopLine)
+
+        line.set_y1(stopLine, entryPrice)
+        line.set_y2(stopLine, entryPrice)
+
+        line.set_color(stopLine, color.red)
+        line.set_style(stopLine, line.style_dotted)
+
+
+// ============================================================================
+// WIN
+// ============================================================================
+
+if tradeWon
+
+    wins += 1
+    grossProfitR += targetR
+
+
+    if tradeDirection == 1
+        longWins += 1
+    else
+        shortWins += 1
+
+
+    setupIndex = tradeSetupType - 1
+
+    array.set(setupWins, setupIndex, array.get(setupWins, setupIndex) + 1)
+    array.set(touchWins, tradeTouchGroup, array.get(touchWins, tradeTouchGroup) + 1)
+
+
+    if tradeTimeBucket >= 0
+        array.set(timeWins, tradeTimeBucket, array.get(timeWins, tradeTimeBucket) + 1)
+
+
+    if showTradeLevels
+
+        if not na(targetLine)
+
+            line.set_x2(targetLine, bar_index)
+            line.set_extend(targetLine, extend.none)
+            line.set_style(targetLine, line.style_solid)
+            line.set_width(targetLine, 3)
+            line.set_color(targetLine, color.green)
+
+
+        if not na(stopLine)
+
+            line.set_x2(stopLine, bar_index)
+            line.set_extend(stopLine, extend.none)
+            line.set_style(stopLine, line.style_dotted)
+
+
+        if not na(entryLine)
+
+            line.set_x2(entryLine, bar_index)
+            line.set_extend(entryLine, extend.none)
+
+
+    if showResultLabels
+
+        label.new(
+             bar_index,
+             targetPrice,
+             "WIN +" + str.tostring(targetR, "#.##") + "R",
+             style=tradeDirection == 1 ? label.style_label_down : label.style_label_up,
+             color=color.green,
+             textcolor=color.white,
+             size=size.tiny)
+
+
+    inTrade := false
+
+
+// ============================================================================
+// LOSS
+// ============================================================================
+
+if tradeLost
+
+    losses += 1
+    grossLossR -= 1.0
+
+
+    if tradeDirection == 1
+        longLosses += 1
+    else
+        shortLosses += 1
+
+
+    setupIndex = tradeSetupType - 1
+
+    array.set(setupLosses, setupIndex, array.get(setupLosses, setupIndex) + 1)
+    array.set(touchLosses, tradeTouchGroup, array.get(touchLosses, tradeTouchGroup) + 1)
+
+
+    if tradeTimeBucket >= 0
+        array.set(timeLosses, tradeTimeBucket, array.get(timeLosses, tradeTimeBucket) + 1)
+
+
+    if showTradeLevels
+
+        if not na(stopLine)
+
+            line.set_x2(stopLine, bar_index)
+            line.set_extend(stopLine, extend.none)
+            line.set_style(stopLine, line.style_solid)
+            line.set_width(stopLine, 3)
+            line.set_color(stopLine, color.red)
+
+
+        if not na(targetLine)
+
+            line.set_x2(targetLine, bar_index)
+            line.set_extend(targetLine, extend.none)
+            line.set_style(targetLine, line.style_dotted)
+
+
+        if not na(entryLine)
+
+            line.set_x2(entryLine, bar_index)
+            line.set_extend(entryLine, extend.none)
+
+
+    if showResultLabels
+
+        label.new(
+             bar_index,
+             stopPrice,
+             "LOSS -1R",
+             style=tradeDirection == 1 ? label.style_label_up : label.style_label_down,
+             color=color.red,
+             textcolor=color.white,
+             size=size.tiny)
+
+
+    inTrade := false
+
+
+// ============================================================================
+// BREAKEVEN
+// ============================================================================
+
+if tradeBE
+
+    breakEvens += 1
+
+
+    if tradeDirection == 1
+        longBEs += 1
+    else
+        shortBEs += 1
+
+
+    setupIndex = tradeSetupType - 1
+
+    array.set(setupBE, setupIndex, array.get(setupBE, setupIndex) + 1)
+    array.set(touchBE, tradeTouchGroup, array.get(touchBE, tradeTouchGroup) + 1)
+
+
+    if tradeTimeBucket >= 0
+        array.set(timeBE, tradeTimeBucket, array.get(timeBE, tradeTimeBucket) + 1)
+
+
+    if showTradeLevels
+
+        if not na(stopLine)
+
+            line.set_x2(stopLine, bar_index)
+            line.set_extend(stopLine, extend.none)
+            line.set_style(stopLine, line.style_solid)
+            line.set_width(stopLine, 3)
+            line.set_color(stopLine, color.red)
+
+
+        if not na(targetLine)
+
+            line.set_x2(targetLine, bar_index)
+            line.set_extend(targetLine, extend.none)
+            line.set_style(targetLine, line.style_dotted)
+
+
+        if not na(entryLine)
+
+            line.set_x2(entryLine, bar_index)
+            line.set_extend(entryLine, extend.none)
+
+
+    if showResultLabels
+
+        label.new(
+             bar_index,
+             entryPrice,
+             "BE 0R",
+             style=tradeDirection == 1 ? label.style_label_up : label.style_label_down,
+             color=color.red,
+             textcolor=color.white,
+             size=size.tiny)
+
+
+    inTrade := false
+
+
+// ============================================================================
+// END OF DAY EXIT
+// ============================================================================
+
+if tradeEOD
+
+    eodExits += 1
+
+    eodPositive = eodR > 0.01
+    eodNegative = eodR < -0.01
+
+    setupIndex = tradeSetupType - 1
+
+
+    if eodPositive
+
+        wins += 1
+        grossProfitR += eodR
+
+
+        if tradeDirection == 1
+            longWins += 1
+        else
+            shortWins += 1
+
+
+        array.set(setupWins, setupIndex, array.get(setupWins, setupIndex) + 1)
+        array.set(touchWins, tradeTouchGroup, array.get(touchWins, tradeTouchGroup) + 1)
+
+
+        if tradeTimeBucket >= 0
+            array.set(timeWins, tradeTimeBucket, array.get(timeWins, tradeTimeBucket) + 1)
+
+
+    else if eodNegative
+
+        losses += 1
+        grossLossR += eodR
+
+
+        if tradeDirection == 1
+            longLosses += 1
+        else
+            shortLosses += 1
+
+
+        array.set(setupLosses, setupIndex, array.get(setupLosses, setupIndex) + 1)
+        array.set(touchLosses, tradeTouchGroup, array.get(touchLosses, tradeTouchGroup) + 1)
+
+
+        if tradeTimeBucket >= 0
+            array.set(timeLosses, tradeTimeBucket, array.get(timeLosses, tradeTimeBucket) + 1)
+
+
+    else
+
+        breakEvens += 1
+
+
+        if tradeDirection == 1
+            longBEs += 1
+        else
+            shortBEs += 1
+
+
+        array.set(setupBE, setupIndex, array.get(setupBE, setupIndex) + 1)
+        array.set(touchBE, tradeTouchGroup, array.get(touchBE, tradeTouchGroup) + 1)
+
+
+        if tradeTimeBucket >= 0
+            array.set(timeBE, tradeTimeBucket, array.get(timeBE, tradeTimeBucket) + 1)
+
+
+    if showTradeLevels
+
+        if not na(entryLine)
+            line.set_x2(entryLine, bar_index)
+            line.set_extend(entryLine, extend.none)
+
+        if not na(targetLine)
+            line.set_x2(targetLine, bar_index)
+            line.set_extend(targetLine, extend.none)
+
+        if not na(stopLine)
+            line.set_x2(stopLine, bar_index)
+            line.set_extend(stopLine, extend.none)
+
+
+    if showResultLabels
+
+        eodText = "EOD " + (eodR >= 0 ? "+" : "") + str.tostring(eodR, "#.##") + "R"
+
+        label.new(
+             bar_index,
+             close,
+             eodText,
+             style=eodR >= 0 ? label.style_label_down : label.style_label_up,
+             color=eodR >= 0 ? color.green : color.red,
+             textcolor=color.white,
+             size=size.tiny)
+
+
+    inTrade := false
+
+
+
+// ============================================================================
+// DISPLAY STATISTICS ONLY: observes original entry/exit flags after management.
+// No values below feed back into entries, exits, filters, or risk management.
+// Today is the last chart bar's calendar day in the configured session timezone.
+// Closed daily results are attributed to entry day; open R uses the last close.
+// ============================================================================
+var int reportEntryTime = na
+var int reportEntryBucket = -1
+var int todayEntered = 0
+var int todayWins = 0
+var int todayLosses = 0
+var int todayBE = 0
+var float todayNetR = 0.0
+var float reportPeakR = 0.0
+var float reportMaxDDR = 0.0
+var int targetExits = 0
+var int stopExits = 0
+var int beExits = 0
+var int loadedFrom = time
+var int reportFirstEntry = na
+var int reportLastEntry = na
+var reportTimeR = array.new_float(8, 0.0)
+var reportTimeW = array.new_int(8, 0)
+var reportTimeN = array.new_int(8, 0)
+var reportSessionR = array.new_float(5, 0.0)
+var reportSessionW = array.new_int(5, 0)
+var reportSessionN = array.new_int(5, 0)
+
+if newNYDay
+    todayEntered := 0
+    todayWins := 0
+    todayLosses := 0
+    todayBE := 0
+    todayNetR := 0.0
+
+if actualLongEntry or actualShortEntry
+    reportEntryTime := time
+    reportEntryBucket := tradeTimeBucket >= 0 ? tradeTimeBucket : 7
+    todayEntered += 1
+    if na(reportFirstEntry)
+        reportFirstEntry := time
+    reportLastEntry := time
+
+if tradeWon or tradeLost or tradeBE or tradeEOD
+    // Mirror original EOD tolerance and gross-R accounting exactly.
+    resultR = tradeWon ? targetR : tradeLost ? -1.0 : tradeEOD and math.abs(eodR) > 0.01 ? eodR : 0.0
+    resultWin = tradeWon or (tradeEOD and eodR > 0.01)
+    resultLoss = tradeLost or (tradeEOD and eodR < -0.01)
+    targetExits += tradeWon ? 1 : 0
+    stopExits += tradeLost ? 1 : 0
+    beExits += tradeBE ? 1 : 0
+    equityR = grossProfitR + grossLossR
+    reportPeakR := math.max(reportPeakR, equityR)
+    reportMaxDDR := math.max(reportMaxDDR, reportPeakR - equityR)
+    if not na(reportEntryTime)
+        if str.format_time(reportEntryTime, "yyyyMMdd", sessionTimezone) == str.format_time(time, "yyyyMMdd", sessionTimezone)
+            todayWins += resultWin ? 1 : 0
+            todayLosses += resultLoss ? 1 : 0
+            todayBE += not resultWin and not resultLoss ? 1 : 0
+            todayNetR += resultR
+        b = reportEntryBucket
+        array.set(reportTimeN, b, array.get(reportTimeN, b) + 1)
+        array.set(reportTimeW, b, array.get(reportTimeW, b) + (resultWin ? 1 : 0))
+        array.set(reportTimeR, b, array.get(reportTimeR, b) + resultR)
+        entryMinute = hour(reportEntryTime, sessionTimezone) * 60 + minute(reportEntryTime, sessionTimezone)
+        // A/B/C: first three RTH hours. AM/PM: before/after 12:00.
+        for j = 0 to 4
+            belongs = j < 3 ? (b == j) : j == 3 ? entryMinute < 720 : entryMinute >= 720
+            if belongs
+                array.set(reportSessionN, j, array.get(reportSessionN, j) + 1)
+                array.set(reportSessionW, j, array.get(reportSessionW, j) + (resultWin ? 1 : 0))
+                array.set(reportSessionR, j, array.get(reportSessionR, j) + resultR)
+
+reportNum(float value) =>
+    na(value) ? "—" : str.tostring(value, "0.00")
+
+reportWR(int w, int n) =>
+    n > 0 ? str.tostring(100.0 * w / n, "0.00") + "%" : "—"
+
+reportSummary(int w, int n, float r) =>
+    str.tostring(n) + " / " + reportWR(w, n) + " / " + reportNum(r)
+
+reportRow(table t, int row, string label, string value, bool section, float result = na) =>
+    bg = section ? color.rgb(32, 62, 138) : row % 2 == 0 ? color.rgb(49, 54, 64) : color.rgb(60, 65, 75)
+    valueBg = section or na(result) ? bg : result > 0 ? color.rgb(37, 96, 53) : result < 0 ? color.rgb(122, 42, 49) : bg
+    table.cell(t, 0, row, label, bgcolor=bg, text_color=color.white, text_size=tableFontSize, width=tableWidth * 0.60, height=tableRowHeight)
+    table.cell(t, 1, row, value, bgcolor=valueBg, text_color=color.white, text_size=tableFontSize, width=tableWidth * 0.40, height=tableRowHeight)
+
+reportPos = switch tablePosition
+    "Top Left" => position.top_left
+    "Bottom Right" => position.bottom_right
+    "Bottom Left" => position.bottom_left
+    => position.top_right
+
+var table stats = table.new(reportPos, 2, 72, border_width=1, frame_width=1, border_color=color.rgb(20, 24, 35))
+var reportHours = array.from("09:30-10:30", "10:30-11:30", "11:30-12:30", "12:30-13:30", "13:30-14:30", "14:30-15:30", "15:30-16:00", "Other entry hours")
+var reportSessions = array.from("A 09:30-10:30", "B 10:30-11:30", "C 11:30-12:30", "AM before 12:00", "PM from 12:00")
+
+if barstate.islast
+    table.clear(stats, 0, 0, 1, 71)
+    if showTable
+        closedN = wins + losses + breakEvens
+        net = grossProfitR + grossLossR
+        markedR = inTrade and riskDistance > 0 ? tradeDirection * (close - entryPrice) / riskDistance : na
+        todayClosed = todayWins + todayLosses + todayBE
+        todayOpen = inTrade and not na(reportEntryTime) and str.format_time(reportEntryTime, "yyyyMMdd", sessionTimezone) == str.format_time(time, "yyyyMMdd", sessionTimezone)
+        pfText = grossLossR < 0 ? reportNum(grossProfitR / math.abs(grossLossR)) : grossProfitR > 0 ? "∞" : "—"
+        startText = na(reportFirstEntry) ? "—" : str.format_time(reportFirstEntry, "yyyy-MM-dd HH:mm", sessionTimezone)
+        endText = str.format_time(time, "yyyy-MM-dd", sessionTimezone)
+        reportRow(stats, 0, "AB - VWAP V3.9.2", str.tostring(targetR, "0.##") + "R Results", true)
+        reportRow(stats, 1, "Trade period from", startText, false)
+        reportRow(stats, 2, "Through chart day", endText, false)
+        reportRow(stats, 3, "Entered / closed", str.tostring(totalTrades) + " / " + str.tostring(closedN), false)
+        reportRow(stats, 4, "W / L / BE (net)", str.tostring(wins) + " / " + str.tostring(losses) + " / " + str.tostring(breakEvens), false)
+        reportRow(stats, 5, "WR with BE: W/(W+L+BE)", reportWR(wins, closedN), false)
+        reportRow(stats, 6, "WR without BE: W/(W+L)", reportWR(wins, wins + losses), false)
+        reportRow(stats, 7, "Long WR (closed)", percentText(longWins, longWins + longLosses + longBEs), false)
+        reportRow(stats, 8, "Short WR (closed)", percentText(shortWins, shortWins + shortLosses + shortBEs), false)
+        reportRow(stats, 9, "Gross profit R", reportNum(grossProfitR), false)
+        reportRow(stats, 10, "Gross loss R (abs)", reportNum(math.abs(grossLossR)), false)
+        reportRow(stats, 11, "Net R", reportNum(net), false, net)
+        reportRow(stats, 12, "Profit factor", pfText, false)
+        reportRow(stats, 13, "Max closed DD R", reportNum(reportMaxDDR), false)
+        reportRow(stats, 14, "Expectancy R", reportNum(closedN > 0 ? net / closedN : na), false)
+        reportRow(stats, 15, "Current ATR (" + str.tostring(atrLength) + ")", str.tostring(atr, format.mintick), false)
+        reportRow(stats, 16, "Open trade / marked R", inTrade ? (tradeDirection == 1 ? "Long / " : "Short / ") + reportNum(markedR) : "Flat", false)
+        reportRow(stats, 17, "TP / SL / BE / EOD exits", str.tostring(targetExits) + " / " + str.tostring(stopExits) + " / " + str.tostring(beExits) + " / " + str.tostring(eodExits), false)
+        reportRow(stats, 18, "Target hit rate (closed)", reportWR(targetExits, closedN), false)
+        reportRow(stats, 19, "Round-trip cost", "Not modeled (original logic)", false)
+
+        for j = 0 to 4
+            reportRow(stats, 20 + j, array.get(reportSessions, j) + " N / WR / R", reportSummary(array.get(reportSessionW, j), array.get(reportSessionN, j), array.get(reportSessionR, j)), false, array.get(reportSessionR, j))
+        reportRow(stats, 25, "Chart / trend TF", timeframe.period + " / " + trendTFText, false)
+        reportRow(stats, 26, "Last chart data", str.format_time(time, "yyyy-MM-dd HH:mm", sessionTimezone), false)
+        reportRow(stats, 27, "TODAY'S ENTRIES | " + sessionTimezone, endText, true)
+        reportRow(stats, 28, "Entered / closed / open", str.tostring(todayEntered) + " / " + str.tostring(todayClosed) + " / " + (todayOpen ? "1" : "0"), false)
+        reportRow(stats, 29, "Today W / L / BE", str.tostring(todayWins) + " / " + str.tostring(todayLosses) + " / " + str.tostring(todayBE), false)
+        reportRow(stats, 30, "Today WR with BE", reportWR(todayWins, todayClosed), false)
+        reportRow(stats, 31, "Today WR without BE", reportWR(todayWins, todayWins + todayLosses), false)
+        reportRow(stats, 32, "Today net R (closed)", reportNum(todayNetR), false, todayNetR)
+        reportRow(stats, 33, "ENTRY HOUR | " + sessionTimezone, "WR (W/N) | Net R", true)
+        for j = 0 to 7
+            n = array.get(reportTimeN, j)
+            w = array.get(reportTimeW, j)
+            r = array.get(reportTimeR, j)
+            reportRow(stats, 34 + j, array.get(reportHours, j), n > 0 ? percentText(w, n) + " | " + reportNum(r) + "R" : "— (0/0) | 0.00R", false, n > 0 ? r : na)
+        reportRow(stats, 42, "SETUP RESULTS", "WR (W/N)", true)
+        for j = 0 to 3
+            enabled = j == 0 ? enableBreakRetest : j == 1 ? enableRejection : j == 2 ? enableBounce : enableReclaim
+            n = array.get(setupWins, j) + array.get(setupLosses, j) + array.get(setupBE, j)
+            reportRow(stats, 43 + j, getSetupName(j + 1), enabled ? percentText(array.get(setupWins, j), n) : "OFF", false)
+        reportRow(stats, 47, "VWAP TOUCH", "WR (W/N)", true)
+        for j = 0 to 2
+            n = array.get(touchWins, j) + array.get(touchLosses, j) + array.get(touchBE, j)
+            reportRow(stats, 48 + j, j == 0 ? "1st touch" : j == 1 ? "2nd touch" : "3rd+ touch", percentText(array.get(touchWins, j), n), false)
+        reportRow(stats, 51, "Loaded history starts", str.format_time(loadedFrom, "yyyy-MM-dd HH:mm", sessionTimezone), false)
+        reportRow(stats, 52, "Session / exit rule", rthSession + " / " + sameBarMode, false)
+        reportRow(stats, 53, "R accounting", "Original; no fees/slippage", false)
+        if showTableDiagnostics
+            reportRow(stats, 54, "DIAGNOSTICS", "Count / setting", true)
+            reportRow(stats, 55, "VWAP touches", str.tostring(diagTouches), false)
+            reportRow(stats, 56, "1st/2nd touches", str.tostring(diagEarlyTouches), false)
+            reportRow(stats, 57, "Raw break + retest", str.tostring(diagRawBreakRetests), false)
+            reportRow(stats, 58, "Raw rejections", str.tostring(diagRawRejections), false)
+            reportRow(stats, 59, "Raw bounces", str.tostring(diagRawBounces), false)
+            reportRow(stats, 60, "Raw reclaims", str.tostring(diagRawReclaims), false)
+            reportRow(stats, 61, "Qualified / armed / entries", str.tostring(diagQualified) + " / " + str.tostring(diagArmed) + " / " + str.tostring(diagEntries), false)
+            reportRow(stats, 62, "ATR / slope bars", str.tostring(atrLength) + " / " + str.tostring(slopeBars), false)
+            reportRow(stats, 63, "Max touch", limitTouchNumber ? str.tostring(maxTouchNumber) : "OFF", false)
+            reportRow(stats, 64, "Target / max stop", str.tostring(targetR) + "R / " + str.tostring(maxStopATR) + " ATR", false)
+            reportRow(stats, 65, "B+R separation", str.tostring(minBreakDistanceATR) + " ATR", false)
