@@ -1,7 +1,7 @@
 //@version=6
 indicator("AB - Trend-Aligned AMD 2R+ Research", overlay = true, max_lines_count = 450, max_labels_count = 150)
 
-// RESEARCH MODEL / v1.2: Balanced revision + Legacy v1.1 comparison mode.
+// RESEARCH MODEL / v1.3: independent AM/PM ranges and frozen entry-time grades.
 // Standard time-based candles. Auto: session AMD <=15m; rolling AMD above 15m.
 // Auto trend timeframe is 3x chart (rounded to a supported TradingView interval).
 // RTH-only intraday charts use an explicitly identified opening-range fallback.
@@ -48,6 +48,11 @@ int balancedDaily = input.int(2, "Balanced maximum entries / day", minval = 1, m
 int attemptsPerSide = input.int(2, "Balanced sweep attempts per boundary / day", minval = 1, maxval = 5, group = g2)
 int retryMinutes = input.int(15, "Balanced retry cooldown minutes", minval = 1, maxval = 180, group = g2)
 int minimumTimeLeft = input.int(60, "Balanced minimum minutes before flatten for NEW entry", minval = 0, maxval = 240, group = g2)
+bool enableAfternoon = input.bool(true, "Balanced: add independent afternoon accumulation", group = g2)
+string afternoonAcc = input.session("1200-1230", "Afternoon accumulation (same calendar day)", group = g2)
+string afternoonEntry = input.session("1230-1530", "Afternoon entry window", group = g2)
+int entriesPerWindow = input.int(1, "Balanced maximum entries per AM/PM window", minval = 1, maxval = 5, group = g2)
+string minimumGrade = input.string("B or better", "Minimum setup grade", options = ["B or better", "A or better", "A+ only"], group = g1)
 string g3 = "03 | Setup and risk"
 int atrLen = input.int(14, "Chart ATR length", minval = 2, group = g3)
 float minRange = input.float(0.5, "Minimum range / ATR at accumulation end", minval = 0.1, step = 0.1, group = g3)
@@ -120,6 +125,18 @@ int dateKey = year(time, tz) * 10000 + month(time, tz) * 100 + dayofmonth(time, 
 bool newDay = bar_index > 0 and dateKey != dateKey[1]
 int cutoff = timestamp(tz, year(time, tz), month(time, tz), dayofmonth(time, tz), exitHour, exitMinute)
 bool beforeCutoff = time_close < cutoff
+bool useAfternoon = balanced and not rolling and enableAfternoon
+int pmStartHour = int(str.tonumber(str.substring(afternoonAcc, 0, 2)))
+int pmStartMinute = int(str.tonumber(str.substring(afternoonAcc, 2, 4)))
+int pmStart = timestamp(tz, year(time, tz), month(time, tz), dayofmonth(time, tz), pmStartHour, pmStartMinute)
+bool afternoonPhase = useAfternoon and time >= pmStart
+bool phaseChanged = afternoonPhase and (not afternoonPhase[1] or newDay)
+bool inAfternoonAcc = not na(time(timeframe.period, afternoonAcc + ":" + days, tz))
+bool inAfternoonEntry = not na(time(timeframe.period, afternoonEntry + ":" + days, tz))
+// Grade is a descriptive confluence score, not an estimated success probability.
+// Five points: strict HTF stack, full profile body, close quality >=80%,
+// structural risk <=1.5 ATR, reclaim within 5m (or <=1 bar on daily+).
+f_gradeName(int grade) => grade == 0 ? "A+" : grade == 1 ? "A" : "B"
 
 type Research
     bool active = false
@@ -127,6 +144,8 @@ type Research
     int entryBar = na
     int entryDay = na
     int enteredAt = na
+    int grade = 2
+    int window = 0
     float entry = na
     float stop = na
     float risk = na
@@ -156,6 +175,12 @@ type Research
     array<int> binN = na
     array<int> binW = na
     array<float> binR = na
+    array<int> gradeN = na
+    array<int> gradeW = na
+    array<float> gradeR = na
+    array<int> windowN = na
+    array<int> windowW = na
+    array<float> windowR = na
 
 method settle(Research s, float price, bool ambiguity, bool timedExit) =>
     float r = (price - s.entry) * s.side / s.risk - costTicks * syminfo.mintick / s.risk
@@ -180,6 +205,12 @@ method settle(Research s, float price, bool ambiguity, bool timedExit) =>
     s.binN.set(s.bucket, s.binN.get(s.bucket) + 1)
     s.binW.set(s.bucket, s.binW.get(s.bucket) + (r > 0.000001 ? 1 : 0))
     s.binR.set(s.bucket, s.binR.get(s.bucket) + r)
+    s.gradeN.set(s.grade, s.gradeN.get(s.grade) + 1)
+    s.gradeW.set(s.grade, s.gradeW.get(s.grade) + (r > 0.000001 ? 1 : 0))
+    s.gradeR.set(s.grade, s.gradeR.get(s.grade) + r)
+    s.windowN.set(s.window, s.windowN.get(s.window) + 1)
+    s.windowW.set(s.window, s.windowW.get(s.window) + (r > 0.000001 ? 1 : 0))
+    s.windowR.set(s.window, s.windowR.get(s.window) + r)
     s.active := false
 
 var array<Research> sims = array.new<Research>()
@@ -190,6 +221,12 @@ if barstate.isfirst
         s.binN := array.new_int(4, 0)
         s.binW := array.new_int(4, 0)
         s.binR := array.new_float(4, 0)
+        s.gradeN := array.new_int(3, 0)
+        s.gradeW := array.new_int(3, 0)
+        s.gradeR := array.new_float(3, 0)
+        s.windowN := array.new_int(3, 0)
+        s.windowW := array.new_int(3, 0)
+        s.windowR := array.new_float(3, 0)
         sims.push(s)
 
 var float rangeHi = na
@@ -205,6 +242,8 @@ var int fallbackSessions = 0
 var int missingSessions = 0
 var int lastMissingDay = na
 var int dailyEntries = 0
+var int windowEntries = 0
+var int gradeRejected = 0
 var int validSessions = 0
 var int rejectedSessions = 0
 var int sweeps = 0
@@ -246,7 +285,7 @@ bool shortSignal = false
 bool resultSignal = false
 // A fallback is selected only when no overnight range exists for this day.
 // It is never spliced into an already collected overnight range.
-bool inAcc = not rolling and (overnightAcc or (rthFallback and inOpening and (fallbackDay or na(rangeHi) or newDay)))
+bool inAcc = not rolling and (afternoonPhase ? inAfternoonAcc : (overnightAcc or (rthFallback and inOpening and (fallbackDay or na(rangeHi) or newDay))))
 
 if barstate.isconfirmed
     // Resolve old positions BEFORE considering any new close entry.
@@ -296,6 +335,7 @@ if barstate.isconfirmed
         accComplete := false
         rangeValid := false
         dailyEntries := 0
+        windowEntries := 0
         state := 0
         usedLow := false
         usedHigh := false
@@ -304,18 +344,35 @@ if barstate.isconfirmed
         lowAttempts := 0
         highAttempts := 0
         lastAttemptAt := na
+    // Independent PM range: clear the AM setup and attempt budget, but keep
+    // existing trades and the daily entry cap. Never recycle the AM range as PM.
+    if phaseChanged
+        rangeHi := na
+        rangeLo := na
+        accCount := 0
+        accMinutes := 0
+        accComplete := false
+        rangeValid := false
+        state := 0
+        usedLow := false
+        usedHigh := false
+        lowAttempts := 0
+        highAttempts := 0
+        lastAttemptAt := na
+        windowEntries := 0
+        fallbackDay := false
     if inAcc
         observedAccBars += inResearch ? 1 : 0
         if inOpening and not overnightAcc
             fallbackDay := true
         // A history slice beginning inside accumulation is rejected. Midnight
         // start is valid only when previous loaded bar belongs to previous day.
-        if not inAcc[1] or newDay
+        if not inAcc[1] or newDay or phaseChanged
             rangeHi := high
             rangeLo := low
             accCount := 1
             accMinutes := (time_close - time) / 60000.0
-            accComplete := bar_index > 0
+            accComplete := bar_index > 0 and (not afternoonPhase or time == pmStart)
             rangeValid := false
             state := 0
         else
@@ -323,7 +380,7 @@ if barstate.isconfirmed
             rangeLo := na(rangeLo) ? low : math.min(rangeLo, low)
             accCount += 1
             accMinutes += (time_close - time) / 60000.0
-    if not rolling and not inAcc and inAcc[1] and not newDay
+    if not rolling and not inAcc and inAcc[1] and not newDay and not phaseChanged
         float widthATR = (rangeHi - rangeLo) / atr[1]
         rangeValid := accComplete and accCount >= 2 and accMinutes >= minAccMinutes and widthATR >= minRange and widthATR <= maxRange
         if inResearch
@@ -343,13 +400,13 @@ if barstate.isconfirmed
             validSessions += 1
         else if inResearch
             rejectedSessions += 1
-    bool entryWindow = rolling or (fallbackDay ? inOpeningEntry : inEntry)
+    bool entryWindow = rolling or (afternoonPhase ? inAfternoonEntry : fallbackDay ? inOpeningEntry : inEntry)
     if inResearch and entryWindow
         observedEntryBars += 1
         if not rolling and na(rangeHi) and (na(lastMissingDay) or lastMissingDay != dateKey)
             missingSessions += 1
             lastMissingDay := dateKey
-    bool eligible = entryWindow and not inAcc and rangeValid and (rolling or beforeCutoff) and inResearch and (rolling or dailyEntries < (balanced ? balancedDaily : maxDaily)) and not na(atr[1])
+    bool eligible = entryWindow and not inAcc and rangeValid and (rolling or beforeCutoff) and inResearch and (rolling or dailyEntries < (balanced ? balancedDaily : maxDaily)) and (not useAfternoon or windowEntries < entriesPerWindow) and not na(atr[1])
     if not eligible
         state := 0
     else
@@ -439,6 +496,11 @@ if barstate.isconfirmed
                     bool riskOK = risk >= minRisk * atr[1] and risk <= maxRisk * atr[1] and risk >= syminfo.mintick
                     bool busy = sims.get(0).active or sims.get(1).active or sims.get(2).active
                     bool enoughTime = not balanced or rolling or cutoff - time_close >= minimumTimeLeft * 60000
+                    bool strictTrend = side == 1 ? hc > hf and hf > hs and (not slopeFilter or hf > hfPrev) : hc < hf and hf < hs and (not slopeFilter or hf < hfPrev)
+                    bool fastReclaim = timeframe.isintraday ? reclaimedAt - sweptAt <= 5 * 60000 : reclaimBar - sweepBar <= 1
+                    int gradeScore = (strictTrend ? 1 : 0) + (math.abs(close - open) >= bodyMin * atr[1] ? 1 : 0) + (location >= 0.80 ? 1 : 0) + (risk <= 1.5 * atr[1] ? 1 : 0) + (fastReclaim ? 1 : 0)
+                    int setupGrade = gradeScore >= 4 ? 0 : gradeScore >= 2 ? 1 : 2
+                    bool gradeAllowed = minimumGrade == "B or better" or (minimumGrade == "A or better" and setupGrade <= 1) or (minimumGrade == "A+ only" and setupGrade == 0)
                     if not aligned
                         trendRejected += 1
                     else if not riskOK
@@ -447,9 +509,12 @@ if barstate.isconfirmed
                         busyRejected += 1
                     else if not enoughTime
                         lateRejected += 1
+                    else if not gradeAllowed
+                        gradeRejected += 1
                     else
                         firstTrade := na(firstTrade) ? time_close : firstTrade
                         dailyEntries += 1
+                        windowEntries += 1
                         int minutes = hour(time_close, tz) * 60 + minute(time_close, tz)
                         int bin = minutes < 600 ? 0 : minutes < 660 ? 1 : minutes < 720 ? 2 : 3
                         for i = 0 to 2
@@ -459,6 +524,8 @@ if barstate.isconfirmed
                             s.entryBar := bar_index
                             s.entryDay := dateKey
                             s.enteredAt := time_close
+                            s.grade := setupGrade
+                            s.window := rolling ? 2 : afternoonPhase ? 1 : 0
                             s.entry := close
                             s.stop := sl
                             s.risk := risk
@@ -469,8 +536,8 @@ if barstate.isconfirmed
                             s.first := na(s.first) ? time_close : s.first
                         Research ds = sims.get(drawIdx)
                         color ink = side == 1 ? color.teal : color.orange
-                        string setupName = rolling ? "Trend-Aligned Rolling AMD" : fallbackDay ? "Trend-Aligned RTH AMD" : "Trend-Aligned Session AMD"
-                        string caption = (side == 1 ? "LONG" : "SHORT") + " | " + setupName + "\nSweep > Reclaim > Distribution\nEntry " + str.tostring(close, format.mintick) + "\nSL " + str.tostring(sl, format.mintick) + "\nTP " + str.tostring(ds.target, format.mintick) + " (" + displayedTarget + ")"
+                        string setupName = rolling ? "Trend-Aligned Rolling AMD" : afternoonPhase ? "Trend-Aligned PM AMD" : fallbackDay ? "Trend-Aligned AM RTH AMD" : "Trend-Aligned AM Session AMD"
+                        string caption = (side == 1 ? "LONG" : "SHORT") + " | " + setupName + "\nGrade " + f_gradeName(setupGrade) + " (" + str.tostring(gradeScore) + "/5)\nSweep > Reclaim > Distribution\nEntry " + str.tostring(close, format.mintick) + "\nSL " + str.tostring(sl, format.mintick) + "\nTP " + str.tostring(ds.target, format.mintick) + " (" + displayedTarget + ")"
                         tradeLabel := label.new(bar_index, side == 1 ? low : high, caption, style = side == 1 ? label.style_label_up : label.style_label_down, color = ink, textcolor = color.white, size = size.small)
                         retainedLabels.push(tradeLabel)
                         int nextClose = time_close + int(chartSeconds * 1000)
@@ -499,18 +566,19 @@ alertcondition(resultSignal, "AMD selected target resolved", "The selected AMD t
 f_num(float v) => str.tostring(v, "#.##")
 f_wr(int wins, int count) => count > 0 ? str.tostring(100.0 * wins / count, "#.##") + "%" : "--"
 f_pf(Research s) => s.gl > 0 ? f_num(s.gp / s.gl) : s.gp > 0 ? "Inf" : "--"
+f_group(int n, int w, float r) => str.tostring(n) + " / " + f_wr(w, n) + " / " + f_num(r)
 f_cell(table t, int col, int row, string txt, color bg) =>
     table.cell(t, col, row, txt, text_color = color.white, bgcolor = bg, text_size = tableTextSize)
 
-var table perf = table.new(position.top_right, 4, 27, border_width = 1)
-var table diag = table.new(position.bottom_left, 4, 24, border_width = 1)
+var table perf = table.new(position.top_right, 4, 33, border_width = 1)
+var table diag = table.new(position.bottom_left, 4, 25, border_width = 1)
 if barstate.isfirst
-    for r = 5 to 23
+    for r = 5 to 24
         table.merge_cells(diag, 1, r, 3, r)
 if barstate.islast and showTable
     color bg = color.new(color.black, 0)
     color head = color.new(color.blue, 45)
-    f_cell(perf, 0, 0, "AB | AMD v1.2", head)
+    f_cell(perf, 0, 0, "AB | AMD v1.3", head)
     for i = 0 to 2
         Research s = sims.get(i)
         int c = i + 1
@@ -541,9 +609,15 @@ if barstate.islast and showTable
         f_cell(perf, c, 24, str.tostring(s.profitableTimed) + " / " + str.tostring(s.timed), bg)
         f_cell(perf, c, 25, f_num(s.timedR), bg)
         f_cell(perf, c, 26, rules, bg)
+        for g = 0 to 2
+            f_cell(perf, c, g + 27, f_group(s.gradeN.get(g), s.gradeW.get(g), s.gradeR.get(g)), bg)
+            f_cell(perf, c, g + 30, f_group(s.windowN.get(g), s.windowW.get(g), s.windowR.get(g)), bg)
     array<string> names = array.from("Trade Period from", "Through today", "Trades entered", "Closed", "W / L / BE (net)", "Win rate", "Long WR (closed)", "Short WR (closed)", "Gross profit R", "Gross loss R (abs)", "Net R", "Profit factor", "Max closed DD R", "Expectancy R", "Open trade", "Both hit: SL first", "Time/session exits", "Open net R (mark)", "Round-trip cost", "Coverage", "Entry policy", "TP hits / SL hits", "Target hit rate (closed)", "Profitable timed / timed", "Timed exits net R", "Rule set")
     for row = 1 to 26
         f_cell(perf, 0, row, names.get(row - 1), bg)
+    array<string> groupNames = array.from("A+ closed N / WR / R", "A closed N / WR / R", "B closed N / WR / R", "AM closed N / WR / R", "PM closed N / WR / R", "Rolling closed N / WR / R")
+    for r = 0 to 5
+        f_cell(perf, 0, r + 27, groupNames.get(r), bg)
     f_cell(diag, 0, 0, market + " | " + timeframe.period + " / " + htf, head)
     f_cell(diag, 1, 0, "N", head)
     f_cell(diag, 2, 0, "WR", head)
@@ -555,11 +629,11 @@ if barstate.islast and showTable
         f_cell(diag, 1, b + 1, str.tostring(ds.binN.get(b)), bg)
         f_cell(diag, 2, b + 1, f_wr(ds.binW.get(b), ds.binN.get(b)), bg)
         f_cell(diag, 3, b + 1, f_num(ds.binR.get(b)), bg)
-    string activeModel = rolling ? "Rolling " + str.tostring(rollingBars) + " candles" : fallbackDay ? "RTH opening-range AMD" : "Session AMD"
+    string activeModel = rolling ? "Rolling " + str.tostring(rollingBars) + " candles" : afternoonPhase ? "PM fresh-range AMD" : fallbackDay ? "AM RTH opening-range AMD" : "AM session AMD"
     string status = rolling ? (bar_index < rollingBars ? "Need more history" : rangeValid ? "Rolling range ready" : "Range / ATR filter") : observedAccBars == 0 ? "No accumulation bars: enable RTH fallback or ETH" : not rangeValid ? "Range incomplete / rejected / still forming" : "Range ready; see setup counters"
     string trendStatus = na(hs) ? "HTF EMA warmup" : timeframe.in_seconds(htf) <= chartSeconds ? "Previous chart bar (max interval)" : "Confirmed previous HTF"
-    array<string> diagNames = array.from(rolling ? "Range windows valid / rejected" : "Sessions valid / rejected", "Sweeps / reclaims", "Displacements / expired", "HTF / risk rejected", "Busy / dual sweeps", "Setup + entry window", "Trend now / state", "Diagnostics target / timezone", "Active model", "Accumulation / entry bars", "RTH fallbacks / missing days", "Data / setup status", "Trend data status", "Chart session / last data")
-    array<string> diagValues = array.from(str.tostring(validSessions) + " / " + str.tostring(rejectedSessions), str.tostring(sweeps) + " / " + str.tostring(reclaims), str.tostring(distributions) + " / " + str.tostring(expired), str.tostring(trendRejected) + " / " + str.tostring(riskRejected), str.tostring(busyRejected) + " / " + str.tostring(dualSweeps), "AMD | " + (rolling ? "All chart bars" : fallbackDay ? openingEntry : entrySession), (bull ? "Bull" : bear ? "Bear" : "Neutral") + " / " + str.tostring(state), displayedTarget + " | " + tz, activeModel, str.tostring(observedAccBars) + " / " + str.tostring(observedEntryBars), str.tostring(fallbackSessions) + " / " + str.tostring(missingSessions), status, trendStatus, syminfo.session + " | " + str.format_time(time_close, "yyyy-MM-dd HH:mm", tz))
+    array<string> diagNames = array.from(rolling ? "Range windows valid / rejected" : "AM/PM windows valid / rejected", "Sweeps / reclaims", "Displacements / expired", "HTF / risk rejected", "Busy / dual sweeps", "Setup + entry window", "Trend now / state", "Diagnostics target /timezone", "Active model", "Accumulation / entry bars", "RTH fallbacks / missing days", "Data / setup status", "Trend data status", "Chart session / last data")
+    array<string> diagValues = array.from(str.tostring(validSessions) + " / " + str.tostring(rejectedSessions), str.tostring(sweeps) + " / " + str.tostring(reclaims), str.tostring(distributions) + " / " + str.tostring(expired), str.tostring(trendRejected) + " / " + str.tostring(riskRejected), str.tostring(busyRejected) + " / " + str.tostring(dualSweeps), "AMD | " + (rolling ? "All chart bars" : afternoonPhase ? afternoonEntry : fallbackDay ? openingEntry : entrySession), (bull ? "Bull" : bear ? "Bear" : "Neutral") + " / " + str.tostring(state), displayedTarget + " | " + tz, activeModel, str.tostring(observedAccBars) + " / " + str.tostring(observedEntryBars), str.tostring(fallbackSessions) + " / " + str.tostring(missingSessions), status, trendStatus, syminfo.session + " | " + str.format_time(time_close, "yyyy-MM-dd HH:mm", tz))
     for r = 0 to 13
         f_cell(diag, 0, r + 5, diagNames.get(r), bg)
         f_cell(diag, 1, r + 5, diagValues.get(r), bg)
@@ -568,3 +642,5 @@ if barstate.islast and showTable
     for r = 0 to 4
         f_cell(diag, 0, r + 19, extraNames.get(r), bg)
         f_cell(diag, 1, r + 19, extraValues.get(r), bg)
+    f_cell(diag, 0, 24, "Grade filter / rejected", bg)
+    f_cell(diag, 1, 24, minimumGrade + " / " + str.tostring(gradeRejected), bg)
