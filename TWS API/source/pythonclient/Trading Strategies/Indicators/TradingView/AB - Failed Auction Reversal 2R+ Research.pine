@@ -1,0 +1,364 @@
+//@version=6
+indicator("AB - Failed Auction Reversal 2R+ Research", overlay=true, max_lines_count=450, max_labels_count=150)
+
+// RESEARCH INDICATOR, not a Strategy Tester strategy. Standard time-based OHLC only.
+// Profile approximation: completed session HLC3 observations weighted by bar volume,
+// rebinned into equal price bins. POC = lowest bin on ties. Expand from POC toward
+// the larger adjacent volume (lower bin on ties) until the requested VA is covered.
+// This is not exchange volume-at-price, bid/ask data, or TradingView's native profile.
+// Initial partial session is discarded. Levels freeze for the whole next session.
+// Session must be a single daytime interval (default New York RTH), not overnight.
+// Signals and accounting commit only on confirmed bars. Entry = signal close;
+// exits start on the following bar. Stop wins all ambiguous stop/target bars,
+// even if the bar opens beyond target. Adverse stop gaps fill at open; favorable
+// target gaps fill at target. Session exit = last session bar close when its
+// scheduled close reaches session end; fallback = first outside/new session open.
+// Three targets share entries; no new entry until all three hypothetical trades
+// close. Net R includes round-trip cost in ticks / initial risk. No BE stop move.
+// Max DD is closed-trade equity DD. Open trades excluded from closed statistics.
+// Targets round to the nearest tradable tick; realized R reflects that rounding.
+// History, timeframe, session, volume feed and inputs change the research sample.
+
+string G1 = "Session and profile"
+string tz = input.string("America/New_York", "Session timezone", group=G1)
+string sess = input.session("0930-1600", "Profile and trading session", group=G1)
+string days = input.string("23456", "Session days (1=Sun, 7=Sat)", group=G1)
+int bins = input.int(48, "Profile bins", minval=12, maxval=120, group=G1)
+float vaPct = input.float(70, "Value area %", minval=50, maxval=95, group=G1)
+int minBars = input.int(30, "Minimum completed profile bars", minval=5, group=G1)
+string G2 = "Failed auction sequence"
+string preset = input.string("Auto", "Instrument profile", options=["Auto", "MES/ES", "MNQ/NQ", "MGC/GC", "Custom"], group=G2)
+int customBuffer = input.int(2, "Custom stop buffer ticks", minval=1, group=G2)
+int maxOutside = input.int(3, "Maximum outside closes before acceptance", minval=1, maxval=20, group=G2)
+int maxReentry = input.int(8, "Maximum excursion bars to re-enter", minval=1, group=G2)
+int maxRetest = input.int(6, "Maximum bars after re-entry for retest", minval=1, group=G2)
+int toleranceTicks = input.int(2, "Boundary retest tolerance ticks", minval=0, group=G2)
+int excursionTicks = input.int(2, "Minimum excursion ticks", minval=1, group=G2)
+float minRisk = input.float(4, "Minimum risk ticks", minval=1, group=G2)
+float maxRisk = input.float(100, "Maximum risk ticks", minval=2, group=G2)
+int sessionLimit = input.int(3, "Maximum entries per session", minval=1, group=G2)
+bool bothSides = input.bool(true, "Enable shorts (longs always enabled)", group=G2)
+string G3 = "Research and display"
+float primary = input.float(2.5, "Displayed target R", options=[2.0, 2.5, 3.0], group=G3)
+int startDate = input.time(timestamp("01 Jan 2020 00:00 +0000"), "Research start", group=G3)
+int holdingBars = input.int(48, "Maximum holding bars", minval=1, group=G3)
+float costs = input.float(0, "Round-trip costs (ticks)", minval=0, step=0.25, group=G3)
+int keepTrades = input.int(80, "Retain last trade drawings", minval=1, maxval=140, group=G3)
+bool showLevels = input.bool(true, "Show prior-session value", group=G3)
+bool showTable = input.bool(true, "Show research table", group=G3)
+
+string root = syminfo.root
+string mode = preset == "Auto" ? (str.contains(root, "NQ") ? "MNQ/NQ" : str.contains(root, "GC") ? "MGC/GC" : "MES/ES") : preset
+int bufferTicks = mode == "Custom" ? customBuffer : mode == "MNQ/NQ" ? 4 : 2
+float tick = syminfo.mintick
+float tol = toleranceTicks * tick
+bool inSession = not na(time(timeframe.period, sess + ":" + days, tz))
+int dayKey = year(time, tz) * 10000 + month(time, tz) * 100 + dayofmonth(time, tz)
+bool newSession = inSession and (not inSession[1] or dayKey != dayKey[1])
+bool endSession = not inSession and inSession[1]
+int sessStart = int(str.tonumber(str.substring(sess, 0, 4)))
+int sessEnd = int(str.tonumber(str.substring(sess, 5, 9)))
+bool supported = timeframe.isintraday and chart.is_standard and sessEnd > sessStart
+int sessionEndMinute = int(math.floor(sessEnd / 100)) * 60 + sessEnd % 100
+bool lastSessionBar = inSession and hour(time_close, tz) * 60 + minute(time_close, tz) >= sessionEndMinute
+var array<float> samples = array.new_float()
+var array<float> weights = array.new_float()
+var bool completeStart = false
+var bool overflow = false
+var float vah = na
+var float val = na
+var float poc = na
+var int profiles = 0
+var int skipped = 0
+
+f_profile(array<float> ps, array<float> vs) =>
+    float lo = array.min(ps)
+    float hi = array.max(ps)
+    float step = math.max((hi - lo) / bins, tick)
+    array<float> hist = array.new_float(bins, 0.0)
+    for j = 0 to array.size(ps) - 1
+        int b = math.min(bins - 1, int(math.floor((array.get(ps, j) - lo) / step)))
+        array.set(hist, b, array.get(hist, b) + array.get(vs, j))
+    int p = array.indexof(hist, array.max(hist))
+    int l = p
+    int h = p
+    float covered = array.get(hist, p)
+    float needed = array.sum(hist) * vaPct / 100
+    while covered < needed and (l > 0 or h < bins - 1)
+        float below = l > 0 ? array.get(hist, l - 1) : -1
+        float above = h < bins - 1 ? array.get(hist, h + 1) : -1
+        if below >= above
+            l -= 1
+            covered += array.get(hist, l)
+        else
+            h += 1
+            covered += array.get(hist, h)
+    [lo + l * step, lo + (h + 1) * step, lo + (p + 0.5) * step]
+
+var int state = 0 // 0 idle, +1 downside excursion, +2 reclaimed; negative = upside
+var int began = na
+var int reclaimed = na
+var int outsideCloses = 0
+var float extreme = na
+var int sessionEntries = 0
+var int sessionsSeen = 0
+var int sessionsTraded = 0
+var int excursions = 0
+var int reentries = 0
+var int accepted = 0
+var int expired = 0
+var int riskRejected = 0
+var int firstTrade = na
+var int totalEntries = 0
+var int direction = 0
+var int entryBar = na
+var int entryBucket = 0
+var float entry = na
+var float stop = na
+var float risk = na
+var array<float> targets = array.from(2.0, 2.5, 3.0)
+var array<bool> active = array.new_bool(3, false)
+var array<int> counts = array.new_int(3, 0)
+var array<int> wins = array.new_int(3, 0)
+var array<int> losses = array.new_int(3, 0)
+var array<int> bes = array.new_int(3, 0)
+var array<float> gp = array.new_float(3, 0)
+var array<float> gl = array.new_float(3, 0)
+var array<float> net = array.new_float(3, 0)
+var array<float> peak = array.new_float(3, 0)
+var array<float> dd = array.new_float(3, 0)
+var array<int> dirN = array.new_int(2, 0)
+var array<int> dirW = array.new_int(2, 0)
+var array<int> todN = array.new_int(3, 0)
+var array<int> todW = array.new_int(3, 0)
+var array<int> exitN = array.new_int(3, 0) // stop, target, time/session
+var array<line> drawings = array.new_line()
+var array<label> labels = array.new_label()
+var line eLine = na
+var line sLine = na
+var line tLine = na
+int primaryIndex = primary == 2 ? 0 : primary == 2.5 ? 1 : 2
+bool longSignal = false
+bool shortSignal = false
+bool primaryExit = false
+
+if barstate.isconfirmed and supported
+    // Finalize before adding the first new-session observation, including RTH-only charts.
+    if endSession or newSession
+        if array.size(samples) > 0
+            if completeStart and not overflow and array.size(samples) >= minBars and array.sum(weights) > 0
+                [lv, hv, pv] = f_profile(samples, weights)
+                val := lv
+                vah := hv
+                poc := pv
+                profiles += 1
+            else
+                val := na
+                vah := na
+                poc := na
+                skipped += 1
+            array.clear(samples)
+            array.clear(weights)
+        state := 0
+    if newSession
+        completeStart := not barstate.isfirst
+        overflow := false
+        sessionEntries := 0
+        if time >= startDate and not na(val)
+            sessionsSeen += 1
+    if inSession
+        if array.size(samples) < 2000
+            array.push(samples, hlc3)
+            array.push(weights, math.max(nz(volume), 0))
+        else
+            overflow := true
+
+    // Existing trades are processed before new signals, never on entry bar.
+    if array.includes(active, true) and bar_index > entryBar
+        for k = 0 to 2
+            if array.get(active, k)
+                float tp = math.round_to_mintick(entry + direction * risk * array.get(targets, k))
+                bool stopHit = direction == 1 ? low <= stop : high >= stop
+                bool targetHit = direction == 1 ? high >= tp : low <= tp
+                bool sessionExit = not inSession or newSession
+                bool timed = bar_index - entryBar >= holdingBars or lastSessionBar
+                float fillPx = na
+                int reason = 2
+                // On session transition we flatten at open, not on later bar range.
+                if sessionExit
+                    bool gapStop = direction == 1 ? open <= stop : open >= stop
+                    bool gapTarget = direction == 1 ? open >= tp : open <= tp
+                    fillPx := gapStop ? open : gapTarget ? tp : open
+                    reason := gapStop ? 0 : gapTarget ? 1 : 2
+                else if stopHit
+                    fillPx := direction == 1 ? math.min(stop, open) : math.max(stop, open)
+                    reason := 0
+                else if targetHit
+                    fillPx := tp
+                    reason := 1
+                else if timed
+                    fillPx := close
+                if not na(fillPx)
+                    float result = direction * (fillPx - entry) / risk - costs * tick / risk
+                    array.set(active, k, false)
+                    array.set(counts, k, array.get(counts, k) + 1)
+                    array.set(wins, k, array.get(wins, k) + (result > 0.000001 ? 1 : 0))
+                    array.set(losses, k, array.get(losses, k) + (result < -0.000001 ? 1 : 0))
+                    array.set(bes, k, array.get(bes, k) + (math.abs(result) <= 0.000001 ? 1 : 0))
+                    array.set(gp, k, array.get(gp, k) + math.max(result, 0))
+                    array.set(gl, k, array.get(gl, k) + math.max(-result, 0))
+                    float equity = array.get(net, k) + result
+                    array.set(net, k, equity)
+                    array.set(peak, k, math.max(array.get(peak, k), equity))
+                    array.set(dd, k, math.max(array.get(dd, k), array.get(peak, k) - equity))
+                    if k == primaryIndex
+                        primaryExit := true
+                        int di = direction == 1 ? 0 : 1
+                        array.set(dirN, di, array.get(dirN, di) + 1)
+                        array.set(dirW, di, array.get(dirW, di) + (result > 0.000001 ? 1 : 0))
+                        array.set(todN, entryBucket, array.get(todN, entryBucket) + 1)
+                        array.set(todW, entryBucket, array.get(todW, entryBucket) + (result > 0.000001 ? 1 : 0))
+                        array.set(exitN, reason, array.get(exitN, reason) + 1)
+                        line.set_style(eLine, line.style_solid)
+                        // Winning target or losing stop becomes solid; time exit makes both solid.
+                        if reason != 0
+                            line.set_style(tLine, line.style_solid)
+                        if reason != 1
+                            line.set_style(sLine, line.style_solid)
+                        line.set_color(eLine, result > 0 ? color.lime : result < 0 ? color.red : color.gray)
+        if array.get(active, primaryIndex) or primaryExit
+            line.set_x2(eLine, bar_index)
+            line.set_x2(sLine, bar_index)
+            line.set_x2(tLine, bar_index)
+
+    bool eligible = inSession and not lastSessionBar and time >= startDate and not na(val) and not array.includes(active, true) and not primaryExit and sessionEntries < sessionLimit
+    if not eligible
+        state := 0
+    else
+        // An accepted auction is blocked until price closes back inside value.
+        if math.abs(state) == 3 and close > val and close < vah
+            state := 0
+        if state == 0
+            if low < val - excursionTicks * tick
+                state := 1
+                extreme := low
+            else if bothSides and high > vah + excursionTicks * tick
+                state := -1
+                extreme := high
+            if state != 0
+                began := bar_index
+                outsideCloses := 0
+                excursions += 1
+        if math.abs(state) == 1
+            bool isLong = state > 0
+            extreme := isLong ? math.min(extreme, low) : math.max(extreme, high)
+            bool outside = isLong ? close < val : close > vah
+            outsideCloses := outside ? outsideCloses + 1 : 0
+            if outsideCloses >= maxOutside
+                accepted += 1
+                state := isLong ? 3 : -3
+            else if bar_index - began > maxReentry
+                expired += 1
+                state := 0
+            else if close > val and close < vah
+                state := isLong ? 2 : -2
+                reclaimed := bar_index
+                reentries += 1
+        else if math.abs(state) == 2
+            bool isLong = state > 0
+            extreme := isLong ? math.min(extreme, low) : math.max(extreme, high)
+            bool invalid = isLong ? close < val - tol : close > vah + tol
+            bool retest = isLong ? low <= val + tol and close > val and close > open : high >= vah - tol and close < vah and close < open
+            if invalid or bar_index - reclaimed > maxRetest
+                expired += 1
+                state := 0
+            else if bar_index > reclaimed and retest and close > val and close < vah
+                float proposedStop = math.round_to_mintick(extreme + (isLong ? -1 : 1) * bufferTicks * tick)
+                float proposedRisk = math.abs(close - proposedStop)
+                if proposedRisk / tick >= minRisk and proposedRisk / tick <= maxRisk
+                    direction := isLong ? 1 : -1
+                    entry := close
+                    stop := proposedStop
+                    risk := proposedRisk
+                    entryBar := bar_index
+                    int minuteOfDay = hour(time, tz) * 60 + minute(time, tz)
+                    entryBucket := minuteOfDay < 660 ? 0 : minuteOfDay < 840 ? 1 : 2
+                    array.fill(active, true)
+                    if sessionEntries == 0
+                        sessionsTraded += 1
+                    sessionEntries += 1
+                    totalEntries += 1
+                    if na(firstTrade)
+                        firstTrade := time_close
+                    longSignal := isLong
+                    shortSignal := not isLong
+                    float tp = math.round_to_mintick(entry + direction * risk * primary)
+                    eLine := line.new(bar_index, entry, bar_index + 1, entry, color=color.gray, style=line.style_dotted)
+                    sLine := line.new(bar_index, stop, bar_index + 1, stop, color=color.red, style=line.style_dotted)
+                    tLine := line.new(bar_index, tp, bar_index + 1, tp, color=color.lime, style=line.style_dotted)
+                    array.push(drawings, eLine)
+                    array.push(drawings, sLine)
+                    array.push(drawings, tLine)
+                    string msg = (isLong ? "LONG" : "SHORT") + " | Failed Auction Reversal\nEntry: " + str.tostring(entry, format.mintick) + "\nSL: " + str.tostring(stop, format.mintick) + "\nTP: " + str.tostring(tp, format.mintick) + " (" + str.tostring(primary) + "R)"
+                    array.push(labels, label.new(bar_index, isLong ? low : high, msg, style=isLong ? label.style_label_up : label.style_label_down, color=isLong ? color.teal : color.orange, textcolor=color.white, size=size.small))
+                    if array.size(labels) > keepTrades
+                        label.delete(array.shift(labels))
+                        for j = 0 to 2
+                            line.delete(array.shift(drawings))
+                    alert(msg, alert.freq_once_per_bar_close)
+                else
+                    riskRejected += 1
+                state := 0
+
+plot(showLevels and inSession ? vah : na, "Prior VAH (approx)", color=color.orange, style=plot.style_linebr)
+plot(showLevels and inSession ? val : na, "Prior VAL (approx)", color=color.teal, style=plot.style_linebr)
+plot(showLevels and inSession ? poc : na, "Prior POC (approx)", color=color.new(color.purple, 20), style=plot.style_linebr)
+alertcondition(longSignal, "LONG Failed Auction", "LONG Failed Auction Reversal confirmed. See signal box for Entry/SL/TP.")
+alertcondition(shortSignal, "SHORT Failed Auction", "SHORT Failed Auction Reversal confirmed. See signal box for Entry/SL/TP.")
+alertcondition(primaryExit, "Displayed trade closed", "Failed Auction displayed-target research trade closed.")
+
+f_num(float n) =>
+    str.tostring(n, "#.##")
+f_wr(int w, int n) =>
+    n > 0 ? str.tostring(100.0 * w / n, "#.0") + "%" : "n/a"
+var table panel = table.new(position.top_right, 4, 25, border_width=1)
+f_cell(int c, int r, string s) =>
+    table.cell(panel, c, r, s, text_color=color.white, bgcolor=r == 0 ? color.new(color.teal, 20) : color.new(color.black, 15), text_size=size.small)
+
+if barstate.islast and showTable
+    f_cell(0, 0, "FAILED AUCTION | " + timeframe.period)
+    for k = 0 to 2
+        f_cell(k + 1, 0, str.tostring(array.get(targets, k)) + "R")
+    string period = na(firstTrade) ? "No actual trades" : str.format_time(firstTrade, "yyyy-MM-dd", tz) + " → " + str.format_time(timenow, "yyyy-MM-dd", tz)
+    array<string> titles = array.from("Trade Period", "Closed trades", "W / L / BE", "Win rate", "Gross profit R", "Gross loss R", "Net R (after costs)", "Profit factor", "Max closed DD R", "Open trades", "Long WR (display TP)", "Short WR (display TP)", "Before 11:00 WR / n", "11:00–14:00 WR / n", "After 14:00 WR / n", "Entries / session cap", "Excursions / re-entries", "Accepted / expired", "Risk rejected", "Stop / TP / timed exits", "Valid / skipped profiles", "Profile / instrument", "Execution / status", "Sessions traded / eligible")
+    for r = 1 to 24
+        f_cell(0, r, array.get(titles, r - 1))
+        for c = 1 to 3
+            f_cell(c, r, "")
+    f_cell(1, 1, period)
+    for k = 0 to 2
+        f_cell(k + 1, 2, str.tostring(array.get(counts, k)))
+        f_cell(k + 1, 3, str.tostring(array.get(wins, k)) + " / " + str.tostring(array.get(losses, k)) + " / " + str.tostring(array.get(bes, k)))
+        f_cell(k + 1, 4, f_wr(array.get(wins, k), array.get(counts, k)))
+        f_cell(k + 1, 5, f_num(array.get(gp, k)))
+        f_cell(k + 1, 6, f_num(array.get(gl, k)))
+        f_cell(k + 1, 7, f_num(array.get(net, k)))
+        f_cell(k + 1, 8, array.get(gl, k) > 0 ? f_num(array.get(gp, k) / array.get(gl, k)) : array.get(gp, k) > 0 ? "∞" : "n/a")
+        f_cell(k + 1, 9, f_num(array.get(dd, k)))
+        f_cell(k + 1, 10, array.get(active, k) ? "1" : "0")
+    for d = 0 to 1
+        f_cell(1, 11 + d, f_wr(array.get(dirW, d), array.get(dirN, d)) + " / " + str.tostring(array.get(dirN, d)))
+    for b = 0 to 2
+        f_cell(1, 13 + b, f_wr(array.get(todW, b), array.get(todN, b)) + " / " + str.tostring(array.get(todN, b)))
+    f_cell(1, 16, str.tostring(totalEntries) + " / " + str.tostring(sessionLimit))
+    f_cell(1, 17, str.tostring(excursions) + " / " + str.tostring(reentries))
+    f_cell(1, 18, str.tostring(accepted) + " / " + str.tostring(expired))
+    f_cell(1, 19, str.tostring(riskRejected))
+    f_cell(1, 20, str.tostring(array.get(exitN, 0)) + " / " + str.tostring(array.get(exitN, 1)) + " / " + str.tostring(array.get(exitN, 2)))
+    f_cell(1, 21, str.tostring(profiles) + " / " + str.tostring(skipped))
+    f_cell(1, 22, "HLC3 × volume / " + mode)
+    f_cell(1, 23, not supported ? "Requires standard intraday; daytime session" : "Close entry; stop first; TZ " + tz)
+    f_cell(1, 24, str.tostring(sessionsTraded) + " / " + str.tostring(sessionsSeen))
+else if barstate.islast
+    table.clear(panel, 0, 0, 3, 24)
+
