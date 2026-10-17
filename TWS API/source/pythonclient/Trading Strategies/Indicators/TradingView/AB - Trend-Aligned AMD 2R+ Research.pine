@@ -1,7 +1,7 @@
 //@version=6
 indicator("AB - Trend-Aligned AMD 2R+ Research", overlay = true, max_lines_count = 450, max_labels_count = 150)
 
-// RESEARCH MODEL / v1.4: single 2R dashboard, hourly and today's entry cohorts.
+// RESEARCH MODEL / v1.5: configurable dashboard visibility, font and dimensions.
 // Standard time-based candles. Auto: session AMD <=15m; rolling AMD above 15m.
 // Auto trend timeframe is 3x chart (rounded to a supported TradingView interval).
 // RTH-only intraday charts use an explicitly identified opening-range fallback.
@@ -79,10 +79,14 @@ int fromDate = input.time(timestamp("01 Jan 2020 00:00 +0000"), "Research start 
 int untilDate = input.time(timestamp("31 Dec 2099 23:59 +0000"), "Research end (entries; exits still managed)", group = g4)
 string displayedTarget = "2R"
 bool showRange = input.bool(true, "Show accumulation range", group = g4)
-bool showTable = input.bool(true, "Show research tables", group = g4)
 int keepTrades = input.int(60, "Retain chart trade drawings", minval = 1, maxval = 100, group = g4)
-string tableScale = input.string("Tiny", "Table text size", options = ["Tiny", "Small", "Normal"], group = g4)
-string tableTextSize = tableScale == "Tiny" ? size.tiny : tableScale == "Small" ? size.small : size.normal
+string g5 = "05 | Table controls"
+bool showTable = input.bool(true, "Show performance table", group = g5, tooltip = "Uncheck to remove only the table. Signals, lines, alerts and research calculations continue.")
+string tableScale = input.string("Tiny", "Table font size", options = ["Tiny", "Small", "Normal", "Large", "Huge", "Custom"], group = g5)
+int customTableFont = input.int(8, "Custom font size (points)", minval = 4, maxval = 32, group = g5, tooltip = "Used when Table font size is Custom. Smaller numbers reduce text size.")
+float tableRowHeight = input.float(1.7, "Row height (% of chart; 0 = auto)", minval = 0, maxval = 5, step = 0.1, group = g5, tooltip = "Increase/decrease the table height independently of font size. There are 44 rows; values above roughly 2.2% can exceed the chart height. Zero fits each row to its text.")
+float tableWidth = input.float(0, "Table width (% of chart; 0 = auto)", minval = 0, maxval = 80, step = 1, group = g5, tooltip = "Zero fits the columns to their text. A positive value sets the total table width; labels use 60%, results 40%.")
+string tableTextSize = tableScale == "Tiny" ? size.tiny : tableScale == "Small" ? size.small : tableScale == "Normal" ? size.normal : tableScale == "Large" ? size.large : size.huge
 bool inResearch = time >= fromDate and time_close <= untilDate
 
 if barstate.isfirst
@@ -593,14 +597,17 @@ f_wr(int wins, int count) => count > 0 ? str.tostring(100.0 * wins / count, "#.#
 f_pf(Research s) => s.gl > 0 ? f_num(s.gp / s.gl) : s.gp > 0 ? "Inf" : "--"
 f_group(int n, int w, float r) => str.tostring(n) + " / " + f_wr(w, n) + " / " + f_num(r)
 f_cell(table t, int col, int row, string txt, color bg) =>
-    // Explicit percentage height fits the added rows without shrinking text.
-    table.cell(t, col, row, txt, text_color = color.white, bgcolor = bg, text_size = tableTextSize, height = tableScale == "Tiny" ? 1.7 : tableScale == "Small" ? 2.0 : 2.2)
+    float cellWidth = tableWidth > 0 ? tableWidth * (col == 0 ? 0.6 : 0.4) : 0
+    if tableScale == "Custom"
+        table.cell(t, col, row, txt, text_color = color.white, bgcolor = bg, text_size = customTableFont, height = tableRowHeight, width = cellWidth)
+    else
+        table.cell(t, col, row, txt, text_color = color.white, bgcolor = bg, text_size = tableTextSize, height = tableRowHeight, width = cellWidth)
 
 // One right-side table. Keep hidden 2.5R/3R reference engines solely to
 // preserve v1.3 entry-cohort admission; chart/alerts/dashboard all report 2R.
 f_netColor(float r, color neutral) => r > 0.000001 ? color.new(color.green, 50) : r < -0.000001 ? color.new(color.red, 50) : neutral
 f_hour(int n, int w, float r) => f_wr(w, n) + " (" + str.tostring(w) + "/" + str.tostring(n) + ") | " + f_num(r) + "R"
-var table perf = table.new(position.top_right, 2, 44, border_width = 1)
+var table perf = showTable ? table.new(position.top_right, 2, 44, border_width = 1) : na
 if barstate.islast and showTable
     color bg = color.new(color.black, 0)
     color head = color.new(color.blue, 45)
@@ -615,7 +622,7 @@ if barstate.islast and showTable
     int tdBE = dayFresh ? s.todayBE : 0
     int tdClosed = dayFresh ? todayClosed : 0
     float tdR = dayFresh ? s.todayR : 0
-    f_cell(perf, 0, 0, "AB | AMD v1.4", head)
+    f_cell(perf, 0, 0, "AB | AMD v1.5", head)
     f_cell(perf, 1, 0, "2R Results", head)
     array<string> names = array.from("Trade Period from", "Through today", "Entered / closed", "W / L / BE (net)", "WR with BE: W/(W+L+BE)", "WR without BE: W/(W+L)", "Long WR (closed)", "Short WR (closed)", "Gross profit R", "Gross loss R (abs)", "Net R", "Profit factor", "Max closed DD R", "Expectancy R", "Current ATR (" + str.tostring(atrLen) + ")", "Open trade / marked R", "TP / SL / timed exits", "Target hit rate", "Round-trip cost", "A+ closed N / WR / R", "A closed N / WR / R", "B closed N / WR / R", "AM closed N / WR / R", "PM closed N / WR / R", "Model / chart / trend TF", "Last chart data")
     string activeModel = rolling ? "Rolling" : afternoonPhase ? "PM" : fallbackDay ? "AM RTH" : "AM session"
