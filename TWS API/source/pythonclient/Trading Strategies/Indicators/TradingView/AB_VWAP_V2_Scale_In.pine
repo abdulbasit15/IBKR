@@ -1,0 +1,1156 @@
+//@version=6
+indicator("AB - VWAP Break Retest / Bounce / Rejection V2 Scale-In",
+     overlay=true,
+     max_labels_count=500,
+     max_lines_count=500)
+// ============================================================================
+// BACKTEST PERIOD
+// ============================================================================
+groupBT = "Backtest Period"
+startDate = input.time(
+     timestamp("31 Dec 2025 00:00 +0000"),
+     "Backtest Start",
+     group=groupBT)
+endDate = input.time(
+     timestamp("31 Dec 2026 23:59 +0000"),
+     "Backtest End",
+     group=groupBT)
+inBacktest = time >= startDate and time <= endDate
+// ============================================================================
+// VWAP SETTINGS
+// ============================================================================
+groupVWAP = "VWAP Settings"
+src = input.source(
+     hlc3,
+     "VWAP Source",
+     group=groupVWAP)
+showVWAP = input.bool(
+     true,
+     "Show VWAP",
+     group=groupVWAP)
+toleranceATR = input.float(
+     0.12,
+     "VWAP Touch Tolerance (ATR)",
+     minval=0.01,
+     step=0.01,
+     group=groupVWAP)
+// ============================================================================
+// SIGNAL SETTINGS
+// ============================================================================
+groupSetup = "Signal Settings"
+enableBreakRetest = input.bool(
+     true,
+     "Enable Break & Retest",
+     group=groupSetup)
+enableBounce = input.bool(
+     true,
+     "Enable Bounce",
+     group=groupSetup)
+enableRejection = input.bool(
+     true,
+     "Enable Rejection",
+     group=groupSetup)
+retestBars = input.int(
+     8,
+     "Break → Retest Max Bars",
+     minval=1,
+     maxval=30,
+     group=groupSetup)
+minBreakATR = input.float(
+     0.05,
+     "Minimum Break Distance (ATR)",
+     minval=0.0,
+     step=0.01,
+     group=groupSetup)
+wickRatio = input.float(
+     1.20,
+     "Rejection Wick / Body Ratio",
+     minval=0.5,
+     step=0.1,
+     group=groupSetup)
+cooldownBars = input.int(
+     3,
+     "Signal Cooldown Bars",
+     minval=0,
+     group=groupSetup)
+// ============================================================================
+// TREND FILTER
+// ============================================================================
+groupTrend = "Trend Filter"
+useTrendFilter = input.bool(
+     true,
+     "Use EMA Trend Filter",
+     group=groupTrend)
+emaLength = input.int(
+     20,
+     "EMA Length",
+     minval=1,
+     group=groupTrend)
+requireVWAPSlope = input.bool(
+     false,
+     "Require VWAP Slope",
+     group=groupTrend)
+// ============================================================================
+// INITIAL TRADE MANAGEMENT
+// ============================================================================
+groupRisk = "Initial Trade Management"
+atrLength = input.int(
+     14,
+     "ATR Length",
+     minval=1,
+     group=groupRisk)
+stopATR = input.float(
+     1.0,
+     "Initial Stop ATR",
+     minval=0.1,
+     step=0.1,
+     group=groupRisk)
+targetR = input.float(
+     2.0,
+     "Initial Profit Target (R)",
+     minval=0.25,
+     step=0.25,
+     group=groupRisk)
+// ============================================================================
+// V2 SCALE-IN MANAGEMENT
+// ============================================================================
+groupV2 = "V2 Scale-In"
+enableScaleIn = input.bool(
+     true,
+     "Add 1 Contract At Initial SL",
+     group=groupV2)
+postAddStopATR = input.float(
+     1.0,
+     "New SL Distance After Add (ATR)",
+     minval=0.1,
+     step=0.1,
+     group=groupV2)
+postAddTargetATR = input.float(
+     2.0,
+     "New TP Distance After Add (ATR)",
+     minval=0.25,
+     step=0.25,
+     group=groupV2)
+moveToBE = input.bool(
+     true,
+     "Move SL to Breakeven",
+     group=groupV2)
+beTriggerR = input.float(
+     1.0,
+     "Move SL to BE After R",
+     minval=0.25,
+     step=0.25,
+     group=groupV2)
+sameBarMode = input.string(
+     "Stop First",
+     "If Initial TP & SL Hit Same Candle",
+     options=["Stop First", "Target First"],
+     group=groupV2)
+// ============================================================================
+// SESSION
+// ============================================================================
+groupSession = "Session Filter"
+useSession = input.bool(
+     true,
+     "Use NY Session",
+     group=groupSession)
+sessionInput = input.session(
+     "0930-1600",
+     "Trading Session",
+     group=groupSession)
+sessionTimezone = input.string(
+     "America/New_York",
+     "Session Timezone",
+     group=groupSession)
+// ============================================================================
+// DISPLAY
+// ============================================================================
+groupDisplay = "Display"
+showSignals = input.bool(
+     true,
+     "Show Entry Signals",
+     group=groupDisplay)
+showTradeLevels = input.bool(
+     true,
+     "Show Entry / TP / SL",
+     group=groupDisplay)
+showTradeLabel = input.bool(
+     true,
+     "Show Trade Information Box",
+     group=groupDisplay)
+showAddLabel = input.bool(
+     true,
+     "Show ADD +1 Box",
+     group=groupDisplay)
+entryBoxSizeInput = input.string(
+     "Normal",
+     "Entry Box Size",
+     options=["Tiny", "Small", "Normal", "Large"],
+     group=groupDisplay)
+showResultLabels = input.bool(
+     true,
+     "Show WIN / LOSS / BE Labels",
+     group=groupDisplay)
+showTable = input.bool(
+     true,
+     "Show Result Table",
+     group=groupDisplay)
+// Table controls affect display only. Cost is a reporting allowance, not an order fill model.
+tableSizeInput = input.string("Tiny", "Table font size", options=["Tiny", "Small", "Normal", "Large"], group=groupDisplay)
+tablePositionInput = input.string("Top right", "Table position", options=["Top right", "Middle right", "Bottom right", "Top left", "Bottom left"], group=groupDisplay)
+tableColumnWidth = input.float(0, "Table column width % (0 = auto)", minval=0, maxval=40, step=0.5, group=groupDisplay)
+tableRowHeight = input.float(0, "Table row height % (0 = auto)", minval=0, maxval=5, step=0.1, group=groupDisplay)
+roundTripCostTicks = input.float(2.0, "Reporting: round-trip cost ticks / contract", minval=0, step=0.25, group=groupDisplay, tooltip="Combined fee/slippage allowance per contract round trip, in ticks. A scaled position incurs two contract round trips. Set 0 for the original before-cost results. This does not change entries, stops, targets or result labels.")
+// ============================================================================
+// FUNCTIONS
+// ============================================================================
+getSetupName(_type) =>
+    switch _type
+        1 => "BREAK + RETEST"
+        2 => "BOUNCE"
+        3 => "REJECTION"
+        => ""
+getLabelSize(_sizeName) =>
+    switch _sizeName
+        "Tiny" => size.tiny
+        "Small" => size.small
+        "Normal" => size.normal
+        "Large" => size.large
+        => size.normal
+getTimeBucket() =>
+    h = hour(time, "America/New_York")
+    m = minute(time, "America/New_York")
+    totalMinutes = h * 60 + m
+    int bucket = 7
+    if totalMinutes >= 570 and totalMinutes < 630
+        bucket := 0
+    else if totalMinutes >= 630 and totalMinutes < 690
+        bucket := 1
+    else if totalMinutes >= 690 and totalMinutes < 750
+        bucket := 2
+    else if totalMinutes >= 750 and totalMinutes < 810
+        bucket := 3
+    else if totalMinutes >= 810 and totalMinutes < 870
+        bucket := 4
+    else if totalMinutes >= 870 and totalMinutes < 930
+        bucket := 5
+    else if totalMinutes >= 930 and totalMinutes < 960
+        bucket := 6
+    bucket
+percentText(_wins, _trades) =>
+    string txt = "—"
+    if _trades > 0
+        rate = _wins * 100.0 / _trades
+        txt := str.tostring(rate, "#.0") + "% (" + str.tostring(_wins) + "/" + str.tostring(_trades) + ")"
+    txt
+dateText(_timestamp) =>
+    str.tostring(year(_timestamp)) + "-" + str.tostring(month(_timestamp), "00") + "-" + str.tostring(dayofmonth(_timestamp), "00")
+// ============================================================================
+// DISPLAY SIZE
+// ============================================================================
+entryLabelSize = getLabelSize(entryBoxSizeInput)
+// ============================================================================
+// CORE CALCULATIONS
+// ============================================================================
+vwap = ta.vwap(src)
+atr = ta.atr(atrLength)
+ema = ta.ema(close, emaLength)
+touchTolerance = atr * toleranceATR
+minBreak = atr * minBreakATR
+plot(
+     showVWAP ? vwap : na,
+     title="VWAP",
+     color=color.white,
+     linewidth=2)
+plot(
+     useTrendFilter ? ema : na,
+     title="EMA",
+     color=color.blue,
+     linewidth=1)
+// ============================================================================
+// SESSION
+// ============================================================================
+inSession = not na(time(timeframe.period, sessionInput, sessionTimezone))
+sessionOK = not useSession or inSession
+// ============================================================================
+// TREND CONDITIONS
+// ============================================================================
+vwapRising = vwap > vwap[1]
+vwapFalling = vwap < vwap[1]
+longTrend = not useTrendFilter or (close > ema and ema >= ema[1])
+shortTrend = not useTrendFilter or (close < ema and ema <= ema[1])
+longSlopeOK = not requireVWAPSlope or vwapRising
+shortSlopeOK = not requireVWAPSlope or vwapFalling
+// ============================================================================
+// CANDLE INFORMATION
+// ============================================================================
+body = math.abs(close - open)
+upperWick = high - math.max(open, close)
+lowerWick = math.min(open, close) - low
+bullCandle = close > open
+bearCandle = close < open
+// ============================================================================
+// BREAKOUT TRACKING
+// ============================================================================
+var int longBreakBar = na
+var int shortBreakBar = na
+longBreak = close > vwap + minBreak and close[1] <= vwap[1]
+shortBreak = close < vwap - minBreak and close[1] >= vwap[1]
+if longBreak
+    longBreakBar := bar_index
+    shortBreakBar := na
+if shortBreak
+    shortBreakBar := bar_index
+    longBreakBar := na
+// ============================================================================
+// BREAK + RETEST
+// ============================================================================
+validLongRetestWindow = not na(longBreakBar) and bar_index > longBreakBar and bar_index - longBreakBar <= retestBars
+validShortRetestWindow = not na(shortBreakBar) and bar_index > shortBreakBar and bar_index - shortBreakBar <= retestBars
+longRetestTouch = low <= vwap + touchTolerance and close > vwap
+shortRetestTouch = high >= vwap - touchTolerance and close < vwap
+longBreakRetestSignal = enableBreakRetest and validLongRetestWindow and longRetestTouch and bullCandle and longTrend and longSlopeOK and sessionOK and inBacktest
+shortBreakRetestSignal = enableBreakRetest and validShortRetestWindow and shortRetestTouch and bearCandle and shortTrend and shortSlopeOK and sessionOK and inBacktest
+if longBreakRetestSignal
+    longBreakBar := na
+if shortBreakRetestSignal
+    shortBreakBar := na
+if not na(longBreakBar)
+    if bar_index - longBreakBar > retestBars
+        longBreakBar := na
+if not na(shortBreakBar)
+    if bar_index - shortBreakBar > retestBars
+        shortBreakBar := na
+// ============================================================================
+// VWAP BOUNCE
+// ============================================================================
+longBounceSignal = enableBounce and close[1] > vwap[1] and low <= vwap + touchTolerance and low >= vwap - touchTolerance and close > vwap and bullCandle and close > close[1] and longTrend and longSlopeOK and sessionOK and inBacktest
+shortBounceSignal = enableBounce and close[1] < vwap[1] and high >= vwap - touchTolerance and high <= vwap + touchTolerance and close < vwap and bearCandle and close < close[1] and shortTrend and shortSlopeOK and sessionOK and inBacktest
+// ============================================================================
+// VWAP REJECTION
+// ============================================================================
+longRejectionSignal = enableRejection and low < vwap and close > vwap and bullCandle and lowerWick >= body * wickRatio and longTrend and longSlopeOK and sessionOK and inBacktest
+shortRejectionSignal = enableRejection and high > vwap and close < vwap and bearCandle and upperWick >= body * wickRatio and shortTrend and shortSlopeOK and sessionOK and inBacktest
+// ============================================================================
+// SIGNAL PRIORITY
+//
+// 1 = BREAK + RETEST
+// 2 = BOUNCE
+// 3 = REJECTION
+// ============================================================================
+var int lastSignalBar = na
+cooldownOK = na(lastSignalBar) or bar_index - lastSignalBar > cooldownBars
+int signalDirection = 0
+int signalType = 0
+if cooldownOK and inBacktest
+    if longBreakRetestSignal
+        signalDirection := 1
+        signalType := 1
+    else if shortBreakRetestSignal
+        signalDirection := -1
+        signalType := 1
+    else if longRejectionSignal
+        signalDirection := 1
+        signalType := 3
+    else if shortRejectionSignal
+        signalDirection := -1
+        signalType := 3
+    else if longBounceSignal
+        signalDirection := 1
+        signalType := 2
+    else if shortBounceSignal
+        signalDirection := -1
+        signalType := 2
+// ============================================================================
+// TRADE STATE
+// ============================================================================
+var bool inTrade = false
+var int tradeDirection = 0
+var int tradeType = 0
+var float entryPrice = na
+var float addPrice = na
+var float averageEntry = na
+var float initialRiskDistance = na
+var float activeRiskDistance = na
+var float stopPrice = na
+var float targetPrice = na
+var float beTriggerPrice = na
+var bool scaledIn = false
+var int scaleInBar = na
+var bool beActivated = false
+var int beActivatedBar = na
+var int entryBar = na
+var int entryBucket = na
+var line entryLine = na
+var line stopLine = na
+var line targetLine = na
+var line addLine = na
+// ============================================================================
+// STATISTICS
+// ============================================================================
+var int totalTrades = 0
+var int wins = 0
+var int losses = 0
+var int breakEvens = 0
+var int longTrades = 0
+var int longWins = 0
+var int shortTrades = 0
+var int shortWins = 0
+var float grossProfitR = 0.0
+var float grossLossR = 0.0
+// ============================================================================
+// SCALE-IN STATISTICS
+// ============================================================================
+var int scaledTrades = 0
+var int scaledWins = 0
+var int scaledLosses = 0
+var int scaledBE = 0
+// ============================================================================
+// SETUP STATISTICS
+// ============================================================================
+var int brTrades = 0
+var int brWins = 0
+var int bounceTrades = 0
+var int bounceWins = 0
+var int rejectionTrades = 0
+var int rejectionWins = 0
+// ============================================================================
+// TIME STATISTICS
+// ============================================================================
+var bucketTrades = array.new_int(8, 0)
+var bucketWins = array.new_int(8, 0)
+// ============================================================================
+// COMPACT DASHBOARD ACCOUNTING: CLOSED campaigns; R = initial 1-contract risk.
+// Original result labels remain gross TP / SL / BE; dashboard classifies NET P&L.
+// ============================================================================
+type DashboardBucket
+    int entered = 0
+    int closed = 0
+    int w = 0
+    int l = 0
+    int be = 0
+    float net = 0.0
+method book(DashboardBucket b, float result) =>
+    b.closed += 1
+    b.w += result > 0.00000001 ? 1 : 0
+    b.l += result < -0.00000001 ? 1 : 0
+    b.be += math.abs(result) <= 0.00000001 ? 1 : 0
+    b.net += result
+var DashboardBucket allReport = DashboardBucket.new()
+var DashboardBucket longReport = DashboardBucket.new()
+var DashboardBucket shortReport = DashboardBucket.new()
+var DashboardBucket amReport = DashboardBucket.new()
+var DashboardBucket pmReport = DashboardBucket.new()
+var DashboardBucket todayReport = DashboardBucket.new()
+var DashboardBucket scaleReport = DashboardBucket.new()
+var array<DashboardBucket> setupReport = array.new<DashboardBucket>()
+var array<DashboardBucket> hourReport = array.new<DashboardBucket>()
+if barstate.isfirst
+    for i = 0 to 3
+        setupReport.push(DashboardBucket.new())
+    for i = 0 to 7
+        hourReport.push(DashboardBucket.new())
+var int loadedStart = time
+var int firstEligibleBar = na
+if na(firstEligibleBar) and inBacktest
+    firstEligibleBar := time
+nyDateKey = year(time, "America/New_York") * 10000 + month(time, "America/New_York") * 100 + dayofmonth(time, "America/New_York")
+if barstate.isconfirmed and (barstate.isfirst or nyDateKey != nyDateKey[1])
+    todayReport := DashboardBucket.new()
+var bool entryAM = false
+var int entryNYDate = na
+var float reportGrossPositive = 0.0
+var float reportGrossNegative = 0.0
+var float reportPeakR = 0.0
+var float reportMaxDD = 0.0
+var int reportTP = 0
+var int reportSL = 0
+var int reportBEStops = 0
+// ============================================================================
+// NEW TRADE
+// ============================================================================
+newTrade = signalDirection != 0 and not inTrade and inBacktest
+if newTrade
+    inTrade := true
+    tradeDirection := signalDirection
+    tradeType := signalType
+    entryPrice := close
+    averageEntry := entryPrice
+    entryBar := bar_index
+    initialRiskDistance := atr * stopATR
+    activeRiskDistance := initialRiskDistance
+    addPrice := na
+    scaledIn := false
+    scaleInBar := na
+    beActivated := false
+    beActivatedBar := na
+    // ------------------------------------------------------------------------
+    // LONG
+    // ------------------------------------------------------------------------
+    if tradeDirection == 1
+        stopPrice := entryPrice - initialRiskDistance
+        targetPrice := entryPrice + initialRiskDistance * targetR
+        beTriggerPrice := entryPrice + initialRiskDistance * beTriggerR
+        longTrades += 1
+    // ------------------------------------------------------------------------
+    // SHORT
+    // ------------------------------------------------------------------------
+    else
+        stopPrice := entryPrice + initialRiskDistance
+        targetPrice := entryPrice - initialRiskDistance * targetR
+        beTriggerPrice := entryPrice - initialRiskDistance * beTriggerR
+        shortTrades += 1
+    totalTrades += 1
+    entryAM := hour(time, "America/New_York") < 12
+    entryNYDate := nyDateKey
+    if barstate.isconfirmed
+        allReport.entered += 1
+        todayReport.entered += 1
+        if tradeDirection == 1
+            longReport.entered += 1
+        else
+            shortReport.entered += 1
+        if entryAM
+            amReport.entered += 1
+        else
+            pmReport.entered += 1
+        DashboardBucket entrySetup = setupReport.get(tradeType)
+        entrySetup.entered += 1
+    if tradeType == 1
+        brTrades += 1
+    else if tradeType == 2
+        bounceTrades += 1
+    else if tradeType == 3
+        rejectionTrades += 1
+    entryBucket := getTimeBucket()
+    currentBucketTrades = array.get(bucketTrades, entryBucket)
+    array.set(
+         bucketTrades,
+         entryBucket,
+         currentBucketTrades + 1)
+    lastSignalBar := bar_index
+    // ========================================================================
+    // INITIAL LINES
+    // ========================================================================
+    if showTradeLevels
+        entryLine := line.new(
+             bar_index,
+             entryPrice,
+             bar_index + 1,
+             entryPrice,
+             extend=extend.right,
+             color=tradeDirection == 1 ? color.green : color.red,
+             style=line.style_dotted,
+             width=2)
+        targetLine := line.new(
+             bar_index,
+             targetPrice,
+             bar_index + 1,
+             targetPrice,
+             extend=extend.right,
+             color=color.green,
+             style=line.style_dotted,
+             width=2)
+        stopLine := line.new(
+             bar_index,
+             stopPrice,
+             bar_index + 1,
+             stopPrice,
+             extend=extend.right,
+             color=color.red,
+             style=line.style_dotted,
+             width=2)
+    // ========================================================================
+    // INITIAL ENTRY BOX
+    // ========================================================================
+    if showTradeLabel
+        setupName = getSetupName(tradeType)
+        string directionName = ""
+        if tradeDirection == 1
+            directionName := "LONG"
+        else
+            directionName := "SHORT"
+        labelText = directionName + " - " + setupName + "\nQty 1" + "\nEntry " + str.tostring(entryPrice, format.mintick) + "\nStop " + str.tostring(stopPrice, format.mintick) + "\nTP " + str.tostring(targetPrice, format.mintick)
+        if tradeDirection == 1
+            label.new(
+                 bar_index,
+                 low,
+                 labelText,
+                 style=label.style_label_up,
+                 color=color.green,
+                 textcolor=color.white,
+                 size=entryLabelSize)
+        else
+            label.new(
+                 bar_index,
+                 high,
+                 labelText,
+                 style=label.style_label_down,
+                 color=color.red,
+                 textcolor=color.white,
+                 size=entryLabelSize)
+// ============================================================================
+// TRADE CHECK VARIABLES
+// ============================================================================
+bool targetHit = false
+bool initialStopTouched = false
+bool finalStopHit = false
+bool beHit = false
+bool triggerBE = false
+bool tradeWon = false
+bool tradeLost = false
+bool tradeBE = false
+bool doScaleIn = false
+// ============================================================================
+// PRE-SCALE TRADE MANAGEMENT
+// ============================================================================
+if inTrade and not scaledIn and bar_index > entryBar
+    if tradeDirection == 1
+        targetHit := high >= targetPrice
+        if not beActivated
+            initialStopTouched := low <= stopPrice
+        if beActivated and bar_index > beActivatedBar
+            beHit := low <= averageEntry
+        if moveToBE and not beActivated and high >= beTriggerPrice
+            triggerBE := true
+    else
+        targetHit := low <= targetPrice
+        if not beActivated
+            initialStopTouched := high >= stopPrice
+        if beActivated and bar_index > beActivatedBar
+            beHit := high >= averageEntry
+        if moveToBE and not beActivated and low <= beTriggerPrice
+            triggerBE := true
+    // ------------------------------------------------------------------------
+    // TP AND INITIAL SL BOTH TOUCHED
+    // ------------------------------------------------------------------------
+    if targetHit and initialStopTouched
+        if sameBarMode == "Target First"
+            tradeWon := true
+        else
+            if enableScaleIn
+                doScaleIn := true
+            else
+                tradeLost := true
+    else if targetHit
+        tradeWon := true
+    else if initialStopTouched
+        if enableScaleIn
+            doScaleIn := true
+        else
+            tradeLost := true
+    else if beHit
+        tradeBE := true
+// ============================================================================
+// SCALE IN AT ORIGINAL STOP
+// ============================================================================
+if inTrade and doScaleIn and not scaledIn
+    scaledIn := true
+    scaleInBar := bar_index
+    scaledTrades += 1
+    if barstate.isconfirmed
+        scaleReport.entered += 1
+    addPrice := stopPrice
+    averageEntry := (entryPrice + addPrice) / 2.0
+    activeRiskDistance := atr * postAddStopATR
+    // Reset BE state after averaging
+    beActivated := false
+    beActivatedBar := na
+    // ------------------------------------------------------------------------
+    // LONG NEW TP / SL
+    // ------------------------------------------------------------------------
+    if tradeDirection == 1
+        stopPrice := averageEntry - atr * postAddStopATR
+        targetPrice := averageEntry + atr * postAddTargetATR
+        beTriggerPrice := averageEntry + activeRiskDistance * beTriggerR
+    // ------------------------------------------------------------------------
+    // SHORT NEW TP / SL
+    // ------------------------------------------------------------------------
+    else
+        stopPrice := averageEntry + atr * postAddStopATR
+        targetPrice := averageEntry - atr * postAddTargetATR
+        beTriggerPrice := averageEntry - activeRiskDistance * beTriggerR
+    // ------------------------------------------------------------------------
+    // UPDATE LINES
+    // ------------------------------------------------------------------------
+    if showTradeLevels
+        addLine := line.new(
+             bar_index,
+             addPrice,
+             bar_index + 1,
+             addPrice,
+             extend=extend.none,
+             color=color.orange,
+             style=line.style_solid,
+             width=2)
+        if not na(entryLine)
+            line.set_y1(
+                 entryLine,
+                 averageEntry)
+            line.set_y2(
+                 entryLine,
+                 averageEntry)
+        if not na(stopLine)
+            line.set_y1(
+                 stopLine,
+                 stopPrice)
+            line.set_y2(
+                 stopLine,
+                 stopPrice)
+            line.set_style(
+                 stopLine,
+                 line.style_dotted)
+            line.set_color(
+                 stopLine,
+                 color.red)
+        if not na(targetLine)
+            line.set_y1(
+                 targetLine,
+                 targetPrice)
+            line.set_y2(
+                 targetLine,
+                 targetPrice)
+            line.set_style(
+                 targetLine,
+                 line.style_dotted)
+            line.set_color(
+                 targetLine,
+                 color.green)
+    // ------------------------------------------------------------------------
+    // ADD LABEL
+    // ------------------------------------------------------------------------
+    if showAddLabel
+        addText = "ADD +1" + "\nAdd " + str.tostring(addPrice, format.mintick) + "\nAvg " + str.tostring(averageEntry, format.mintick) + "\nNew SL " + str.tostring(stopPrice, format.mintick) + "\nNew TP " + str.tostring(targetPrice, format.mintick)
+        if tradeDirection == 1
+            label.new(
+                 bar_index,
+                 low,
+                 addText,
+                 style=label.style_label_up,
+                 color=color.orange,
+                 textcolor=color.white,
+                 size=entryLabelSize)
+        else
+            label.new(
+                 bar_index,
+                 high,
+                 addText,
+                 style=label.style_label_down,
+                 color=color.orange,
+                 textcolor=color.white,
+                 size=entryLabelSize)
+// ============================================================================
+// POST-SCALE TRADE MANAGEMENT
+//
+// New TP / SL becomes active from the NEXT bar.
+// This avoids pretending we know the exact intrabar sequence on historical bars.
+// ============================================================================
+if inTrade and scaledIn and bar_index > scaleInBar
+    targetHit := false
+    finalStopHit := false
+    beHit := false
+    triggerBE := false
+    if tradeDirection == 1
+        targetHit := high >= targetPrice
+        if not beActivated
+            finalStopHit := low <= stopPrice
+        if beActivated and bar_index > beActivatedBar
+            beHit := low <= averageEntry
+        if moveToBE and not beActivated and high >= beTriggerPrice
+            triggerBE := true
+    else
+        targetHit := low <= targetPrice
+        if not beActivated
+            finalStopHit := high >= stopPrice
+        if beActivated and bar_index > beActivatedBar
+            beHit := high >= averageEntry
+        if moveToBE and not beActivated and low <= beTriggerPrice
+            triggerBE := true
+    if targetHit and finalStopHit
+        if sameBarMode == "Target First"
+            tradeWon := true
+        else
+            tradeLost := true
+    else if targetHit
+        tradeWon := true
+    else if finalStopHit
+        tradeLost := true
+    else if beHit
+        tradeBE := true
+// ============================================================================
+// ACTIVATE BREAKEVEN
+// ============================================================================
+if inTrade and triggerBE and not tradeWon and not tradeLost
+    beActivated := true
+    beActivatedBar := bar_index
+    stopPrice := averageEntry
+    if showTradeLevels and not na(stopLine)
+        line.set_y1(
+             stopLine,
+             averageEntry)
+        line.set_y2(
+             stopLine,
+             averageEntry)
+        line.set_color(
+             stopLine,
+             color.red)
+        line.set_style(
+             stopLine,
+             line.style_dotted)
+// ============================================================================
+// CALCULATE ACTUAL R RESULT
+//
+// R is normalized to the ORIGINAL 1-contract initial risk.
+// This means scale-in results include the increased 2-contract exposure.
+// ============================================================================
+float tradeResultR = 0.0
+if tradeWon
+    if scaledIn
+        if tradeDirection == 1
+            pnlPoints = (targetPrice - entryPrice) + (targetPrice - addPrice)
+            tradeResultR := pnlPoints / initialRiskDistance
+        else
+            pnlPoints = (entryPrice - targetPrice) + (addPrice - targetPrice)
+            tradeResultR := pnlPoints / initialRiskDistance
+    else
+        tradeResultR := targetR
+if tradeLost
+    if scaledIn
+        if tradeDirection == 1
+            pnlPoints = (stopPrice - entryPrice) + (stopPrice - addPrice)
+            tradeResultR := pnlPoints / initialRiskDistance
+        else
+            pnlPoints = (entryPrice - stopPrice) + (addPrice - stopPrice)
+            tradeResultR := pnlPoints / initialRiskDistance
+    else
+        tradeResultR := -1.0
+// ============================================================================
+// WIN
+// ============================================================================
+if tradeWon
+    wins += 1
+    if tradeResultR > 0
+        grossProfitR += tradeResultR
+    if tradeDirection == 1
+        longWins += 1
+    else
+        shortWins += 1
+    if tradeType == 1
+        brWins += 1
+    else if tradeType == 2
+        bounceWins += 1
+    else if tradeType == 3
+        rejectionWins += 1
+    if scaledIn
+        scaledWins += 1
+    oldWins = array.get(bucketWins, entryBucket)
+    array.set(
+         bucketWins,
+         entryBucket,
+         oldWins + 1)
+    // ------------------------------------------------------------------------
+    // TP SOLID GREEN
+    // ------------------------------------------------------------------------
+    if showTradeLevels
+        if not na(targetLine)
+            line.set_x2(
+                 targetLine,
+                 bar_index)
+            line.set_extend(
+                 targetLine,
+                 extend.none)
+            line.set_style(
+                 targetLine,
+                 line.style_solid)
+            line.set_width(
+                 targetLine,
+                 3)
+            line.set_color(
+                 targetLine,
+                 color.green)
+        if not na(stopLine)
+            line.set_x2(
+                 stopLine,
+                 bar_index)
+            line.set_extend(
+                 stopLine,
+                 extend.none)
+            line.set_style(
+                 stopLine,
+                 line.style_dotted)
+            line.set_color(
+                 stopLine,
+                 color.red)
+        if not na(entryLine)
+            line.set_x2(
+                 entryLine,
+                 bar_index)
+            line.set_extend(
+                 entryLine,
+                 extend.none)
+    if showResultLabels
+        label.new(
+             bar_index,
+             targetPrice,
+             "WIN +" + str.tostring(tradeResultR, "#.##") + "R",
+             style=tradeDirection == 1 ? label.style_label_down : label.style_label_up,
+             color=color.green,
+             textcolor=color.white,
+             size=size.tiny)
+    inTrade := false
+// ============================================================================
+// LOSS
+// ============================================================================
+if tradeLost
+    losses += 1
+    if tradeResultR < 0
+        grossLossR += tradeResultR
+    if scaledIn
+        scaledLosses += 1
+    // ------------------------------------------------------------------------
+    // SL SOLID RED
+    // ------------------------------------------------------------------------
+    if showTradeLevels
+        if not na(stopLine)
+            line.set_x2(
+                 stopLine,
+                 bar_index)
+            line.set_extend(
+                 stopLine,
+                 extend.none)
+            line.set_style(
+                 stopLine,
+                 line.style_solid)
+            line.set_width(
+                 stopLine,
+                 3)
+            line.set_color(
+                 stopLine,
+                 color.red)
+        if not na(targetLine)
+            line.set_x2(
+                 targetLine,
+                 bar_index)
+            line.set_extend(
+                 targetLine,
+                 extend.none)
+            line.set_style(
+                 targetLine,
+                 line.style_dotted)
+            line.set_color(
+                 targetLine,
+                 color.green)
+        if not na(entryLine)
+            line.set_x2(
+                 entryLine,
+                 bar_index)
+            line.set_extend(
+                 entryLine,
+                 extend.none)
+    if showResultLabels
+        label.new(
+             bar_index,
+             stopPrice,
+             "LOSS " + str.tostring(tradeResultR, "#.##") + "R",
+             style=tradeDirection == 1 ? label.style_label_up : label.style_label_down,
+             color=color.red,
+             textcolor=color.white,
+             size=size.tiny)
+    inTrade := false
+// ============================================================================
+// BREAKEVEN
+// ============================================================================
+if tradeBE
+    breakEvens += 1
+    if scaledIn
+        scaledBE += 1
+    if showTradeLevels
+        if not na(stopLine)
+            line.set_x2(
+                 stopLine,
+                 bar_index)
+            line.set_extend(
+                 stopLine,
+                 extend.none)
+            line.set_style(
+                 stopLine,
+                 line.style_solid)
+            line.set_width(
+                 stopLine,
+                 3)
+            line.set_color(
+                 stopLine,
+                 color.red)
+        if not na(targetLine)
+            line.set_x2(
+                 targetLine,
+                 bar_index)
+            line.set_extend(
+                 targetLine,
+                 extend.none)
+            line.set_style(
+                 targetLine,
+                 line.style_dotted)
+            line.set_color(
+                 targetLine,
+                 color.green)
+        if not na(entryLine)
+            line.set_x2(
+                 entryLine,
+                 bar_index)
+            line.set_extend(
+                 entryLine,
+                 extend.none)
+    if showResultLabels
+        label.new(
+             bar_index,
+             averageEntry,
+             "BE 0R",
+             style=tradeDirection == 1 ? label.style_label_up : label.style_label_down,
+             color=color.red,
+             textcolor=color.white,
+             size=size.tiny)
+    inTrade := false
+// One completed campaign, including both contracts after an add.
+if barstate.isconfirmed and (tradeWon or tradeLost or tradeBE)
+    costR = roundTripCostTicks * syminfo.mintick * (scaledIn ? 2.0 : 1.0) / initialRiskDistance
+    netResultR = tradeResultR - costR
+    allReport.book(netResultR)
+    if tradeDirection == 1
+        longReport.book(netResultR)
+    else
+        shortReport.book(netResultR)
+    if entryAM
+        amReport.book(netResultR)
+    else
+        pmReport.book(netResultR)
+    todayReport.book(netResultR)
+    setupReport.get(tradeType).book(netResultR)
+    hourReport.get(entryBucket).book(netResultR)
+    if scaledIn
+        scaleReport.book(netResultR)
+    reportGrossPositive += math.max(netResultR, 0.0)
+    reportGrossNegative += math.max(-netResultR, 0.0)
+    reportPeakR := math.max(reportPeakR, allReport.net)
+    reportMaxDD := math.max(reportMaxDD, reportPeakR - allReport.net)
+    reportTP += tradeWon ? 1 : 0
+    reportSL += tradeLost ? 1 : 0
+    reportBEStops += tradeBE ? 1 : 0
+// ============================================================================
+// ENTRY SIGNAL MARKERS
+// ============================================================================
+plotshape(
+     showSignals and newTrade and signalDirection == 1,
+     title="VWAP Long",
+     location=location.belowbar,
+     style=shape.triangleup,
+     size=size.small,
+     color=color.lime,
+     text="L")
+plotshape(
+     showSignals and newTrade and signalDirection == -1,
+     title="VWAP Short",
+     location=location.abovebar,
+     style=shape.triangledown,
+     size=size.small,
+     color=color.red,
+     text="S")
+// ============================================================================
+// ALERTS
+// ============================================================================
+alertcondition(
+     newTrade and signalDirection == 1,
+     title="VWAP Long",
+     message="VWAP LONG signal")
+alertcondition(
+     newTrade and signalDirection == -1,
+     title="VWAP Short",
+     message="VWAP SHORT signal")
+// ============================================================================
+// COMPACT TABLE: hide/show, font, position and optional width/height controls.
+// "Today" is the last loaded chart date in New York, not the wall-clock date.
+// ============================================================================
+tableFont = getLabelSize(tableSizeInput)
+tablePosition = switch tablePositionInput
+    "Middle right" => position.middle_right
+    "Bottom right" => position.bottom_right
+    "Top left" => position.top_left
+    "Bottom left" => position.bottom_left
+    => position.top_right
+var table stats = table.new(tablePosition, 2, 46, border_width=1, frame_width=1, border_color=color.new(color.black, 25))
+reportNumber(float value) =>
+    na(value) ? "—" : str.tostring(value, "#.##")
+reportWR(int w, int n) =>
+    n > 0 ? str.tostring(100.0 * w / n, "#.##") + "%" : "—"
+reportClosed(DashboardBucket b) =>
+    str.tostring(b.closed) + " / " + reportWR(b.w, b.closed) + " / " + reportNumber(b.net) + "R"
+reportRow(int row, string key, string value, color valueBG, bool header=false) =>
+    keyBG = header ? color.rgb(28, 61, 128) : color.rgb(52, 57, 67)
+    table.cell(stats, 0, row, key, text_color=color.white, bgcolor=keyBG, text_size=tableFont, width=tableColumnWidth, height=tableRowHeight)
+    table.cell(stats, 1, row, value, text_color=color.white, bgcolor=header ? keyBG : valueBG, text_size=tableFont, width=tableColumnWidth, height=tableRowHeight)
+reportResultBG(float value) =>
+    value > 0.00000001 ? color.rgb(40, 91, 52) : value < -0.00000001 ? color.rgb(117, 43, 49) : color.rgb(52, 57, 67)
+if barstate.islast
+    table.clear(stats, 0, 0, 1, 45)
+    if showTable
+        bodyBG = color.rgb(52, 57, 67)
+        netPF = reportGrossNegative > 0 ? reportNumber(reportGrossPositive / reportGrossNegative) : reportGrossPositive > 0 ? "∞" : "—"
+        openQty = inTrade ? (scaledIn ? 2 : 1) : 0
+        openGrossR = inTrade and initialRiskDistance > 0 ? ((close - entryPrice) * tradeDirection + (scaledIn ? (close - addPrice) * tradeDirection : 0.0)) / initialRiskDistance : na
+        openNetR = inTrade ? openGrossR - roundTripCostTicks * syminfo.mintick * openQty / initialRiskDistance : na
+        positionText = inTrade ? (tradeDirection == 1 ? "Long " : "Short ") + str.tostring(openQty) + " / " + reportNumber(openNetR) + "R" : "Flat"
+        periodText = na(firstEligibleBar) ? "No bars in range" : str.format_time(firstEligibleBar, "yyyy-MM-dd HH:mm", "America/New_York")
+        lastText = str.format_time(time, "yyyy-MM-dd HH:mm", "America/New_York")
+        dateNY = str.format_time(time, "yyyy-MM-dd", "America/New_York")
+        todayOpen = inTrade and entryNYDate == nyDateKey ? 1 : 0
+        chartTrend = close > ema and ema > ema[1] ? "UP" : close < ema and ema < ema[1] ? "DOWN" : "NEUTRAL"
+        DashboardBucket brSummary = setupReport.get(1)
+        DashboardBucket bounceSummary = setupReport.get(2)
+        DashboardBucket rejectionSummary = setupReport.get(3)
+        brReportNet = brSummary.net
+        bounceReportNet = bounceSummary.net
+        rejectionReportNet = rejectionSummary.net
+        reportRow(0, "AB | VWAP V2 Scale-In", reportNumber(targetR) + "R initial", bodyBG, true)
+        reportRow(1, "Trade period from (NY)", periodText, bodyBG)
+        reportRow(2, "Through chart date (NY)", dateNY, bodyBG)
+        reportRow(3, "Entered / closed / open", str.tostring(allReport.entered) + " / " + str.tostring(allReport.closed) + " / " + str.tostring(inTrade ? 1 : 0), bodyBG)
+        reportRow(4, "W / L / BE (net)", str.tostring(allReport.w) + " / " + str.tostring(allReport.l) + " / " + str.tostring(allReport.be), bodyBG)
+        reportRow(5, "WR with BE: W/(W+L+BE)", reportWR(allReport.w, allReport.closed), bodyBG)
+        reportRow(6, "WR without BE: W/(W+L)", reportWR(allReport.w, allReport.w + allReport.l), bodyBG)
+        reportRow(7, "Long WR (closed)", reportWR(longReport.w, longReport.closed) + " (" + str.tostring(longReport.closed) + ")", bodyBG)
+        reportRow(8, "Short WR (closed)", reportWR(shortReport.w, shortReport.closed) + " (" + str.tostring(shortReport.closed) + ")", bodyBG)
+        reportRow(9, "Gross profit R (net winners)", reportNumber(reportGrossPositive), bodyBG)
+        reportRow(10, "Gross loss R (abs, net losers)", reportNumber(reportGrossNegative), bodyBG)
+        reportRow(11, "Net R", reportNumber(allReport.net), reportResultBG(allReport.net))
+        reportRow(12, "Profit factor (after allowance)", netPF, bodyBG)
+        reportRow(13, "Max closed DD R", reportNumber(reportMaxDD), bodyBG)
+        reportRow(14, "Expectancy R / closed trade", allReport.closed > 0 ? reportNumber(allReport.net / allReport.closed) : "—", bodyBG)
+        reportRow(15, "Current ATR (" + str.tostring(atrLength) + ")", reportNumber(atr), bodyBG)
+        reportRow(16, "Open position / est. marked R", positionText, bodyBG)
+        reportRow(17, "TP / SL / BE stop exits", str.tostring(reportTP) + " / " + str.tostring(reportSL) + " / " + str.tostring(reportBEStops), bodyBG)
+        reportRow(18, "Target hit rate (closed)", reportWR(reportTP, allReport.closed), bodyBG)
+        reportRow(19, "Round-trip cost / contract", reportNumber(roundTripCostTicks) + " ticks", bodyBG)
+        reportRow(20, "Break+retest closed N / WR / R", reportClosed(setupReport.get(1)), reportResultBG(brReportNet))
+        reportRow(21, "Bounce closed N / WR / R", reportClosed(setupReport.get(2)), reportResultBG(bounceReportNet))
+        reportRow(22, "Rejection closed N / WR / R", reportClosed(setupReport.get(3)), reportResultBG(rejectionReportNet))
+        reportRow(23, "AM closed N / WR / R", reportClosed(amReport), reportResultBG(amReport.net))
+        reportRow(24, "PM closed N / WR / R", reportClosed(pmReport), reportResultBG(pmReport.net))
+        reportRow(25, "Chart TF / EMA trend", timeframe.period + " / EMA " + str.tostring(emaLength) + " " + chartTrend, bodyBG)
+        reportRow(26, "Last chart bar (NY)", lastText, bodyBG)
+        reportRow(27, "TODAY | America/New_York", dateNY, bodyBG, true)
+        reportRow(28, "Entered / closed / open*", str.tostring(todayReport.entered) + " / " + str.tostring(todayReport.closed) + " / " + str.tostring(todayOpen), bodyBG)
+        reportRow(29, "Today W / L / BE (net)", str.tostring(todayReport.w) + " / " + str.tostring(todayReport.l) + " / " + str.tostring(todayReport.be), bodyBG)
+        reportRow(30, "Today WR with BE", reportWR(todayReport.w, todayReport.closed), bodyBG)
+        reportRow(31, "Today WR without BE", reportWR(todayReport.w, todayReport.w + todayReport.l), bodyBG)
+        reportRow(32, "Today net R (closed)", reportNumber(todayReport.net), reportResultBG(todayReport.net))
+        reportRow(33, "ENTRY HOUR | New York", "WR (W/N) | Net R", bodyBG, true)
+        hourNames = array.from("09:30–10:30", "10:30–11:30", "11:30–12:30", "12:30–13:30", "13:30–14:30", "14:30–15:30", "15:30–16:00", "Other entry hours")
+        for i = 0 to 7
+            DashboardBucket h = hourReport.get(i)
+            hrText = reportWR(h.w, h.closed) + " (" + str.tostring(h.w) + "/" + str.tostring(h.closed) + ") | " + reportNumber(h.net) + "R"
+            reportRow(34 + i, hourNames.get(i), hrText, reportResultBG(h.net))
+        reportRow(42, "Scaled closed N / WR / R", reportClosed(scaleReport), reportResultBG(scaleReport.net))
+        reportRow(43, "Virtual OHLC | " + sameBarMode, "No grading | *today exits by close date", bodyBG)
+        reportRow(44, "Loaded history starts (NY)", str.format_time(loadedStart, "yyyy-MM-dd HH:mm", "America/New_York"), bodyBG)
+        enabledSetups = (enableBreakRetest ? "BR " : "") + (enableBounce ? "Bounce " : "") + (enableRejection ? "Rejection" : "")
+        reportRow(45, "Enabled setups / scale-in", enabledSetups + (enableScaleIn ? " / add ON" : " / add OFF"), bodyBG)
