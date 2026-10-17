@@ -1,7 +1,7 @@
 //@version=6
 indicator("AB - Trend-Aligned AMD 2R+ Research", overlay = true, max_lines_count = 450, max_labels_count = 150)
 
-// RESEARCH MODEL / v1.3: independent AM/PM ranges and frozen entry-time grades.
+// RESEARCH MODEL / v1.4: single 2R dashboard, hourly and today's entry cohorts.
 // Standard time-based candles. Auto: session AMD <=15m; rolling AMD above 15m.
 // Auto trend timeframe is 3x chart (rounded to a supported TradingView interval).
 // RTH-only intraday charts use an explicitly identified opening-range fallback.
@@ -77,7 +77,7 @@ float costTicks = input.float(2, "Round-trip cost in ticks (commission + slippag
 string g4 = "04 | Research and display"
 int fromDate = input.time(timestamp("01 Jan 2020 00:00 +0000"), "Research start (entries)", group = g4)
 int untilDate = input.time(timestamp("31 Dec 2099 23:59 +0000"), "Research end (entries; exits still managed)", group = g4)
-string displayedTarget = input.string("2.5R", "Chart / alert target", options = ["2R", "2.5R", "3R"], group = g4)
+string displayedTarget = "2R"
 bool showRange = input.bool(true, "Show accumulation range", group = g4)
 bool showTable = input.bool(true, "Show research tables", group = g4)
 int keepTrades = input.int(60, "Retain chart trade drawings", minval = 1, maxval = 100, group = g4)
@@ -98,7 +98,7 @@ if barstate.isfirst
 string market = profile == "Auto" ? (str.contains(syminfo.root, "NQ") ? "MNQ" : str.contains(syminfo.root, "ES") ? "MES" : str.contains(syminfo.root, "GC") ? "MGC" : "Custom") : profile
 float sweepMin = market == "MNQ" ? 0.10 : market == "MES" ? 0.08 : market == "MGC" ? 0.12 : customSweep
 float bodyMin = market == "MNQ" ? 0.60 : market == "MES" ? 0.50 : market == "MGC" ? 0.65 : customBody
-int drawIdx = displayedTarget == "2R" ? 0 : displayedTarget == "2.5R" ? 1 : 2
+int drawIdx = 0
 float atr = ta.atr(atrLen)
 float chartSeconds = timeframe.in_seconds()
 string autoHTF = timeframe.from_seconds(int(math.min(chartSeconds * 3, 31536000)))
@@ -122,6 +122,8 @@ bool inEntry = not na(time(timeframe.period, entrySession + ":" + days, tz))
 bool inOpening = not na(time(timeframe.period, openingSession + ":" + days, tz))
 bool inOpeningEntry = not na(time(timeframe.period, openingEntry + ":" + days, tz))
 int dateKey = year(time, tz) * 10000 + month(time, tz) * 100 + dayofmonth(time, tz)
+int todayKey = year(timenow, tz) * 10000 + month(timenow, tz) * 100 + dayofmonth(timenow, tz)
+int entryCloseDay = year(time_close, tz) * 10000 + month(time_close, tz) * 100 + dayofmonth(time_close, tz)
 bool newDay = bar_index > 0 and dateKey != dateKey[1]
 int cutoff = timestamp(tz, year(time, tz), month(time, tz), dayofmonth(time, tz), exitHour, exitMinute)
 bool beforeCutoff = time_close < cutoff
@@ -172,6 +174,12 @@ type Research
     float dd = 0
     float lastR = na
     int first = na
+    int todayStamp = na
+    int todayEntered = 0
+    int todayW = 0
+    int todayL = 0
+    int todayBE = 0
+    float todayR = 0
     array<int> binN = na
     array<int> binW = na
     array<float> binR = na
@@ -202,6 +210,13 @@ method settle(Research s, float price, bool ambiguity, bool timedExit) =>
     s.peak := math.max(s.peak, s.net)
     s.dd := math.max(s.dd, s.peak - s.net)
     s.lastR := r
+    // Today's cohort is attributed to ENTRY date in the selected timezone.
+    // An older trade closing today is excluded; open entries are not wins/losses.
+    if s.entryDay == todayKey
+        s.todayW += r > 0.000001 ? 1 : 0
+        s.todayL += r < -0.000001 ? 1 : 0
+        s.todayBE += math.abs(r) <= 0.000001 ? 1 : 0
+        s.todayR += r
     s.binN.set(s.bucket, s.binN.get(s.bucket) + 1)
     s.binW.set(s.bucket, s.binW.get(s.bucket) + (r > 0.000001 ? 1 : 0))
     s.binR.set(s.bucket, s.binR.get(s.bucket) + r)
@@ -218,9 +233,9 @@ var array<float> multiples = array.from(2.0, 2.5, 3.0)
 if barstate.isfirst
     for i = 0 to 2
         Research s = Research.new()
-        s.binN := array.new_int(4, 0)
-        s.binW := array.new_int(4, 0)
-        s.binR := array.new_float(4, 0)
+        s.binN := array.new_int(8, 0)
+        s.binW := array.new_int(8, 0)
+        s.binR := array.new_float(8, 0)
         s.gradeN := array.new_int(3, 0)
         s.gradeW := array.new_int(3, 0)
         s.gradeR := array.new_float(3, 0)
@@ -291,6 +306,13 @@ if barstate.isconfirmed
     // Resolve old positions BEFORE considering any new close entry.
     for i = 0 to 2
         Research s = sims.get(i)
+        if na(s.todayStamp) or s.todayStamp != todayKey
+            s.todayStamp := todayKey
+            s.todayEntered := 0
+            s.todayW := 0
+            s.todayL := 0
+            s.todayBE := 0
+            s.todayR := 0
         if s.active and bar_index > s.entryBar
             // A missing cutoff candle must not give the position exposure to
             // an entire later day's candle: the first available open exits it.
@@ -516,13 +538,16 @@ if barstate.isconfirmed
                         dailyEntries += 1
                         windowEntries += 1
                         int minutes = hour(time_close, tz) * 60 + minute(time_close, tz)
-                        int bin = minutes < 600 ? 0 : minutes < 660 ? 1 : minutes < 720 ? 2 : 3
+                        // Seven hourly cohorts anchored at 09:30; all other
+                        // entry-close times go to Other. No trade is double-counted.
+                        int bin = minutes >= 570 and minutes < 990 ? int(math.floor((minutes - 570) / 60.0)) : 7
                         for i = 0 to 2
                             Research s = sims.get(i)
                             s.active := true
                             s.side := side
                             s.entryBar := bar_index
-                            s.entryDay := dateKey
+                            s.entryDay := entryCloseDay
+                            s.todayEntered += entryCloseDay == todayKey ? 1 : 0
                             s.enteredAt := time_close
                             s.grade := setupGrade
                             s.window := rolling ? 2 : afternoonPhase ? 1 : 0
@@ -568,79 +593,58 @@ f_wr(int wins, int count) => count > 0 ? str.tostring(100.0 * wins / count, "#.#
 f_pf(Research s) => s.gl > 0 ? f_num(s.gp / s.gl) : s.gp > 0 ? "Inf" : "--"
 f_group(int n, int w, float r) => str.tostring(n) + " / " + f_wr(w, n) + " / " + f_num(r)
 f_cell(table t, int col, int row, string txt, color bg) =>
-    table.cell(t, col, row, txt, text_color = color.white, bgcolor = bg, text_size = tableTextSize)
+    // Explicit percentage height fits the added rows without shrinking text.
+    table.cell(t, col, row, txt, text_color = color.white, bgcolor = bg, text_size = tableTextSize, height = tableScale == "Tiny" ? 1.7 : tableScale == "Small" ? 2.0 : 2.2)
 
-var table perf = table.new(position.top_right, 4, 33, border_width = 1)
-var table diag = table.new(position.bottom_left, 4, 25, border_width = 1)
-if barstate.isfirst
-    for r = 5 to 24
-        table.merge_cells(diag, 1, r, 3, r)
+// One right-side table. Keep hidden 2.5R/3R reference engines solely to
+// preserve v1.3 entry-cohort admission; chart/alerts/dashboard all report 2R.
+f_netColor(float r, color neutral) => r > 0.000001 ? color.new(color.green, 50) : r < -0.000001 ? color.new(color.red, 50) : neutral
+f_hour(int n, int w, float r) => f_wr(w, n) + " (" + str.tostring(w) + "/" + str.tostring(n) + ") | " + f_num(r) + "R"
+var table perf = table.new(position.top_right, 2, 44, border_width = 1)
 if barstate.islast and showTable
     color bg = color.new(color.black, 0)
     color head = color.new(color.blue, 45)
-    f_cell(perf, 0, 0, "AB | AMD v1.3", head)
-    for i = 0 to 2
-        Research s = sims.get(i)
-        int c = i + 1
-        f_cell(perf, c, 0, str.tostring(multiples.get(i)) + "R", head)
-        f_cell(perf, c, 1, na(firstTrade) ? "No actual trade" : str.format_time(firstTrade, "yyyy-MM-dd HH:mm", tz), bg)
-        f_cell(perf, c, 2, str.format_time(timenow, "yyyy-MM-dd", tz), bg)
-        f_cell(perf, c, 3, str.tostring(s.n + (s.active ? 1 : 0)), bg)
-        f_cell(perf, c, 4, str.tostring(s.n), bg)
-        f_cell(perf, c, 5, str.tostring(s.wins) + " / " + str.tostring(s.losses) + " / " + str.tostring(s.be), bg)
-        f_cell(perf, c, 6, f_wr(s.wins, s.n), bg)
-        f_cell(perf, c, 7, f_wr(s.longWins, s.longs) + " (" + str.tostring(s.longs) + ")", bg)
-        f_cell(perf, c, 8, f_wr(s.shortWins, s.shorts) + " (" + str.tostring(s.shorts) + ")", bg)
-        f_cell(perf, c, 9, f_num(s.gp), bg)
-        f_cell(perf, c, 10, f_num(s.gl), bg)
-        f_cell(perf, c, 11, f_num(s.net), s.net >= 0 ? color.new(color.teal, 50) : color.new(color.red, 50))
-        f_cell(perf, c, 12, f_pf(s), bg)
-        f_cell(perf, c, 13, f_num(s.dd), bg)
-        f_cell(perf, c, 14, s.n > 0 ? f_num(s.net / s.n) : "--", bg)
-        f_cell(perf, c, 15, s.active ? (s.side == 1 ? "LONG" : "SHORT") : "Flat", bg)
-        f_cell(perf, c, 16, str.tostring(s.ambiguous), bg)
-        f_cell(perf, c, 17, str.tostring(s.timed), bg)
-        f_cell(perf, c, 18, s.active ? f_num((close - s.entry) * s.side / s.risk - costTicks * syminfo.mintick / s.risk) : "--", bg)
-        f_cell(perf, c, 19, str.tostring(costTicks) + " ticks", bg)
-        f_cell(perf, c, 20, "Loaded bars only", bg)
-        f_cell(perf, c, 21, "Same entry cohort", bg)
-        f_cell(perf, c, 22, str.tostring(s.tpHits) + " / " + str.tostring(s.stopHits), bg)
-        f_cell(perf, c, 23, f_wr(s.tpHits, s.n), bg)
-        f_cell(perf, c, 24, str.tostring(s.profitableTimed) + " / " + str.tostring(s.timed), bg)
-        f_cell(perf, c, 25, f_num(s.timedR), bg)
-        f_cell(perf, c, 26, rules, bg)
-        for g = 0 to 2
-            f_cell(perf, c, g + 27, f_group(s.gradeN.get(g), s.gradeW.get(g), s.gradeR.get(g)), bg)
-            f_cell(perf, c, g + 30, f_group(s.windowN.get(g), s.windowW.get(g), s.windowR.get(g)), bg)
-    array<string> names = array.from("Trade Period from", "Through today", "Trades entered", "Closed", "W / L / BE (net)", "Win rate", "Long WR (closed)", "Short WR (closed)", "Gross profit R", "Gross loss R (abs)", "Net R", "Profit factor", "Max closed DD R", "Expectancy R", "Open trade", "Both hit: SL first", "Time/session exits", "Open net R (mark)", "Round-trip cost", "Coverage", "Entry policy", "TP hits / SL hits", "Target hit rate (closed)", "Profitable timed / timed", "Timed exits net R", "Rule set")
+    Research s = sims.get(0)
+    int todayClosed = s.todayW + s.todayL + s.todayBE
+    // Protect the displayed daily summary at midnight before another confirmed
+    // candle has reset the daily accumulator. No accounting mutates intrabar.
+    bool dayFresh = s.todayStamp == todayKey
+    int tdN = dayFresh ? s.todayEntered : 0
+    int tdW = dayFresh ? s.todayW : 0
+    int tdL = dayFresh ? s.todayL : 0
+    int tdBE = dayFresh ? s.todayBE : 0
+    int tdClosed = dayFresh ? todayClosed : 0
+    float tdR = dayFresh ? s.todayR : 0
+    f_cell(perf, 0, 0, "AB | AMD v1.4", head)
+    f_cell(perf, 1, 0, "2R Results", head)
+    array<string> names = array.from("Trade Period from", "Through today", "Entered / closed", "W / L / BE (net)", "WR with BE: W/(W+L+BE)", "WR without BE: W/(W+L)", "Long WR (closed)", "Short WR (closed)", "Gross profit R", "Gross loss R (abs)", "Net R", "Profit factor", "Max closed DD R", "Expectancy R", "Current ATR (" + str.tostring(atrLen) + ")", "Open trade / marked R", "TP / SL / timed exits", "Target hit rate", "Round-trip cost", "A+ closed N / WR / R", "A closed N / WR / R", "B closed N / WR / R", "AM closed N / WR / R", "PM closed N / WR / R", "Model / chart / trend TF", "Last chart data")
+    string activeModel = rolling ? "Rolling" : afternoonPhase ? "PM" : fallbackDay ? "AM RTH" : "AM session"
+    string openText = s.active ? (s.side == 1 ? "LONG | " : "SHORT | ") + f_num((close - s.entry) * s.side / s.risk - costTicks * syminfo.mintick / s.risk) + "R" : "Flat"
+    array<string> values = array.from(na(firstTrade) ? "No actual trade" : str.format_time(firstTrade, "yyyy-MM-dd HH:mm", tz), str.format_time(timenow, "yyyy-MM-dd", tz), str.tostring(s.n + (s.active ? 1 : 0)) + " / " + str.tostring(s.n), str.tostring(s.wins) + " / " + str.tostring(s.losses) + " / " + str.tostring(s.be), f_wr(s.wins, s.n), f_wr(s.wins, s.wins + s.losses), f_wr(s.longWins, s.longs) + " (" + str.tostring(s.longs) + ")", f_wr(s.shortWins, s.shorts) + " (" + str.tostring(s.shorts) + ")", f_num(s.gp), f_num(s.gl), f_num(s.net), f_pf(s), f_num(s.dd), s.n > 0 ? f_num(s.net / s.n) : "--", na(atr) ? "--" : str.tostring(atr, format.mintick), openText, str.tostring(s.tpHits) + " / " + str.tostring(s.stopHits) + " / " + str.tostring(s.timed), f_wr(s.tpHits, s.n), str.tostring(costTicks) + " ticks", f_group(s.gradeN.get(0), s.gradeW.get(0), s.gradeR.get(0)), f_group(s.gradeN.get(1), s.gradeW.get(1), s.gradeR.get(1)), f_group(s.gradeN.get(2), s.gradeW.get(2), s.gradeR.get(2)), f_group(s.windowN.get(0), s.windowW.get(0), s.windowR.get(0)), f_group(s.windowN.get(1), s.windowW.get(1), s.windowR.get(1)), activeModel + " | " + timeframe.period + " / " + htf, str.format_time(time_close, "yyyy-MM-dd HH:mm", tz))
     for row = 1 to 26
         f_cell(perf, 0, row, names.get(row - 1), bg)
-    array<string> groupNames = array.from("A+ closed N / WR / R", "A closed N / WR / R", "B closed N / WR / R", "AM closed N / WR / R", "PM closed N / WR / R", "Rolling closed N / WR / R")
-    for r = 0 to 5
-        f_cell(perf, 0, r + 27, groupNames.get(r), bg)
-    f_cell(diag, 0, 0, market + " | " + timeframe.period + " / " + htf, head)
-    f_cell(diag, 1, 0, "N", head)
-    f_cell(diag, 2, 0, "WR", head)
-    f_cell(diag, 3, 0, "Net R", head)
-    Research ds = sims.get(drawIdx)
-    array<string> bins = array.from("Before 10:00", "10:00-10:59", "11:00-11:59", "12:00 onward")
-    for b = 0 to 3
-        f_cell(diag, 0, b + 1, bins.get(b), bg)
-        f_cell(diag, 1, b + 1, str.tostring(ds.binN.get(b)), bg)
-        f_cell(diag, 2, b + 1, f_wr(ds.binW.get(b), ds.binN.get(b)), bg)
-        f_cell(diag, 3, b + 1, f_num(ds.binR.get(b)), bg)
-    string activeModel = rolling ? "Rolling " + str.tostring(rollingBars) + " candles" : afternoonPhase ? "PM fresh-range AMD" : fallbackDay ? "AM RTH opening-range AMD" : "AM session AMD"
-    string status = rolling ? (bar_index < rollingBars ? "Need more history" : rangeValid ? "Rolling range ready" : "Range / ATR filter") : observedAccBars == 0 ? "No accumulation bars: enable RTH fallback or ETH" : not rangeValid ? "Range incomplete / rejected / still forming" : "Range ready; see setup counters"
-    string trendStatus = na(hs) ? "HTF EMA warmup" : timeframe.in_seconds(htf) <= chartSeconds ? "Previous chart bar (max interval)" : "Confirmed previous HTF"
-    array<string> diagNames = array.from(rolling ? "Range windows valid / rejected" : "AM/PM windows valid / rejected", "Sweeps / reclaims", "Displacements / expired", "HTF / risk rejected", "Busy / dual sweeps", "Setup + entry window", "Trend now / state", "Diagnostics target /timezone", "Active model", "Accumulation / entry bars", "RTH fallbacks / missing days", "Data / setup status", "Trend data status", "Chart session / last data")
-    array<string> diagValues = array.from(str.tostring(validSessions) + " / " + str.tostring(rejectedSessions), str.tostring(sweeps) + " / " + str.tostring(reclaims), str.tostring(distributions) + " / " + str.tostring(expired), str.tostring(trendRejected) + " / " + str.tostring(riskRejected), str.tostring(busyRejected) + " / " + str.tostring(dualSweeps), "AMD | " + (rolling ? "All chart bars" : afternoonPhase ? afternoonEntry : fallbackDay ? openingEntry : entrySession), (bull ? "Bull" : bear ? "Bear" : "Neutral") + " / " + str.tostring(state), displayedTarget + " | " + tz, activeModel, str.tostring(observedAccBars) + " / " + str.tostring(observedEntryBars), str.tostring(fallbackSessions) + " / " + str.tostring(missingSessions), status, trendStatus, syminfo.session + " | " + str.format_time(time_close, "yyyy-MM-dd HH:mm", tz))
-    for r = 0 to 13
-        f_cell(diag, 0, r + 5, diagNames.get(r), bg)
-        f_cell(diag, 1, r + 5, diagValues.get(r), bg)
-    array<string> extraNames = array.from("Reclaim / distribution timeouts", "Invalidations / deep sweeps", "Late entries rejected", "Rules / confirmed trend filter", "Loaded history starts")
-    array<string> extraValues = array.from(str.tostring(reclaimExpired) + " / " + str.tostring(distributionExpired), str.tostring(invalidated) + " / " + str.tostring(deepRejected), str.tostring(lateRejected), rules + " / " + (balanced ? trendRule : "Strict EMA stack"), str.format_time(firstLoaded, "yyyy-MM-dd HH:mm", tz))
-    for r = 0 to 4
-        f_cell(diag, 0, r + 19, extraNames.get(r), bg)
-        f_cell(diag, 1, r + 19, extraValues.get(r), bg)
-    f_cell(diag, 0, 24, "Grade filter / rejected", bg)
-    f_cell(diag, 1, 24, minimumGrade + " / " + str.tostring(gradeRejected), bg)
+        float groupR = row >= 20 and row <= 22 ? s.gradeR.get(row - 20) : row >= 23 and row <= 24 ? s.windowR.get(row - 23) : 0
+        color fill = row == 11 ? f_netColor(s.net, bg) : row >= 20 and row <= 24 ? f_netColor(groupR, bg) : bg
+        f_cell(perf, 1, row, values.get(row - 1), fill)
+    f_cell(perf, 0, 27, "TODAY'S SETUPS | " + tz, head)
+    f_cell(perf, 1, 27, str.format_time(timenow, "yyyy-MM-dd", tz), head)
+    f_cell(perf, 0, 28, "Entered / closed / open", bg)
+    f_cell(perf, 1, 28, str.tostring(tdN) + " / " + str.tostring(tdClosed) + " / " + str.tostring(tdN - tdClosed), bg)
+    f_cell(perf, 0, 29, "Today W / L / BE", bg)
+    f_cell(perf, 1, 29, str.tostring(tdW) + " / " + str.tostring(tdL) + " / " + str.tostring(tdBE), bg)
+    f_cell(perf, 0, 30, "Today WR with BE", bg)
+    f_cell(perf, 1, 30, f_wr(tdW, tdClosed), bg)
+    f_cell(perf, 0, 31, "Today WR without BE", bg)
+    f_cell(perf, 1, 31, f_wr(tdW, tdW + tdL), bg)
+    f_cell(perf, 0, 32, "Today net R (closed)", bg)
+    f_cell(perf, 1, 32, f_num(tdR), f_netColor(tdR, bg))
+    f_cell(perf, 0, 33, "ENTRY HOUR | " + tz, head)
+    f_cell(perf, 1, 33, "WR (W/N) | Net R", head)
+    array<string> hours = array.from("09:30-10:30", "10:30-11:30", "11:30-12:30", "12:30-13:30", "13:30-14:30", "14:30-15:30", "15:30-16:30", "Other entry hours")
+    for b = 0 to 7
+        f_cell(perf, 0, b + 34, hours.get(b), bg)
+        f_cell(perf, 1, b + 34, f_hour(s.binN.get(b), s.binW.get(b), s.binR.get(b)), f_netColor(s.binR.get(b), bg))
+    f_cell(perf, 0, 42, "Loaded history starts", bg)
+    f_cell(perf, 1, 42, str.format_time(firstLoaded, "yyyy-MM-dd HH:mm", tz), bg)
+    f_cell(perf, 0, 43, "Rule set / minimum grade", bg)
+    f_cell(perf, 1, 43, rules + " / " + minimumGrade, bg)
