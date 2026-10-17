@@ -1,0 +1,570 @@
+//@version=6
+indicator("AB - Trend-Aligned AMD 2R+ Research", overlay = true, max_lines_count = 450, max_labels_count = 150)
+
+// RESEARCH MODEL / v1.2: Balanced revision + Legacy v1.1 comparison mode.
+// Standard time-based candles. Auto: session AMD <=15m; rolling AMD above 15m.
+// Auto trend timeframe is 3x chart (rounded to a supported TradingView interval).
+// RTH-only intraday charts use an explicitly identified opening-range fallback.
+// Completed accumulation -> sweep -> reclaim -> LATER displacement -> close entry.
+// No orders fill on their entry candle. Three independent fixed-target simulations
+// share entries; the next cohort waits until ALL three are flat. No pyramiding.
+// Stop wins any OHLC ambiguity. Adverse stop gaps fill at open; favorable target
+// gaps fill at target. Session/time exits fill at close, after intrabar barriers.
+// Rolling mode ignores calendar flatten/daily entry caps; maxHold still applies.
+// No moving stop, scaling, or retroactive pivot. R uses original structural risk.
+// Statistics cover loaded chart bars only, not a broker or Strategy Tester report.
+// Trade costs are an adjustable ROUND-TRIP number of ticks, deducted at exit.
+// Max DD uses CLOSED equity; open P/L and intratrade excursion are not included.
+// Active lines dotted; entry and achieved exit solid on resolution; unused exit
+// stays dotted. Time exits add a solid amber actual-exit line. Old drawings are
+// pruned; statistics persist across all loaded bars. Alerts fire on close only.
+
+string g1 = "01 | Market and trend"
+string rules = input.string("Balanced", "Rule set", options = ["Balanced", "Legacy v1.1"], group = g1)
+bool balanced = rules == "Balanced"
+string trendRule = input.string("Directional", "Balanced confirmed HTF filter", options = ["Directional", "Strict EMA stack"], group = g1)
+string profile = input.string("Auto", "Market profile", options = ["Auto", "MNQ", "MES", "MGC", "Custom"], group = g1)
+string trendMode = input.string("Auto", "Trend timeframe mode", options = ["Auto", "Manual"], group = g1)
+string manualHTF = input.timeframe("15", "Manual trend timeframe (auto-promoted if too low)", group = g1)
+string setupMode = input.string("Auto", "Accumulation model", options = ["Auto", "Session", "Rolling"], group = g1)
+int rollingBars = input.int(20, "Rolling accumulation: preceding candles", minval = 3, maxval = 500, group = g1)
+int fastLen = input.int(20, "HTF fast EMA", minval = 2, group = g1)
+int slowLen = input.int(50, "HTF slow EMA", minval = 3, group = g1)
+bool slopeFilter = input.bool(true, "Require fast EMA slope in trade direction", group = g1)
+string direction = input.string("Both", "Direction", options = ["Both", "Long only", "Short only"], group = g1)
+string g2 = "02 | Sessions (exchange holidays follow chart data)"
+string tz = input.string("America/New_York", "Session timezone (IANA)", group = g2)
+string accSession = input.session("0000-0830", "Accumulation (same calendar day)", group = g2)
+string entrySession = input.session("0930-1130", "Sweep / distribution entry window", group = g2)
+string days = input.string("23456", "Session days: 1=Sun, 2=Mon ... 7=Sat", group = g2)
+int exitHour = input.int(15, "Flatten hour", minval = 0, maxval = 23, group = g2)
+int exitMinute = input.int(55, "Flatten minute", minval = 0, maxval = 59, group = g2)
+int minAccMinutes = input.int(30, "Minimum observed accumulation minutes", minval = 1, group = g2)
+bool rthFallback = input.bool(true, "Auto opening-range fallback when overnight bars are absent", group = g2)
+string openingSession = input.session("0930-1000", "RTH fallback accumulation", group = g2)
+string openingEntry = input.session("1000-1530", "RTH fallback entry window", group = g2)
+int maxDaily = input.int(1, "Maximum entries / calendar day", minval = 1, maxval = 10, group = g2)
+int balancedDaily = input.int(2, "Balanced maximum entries / day", minval = 1, maxval = 10, group = g2)
+int attemptsPerSide = input.int(2, "Balanced sweep attempts per boundary / day", minval = 1, maxval = 5, group = g2)
+int retryMinutes = input.int(15, "Balanced retry cooldown minutes", minval = 1, maxval = 180, group = g2)
+int minimumTimeLeft = input.int(60, "Balanced minimum minutes before flatten for NEW entry", minval = 0, maxval = 240, group = g2)
+string g3 = "03 | Setup and risk"
+int atrLen = input.int(14, "Chart ATR length", minval = 2, group = g3)
+float minRange = input.float(0.5, "Minimum range / ATR at accumulation end", minval = 0.1, step = 0.1, group = g3)
+float maxRange = input.float(12, "Maximum range / ATR at accumulation end", minval = 0.2, step = 0.5, group = g3)
+float customSweep = input.float(0.10, "Custom minimum sweep / ATR", minval = 0, step = 0.05, group = g3)
+float maxSweep = input.float(1.5, "Maximum penetration / ATR at sweep", minval = 0.1, step = 0.1, group = g3)
+int reclaimBars = input.int(3, "Bars allowed to reclaim (0 = sweep candle)", minval = 0, maxval = 20, group = g3)
+int distributionBars = input.int(6, "Bars after reclaim allowed for displacement", minval = 1, maxval = 30, group = g3)
+int reclaimMinutes = input.int(15, "Balanced intraday reclaim deadline: minutes", minval = 1, maxval = 180, group = g3)
+int distributionMinutes = input.int(60, "Balanced intraday distribution deadline: minutes", minval = 1, maxval = 240, group = g3)
+int holdMinutes = input.int(360, "Balanced intraday maximum holding minutes", minval = 1, maxval = 1440, group = g3)
+float bodyFactor = input.float(0.75, "Balanced body threshold x market profile", minval = 0.25, maxval = 2, step = 0.05, group = g3)
+bool balancedMid = input.bool(false, "Balanced require range-midpoint close", group = g3)
+float customBody = input.float(0.6, "Custom displacement body / prior ATR", minval = 0.1, step = 0.1, group = g3)
+float closeQuality = input.float(0.7, "Displacement close location (0.7 = top/bottom 30%)", minval = 0.5, maxval = 1, step = 0.05, group = g3)
+bool requireMid = input.bool(true, "Displacement must close beyond range midpoint", group = g3)
+int stopBuffer = input.int(2, "Structural stop buffer ticks", minval = 1, group = g3)
+float minRisk = input.float(0.3, "Minimum risk / prior ATR", minval = 0.05, step = 0.05, group = g3)
+float maxRisk = input.float(3, "Maximum risk / prior ATR", minval = 0.1, step = 0.1, group = g3)
+int maxHold = input.int(48, "Maximum holding candles", minval = 1, maxval = 5000, group = g3)
+float costTicks = input.float(2, "Round-trip cost in ticks (commission + slippage equivalent)", minval = 0, step = 0.25, group = g3)
+string g4 = "04 | Research and display"
+int fromDate = input.time(timestamp("01 Jan 2020 00:00 +0000"), "Research start (entries)", group = g4)
+int untilDate = input.time(timestamp("31 Dec 2099 23:59 +0000"), "Research end (entries; exits still managed)", group = g4)
+string displayedTarget = input.string("2.5R", "Chart / alert target", options = ["2R", "2.5R", "3R"], group = g4)
+bool showRange = input.bool(true, "Show accumulation range", group = g4)
+bool showTable = input.bool(true, "Show research tables", group = g4)
+int keepTrades = input.int(60, "Retain chart trade drawings", minval = 1, maxval = 100, group = g4)
+string tableScale = input.string("Tiny", "Table text size", options = ["Tiny", "Small", "Normal"], group = g4)
+string tableTextSize = tableScale == "Tiny" ? size.tiny : tableScale == "Small" ? size.small : size.normal
+bool inResearch = time >= fromDate and time_close <= untilDate
+
+if barstate.isfirst
+    if na(timeframe.in_seconds())
+        runtime.error("Use a time-based candle interval; tick and price-based charts cannot define session durations.")
+    if not chart.is_standard
+        runtime.error("Research requires standard time-based candles, not synthetic charts.")
+    if maxRange <= minRange or maxRisk <= minRisk
+        runtime.error("Maximum range and risk filters must exceed their minimums.")
+    if untilDate < fromDate
+        runtime.error("Research end must be on or after research start.")
+
+string market = profile == "Auto" ? (str.contains(syminfo.root, "NQ") ? "MNQ" : str.contains(syminfo.root, "ES") ? "MES" : str.contains(syminfo.root, "GC") ? "MGC" : "Custom") : profile
+float sweepMin = market == "MNQ" ? 0.10 : market == "MES" ? 0.08 : market == "MGC" ? 0.12 : customSweep
+float bodyMin = market == "MNQ" ? 0.60 : market == "MES" ? 0.50 : market == "MGC" ? 0.65 : customBody
+int drawIdx = displayedTarget == "2R" ? 0 : displayedTarget == "2.5R" ? 1 : 2
+float atr = ta.atr(atrLen)
+float chartSeconds = timeframe.in_seconds()
+string autoHTF = timeframe.from_seconds(int(math.min(chartSeconds * 3, 31536000)))
+// At TradingView's maximum supported interval, use the previous confirmed
+// chart bar as trend context and explicitly disclose that it is not higher TF.
+string htf = trendMode == "Manual" and timeframe.in_seconds(manualHTF) > chartSeconds ? manualHTF : autoHTF
+bool rolling = not timeframe.isintraday or setupMode == "Rolling" or (setupMode == "Auto" and chartSeconds > 900)
+float rollingHi = ta.highest(high[1], rollingBars)
+float rollingLo = ta.lowest(low[1], rollingBars)
+// Every tuple member is offset. lookahead_on maps only PREVIOUS confirmed HTF data.
+[hc, hf, hs, hfPrev] = request.security(syminfo.tickerid, htf, [close[1], ta.ema(close, fastLen)[1], ta.ema(close, slowLen)[1], ta.ema(close, fastLen)[2]], lookahead = barmerge.lookahead_on)
+bool bull = hc > hf and hf > hs and (not slopeFilter or hf > hfPrev)
+bool bear = hc < hf and hf < hs and (not slopeFilter or hf < hfPrev)
+if balanced and trendRule == "Directional"
+    // No developing HTF data: direction above/below slow EMA, plus fast slope.
+    // An established slow/fast stack is optional, allowing earlier transitions.
+    bull := hc > hs and (not slopeFilter or hf > hfPrev)
+    bear := hc < hs and (not slopeFilter or hf < hfPrev)
+bool overnightAcc = not na(time(timeframe.period, accSession + ":" + days, tz))
+bool inEntry = not na(time(timeframe.period, entrySession + ":" + days, tz))
+bool inOpening = not na(time(timeframe.period, openingSession + ":" + days, tz))
+bool inOpeningEntry = not na(time(timeframe.period, openingEntry + ":" + days, tz))
+int dateKey = year(time, tz) * 10000 + month(time, tz) * 100 + dayofmonth(time, tz)
+bool newDay = bar_index > 0 and dateKey != dateKey[1]
+int cutoff = timestamp(tz, year(time, tz), month(time, tz), dayofmonth(time, tz), exitHour, exitMinute)
+bool beforeCutoff = time_close < cutoff
+
+type Research
+    bool active = false
+    int side = 0
+    int entryBar = na
+    int entryDay = na
+    int enteredAt = na
+    float entry = na
+    float stop = na
+    float risk = na
+    float target = na
+    int bucket = 0
+    int n = 0
+    int wins = 0
+    int losses = 0
+    int be = 0
+    int longs = 0
+    int longWins = 0
+    int shorts = 0
+    int shortWins = 0
+    int ambiguous = 0
+    int timed = 0
+    int tpHits = 0
+    int stopHits = 0
+    int profitableTimed = 0
+    float timedR = 0
+    float gp = 0
+    float gl = 0
+    float net = 0
+    float peak = 0
+    float dd = 0
+    float lastR = na
+    int first = na
+    array<int> binN = na
+    array<int> binW = na
+    array<float> binR = na
+
+method settle(Research s, float price, bool ambiguity, bool timedExit) =>
+    float r = (price - s.entry) * s.side / s.risk - costTicks * syminfo.mintick / s.risk
+    s.n += 1
+    s.wins += r > 0.000001 ? 1 : 0
+    s.losses += r < -0.000001 ? 1 : 0
+    s.be += math.abs(r) <= 0.000001 ? 1 : 0
+    s.longs += s.side == 1 ? 1 : 0
+    s.longWins += s.side == 1 and r > 0.000001 ? 1 : 0
+    s.shorts += s.side == -1 ? 1 : 0
+    s.shortWins += s.side == -1 and r > 0.000001 ? 1 : 0
+    s.ambiguous += ambiguity ? 1 : 0
+    s.timed += timedExit ? 1 : 0
+    s.profitableTimed += timedExit and r > 0.000001 ? 1 : 0
+    s.timedR += timedExit ? r : 0
+    s.gp += math.max(r, 0)
+    s.gl += math.max(-r, 0)
+    s.net += r
+    s.peak := math.max(s.peak, s.net)
+    s.dd := math.max(s.dd, s.peak - s.net)
+    s.lastR := r
+    s.binN.set(s.bucket, s.binN.get(s.bucket) + 1)
+    s.binW.set(s.bucket, s.binW.get(s.bucket) + (r > 0.000001 ? 1 : 0))
+    s.binR.set(s.bucket, s.binR.get(s.bucket) + r)
+    s.active := false
+
+var array<Research> sims = array.new<Research>()
+var array<float> multiples = array.from(2.0, 2.5, 3.0)
+if barstate.isfirst
+    for i = 0 to 2
+        Research s = Research.new()
+        s.binN := array.new_int(4, 0)
+        s.binW := array.new_int(4, 0)
+        s.binR := array.new_float(4, 0)
+        sims.push(s)
+
+var float rangeHi = na
+var float rangeLo = na
+var int accCount = 0
+var bool accComplete = false
+var bool rangeValid = false
+var bool fallbackDay = false
+var float accMinutes = 0
+var int observedAccBars = 0
+var int observedEntryBars = 0
+var int fallbackSessions = 0
+var int missingSessions = 0
+var int lastMissingDay = na
+var int dailyEntries = 0
+var int validSessions = 0
+var int rejectedSessions = 0
+var int sweeps = 0
+var int reclaims = 0
+var int distributions = 0
+var int dualSweeps = 0
+var int expired = 0
+var int trendRejected = 0
+var int riskRejected = 0
+var int busyRejected = 0
+var int lateRejected = 0
+var int reclaimExpired = 0
+var int distributionExpired = 0
+var int invalidated = 0
+var int deepRejected = 0
+var int lowAttempts = 0
+var int highAttempts = 0
+// State: 0 waiting, +/-1 swept, +/-2 reclaimed. Sign is intended direction.
+var int state = 0
+var int sweepBar = na
+var int reclaimBar = na
+var int sweptAt = na
+var int reclaimedAt = na
+var int lastAttemptAt = na
+var float extreme = na
+var float trigger = na
+var bool usedLow = false
+var bool usedHigh = false
+var int firstTrade = na
+var int firstLoaded = time
+var array<line> retainedLines = array.new_line()
+var array<label> retainedLabels = array.new_label()
+var line entryLine = na
+var line stopLine = na
+var line targetLine = na
+var label tradeLabel = na
+bool longSignal = false
+bool shortSignal = false
+bool resultSignal = false
+// A fallback is selected only when no overnight range exists for this day.
+// It is never spliced into an already collected overnight range.
+bool inAcc = not rolling and (overnightAcc or (rthFallback and inOpening and (fallbackDay or na(rangeHi) or newDay)))
+
+if barstate.isconfirmed
+    // Resolve old positions BEFORE considering any new close entry.
+    for i = 0 to 2
+        Research s = sims.get(i)
+        if s.active and bar_index > s.entryBar
+            // A missing cutoff candle must not give the position exposure to
+            // an entire later day's candle: the first available open exits it.
+            bool missedSessionExit = not rolling and newDay
+            bool stopHit = s.side == 1 ? (missedSessionExit ? open <= s.stop : low <= s.stop) : (missedSessionExit ? open >= s.stop : high >= s.stop)
+            bool tpHit = s.side == 1 ? (missedSessionExit ? open >= s.target : high >= s.target) : (missedSessionExit ? open <= s.target : low <= s.target)
+            bool holdExpired = balanced and timeframe.isintraday ? time_close - s.enteredAt >= holdMinutes * 60000 : bar_index - s.entryBar >= maxHold
+            bool timeExit = (not rolling and (newDay or time_close >= cutoff)) or holdExpired
+            bool resolve = stopHit or tpHit or timeExit
+            if resolve
+                bool stopGap = s.side == 1 ? open < s.stop : open > s.stop
+                // If next calendar day is first available bar, flatten at its open.
+                // Overnight gap risk remains real when the cutoff bar is missing.
+                float px = stopHit ? (stopGap ? open : s.stop) : tpHit ? s.target : missedSessionExit ? open : close
+                s.settle(px, stopHit and tpHit, not stopHit and not tpHit)
+                s.stopHits += stopHit ? 1 : 0
+                s.tpHits += not stopHit and tpHit ? 1 : 0
+                if i == drawIdx
+                    resultSignal := true
+                    line.set_x2(entryLine, time_close)
+                    line.set_x2(stopLine, time_close)
+                    line.set_x2(targetLine, time_close)
+                    line.set_style(entryLine, line.style_solid)
+                    if stopHit
+                        line.set_style(stopLine, line.style_solid)
+                    else if tpHit
+                        line.set_style(targetLine, line.style_solid)
+                    if not stopHit and not tpHit or math.abs(px - (stopHit ? s.stop : s.target)) > syminfo.mintick / 2
+                        line actual = line.new(s.enteredAt, px, time_close, px, xloc = xloc.bar_time, color = color.orange, style = line.style_solid)
+                        retainedLines.push(actual)
+                    label.set_text(tradeLabel, label.get_text(tradeLabel) + "\nResult " + str.tostring(s.lastR, "#.##") + "R" + (stopHit and tpHit ? " | SL first" : ""))
+                    alert("AB AMD " + displayedTarget + " closed: " + str.tostring(s.lastR, "#.##") + "R", alert.freq_all)
+            else if i == drawIdx
+                line.set_x2(entryLine, time_close)
+                line.set_x2(stopLine, time_close)
+                line.set_x2(targetLine, time_close)
+
+    if newDay and not rolling
+        rangeHi := na
+        rangeLo := na
+        accCount := 0
+        accComplete := false
+        rangeValid := false
+        dailyEntries := 0
+        state := 0
+        usedLow := false
+        usedHigh := false
+        fallbackDay := false
+        accMinutes := 0
+        lowAttempts := 0
+        highAttempts := 0
+        lastAttemptAt := na
+    if inAcc
+        observedAccBars += inResearch ? 1 : 0
+        if inOpening and not overnightAcc
+            fallbackDay := true
+        // A history slice beginning inside accumulation is rejected. Midnight
+        // start is valid only when previous loaded bar belongs to previous day.
+        if not inAcc[1] or newDay
+            rangeHi := high
+            rangeLo := low
+            accCount := 1
+            accMinutes := (time_close - time) / 60000.0
+            accComplete := bar_index > 0
+            rangeValid := false
+            state := 0
+        else
+            rangeHi := na(rangeHi) ? high : math.max(rangeHi, high)
+            rangeLo := na(rangeLo) ? low : math.min(rangeLo, low)
+            accCount += 1
+            accMinutes += (time_close - time) / 60000.0
+    if not rolling and not inAcc and inAcc[1] and not newDay
+        float widthATR = (rangeHi - rangeLo) / atr[1]
+        rangeValid := accComplete and accCount >= 2 and accMinutes >= minAccMinutes and widthATR >= minRange and widthATR <= maxRange
+        if inResearch
+            validSessions += rangeValid ? 1 : 0
+            rejectedSessions += rangeValid ? 0 : 1
+            fallbackSessions += fallbackDay ? 1 : 0
+    if rolling and state == 0
+        // Exclude the sweep candle from accumulation; freeze once a sweep starts.
+        rangeHi := rollingHi
+        rangeLo := rollingLo
+        float widthATR = (rangeHi - rangeLo) / atr[1]
+        rangeValid := bar_index >= rollingBars and widthATR >= minRange and widthATR <= maxRange
+        usedLow := false
+        usedHigh := false
+        if inResearch and rangeValid
+            observedAccBars += 1
+            validSessions += 1
+        else if inResearch
+            rejectedSessions += 1
+    bool entryWindow = rolling or (fallbackDay ? inOpeningEntry : inEntry)
+    if inResearch and entryWindow
+        observedEntryBars += 1
+        if not rolling and na(rangeHi) and (na(lastMissingDay) or lastMissingDay != dateKey)
+            missingSessions += 1
+            lastMissingDay := dateKey
+    bool eligible = entryWindow and not inAcc and rangeValid and (rolling or beforeCutoff) and inResearch and (rolling or dailyEntries < (balanced ? balancedDaily : maxDaily)) and not na(atr[1])
+    if not eligible
+        state := 0
+    else
+        // A boundary may rearm only after a whole prior candle is back inside
+        // the range, cooldown has elapsed, and the per-side attempt cap allows.
+        // Repeated outside candles never count as fresh liquidity sweeps.
+        if balanced and not rolling and state == 0 and not na(lastAttemptAt) and time_close - lastAttemptAt >= retryMinutes * 60000
+            bool priorInside = low[1] > rangeLo and high[1] < rangeHi
+            if priorInside
+                usedLow := lowAttempts >= attemptsPerSide
+                usedHigh := highAttempts >= attemptsPerSide
+        bool lowSweep = not usedLow and low <= rangeLo - math.max(syminfo.mintick, atr[1] * sweepMin)
+        bool highSweep = not usedHigh and high >= rangeHi + math.max(syminfo.mintick, atr[1] * sweepMin)
+        if lowSweep and highSweep
+            dualSweeps += 1
+            usedLow := true
+            usedHigh := true
+            lowAttempts += 1
+            highAttempts += 1
+            lastAttemptAt := time_close
+            state := 0
+        else if state == 0
+            if lowSweep or highSweep
+                int side = lowSweep ? 1 : -1
+                float penetration = side == 1 ? rangeLo - low : high - rangeHi
+                usedLow := usedLow or lowSweep
+                usedHigh := usedHigh or highSweep
+                sweeps += 1
+                lowAttempts += lowSweep ? 1 : 0
+                highAttempts += highSweep ? 1 : 0
+                lastAttemptAt := time_close
+                if penetration <= maxSweep * atr[1]
+                    state := side
+                    sweepBar := bar_index
+                    sweptAt := time_close
+                    extreme := side == 1 ? low : high
+                    trigger := side == 1 ? high : low
+                    bool reclaimed = side == 1 ? close > rangeLo : close < rangeHi
+                    if reclaimed
+                        state := side * 2
+                        reclaimBar := bar_index
+                        reclaimedAt := time_close
+                        reclaims += 1
+                else
+                    deepRejected += 1
+        if math.abs(state) == 1
+            int side = state > 0 ? 1 : -1
+            extreme := side == 1 ? math.min(extreme, low) : math.max(extreme, high)
+            bool tooDeep = (side == 1 ? rangeLo - extreme : extreme - rangeHi) > maxSweep * atr[1]
+            bool reclaimed = side == 1 ? close > rangeLo : close < rangeHi
+            bool reclaimTimeout = balanced and timeframe.isintraday ? time_close - sweptAt > reclaimMinutes * 60000 : bar_index - sweepBar > reclaimBars
+            if reclaimTimeout or tooDeep
+                state := 0
+                expired += 1
+                reclaimExpired += reclaimTimeout ? 1 : 0
+                deepRejected += tooDeep ? 1 : 0
+            else if reclaimed
+                state := side * 2
+                reclaimBar := bar_index
+                reclaimedAt := time_close
+                trigger := side == 1 ? high : low
+                reclaims += 1
+        if math.abs(state) == 2 and bar_index > reclaimBar
+            int side = state > 0 ? 1 : -1
+            // A fresh breach after reclaim invalidates the sequence. The extreme
+            // cannot drift after reclaim to retroactively improve the stop.
+            bool failed = side == 1 ? low < extreme or close <= rangeLo : high > extreme or close >= rangeHi
+            bool timeout = balanced and timeframe.isintraday ? time_close - reclaimedAt > distributionMinutes * 60000 : bar_index - reclaimBar > distributionBars
+            if failed or timeout
+                state := 0
+                expired += 1
+                distributionExpired += timeout ? 1 : 0
+                invalidated += failed ? 1 : 0
+            else
+                float candleRange = high - low
+                float location = candleRange > 0 ? (side == 1 ? (close - low) / candleRange : (high - close) / candleRange) : 0
+                bool bodyOK = (close - open) * side >= bodyMin * (balanced ? bodyFactor : 1.0) * atr[1]
+                // Balanced enters on a local structure break, rather than
+                // waiting for a distant reclaim wick and the range midpoint.
+                bool breakOK = balanced ? (side == 1 ? close > high[1] : close < low[1]) : (side == 1 ? close > trigger : close < trigger)
+                bool midOK = not (balanced ? balancedMid : requireMid) or (side == 1 ? close > (rangeHi + rangeLo) / 2 : close < (rangeHi + rangeLo) / 2)
+                if bodyOK and breakOK and midOK and location >= closeQuality
+                    distributions += 1
+                    bool aligned = side == 1 ? bull and direction != "Short only" : bear and direction != "Long only"
+                    float sl = math.round_to_mintick(extreme - side * stopBuffer * syminfo.mintick)
+                    float risk = (close - sl) * side
+                    bool riskOK = risk >= minRisk * atr[1] and risk <= maxRisk * atr[1] and risk >= syminfo.mintick
+                    bool busy = sims.get(0).active or sims.get(1).active or sims.get(2).active
+                    bool enoughTime = not balanced or rolling or cutoff - time_close >= minimumTimeLeft * 60000
+                    if not aligned
+                        trendRejected += 1
+                    else if not riskOK
+                        riskRejected += 1
+                    else if busy
+                        busyRejected += 1
+                    else if not enoughTime
+                        lateRejected += 1
+                    else
+                        firstTrade := na(firstTrade) ? time_close : firstTrade
+                        dailyEntries += 1
+                        int minutes = hour(time_close, tz) * 60 + minute(time_close, tz)
+                        int bin = minutes < 600 ? 0 : minutes < 660 ? 1 : minutes < 720 ? 2 : 3
+                        for i = 0 to 2
+                            Research s = sims.get(i)
+                            s.active := true
+                            s.side := side
+                            s.entryBar := bar_index
+                            s.entryDay := dateKey
+                            s.enteredAt := time_close
+                            s.entry := close
+                            s.stop := sl
+                            s.risk := risk
+                            // Round OUTWARD so nominal fixed target is at least R.
+                            float rawTP = close + side * risk * multiples.get(i)
+                            s.target := (side == 1 ? math.ceil(rawTP / syminfo.mintick) : math.floor(rawTP / syminfo.mintick)) * syminfo.mintick
+                            s.bucket := bin
+                            s.first := na(s.first) ? time_close : s.first
+                        Research ds = sims.get(drawIdx)
+                        color ink = side == 1 ? color.teal : color.orange
+                        string setupName = rolling ? "Trend-Aligned Rolling AMD" : fallbackDay ? "Trend-Aligned RTH AMD" : "Trend-Aligned Session AMD"
+                        string caption = (side == 1 ? "LONG" : "SHORT") + " | " + setupName + "\nSweep > Reclaim > Distribution\nEntry " + str.tostring(close, format.mintick) + "\nSL " + str.tostring(sl, format.mintick) + "\nTP " + str.tostring(ds.target, format.mintick) + " (" + displayedTarget + ")"
+                        tradeLabel := label.new(bar_index, side == 1 ? low : high, caption, style = side == 1 ? label.style_label_up : label.style_label_down, color = ink, textcolor = color.white, size = size.small)
+                        retainedLabels.push(tradeLabel)
+                        int nextClose = time_close + int(chartSeconds * 1000)
+                        entryLine := line.new(time_close, close, nextClose, close, xloc = xloc.bar_time, color = color.silver, style = line.style_dotted)
+                        stopLine := line.new(time_close, sl, nextClose, sl, xloc = xloc.bar_time, color = color.red, style = line.style_dotted)
+                        targetLine := line.new(time_close, ds.target, nextClose, ds.target, xloc = xloc.bar_time, color = color.lime, style = line.style_dotted)
+                        retainedLines.push(entryLine)
+                        retainedLines.push(stopLine)
+                        retainedLines.push(targetLine)
+                        longSignal := side == 1
+                        shortSignal := side == -1
+                        alert("AB AMD " + syminfo.ticker + " " + caption, alert.freq_all)
+                    state := 0
+    while retainedLabels.size() > keepTrades
+        label.delete(retainedLabels.shift())
+    while retainedLines.size() > keepTrades * 4
+        line.delete(retainedLines.shift())
+
+plot(showRange and (inAcc or rangeValid) ? rangeHi : na, "Accumulation high", color.new(color.blue, 20), style = plot.style_linebr)
+plot(showRange and (inAcc or rangeValid) ? rangeLo : na, "Accumulation low", color.new(color.blue, 20), style = plot.style_linebr)
+bgcolor(showRange and inAcc ? color.new(color.blue, 94) : na, title = "Accumulation session")
+alertcondition(longSignal, "AMD LONG", "Confirmed Trend-Aligned AMD LONG. Use Any alert() function call for Entry/SL/TP.")
+alertcondition(shortSignal, "AMD SHORT", "Confirmed Trend-Aligned AMD SHORT. Use Any alert() function call for Entry/SL/TP.")
+alertcondition(resultSignal, "AMD selected target resolved", "The selected AMD target simulation has closed.")
+
+f_num(float v) => str.tostring(v, "#.##")
+f_wr(int wins, int count) => count > 0 ? str.tostring(100.0 * wins / count, "#.##") + "%" : "--"
+f_pf(Research s) => s.gl > 0 ? f_num(s.gp / s.gl) : s.gp > 0 ? "Inf" : "--"
+f_cell(table t, int col, int row, string txt, color bg) =>
+    table.cell(t, col, row, txt, text_color = color.white, bgcolor = bg, text_size = tableTextSize)
+
+var table perf = table.new(position.top_right, 4, 27, border_width = 1)
+var table diag = table.new(position.bottom_left, 4, 24, border_width = 1)
+if barstate.isfirst
+    for r = 5 to 23
+        table.merge_cells(diag, 1, r, 3, r)
+if barstate.islast and showTable
+    color bg = color.new(color.black, 0)
+    color head = color.new(color.blue, 45)
+    f_cell(perf, 0, 0, "AB | AMD v1.2", head)
+    for i = 0 to 2
+        Research s = sims.get(i)
+        int c = i + 1
+        f_cell(perf, c, 0, str.tostring(multiples.get(i)) + "R", head)
+        f_cell(perf, c, 1, na(firstTrade) ? "No actual trade" : str.format_time(firstTrade, "yyyy-MM-dd HH:mm", tz), bg)
+        f_cell(perf, c, 2, str.format_time(timenow, "yyyy-MM-dd", tz), bg)
+        f_cell(perf, c, 3, str.tostring(s.n + (s.active ? 1 : 0)), bg)
+        f_cell(perf, c, 4, str.tostring(s.n), bg)
+        f_cell(perf, c, 5, str.tostring(s.wins) + " / " + str.tostring(s.losses) + " / " + str.tostring(s.be), bg)
+        f_cell(perf, c, 6, f_wr(s.wins, s.n), bg)
+        f_cell(perf, c, 7, f_wr(s.longWins, s.longs) + " (" + str.tostring(s.longs) + ")", bg)
+        f_cell(perf, c, 8, f_wr(s.shortWins, s.shorts) + " (" + str.tostring(s.shorts) + ")", bg)
+        f_cell(perf, c, 9, f_num(s.gp), bg)
+        f_cell(perf, c, 10, f_num(s.gl), bg)
+        f_cell(perf, c, 11, f_num(s.net), s.net >= 0 ? color.new(color.teal, 50) : color.new(color.red, 50))
+        f_cell(perf, c, 12, f_pf(s), bg)
+        f_cell(perf, c, 13, f_num(s.dd), bg)
+        f_cell(perf, c, 14, s.n > 0 ? f_num(s.net / s.n) : "--", bg)
+        f_cell(perf, c, 15, s.active ? (s.side == 1 ? "LONG" : "SHORT") : "Flat", bg)
+        f_cell(perf, c, 16, str.tostring(s.ambiguous), bg)
+        f_cell(perf, c, 17, str.tostring(s.timed), bg)
+        f_cell(perf, c, 18, s.active ? f_num((close - s.entry) * s.side / s.risk - costTicks * syminfo.mintick / s.risk) : "--", bg)
+        f_cell(perf, c, 19, str.tostring(costTicks) + " ticks", bg)
+        f_cell(perf, c, 20, "Loaded bars only", bg)
+        f_cell(perf, c, 21, "Same entry cohort", bg)
+        f_cell(perf, c, 22, str.tostring(s.tpHits) + " / " + str.tostring(s.stopHits), bg)
+        f_cell(perf, c, 23, f_wr(s.tpHits, s.n), bg)
+        f_cell(perf, c, 24, str.tostring(s.profitableTimed) + " / " + str.tostring(s.timed), bg)
+        f_cell(perf, c, 25, f_num(s.timedR), bg)
+        f_cell(perf, c, 26, rules, bg)
+    array<string> names = array.from("Trade Period from", "Through today", "Trades entered", "Closed", "W / L / BE (net)", "Win rate", "Long WR (closed)", "Short WR (closed)", "Gross profit R", "Gross loss R (abs)", "Net R", "Profit factor", "Max closed DD R", "Expectancy R", "Open trade", "Both hit: SL first", "Time/session exits", "Open net R (mark)", "Round-trip cost", "Coverage", "Entry policy", "TP hits / SL hits", "Target hit rate (closed)", "Profitable timed / timed", "Timed exits net R", "Rule set")
+    for row = 1 to 26
+        f_cell(perf, 0, row, names.get(row - 1), bg)
+    f_cell(diag, 0, 0, market + " | " + timeframe.period + " / " + htf, head)
+    f_cell(diag, 1, 0, "N", head)
+    f_cell(diag, 2, 0, "WR", head)
+    f_cell(diag, 3, 0, "Net R", head)
+    Research ds = sims.get(drawIdx)
+    array<string> bins = array.from("Before 10:00", "10:00-10:59", "11:00-11:59", "12:00 onward")
+    for b = 0 to 3
+        f_cell(diag, 0, b + 1, bins.get(b), bg)
+        f_cell(diag, 1, b + 1, str.tostring(ds.binN.get(b)), bg)
+        f_cell(diag, 2, b + 1, f_wr(ds.binW.get(b), ds.binN.get(b)), bg)
+        f_cell(diag, 3, b + 1, f_num(ds.binR.get(b)), bg)
+    string activeModel = rolling ? "Rolling " + str.tostring(rollingBars) + " candles" : fallbackDay ? "RTH opening-range AMD" : "Session AMD"
+    string status = rolling ? (bar_index < rollingBars ? "Need more history" : rangeValid ? "Rolling range ready" : "Range / ATR filter") : observedAccBars == 0 ? "No accumulation bars: enable RTH fallback or ETH" : not rangeValid ? "Range incomplete / rejected / still forming" : "Range ready; see setup counters"
+    string trendStatus = na(hs) ? "HTF EMA warmup" : timeframe.in_seconds(htf) <= chartSeconds ? "Previous chart bar (max interval)" : "Confirmed previous HTF"
+    array<string> diagNames = array.from(rolling ? "Range windows valid / rejected" : "Sessions valid / rejected", "Sweeps / reclaims", "Displacements / expired", "HTF / risk rejected", "Busy / dual sweeps", "Setup + entry window", "Trend now / state", "Diagnostics target / timezone", "Active model", "Accumulation / entry bars", "RTH fallbacks / missing days", "Data / setup status", "Trend data status", "Chart session / last data")
+    array<string> diagValues = array.from(str.tostring(validSessions) + " / " + str.tostring(rejectedSessions), str.tostring(sweeps) + " / " + str.tostring(reclaims), str.tostring(distributions) + " / " + str.tostring(expired), str.tostring(trendRejected) + " / " + str.tostring(riskRejected), str.tostring(busyRejected) + " / " + str.tostring(dualSweeps), "AMD | " + (rolling ? "All chart bars" : fallbackDay ? openingEntry : entrySession), (bull ? "Bull" : bear ? "Bear" : "Neutral") + " / " + str.tostring(state), displayedTarget + " | " + tz, activeModel, str.tostring(observedAccBars) + " / " + str.tostring(observedEntryBars), str.tostring(fallbackSessions) + " / " + str.tostring(missingSessions), status, trendStatus, syminfo.session + " | " + str.format_time(time_close, "yyyy-MM-dd HH:mm", tz))
+    for r = 0 to 13
+        f_cell(diag, 0, r + 5, diagNames.get(r), bg)
+        f_cell(diag, 1, r + 5, diagValues.get(r), bg)
+    array<string> extraNames = array.from("Reclaim / distribution timeouts", "Invalidations / deep sweeps", "Late entries rejected", "Rules / confirmed trend filter", "Loaded history starts")
+    array<string> extraValues = array.from(str.tostring(reclaimExpired) + " / " + str.tostring(distributionExpired), str.tostring(invalidated) + " / " + str.tostring(deepRejected), str.tostring(lateRejected), rules + " / " + (balanced ? trendRule : "Strict EMA stack"), str.format_time(firstLoaded, "yyyy-MM-dd HH:mm", tz))
+    for r = 0 to 4
+        f_cell(diag, 0, r + 19, extraNames.get(r), bg)
+        f_cell(diag, 1, r + 19, extraValues.get(r), bg)
