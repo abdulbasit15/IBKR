@@ -1,0 +1,436 @@
+//@version=6
+indicator("AB - Opening Drive First Pullback 2R+ Research", overlay=true, max_lines_count=450, max_labels_count=150)
+// Research indicator, not a broker strategy. Standard time-based OHLC charts only.
+// Entries: confirmed signal -> next available bar open. No entry-bar retrospective fill.
+// HTF: previous completed HTF candle only. No pivots or future-looking data.
+// Three independent fixed-target ledgers share entries; one opening setup per session.
+// Costs are round-trip R deducted at exit; reported W/L/BE classify net outcomes.
+string G1 = "Session and research"
+string tz = input.string("America/New_York", "Session timezone", group=G1)
+int oh = input.int(9, "Open hour", minval=0, maxval=23, group=G1)
+int om = input.int(30, "Open minute", minval=0, maxval=59, group=G1)
+int driveMinutes = input.int(25, "Latest drive confirmation (minutes after open)", minval=5, maxval=90, group=G1)
+int entryMinutes = input.int(90, "Last entry (minutes after open)", minval=10, maxval=240, group=G1)
+int flatMinutes = input.int(385, "Flatten (minutes after open)", minval=30, maxval=600, group=G1)
+int fromDate = input.time(timestamp("01 Jan 2020 00:00 +0000"), "Research start", group=G1)
+int toDate = input.time(timestamp("31 Dec 2099 23:59 +0000"), "Last entry date", group=G1)
+float costR = input.float(0.03, "Round-trip costs (R)", minval=0, step=0.01, group=G1)
+string targetChoice = input.string("2.5R", "Chart target / diagnostics", options=["2R", "2.5R", "3R"], group=G1)
+int keepTrades = input.int(60, "Visible trade history", minval=1, maxval=100, group=G1)
+string G2 = "Opening drive"
+int minBars = input.int(3, "Minimum drive bars", minval=2, maxval=12, group=G2)
+int atrLen = input.int(14, "ATR length", minval=2, group=G2)
+float minATR = input.float(1.2, "Net displacement / pre-open ATR", minval=0.1, step=0.1, group=G2)
+float minEff = input.float(0.65, "Minimum path efficiency", minval=0.1, maxval=1, step=0.05, group=G2)
+float minBody = input.float(0.5, "Minimum mean candle body fraction", minval=0, maxval=1, step=0.05, group=G2)
+float minDir = input.float(0.67, "Minimum directional candle fraction", minval=0.1, maxval=1, step=0.01, group=G2)
+float maxOverlap = input.float(0.55, "Maximum mean adjacent-bar overlap", minval=0, maxval=1, step=0.05, group=G2)
+float minRV = input.float(1.15, "Minimum same-clock relative volume", minval=0.1, step=0.05, group=G2)
+int volDays = input.int(20, "Same-clock volume EMA sessions", minval=2, maxval=100, group=G2)
+int volWarm = input.int(5, "Required prior sessions per clock slot", minval=1, maxval=50, group=G2)
+string htf = input.timeframe("15", "Confirmed trend timeframe", group=G2)
+int fastLen = input.int(20, "HTF fast EMA", minval=2, group=G2)
+int slowLen = input.int(50, "HTF slow EMA", minval=3, group=G2)
+string G3 = "First controlled pullback"
+string zoneMode = input.string("Retracement + EMA", "Required zone", options=["Retracement", "EMA", "Structure", "Any", "Retracement + EMA"], group=G3)
+float shallow = input.float(0.25, "Minimum retracement", minval=0.05, maxval=0.8, step=0.05, group=G3)
+float deep = input.float(0.60, "Maximum retracement", minval=0.1, maxval=0.95, step=0.05, group=G3)
+int emaLen = input.int(9, "Entry EMA", minval=2, group=G3)
+float zoneATR = input.float(0.20, "EMA / structure tolerance (ATR)", minval=0, step=0.05, group=G3)
+int maxPB = input.int(6, "Maximum pullback bars", minval=1, maxval=20, group=G3)
+float pbRange = input.float(1.2, "Maximum pullback candle range (ATR)", minval=0.1, step=0.1, group=G3)
+float pbVol = input.float(0.9, "Maximum mean pullback / drive volume", minval=0.1, step=0.1, group=G3)
+float triggerBody = input.float(0.45, "Reversal minimum body fraction", minval=0.1, maxval=1, step=0.05, group=G3)
+int bufferTicks = input.int(2, "Structural stop buffer (ticks)", minval=1, group=G3)
+float minRiskATR = input.float(0.15, "Minimum entry risk (ATR)", minval=0.01, step=0.05, group=G3)
+float maxRiskATR = input.float(2.0, "Maximum entry risk (ATR)", minval=0.1, step=0.1, group=G3)
+float maxGapATR = input.float(0.35, "Maximum signal-to-fill gap (ATR)", minval=0, step=0.05, group=G3)
+
+if barstate.isfirst
+    if not timeframe.isintraday or timeframe.in_seconds() > 900 or not chart.is_standard
+        runtime.error("Use a standard intraday time chart, 15 minutes or lower; intended for 2m/5m.")
+    if timeframe.in_seconds(htf) <= timeframe.in_seconds()
+        runtime.error("Trend timeframe must be higher than chart timeframe.")
+    if shallow >= deep or driveMinutes >= entryMinutes or entryMinutes >= flatMinutes
+        runtime.error("Require shallow < deep and drive window < entry window < flatten time.")
+
+float atr = ta.atr(atrLen)
+float ema = ta.ema(close, emaLen)
+[hc, hf, hs, hfPrev] = request.security(syminfo.tickerid, htf, [close[1], ta.ema(close, fastLen)[1], ta.ema(close, slowLen)[1], ta.ema(close, fastLen)[2]], lookahead=barmerge.lookahead_on)
+bool bull = hc > hf and hf > hs and hf > hfPrev
+bool bear = hc < hf and hf < hs and hf < hfPrev
+int dayKey = year(time, tz) * 10000 + month(time, tz) * 100 + dayofmonth(time, tz)
+bool newDay = na(dayKey[1]) or dayKey != dayKey[1]
+int openTime = timestamp(tz, year(time, tz), month(time, tz), dayofmonth(time, tz), oh, om)
+float elapsed = (time - openTime) / 60000.0
+float closeElapsed = (time_close - openTime) / 60000.0
+bool weekday = dayofweek(time, tz) >= dayofweek.monday and dayofweek(time, tz) <= dayofweek.friday
+bool entryWindow = weekday and elapsed >= 0 and elapsed < entryMinutes and closeElapsed < flatMinutes
+bool dateOK = time >= fromDate and time <= toDate
+int selected = targetChoice == "2R" ? 0 : targetChoice == "2.5R" ? 1 : 2
+var array<float> targets = array.from(2.0, 2.5, 3.0)
+// Same-clock baseline uses only earlier sessions, updated after current bar evaluation.
+var array<float> clockVol = array.new_float(1440, na)
+var array<int> clockCount = array.new_int(1440, 0)
+int slot = hour(time, tz) * 60 + minute(time, tz)
+float baseline = array.get(clockVol, slot)
+bool volReady = array.get(clockCount, slot) >= volWarm and not na(volume) and baseline > 0
+float rv = volReady ? volume / baseline : na
+
+type Ledger
+    bool active = false
+    float entry = na
+    float stop = na
+    float tp = na
+    float risk = na
+    int dir = 0
+    int born = na
+    int day = na
+    int trades = 0
+    int wins = 0
+    int losses = 0
+    int be = 0
+    int longs = 0
+    int longWins = 0
+    int shorts = 0
+    int shortWins = 0
+    float gp = 0.0
+    float gl = 0.0
+    float net = 0.0
+    float peak = 0.0
+    float dd = 0.0
+    int collisions = 0
+    int timed = 0
+    int first = na
+    int quality = 0
+    int bucket = 0
+    int zone = 0
+    line el = na
+    line sl = na
+    line tl = na
+var array<Ledger> books = array.new<Ledger>()
+if barstate.isfirst
+    for i = 0 to 2
+        array.push(books, Ledger.new())
+var array<int> diagN = array.new_int(8, 0)
+var array<int> diagW = array.new_int(8, 0)
+var array<float> diagR = array.new_float(8, 0.0)
+var array<line> historyLines = array.new<line>()
+var array<label> historyLabels = array.new<label>()
+var int driveCount = 0
+var int rejected = 0
+var int signals = 0
+var int gapReject = 0
+var int warmReject = 0
+var int state = 0 // 0 awaiting opening drive, 1 extension, 2 first pullback, 3 consumed
+var int n = 0
+var float anchor = na
+var float baseATR = na
+var float driveHi = na
+var float driveLo = na
+var float path = 0.0
+var float bodies = 0.0
+var float overlaps = 0.0
+var float upCount = 0.0
+var float downCount = 0.0
+var float sumRV = 0.0
+var int rvN = 0
+var float sumVolume = 0.0
+var int direction = 0
+var float extreme = na
+var float origin = na
+var float structure = na
+var float meanDriveVol = na
+var int quality = 0
+var int pbN = 0
+var float pbExtreme = na
+var float pbVolume = 0.0
+var bool touched = false
+var int touchedZone = 0
+var bool pending = false
+var int pendingDir = 0
+var float pendingStop = na
+var float signalClose = na
+var float signalATR = na
+var int pendingDay = na
+var int pendingQuality = 0
+var int pendingZone = 0
+bool longSignal = false
+bool shortSignal = false
+bool targetEvent = false
+bool stopEvent = false
+
+if barstate.isconfirmed
+    // Fill queued orders at this bar's open before evaluating this bar's range.
+    if pending
+        float r = pendingDir * (open - pendingStop)
+        bool validFill = dayKey == pendingDay and entryWindow and dateOK and r >= minRiskATR * signalATR and r <= maxRiskATR * signalATR and math.abs(open - signalClose) <= maxGapATR * signalATR
+        if validFill
+            for i = 0 to 2
+                Ledger b = array.get(books, i)
+                b.active := true
+                b.entry := open
+                b.stop := pendingStop
+                b.risk := r
+                b.dir := pendingDir
+                b.tp := math.round_to_mintick(open + pendingDir * r * array.get(targets, i))
+                b.born := bar_index
+                b.day := dayKey
+                b.quality := pendingQuality
+                b.zone := pendingZone
+                b.bucket := elapsed < 30 ? 0 : elapsed < 60 ? 1 : 2
+                if na(b.first)
+                    b.first := time
+                if i == selected
+                    color c = pendingDir == 1 ? color.teal : color.orange
+                    b.el := line.new(bar_index, open, bar_index + 1, open, color=color.gray, style=line.style_dotted)
+                    b.sl := line.new(bar_index, b.stop, bar_index + 1, b.stop, color=color.red, style=line.style_dotted)
+                    b.tl := line.new(bar_index, b.tp, bar_index + 1, b.tp, color=color.lime, style=line.style_dotted)
+                    array.push(historyLines, b.el)
+                    array.push(historyLines, b.sl)
+                    array.push(historyLines, b.tl)
+                    string txt = (pendingDir == 1 ? "LONG" : "SHORT") + " | Opening Drive First Pullback\nEntry: " + str.tostring(open, format.mintick) + "\nSL: " + str.tostring(b.stop, format.mintick) + "\nTP: " + str.tostring(b.tp, format.mintick) + " (" + targetChoice + ")"
+                    array.push(historyLabels, label.new(bar_index, open, txt, yloc=yloc.price, style=pendingDir == 1 ? label.style_label_up : label.style_label_down, color=c, textcolor=color.white, size=size.small))
+                    alert(txt + " | Research fill confirmed at bar close", alert.freq_once_per_bar_close)
+        else
+            gapReject += 1
+        pending := false
+    // Independent target ledgers. Stop first on any same-bar collision, including fill bar.
+    for i = 0 to 2
+        Ledger b = array.get(books, i)
+        if b.active
+            bool stale = b.day != dayKey
+            bool stopHit = b.dir == 1 ? low <= b.stop : high >= b.stop
+            bool tpHit = b.dir == 1 ? high >= b.tp : low <= b.tp
+            bool timedOut = closeElapsed >= flatMinutes
+            float exitPrice = na
+            int reason = 0
+            if stale
+                exitPrice := open
+                reason := 3
+            else if stopHit
+                exitPrice := b.dir == 1 ? math.min(open, b.stop) : math.max(open, b.stop)
+                reason := 1
+                if tpHit
+                    b.collisions += 1
+            else if tpHit
+                exitPrice := b.tp // no favorable gap improvement assumed
+                reason := 2
+            else if timedOut
+                exitPrice := close
+                reason := 3
+            if i == selected
+                line.set_x2(b.el, bar_index + 1)
+                line.set_x2(b.sl, bar_index + 1)
+                line.set_x2(b.tl, bar_index + 1)
+            if not na(exitPrice)
+                float result = b.dir * (exitPrice - b.entry) / b.risk - costR
+                bool win = result > 0.000001
+                bool loss = result < -0.000001
+                b.trades += 1
+                b.wins += win ? 1 : 0
+                b.losses += loss ? 1 : 0
+                b.be += not win and not loss ? 1 : 0
+                b.longs += b.dir == 1 ? 1 : 0
+                b.longWins += b.dir == 1 and win ? 1 : 0
+                b.shorts += b.dir == -1 ? 1 : 0
+                b.shortWins += b.dir == -1 and win ? 1 : 0
+                b.gp += math.max(result, 0)
+                b.gl += math.max(-result, 0)
+                b.net += result
+                b.peak := math.max(b.peak, b.net)
+                b.dd := math.max(b.dd, b.peak - b.net)
+                b.timed += reason == 3 ? 1 : 0
+                b.active := false
+                if i == selected
+                    for k in array.from(b.bucket, 3 + b.quality, 5 + b.zone)
+                        array.set(diagN, k, array.get(diagN, k) + 1)
+                        array.set(diagW, k, array.get(diagW, k) + (win ? 1 : 0))
+                        array.set(diagR, k, array.get(diagR, k) + result)
+                    line.set_style(b.el, line.style_solid)
+                    if reason == 1
+                        line.set_style(b.sl, line.style_solid)
+                        stopEvent := true
+                    else if reason == 2
+                        line.set_style(b.tl, line.style_solid)
+                        targetEvent := true
+                    else
+                        line.set_color(b.el, color.yellow)
+    if newDay
+        state := 0
+        n := 0
+        path := 0
+        bodies := 0
+        overlaps := 0
+        upCount := 0
+        downCount := 0
+        sumRV := 0
+        rvN := 0
+        sumVolume := 0
+        anchor := na
+        driveHi := na
+        driveLo := na
+        pbN := 0
+        touched := false
+    bool busy = false
+    for i = 0 to 2
+        busy := busy or array.get(books, i).active
+    if state == 0 and entryWindow and dateOK and not busy
+        // Require the actual opening bar, never a partial loaded session or missing open.
+        if n == 0
+            if time == openTime and not na(atr[1])
+                anchor := open
+                baseATR := atr[1]
+                driveHi := high
+                driveLo := low
+            else
+                state := 3
+        if state == 0
+            n += 1
+            driveHi := math.max(driveHi, high)
+            driveLo := math.min(driveLo, low)
+            path += math.abs(close - (n == 1 ? anchor : close[1]))
+            float span = math.max(high - low, syminfo.mintick)
+            bodies += math.abs(close - open) / span
+            overlaps += n == 1 ? 0 : math.max(0, math.min(high, high[1]) - math.max(low, low[1])) / math.max(math.min(span, high[1] - low[1]), syminfo.mintick)
+            upCount += close > open ? 1 : 0
+            downCount += close < open ? 1 : 0
+            sumVolume += nz(volume)
+            if volReady
+                sumRV += rv
+                rvN += 1
+            int d = close > anchor ? 1 : -1
+            float displacement = math.abs(close - anchor) / baseATR
+            float efficiency = path > 0 ? math.abs(close - anchor) / path : 0
+            float directional = (d == 1 ? upCount : downCount) / n
+            float overlap = n > 1 ? overlaps / (n - 1) : 1
+            float meanRV = rvN == n ? sumRV / n : 0
+            bool aligned = d == 1 ? bull : bear
+            bool qualityOK = n >= minBars and displacement >= minATR and efficiency >= minEff and bodies / n >= minBody and directional >= minDir and overlap <= maxOverlap and meanRV >= minRV and aligned
+            if qualityOK and closeElapsed <= driveMinutes
+                direction := d
+                origin := d == 1 ? driveLo : driveHi
+                extreme := d == 1 ? driveHi : driveLo
+                structure := d == 1 ? math.max(open, low) : math.min(open, high)
+                meanDriveVol := sumVolume / n
+                quality := displacement >= minATR * 1.5 and efficiency >= math.min(0.95, minEff + 0.15) and meanRV >= minRV * 1.25 ? 1 : 0
+                state := 1
+                driveCount += 1
+            else if closeElapsed >= driveMinutes
+                if rvN < n
+                    warmReject += 1
+                state := 3
+    else if (state == 1 or state == 2) and entryWindow and dateOK and not busy
+        bool counter = direction == 1 ? close < close[1] or close < open : close > close[1] or close > open
+        if state == 1 and not counter
+            extreme := direction == 1 ? math.max(extreme, high) : math.min(extreme, low)
+        else
+            if state == 1
+                state := 2
+                pbN := 0
+                pbVolume := 0
+                pbExtreme := direction == 1 ? low : high
+                touched := false
+            pbN += 1
+            pbExtreme := direction == 1 ? math.min(pbExtreme, low) : math.max(pbExtreme, high)
+            pbVolume += nz(volume)
+            float length = direction * (extreme - origin)
+            float depth = length > 0 ? direction * (extreme - pbExtreme) / length : 1
+            float zoneA = extreme - direction * length * shallow
+            float zoneB = extreme - direction * length * deep
+            bool fibTouch = low <= math.max(zoneA, zoneB) and high >= math.min(zoneA, zoneB)
+            bool emaTouch = low <= ema + baseATR * zoneATR and high >= ema - baseATR * zoneATR
+            bool structTouch = low <= structure + baseATR * zoneATR and high >= structure - baseATR * zoneATR
+            bool zoneTouch = zoneMode == "Retracement" ? fibTouch : zoneMode == "EMA" ? emaTouch : zoneMode == "Structure" ? structTouch : zoneMode == "Any" ? fibTouch or emaTouch or structTouch : fibTouch and emaTouch
+            if zoneTouch
+                touched := true
+                touchedZone := fibTouch ? 0 : emaTouch ? 1 : 2
+            bool aligned = direction == 1 ? bull : bear
+            bool invalid = depth > deep or pbN > maxPB or high - low > pbRange * baseATR or not aligned
+            bool reversal = direction == 1 ? close > open and close > high[1] : close < open and close < low[1]
+            float bodyFraction = math.abs(close - open) / math.max(high - low, syminfo.mintick)
+            bool controlled = pbVolume / pbN <= meanDriveVol * pbVol
+            if invalid
+                state := 3
+                rejected += 1
+            else if pbN >= 2 and touched and depth >= shallow and controlled and reversal and bodyFraction >= triggerBody
+                pending := true
+                pendingDir := direction
+                pendingStop := math.round_to_mintick(pbExtreme - direction * bufferTicks * syminfo.mintick)
+                signalClose := close
+                signalATR := baseATR
+                pendingDay := dayKey
+                pendingQuality := quality
+                pendingZone := touchedZone
+                signals += 1
+                longSignal := direction == 1
+                shortSignal := direction == -1
+                state := 3
+            else if direction == 1 ? high > extreme : low < extreme
+                // A resumed drive without a qualifying entry consumes the first pullback.
+                state := 3
+                rejected += 1
+    if (state == 1 or state == 2) and (not entryWindow or not dateOK)
+        rejected += 1
+        state := 3
+    if weekday and elapsed >= 0 and elapsed < flatMinutes and not na(volume)
+        float old = array.get(clockVol, slot)
+        array.set(clockVol, slot, na(old) ? volume : old + 2.0 / (volDays + 1) * (volume - old))
+        array.set(clockCount, slot, array.get(clockCount, slot) + 1)
+    while array.size(historyLines) > keepTrades * 3
+        line.delete(array.shift(historyLines))
+    while array.size(historyLabels) > keepTrades
+        label.delete(array.shift(historyLabels))
+
+plot(ema, "Pullback EMA", color=color.new(color.aqua, 25))
+plot(state == 1 or state == 2 ? extreme : na, "Drive extreme", color=color.new(color.blue, 30), style=plot.style_linebr)
+plot(state == 1 or state == 2 ? origin : na, "Drive origin", color=color.new(color.gray, 40), style=plot.style_linebr)
+plotshape(longSignal, "Confirmed LONG setup", shape.triangleup, location.belowbar, color.teal, size=size.tiny)
+plotshape(shortSignal, "Confirmed SHORT setup", shape.triangledown, location.abovebar, color.orange, size=size.tiny)
+alertcondition(longSignal, "LONG setup confirmed", "Opening Drive First Pullback LONG confirmed on {{ticker}} {{interval}}. Research fill: next bar open, subject to gap/risk validation.")
+alertcondition(shortSignal, "SHORT setup confirmed", "Opening Drive First Pullback SHORT confirmed on {{ticker}} {{interval}}. Research fill: next bar open, subject to gap/risk validation.")
+alertcondition(targetEvent, "Chart target hit", "Opening Drive First Pullback selected target hit on {{ticker}}.")
+alertcondition(stopEvent, "Chart stop hit", "Opening Drive First Pullback selected stop hit on {{ticker}}.")
+
+f_num(float x) => str.tostring(x, "#.##")
+f_wr(int w, int n) => n > 0 ? str.tostring(100.0 * w / n, "#.0") + "%" : "—"
+f_pf(float p, float l) => l > 0 ? f_num(p / l) : p > 0 ? "∞" : "—"
+var table panel = table.new(position.top_right, 4, 31, border_width=1)
+f_row(int row, string key, string a, string b, string c) =>
+    table.cell(panel, 0, row, key, text_color=color.white, bgcolor=color.new(color.gray, 65), text_size=size.small)
+    table.cell(panel, 1, row, a, text_color=color.white, bgcolor=color.new(color.black, 20), text_size=size.small)
+    table.cell(panel, 2, row, b, text_color=color.white, bgcolor=color.new(color.black, 20), text_size=size.small)
+    table.cell(panel, 3, row, c, text_color=color.white, bgcolor=color.new(color.black, 20), text_size=size.small)
+if barstate.islast
+    f_row(0, "AB Opening Drive • " + timeframe.period, "2R", "2.5R", "3R")
+    f_row(1, "Trade Period → today", "", "", "")
+    f_row(2, "Trades / W / L / BE", "", "", "")
+    f_row(3, "Win rate (BE included)", "", "", "")
+    f_row(4, "Long WR / trades", "", "", "")
+    f_row(5, "Short WR / trades", "", "", "")
+    f_row(6, "Gross profit R (after costs)", "", "", "")
+    f_row(7, "Gross loss R (after costs)", "", "", "")
+    f_row(8, "Net R", "", "", "")
+    f_row(9, "Profit factor", "", "", "")
+    f_row(10, "Max closed-trade DD R", "", "", "")
+    f_row(11, "Open / unrealized R*", "", "", "")
+    f_row(12, "Stop/TP collisions", "", "", "")
+    f_row(13, "Time / missing-session exits", "", "", "")
+    for i = 0 to 2
+        Ledger b = array.get(books, i)
+        string period = na(b.first) ? "No fills" : str.format_time(b.first, "yyyy-MM-dd", tz) + " → " + str.format_time(timenow, "yyyy-MM-dd", tz)
+        array<string> values = array.from(period, str.tostring(b.trades) + " / " + str.tostring(b.wins) + " / " + str.tostring(b.losses) + " / " + str.tostring(b.be), f_wr(b.wins, b.trades), f_wr(b.longWins, b.longs) + " / " + str.tostring(b.longs), f_wr(b.shortWins, b.shorts) + " / " + str.tostring(b.shorts), f_num(b.gp), f_num(b.gl), f_num(b.net), f_pf(b.gp, b.gl), f_num(b.dd), b.active ? "1 / " + f_num(b.dir * (close - b.entry) / b.risk - costR) : "0 / —", str.tostring(b.collisions), str.tostring(b.timed))
+        for j = 0 to array.size(values) - 1
+            table.cell(panel, i + 1, j + 1, array.get(values, j), text_color=color.white, bgcolor=i == selected ? color.new(color.teal, 70) : color.new(color.black, 20), text_size=size.small)
+    f_row(14, "Selected target diagnostics", targetChoice, "Trades / WR", "Net R")
+    array<string> names = array.from("Entry +0–29 min", "Entry +30–59 min", "Entry +60 min onward", "Drive: qualified", "Drive: exceptional", "Zone: retracement", "Zone: EMA", "Zone: structure")
+    for k = 0 to 7
+        f_row(15 + k, array.get(names, k), "", str.tostring(array.get(diagN, k)) + " / " + f_wr(array.get(diagW, k), array.get(diagN, k)), f_num(array.get(diagR, k)))
+    f_row(23, "Setup funnel", "Drives " + str.tostring(driveCount), "Signals " + str.tostring(signals), "PB rejected " + str.tostring(rejected))
+    f_row(24, "Skipped", "Gap/risk " + str.tostring(gapReject), "RV warm-up " + str.tostring(warmReject), "1 setup/session")
+    f_row(25, "Execution", "Next open", "Stop first", "Fixed SL/TP")
+    f_row(26, "Costs / flatten", f_num(costR) + "R", "+" + str.tostring(flatMinutes) + "m", "No trailing/BE move")
+    f_row(27, "Coverage through", str.format_time(time_close, "yyyy-MM-dd HH:mm", tz), "Loaded bars only", tz)
+    f_row(28, "Research limits", "OHLC simulation", "No tick ordering", "No empirical claim")
+    f_row(29, "*Open positions excluded", "Closed equity DD", "Net-cost W/L/BE", "Date = first fill")
+    f_row(30, "Line result", "Entry solid on exit", "Hit SL/TP solid", "Other stays dotted")
